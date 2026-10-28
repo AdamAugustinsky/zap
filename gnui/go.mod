@@ -41,3 +41,7 @@ replace gonativeui => ../../go-native-ui
 // The framework's patched typesetting (its D23). A replace in a dependency's
 // go.mod does not apply here, so it is repeated.
 replace github.com/go-text/typesetting => ../../go-native-ui/third_party/typesetting
+
+// whatsmeow with Zap's call patch: the <call> stanza id and the typed video
+// ack the call bridge needs (third_party/whatsmeow/ZAP-PATCH.md).
+replace go.mau.fi/whatsmeow => ./third_party/whatsmeow
