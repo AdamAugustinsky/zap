@@ -1,6 +1,7 @@
-// The media host of one 1:1 call: what Zap's zfcalls/src/host.rs did around
+// The media host of one call: what Zap's zfcalls/src/host.rs did around
 // whatsapp-rust's engine (dial the relay, drive the engine, the microphone
-// and speaker, the camera, the H.264 encoder and the peer's decoder), on
+// and speaker, the camera, the H.264 encoder and the peer's decoder; for a
+// group call one decoder per member, as Zap 0.19.0's decode_remote did), on
 // the Go engine and the gocore/voip device packages.
 
 package engine
@@ -15,7 +16,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"go.mau.fi/whatsmeow/types"
+
 	"zapfast/gocore/voip/camera"
+	"zapfast/gocore/voip/groupcall"
 	"zapfast/gocore/voip/relay"
 	"zapfast/gocore/voip/rtp"
 	"zapfast/gocore/voip/video"
@@ -62,7 +66,13 @@ type VideoDecoder interface {
 type FrameSink interface {
 	PutLocal(p *video.I420)
 	PutRemote(p *video.I420)
+	PutMember(id string, p *video.I420)
 }
+
+// maxMemberStreams is the most group members decoded at once, each with a
+// decoder of its own; a new sender past it replaces the one that began
+// first (0.19.0's MAX_REMOTE_STREAMS).
+const maxMemberStreams = 16
 
 // Devices is how a call reaches the system. Every field may be nil: no
 // relay dialer is an error, no audio is silence both ways, no camera, codec
@@ -95,6 +105,21 @@ type Params struct {
 	CameraOn bool
 	// Microphone, Speaker and Camera are device ids; empty: the default.
 	Microphone, Speaker, Camera string
+	// Group makes this a group call: the relay is the roster's and the key
+	// arrives as an epoch (OpGroup); CallKey and Relay are unused.
+	Group *GroupParams
+}
+
+// GroupParams are a group call's media inputs.
+type GroupParams struct {
+	Creator types.JID
+	// Self is our device JID as the roster names it.
+	Self types.JID
+	// Initial is the roster the media opens on; it carries the relay.
+	Initial *groupcall.Update
+	// MemberID is the tile id a media sender's pictures go under; false for
+	// a sender without a tile. Called from the decoder's goroutine.
+	MemberID func(sender types.JID) (string, bool)
 }
 
 // CallEventKind tells a call's host events apart (zfcalls' wire Kind).
@@ -117,6 +142,8 @@ const (
 	CallRemoteVideo
 	// CallCameraStopped: our camera stopped (unplugged, taken, refused).
 	CallCameraStopped
+	// CallMemberVideo: a group member's first picture (Member).
+	CallMemberVideo
 	// CallEnded is the last event: every device is released.
 	CallEnded
 )
@@ -126,6 +153,7 @@ type CallEvent struct {
 	Generation uint64
 	Kind       CallEventKind
 	Reason     string
+	Member     types.JID
 }
 
 // Op names a command to a live call.
@@ -145,6 +173,9 @@ const (
 	OpMicrophone
 	OpSpeaker
 	OpCameraDevice
+	// OpGroup applies Group (a roster, with Epoch when it has one) or an
+	// Epoch alone.
+	OpGroup
 )
 
 // Command is one command to a live call (zfcalls' wire Command).
@@ -161,6 +192,9 @@ type Command struct {
 	AwaitAccept bool
 	// Value is Orientation's quarter turns.
 	Value uint8
+	// Group and Epoch are OpGroup's.
+	Group *groupcall.Update
+	Epoch *GroupEpoch
 }
 
 // Call is one call's media, from Open to its CallEnded event.
@@ -180,7 +214,16 @@ func Open(p Params, d Devices, emit func(CallEvent)) (*Call, error) {
 	if p.Outgoing {
 		dir = Outgoing
 	}
-	cfg, err := NewConfig(dir, p.CallID, p.SelfLID, p.PeerLID, p.CallKey, p.Relay)
+	var cfg Config
+	var err error
+	if p.Group != nil {
+		if p.Group.Initial == nil || p.Group.Initial.Relay == nil {
+			return nil, &SetupError{"the group call has no relay yet"}
+		}
+		cfg, err = NewGroupConfig(dir, p.CallID, p.SelfLID, p.Group.Creator.String(), p.Group.Initial.Relay)
+	} else {
+		cfg, err = NewConfig(dir, p.CallID, p.SelfLID, p.PeerLID, p.CallKey, p.Relay)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -192,11 +235,23 @@ func Open(p Params, d Devices, emit func(CallEvent)) (*Call, error) {
 	if err != nil {
 		return nil, fmt.Errorf("the media engine: %w", err)
 	}
+	if p.Group != nil {
+		if err := e.ConfigureGroup(GroupConfig{Creator: p.Group.Creator, Self: p.Group.Self, Initial: p.Group.Initial}); err != nil {
+			return nil, fmt.Errorf("the group media: %w", err)
+		}
+	}
 	if d.NewOpus != nil {
 		if c, err := d.NewOpus(); err != nil {
 			slog.Warn("zapfast voip: no Opus codec; a peer on Opus will not be heard", "err", err)
 		} else {
 			e.WithForeignCodec(c)
+			e.WithForeignCodecFactory(func() ForeignCodec {
+				c, err := d.NewOpus()
+				if err != nil {
+					return nil
+				}
+				return c
+			})
 		}
 	}
 	if d.Dial == nil {
@@ -205,6 +260,8 @@ func Open(p Params, d Devices, emit func(CallEvent)) (*Call, error) {
 	c := &Call{Generation: p.Generation, cmds: make(chan *Command, 64), done: make(chan struct{})}
 	h := &host{p: p, d: d, e: e, call: c, emit: func(k CallEventKind, reason string) {
 		emit(CallEvent{Generation: p.Generation, Kind: k, Reason: reason})
+	}, emitMember: func(m types.JID) {
+		emit(CallEvent{Generation: p.Generation, Kind: CallMemberVideo, Member: m})
 	}}
 	go func() {
 		defer close(c.done)
@@ -281,17 +338,19 @@ func (q *eventQueue) take() []Event {
 }
 
 type host struct {
-	p    Params
-	d    Devices
-	e    *Engine
-	call *Call
-	emit func(CallEventKind, string)
+	p          Params
+	d          Devices
+	e          *Engine
+	call       *Call
+	emit       func(CallEventKind, string)
+	emitMember func(types.JID)
 
 	audio     Audio
 	muted     atomic.Bool
 	connected bool
 	remote    bool // the peer's first picture was announced
 	ctl       chan Control
+	group     chan GroupControl
 	rekey     chan PeerAnswer
 	video     *videoPipe
 }
@@ -375,6 +434,7 @@ func (h *host) run() {
 	}
 
 	h.ctl = make(chan Control, 64)
+	h.group = make(chan GroupControl, 64)
 	if h.p.Outgoing {
 		h.rekey = make(chan PeerAnswer, 1)
 	}
@@ -405,6 +465,7 @@ func (h *host) run() {
 			Video:    h.video.out,
 			VideoOut: h.video.deliver,
 			Control:  h.ctl,
+			Group:    h.group,
 			Events:   events.push,
 			Stats:    func(s Stats) { h.call.stats.Store(&s) },
 		}, h.e)
@@ -490,8 +551,13 @@ func (h *host) feedMicrophone(out chan<- []int16, stop <-chan struct{}) {
 func (h *host) closed(r CloseReason) {
 	var reason string
 	switch r.Kind {
-	case CloseLocal, CloseTerminated:
-		return // a hangup; a terminal relay failure was its own event
+	case CloseTerminated:
+		if r.Msg == "" {
+			return // a terminal relay failure was its own event
+		}
+		reason = r.Msg // a roster that no longer has us
+	case CloseLocal:
+		return // a hangup
 	case CloseRelayDisconnected:
 		reason = "The relay connection dropped"
 	case CloseSendFailed:
@@ -568,6 +634,12 @@ func (h *host) command(cmd *Command) {
 		}
 	case OpCameraDevice:
 		err = h.video.switchCamera(cmd.Device)
+	case OpGroup:
+		select {
+		case h.group <- GroupControl{Update: cmd.Group, Epoch: cmd.Epoch}:
+		default:
+			slog.Warn("zapfast voip: a group roster or epoch was dropped (the queue is full)")
+		}
 	}
 	if err != nil {
 		slog.Warn("zapfast voip: a call command failed", "op", cmd.Op, "err", err)
@@ -603,6 +675,10 @@ func (h *host) engineEvent(ev Event) {
 		if ev.VideoAUs > 0 {
 			h.video.sendDrops()
 		}
+	case EventGroupControlRejected:
+		slog.Warn("zapfast voip: the group media refused a control", "control", ev.Control, "err", ev.Err)
+	case EventRelayReconnectTimedOut:
+		slog.Warn("zapfast voip: the group relay could not be redialled in time")
 	}
 }
 
@@ -864,13 +940,29 @@ func (v *videoPipe) capture(cam Camera, gen uint64, stop, done chan struct{}) {
 	}
 }
 
-// decode turns the peer's access units into pictures for the UI.
+// memberStream is one group member's decoder.
+type memberStream struct {
+	dec VideoDecoder
+	// started: a keyframe arrived, where a decoder can begin.
+	started bool
+	// shown: its first picture was announced.
+	shown bool
+}
+
+// decode turns the peer's access units into pictures for the UI. A group
+// call's frames name their sender, and each sender gets a decoder of its
+// own, so every member's picture reaches its own tile.
 func (v *videoPipe) decode(stop, done chan struct{}) {
 	defer close(done)
 	var dec VideoDecoder
+	members := map[types.JID]*memberStream{}
+	var order []types.JID // the order members began in, for the cap
 	defer func() {
 		if dec != nil {
 			dec.Close()
+		}
+		for _, m := range members {
+			m.dec.Close()
 		}
 	}()
 	signal := func(c chan struct{}) {
@@ -879,6 +971,17 @@ func (v *videoPipe) decode(stop, done chan struct{}) {
 		default:
 		}
 	}
+	newDecoder := func() VideoDecoder {
+		if v.h.d.NewDecoder == nil {
+			return nil
+		}
+		d, err := v.h.d.NewDecoder()
+		if err != nil {
+			slog.Warn("zapfast voip: the video decoder could not start", "err", err)
+			return nil
+		}
+		return d
+	}
 	for {
 		var f VideoFrame
 		select {
@@ -886,16 +989,14 @@ func (v *videoPipe) decode(stop, done chan struct{}) {
 			return
 		case f = <-v.in:
 		}
+		if !f.Sender.IsEmpty() {
+			v.member(f, members, &order, newDecoder)
+			continue
+		}
 		if dec == nil {
-			if v.h.d.NewDecoder == nil {
+			if dec = newDecoder(); dec == nil {
 				continue
 			}
-			d, err := v.h.d.NewDecoder()
-			if err != nil {
-				slog.Warn("zapfast voip: the video decoder could not start", "err", err)
-				continue
-			}
-			dec = d
 		}
 		pic, err := dec.Decode(f.Data)
 		if err != nil {
@@ -912,6 +1013,57 @@ func (v *videoPipe) decode(stop, done chan struct{}) {
 			v.h.d.Frames.PutRemote(pic)
 		}
 		signal(v.remoteSeen)
+	}
+}
+
+// member decodes one group member's access unit onto its tile.
+func (v *videoPipe) member(f VideoFrame, members map[types.JID]*memberStream, order *[]types.JID, newDecoder func() VideoDecoder) {
+	key := f.Sender.ToNonAD()
+	m := members[key]
+	if m == nil {
+		d := newDecoder()
+		if d == nil {
+			return
+		}
+		if len(*order) >= maxMemberStreams {
+			oldest := (*order)[0]
+			*order = (*order)[1:]
+			members[oldest].dec.Close()
+			delete(members, oldest)
+		}
+		*order = append(*order, key)
+		m = &memberStream{dec: d}
+		members[key] = m
+	}
+	if !m.started {
+		// A member's decoder starts on its keyframe; members send them on
+		// their own schedule, so there is no one to ask.
+		if !f.Keyframe {
+			return
+		}
+		m.started = true
+	}
+	pic, err := m.dec.Decode(f.Data)
+	if err != nil || pic == nil {
+		return
+	}
+	if f.Orientation != 0 {
+		pic = pic.Rotate(int(f.Orientation))
+	}
+	var id string
+	ok := false
+	if g := v.h.p.Group; g != nil && g.MemberID != nil {
+		id, ok = g.MemberID(f.Sender)
+	}
+	if !ok {
+		return
+	}
+	if v.h.d.Frames != nil {
+		v.h.d.Frames.PutMember(id, pic)
+	}
+	if !m.shown {
+		m.shown = true
+		v.h.emitMember(key)
 	}
 }
 

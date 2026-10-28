@@ -1,14 +1,16 @@
-// Ported from whatsapp-rust 5e72baf wacore/src/voip/driver.rs (run_call
-// and its send queue and video pacer; the group controls and the relay
-// reconnect, which a 1:1 engine never asks for, are not ported), MIT.
+// Ported from whatsapp-rust 5e72baf wacore/src/voip/driver.rs (run_call,
+// its send queue and video pacer, the group controls and the relay
+// reconnect; group reactions are not), MIT.
 
 package engine
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"zapfast/gocore/voip/demux"
+	"zapfast/gocore/voip/groupcall"
 	"zapfast/gocore/voip/relay"
 	"zapfast/gocore/voip/rtp"
 )
@@ -62,6 +64,22 @@ type Control struct {
 	Orientation uint8
 }
 
+// GroupEpoch is one decrypted keygen-v2 epoch for a transaction.
+type GroupEpoch struct {
+	Transaction uint32
+	Key         []byte
+}
+
+// GroupControl is one group-call input: an authoritative roster, with the
+// epoch that belongs to it, or an epoch alone.
+type GroupControl struct {
+	Update *groupcall.Update
+	Epoch  *GroupEpoch
+}
+
+// relayReconnectTimeout bounds a group relay refresh's redial.
+const relayReconnectTimeout = 10 * time.Second
+
 // Channels are what the driver bridges to the host. Nil channels are never
 // ready. Speaker and VideoOut must not block: false is a frame the sink
 // could not take, counted as dropped. Events must not block or lose an
@@ -73,6 +91,7 @@ type Channels struct {
 	Video    <-chan VideoInput
 	VideoOut func(VideoFrame) (full bool)
 	Control  <-chan Control
+	Group    <-chan GroupControl
 	Events   func(Event)
 	// Stats, when set, gets the counters whenever they moved.
 	Stats func(Stats)
@@ -389,30 +408,38 @@ type sendJob struct {
 }
 
 func run(ctx context.Context, t relay.Transport, ch Channels, e *Engine, now func() Millis, wall uint64) (reason CloseReason) {
-	defer t.Close()
+	defer func() { t.Close() }()
 	e.Start(now(), wall)
 
 	// One write in flight at a time, on its own goroutine, so a slow relay
-	// write never holds up reception or playout.
-	jobs := make(chan sendJob)
-	results := make(chan error, 1)
-	sendCtx, stopSend := context.WithCancel(context.Background())
-	defer stopSend()
-	go func() {
-		for {
-			select {
-			case <-sendCtx.Done():
-				return
-			case j := <-jobs:
-				err := t.Send(sendCtx, j.packet)
+	// write never holds up reception or playout. A relay reconnect retires
+	// the sender with its channel.
+	var jobs chan sendJob
+	var results chan error
+	stopSend := func() {}
+	startSender := func(t relay.Transport) {
+		stopSend()
+		jobs, results = make(chan sendJob), make(chan error, 1)
+		sendCtx, cancel := context.WithCancel(context.Background())
+		stopSend = cancel
+		go func(jobs <-chan sendJob, results chan<- error) {
+			for {
 				select {
-				case results <- err:
 				case <-sendCtx.Done():
 					return
+				case j := <-jobs:
+					err := t.Send(sendCtx, j.packet)
+					select {
+					case results <- err:
+					case <-sendCtx.Done():
+						return
+					}
 				}
 			}
-		}
-	}()
+		}(jobs, results)
+	}
+	startSender(t)
+	defer func() { stopSend() }()
 	inFlight := false
 
 	var q sendQueue
@@ -426,7 +453,7 @@ func run(ctx context.Context, t relay.Transport, ch Channels, e *Engine, now fun
 	paceTimer := time.NewTimer(time.Hour)
 	defer paceTimer.Stop()
 	events := t.Events()
-	mic, rekey, video, control := ch.Mic, ch.Rekey, ch.Video, ch.Control
+	mic, rekey, video, control, group := ch.Mic, ch.Rekey, ch.Video, ch.Control, ch.Group
 
 	overdue := func() {
 		if at, ok := e.PollTimeout(); ok && at != Never && now() >= at {
@@ -447,6 +474,7 @@ func run(ctx context.Context, t relay.Transport, ch Channels, e *Engine, now fun
 			}
 		}
 		var sinkDropped, videoSinkDropped uint32
+		var reconnectTo *Output
 	drain:
 		for {
 			o := e.PollOutput()
@@ -465,6 +493,13 @@ func run(ctx context.Context, t relay.Transport, ch Channels, e *Engine, now fun
 				}
 			case OutEvent:
 				ch.Events(o.Event)
+			case OutReconnectRelay:
+				// Everything queued so far targets the retired relay; what
+				// follows (the fresh allocate) is for the new one, which opens
+				// on an IDR.
+				q.batches, q.pending = nil, nil
+				q.gate.raise()
+				reconnectTo = &o
 			case OutTimeout:
 				report(q.flushPending())
 				break drain
@@ -492,6 +527,26 @@ func run(ctx context.Context, t relay.Transport, ch Channels, e *Engine, now fun
 				ch.Stats(e.Stats())
 			}
 			return CloseReason{Kind: CloseTerminated}
+		}
+		if reconnectTo != nil {
+			// The in-flight write belonged to the retired channel.
+			stopSend()
+			inFlight = false
+			rctx, cancel := context.WithTimeout(ctx, relayReconnectTimeout)
+			next, err := t.Reconnect(rctx, reconnectTo.Addr)
+			cancel()
+			if err != nil {
+				if errors.Is(err, context.DeadlineExceeded) {
+					ch.Events(Event{Kind: EventRelayReconnectTimedOut})
+				}
+				return CloseReason{Kind: CloseRelayDisconnected, Msg: "the relay could not be redialled: " + err.Error()}
+			}
+			t.Close()
+			t = next
+			events = t.Events()
+			startSender(t)
+			e.RelayReconnected(now())
+			continue
 		}
 
 		n := now()
@@ -542,6 +597,15 @@ func run(ctx context.Context, t relay.Transport, ch Channels, e *Engine, now fun
 			if ok && !e.applyAnswer(now(), a, &q, report) {
 				return CloseReason{Kind: CloseSetupFailed, Msg: "the call key is malformed"}
 			}
+		case gc, ok := <-group:
+			if !ok {
+				group = nil
+				break
+			}
+			if r, end := e.applyGroupControl(now(), gc, &q, report, ch.Events); end {
+				return r
+			}
+			overdue()
 		case c, ok := <-control:
 			if !ok {
 				control = nil
@@ -622,6 +686,49 @@ func (q *sendQueue) purgeUnstartedVideo() dropped {
 		q.gate.raise()
 	}
 	return d
+}
+
+// applyGroupControl applies one roster (and its paired epoch) or epoch,
+// retiring queued media an advanced epoch or an audio-only roster makes
+// stale. end: the roster removed us.
+func (e *Engine) applyGroupControl(now Millis, gc GroupControl, q *sendQueue, report func(dropped), events func(Event)) (CloseReason, bool) {
+	accepted := true
+	if u := gc.Update; u != nil {
+		prevTx, prevOK := e.GroupEpochTransaction()
+		res, err := e.ApplyGroupUpdate(now, u)
+		switch {
+		case errors.Is(err, ErrLocalParticipantRemoved):
+			return CloseReason{Kind: CloseTerminated, Msg: err.Error()}, true
+		case err != nil:
+			accepted = false
+			events(Event{Kind: EventGroupControlRejected, Control: GroupControlUpdate, Err: err})
+		case res == RosterApplied:
+			tx, ok := e.GroupEpochTransaction()
+			advanced := u.RekeyRequested || tx != prevTx || ok != prevOK
+			audioOnly := u.Media == "audio"
+			if advanced || audioOnly {
+				report(q.purge(func(b *sendBatch) bool {
+					return (advanced && b.kind != batchControl) || (audioOnly && b.kind.isVideo())
+				}))
+			}
+		}
+	}
+	if gc.Epoch == nil {
+		return CloseReason{}, false
+	}
+	if !accepted {
+		// A transition is indivisible: its rejected roster takes its epoch.
+		events(Event{Kind: EventGroupControlRejected, Control: GroupControlEpoch})
+		return CloseReason{}, false
+	}
+	res, err := e.ApplyGroupEpoch(gc.Epoch.Transaction, gc.Epoch.Key)
+	switch {
+	case err != nil:
+		events(Event{Kind: EventGroupControlRejected, Control: GroupControlEpoch, Err: err})
+	case res == EpochInstalled:
+		report(q.purge(func(b *sendBatch) bool { return b.kind != batchControl }))
+	}
+	return CloseReason{}, false
 }
 
 // applyAnswer is the caller's rekey: the codec the peer's capability

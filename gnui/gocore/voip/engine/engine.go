@@ -1,5 +1,5 @@
 // Ported from whatsapp-rust 5e72baf wacore/src/voip/engine.rs (the 1:1
-// path; group media is not ported), MIT.
+// path; the group path is group_engine.go), MIT.
 
 package engine
 
@@ -9,6 +9,8 @@ import (
 	"log/slog"
 	"net/netip"
 	"slices"
+
+	"go.mau.fi/whatsmeow/types"
 
 	"zapfast/gocore/voip/demux"
 	"zapfast/gocore/voip/h264"
@@ -111,6 +113,20 @@ const (
 	EventRTCPReceived
 	EventForeignAudio
 	EventOutboundMediaDropped
+	// EventGroupControlRejected: a group roster or epoch was refused
+	// (Control, Err); the call goes on.
+	EventGroupControlRejected
+	// EventRelayReconnectTimedOut: a group relay refresh's redial took too
+	// long; the call ends.
+	EventRelayReconnectTimedOut
+)
+
+// GroupControlKind is which group input was refused.
+type GroupControlKind int
+
+const (
+	GroupControlUpdate GroupControlKind = iota
+	GroupControlEpoch
 )
 
 // Event is one lifecycle or diagnostic event; the fields its kind uses are
@@ -135,14 +151,21 @@ type Event struct {
 	Payload []byte
 	// VideoAUs and Packets are OutboundMediaDropped's.
 	VideoAUs, Packets uint32
+	// Control and Err are GroupControlRejected's.
+	Control GroupControlKind
+	Err     error
 }
 
-// VideoFrame is a reassembled peer access unit.
+// VideoFrame is a reassembled peer access unit. In a group call Sender,
+// Device and PID say whose it is.
 type VideoFrame struct {
-	Data        []byte
-	Keyframe    bool
-	Orientation uint8
-	Timestamp   uint32
+	Data           []byte
+	Keyframe       bool
+	Orientation    uint8
+	Timestamp      uint32
+	Sender, Device types.JID
+	PID            uint32
+	HasPID         bool
 }
 
 // OutputKind tells the engine's intents apart.
@@ -161,6 +184,9 @@ const (
 	OutEvent
 	// OutTimeout: drained; arm a timer for Deadline (Never: none).
 	OutTimeout
+	// OutReconnectRelay: redial the relay at Addr before sending the
+	// allocate that follows (a group relay refresh), then RelayReconnected.
+	OutReconnectRelay
 )
 
 // Output is one intent the driver executes.
@@ -171,6 +197,7 @@ type Output struct {
 	Video    VideoFrame
 	Event    Event
 	Deadline Millis
+	Addr     netip.AddrPort
 }
 
 // Setup errors.
@@ -324,6 +351,8 @@ type Engine struct {
 	terminated        bool
 	selfPID           string
 	media             *mediaState
+	group             *groupState
+	foreignFactory    func() ForeignCodec
 	peerOrientation   uint8
 	stats             Stats
 	health            healthWatch
@@ -454,7 +483,7 @@ func (e *Engine) PollTimeout() (Millis, bool) {
 	}
 	m := e.media
 	next = min(next, m.playoutDeadline, e.rtcpDeadline)
-	if v := m.video; v != nil && v.active && v.havePending {
+	if v := m.video; e.group == nil && v != nil && v.active && v.havePending {
 		if in, ok := v.pipe.inboundSSRC(); ok && in == v.pendingSSRC {
 			next = min(next, v.pendingAt)
 		}
@@ -536,7 +565,12 @@ func (e *Engine) onTimeout(now Millis) {
 	}
 	m := e.media
 	if e.started && now >= m.playoutDeadline {
-		frame := drainPlayout(m.pcm)
+		var frame []int16
+		if e.group != nil {
+			frame = e.groupPlayout()
+		} else {
+			frame = drainPlayout(m.pcm)
+		}
 		m.playoutDeadline = nextTick(m.playoutDeadline, now, playoutMS)
 		e.push(Output{Kind: OutPlayout, PCM: frame})
 	}
@@ -544,7 +578,7 @@ func (e *Engine) onTimeout(now Millis) {
 		e.emitSenderReports(now, e.rtcpWallOrigin+satSub(now, e.rtcpMonoOrigin))
 		e.rtcpDeadline = nextTick(e.rtcpDeadline, now, rtcpMS)
 	}
-	if v := m.video; v != nil && v.active && v.havePending && now >= v.pendingAt {
+	if v := m.video; e.group == nil && v != nil && v.active && v.havePending && now >= v.pendingAt {
 		if in, ok := v.pipe.inboundSSRC(); ok && in == v.pendingSSRC {
 			e.RequestPeerKeyframe(now, Coalesced)
 		}
@@ -561,7 +595,7 @@ func (e *Engine) onTimeout(now Millis) {
 
 func (e *Engine) announceAudioRTCPSession() {
 	m := e.media
-	if m.rtcpAnnounced {
+	if m.rtcpAnnounced || !e.groupEpochReady() {
 		return
 	}
 	m.rtcpAnnounced = true
@@ -571,6 +605,13 @@ func (e *Engine) announceAudioRTCPSession() {
 // emitSenderReports sends audio's and (when it is on the wire) video's
 // sender reports off one wall-clock sample, for lip sync.
 func (e *Engine) emitSenderReports(now Millis, wall uint64) {
+	if !e.groupEpochReady() {
+		return
+	}
+	if e.group != nil {
+		e.emitGroupSenderReports(now, wall)
+		return
+	}
 	m := e.media
 	var report *rtcp.ReceptionReport
 	if r, ok := m.reception.Report(now); ok {
@@ -650,6 +691,10 @@ func nackedVideoSequences(fb []rtcp.Feedback, ssrc uint32) []uint16 {
 }
 
 func (e *Engine) onRTCP(now Millis, p []byte) {
+	if e.group != nil {
+		e.onGroupRTCP(now, p)
+		return
+	}
 	m := e.media
 	audioSSRC := m.pipe.sendSSRC()
 	plain, ok := m.pipe.unprotectRTCP(p)
@@ -711,7 +756,9 @@ func (e *Engine) onSTUN(now Millis, p []byte) {
 			e.rtcpDeadline = now + rtcpMS
 			// A callee was answered before its media existed; a caller
 			// arms on the accept (PeerAnswered), whichever lands second.
-			if e.direction == Incoming || e.peerHasAnswered {
+			// Not in a group: a mixer of several participants is not one
+			// stream the watchdog can judge.
+			if e.group == nil && (e.direction == Incoming || e.peerHasAnswered) {
 				e.health.mediaStarted(now)
 			}
 			e.announceAudioRTCPSession()
@@ -730,6 +777,10 @@ func (e *Engine) onRTP(now Millis, p []byte) {
 	h, ok := rtp.ParseHeader(p)
 	if !ok {
 		e.stats.RelayPacketUnclassified++
+		return
+	}
+	if e.group != nil {
+		e.onGroupRTP(now, p, h)
 		return
 	}
 	m := e.media
@@ -1041,6 +1092,9 @@ func (e *Engine) SwitchAudioCodec(to AudioCodec, source CodecSource) error {
 }
 
 func (e *Engine) onMic(pcm []int16) {
+	if !e.groupEpochReady() {
+		return
+	}
 	m := e.media
 	if len(pcm) != MicFrameSamples {
 		return
@@ -1089,6 +1143,14 @@ func allZero(pcm []int16) bool {
 
 func (e *Engine) onVideo(au []byte) {
 	v := e.media.video
+	if !e.groupEpochReady() {
+		// An IDR discarded here answered a request that must be asked again
+		// once the epoch installs.
+		if v != nil && v.keyframeRequired && h264.AUHasIDR(au) {
+			v.keyframeAnnounced = false
+		}
+		return
+	}
 	if v == nil || !v.active || v.sendGated {
 		return
 	}
@@ -1100,8 +1162,12 @@ func (e *Engine) onVideo(au []byte) {
 		return
 	}
 	v.keyframeRequired, v.keyframeAnnounced = false, false
+	// A group call's packets belong to an epoch a rekey retires; only a
+	// 1:1 call answers NACKs, so only it keeps them.
 	for _, p := range packets {
-		v.record(p)
+		if e.group == nil {
+			v.record(p)
+		}
 		e.transmit(p)
 	}
 	e.stats.VideoRTPSent += uint32(len(packets))
@@ -1128,7 +1194,7 @@ func (e *Engine) RekeyRecv(lid string) bool {
 // watchdog arms once this and the allocation have both happened.
 func (e *Engine) PeerAnswered(now Millis) {
 	e.peerHasAnswered = true
-	if e.allocated {
+	if e.group == nil && e.allocated {
 		e.health.mediaStarted(now)
 	}
 }
@@ -1174,7 +1240,9 @@ func (e *Engine) RequireVideoKeyframe() {
 // the interval's end.
 func (e *Engine) RequestPeerKeyframe(now Millis, urgency KeyframeUrgency) bool {
 	v := e.media.video
-	if e.terminated || v == nil || !v.active {
+	// A group PLI would have to name a participant; group video recovers on
+	// the sender's own IDRs.
+	if e.terminated || e.group != nil || v == nil || !v.active {
 		return false
 	}
 	in, ok := v.pipe.inboundSSRC()

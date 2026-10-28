@@ -1,7 +1,7 @@
-// Package engine is Zap's 1:1 WhatsApp call engine in Go, ported from
+// Package engine is Zap's WhatsApp call engine in Go, ported from
 // whatsapp-rust 5e72baf's wacore/src/voip (engine.rs, driver.rs,
-// session.rs, audio.rs, codec_probe.rs) and the host around it that Zap's
-// zfcalls crate was.
+// session.rs, audio.rs, codec_probe.rs, group_media.rs, group_audio.rs)
+// and the host around it that Zap's zfcalls crate was.
 //
 // Three layers, as in whatsapp-rust:
 //
@@ -21,8 +21,11 @@
 //     microphone, speaker, camera, H.264 encoder and decoder ([Devices]) to
 //     the driver, reporting [CallEvent]s.
 //
-// Group calls are not ported: their media (participant registry, epochs,
-// mixing) and the relay reconnect a group update asks for. The encoder's
+// A group call ([Engine.ConfigureGroup], group_engine.go) keys each participant's
+// streams from the roster's shared epoch ([GroupMediaRegistry]), decodes
+// and mixes up to 16 members ([ParticipantAudioMixer]), puts each member's
+// pictures on their own tile, holds media until an epoch is installed, and
+// redials the relay when the roster moves it. The encoder's
 // bitrate follows the peer's RTCP (loss, REMB, send drops) between fixed
 // bounds; Zap's video_rate.rs also moved the picture size, which this does
 // not.

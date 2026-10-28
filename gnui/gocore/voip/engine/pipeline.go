@@ -153,6 +153,31 @@ func (m *mediaPipeline) rekeyRecv(callKey []byte, lid string) bool {
 	return true
 }
 
+// rekeyRecvPreservingROC installs a group epoch for one participant
+// without resetting its authenticated RTP rollover or SRTCP replay state.
+func (m *mediaPipeline) rekeyRecvPreservingROC(epoch []byte, lid string) bool {
+	r, c, ok := e2eKeys(epoch, lid)
+	if ok {
+		m.recvKeys, m.recvSRTCPKeys = r, c
+	}
+	return ok
+}
+
+// sendRekey is a group epoch's send keys, derived before any pipeline
+// changes so a failure leaves every pipeline on the old epoch.
+type sendRekey struct{ rtp, rtcp srtp.Keys }
+
+func prepareSendRekey(epoch []byte, selfLID string) (sendRekey, bool) {
+	r, c, ok := e2eKeys(epoch, selfLID)
+	return sendRekey{r, c}, ok
+}
+
+// commitSendRekey swaps the send keys; the RTP sequence, timestamp and ROC
+// and the SRTCP index, CNAME and counters carry on.
+func (m *mediaPipeline) commitSendRekey(k sendRekey) { m.sendKeys, m.srtcp.keys = k.rtp, k.rtcp }
+
+func (m *mediaPipeline) setSendSSRC(ssrc uint32) { m.rtp.SSRC = ssrc }
+
 func (m *mediaPipeline) audioSenderReport(nowMS uint64, report *rtcp.ReceptionReport) []byte {
 	return m.srtcp.senderReport(m.rtp.SSRC, m.rtp.RTPTimestamp(), nowMS, report)
 }
@@ -239,6 +264,18 @@ func (v *videoPipeline) rekeyRecv(callKey []byte, lid string) bool {
 	v.resetDepacketizer()
 	return true
 }
+
+func (v *videoPipeline) rekeyRecvPreservingROC(epoch []byte, lid string) bool {
+	r, _, ok := e2eKeys(epoch, lid)
+	if ok {
+		v.recvKeys = r
+	}
+	return ok
+}
+
+func (v *videoPipeline) commitSendRekey(k sendRekey) { v.sendKeys, v.srtcp.keys = k.rtp, k.rtcp }
+
+func (v *videoPipeline) setSendSSRC(ssrc uint32) { v.rtp.SSRC = ssrc }
 
 // resetReassembly drops reassembly but remembers which streams the peer
 // left (a change on our side).

@@ -425,6 +425,7 @@ func (c *fakeCamera) bestPSNR(p *video.I420) float64 {
 type frameSink struct {
 	mu            sync.Mutex
 	local, remote []*video.I420
+	members       map[string][]*video.I420
 }
 
 func (f *frameSink) PutLocal(p *video.I420) { f.mu.Lock(); f.local = append(f.local, p); f.mu.Unlock() }
@@ -432,6 +433,21 @@ func (f *frameSink) PutRemote(p *video.I420) {
 	f.mu.Lock()
 	f.remote = append(f.remote, p)
 	f.mu.Unlock()
+}
+
+func (f *frameSink) PutMember(id string, p *video.I420) {
+	f.mu.Lock()
+	if f.members == nil {
+		f.members = map[string][]*video.I420{}
+	}
+	f.members[id] = append(f.members[id], p)
+	f.mu.Unlock()
+}
+
+func (f *frameSink) memberPictures(id string) int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return len(f.members[id])
 }
 
 func (f *frameSink) remotes() []*video.I420 {
