@@ -174,6 +174,7 @@ type icons struct {
 	info, check, archive, open        icon.ID
 	folder, photo, edit, eraser, plus icon.ID
 	back, pinSmall, smile             icon.ID
+	tick, waitSmall                   icon.ID // the footer's delivery marks
 	ok                                bool
 }
 
@@ -240,6 +241,10 @@ func (s *Screen) addIcons(e *screen.Env) {
 	}
 	ic.pinSmall = k.AddIcon(icon.Spec{Symbol: "pin.fill", Fallback: '⚲', Pt: footMarkPt})
 	ic.smile = k.AddIcon(icon.Spec{Symbol: "face.smiling", Fallback: '☺', Pt: 16})
+	// the chat list's marks (chatlist/rows.go): a check, and a pair of them
+	// one overlapping the other
+	ic.tick = k.AddIcon(icon.Spec{Symbol: "checkmark", Fallback: '✓', Pt: 11, Weight: 0.3})
+	ic.waitSmall = k.AddIcon(icon.Spec{Symbol: "clock", Fallback: '◷', Pt: 11})
 	ic.ok = true
 }
 

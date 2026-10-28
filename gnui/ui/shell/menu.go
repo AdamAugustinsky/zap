@@ -57,6 +57,7 @@ const (
 	CmdHide       = CmdFullScreen + 1
 	CmdHideOthers = CmdHide + 1
 	CmdShowAll    = CmdHideOthers + 1
+	CmdCloseTab   = CmdShowAll + 1
 )
 
 // helpURL is the user guide ZapFast Help opens (zf:src/macos.rs:234).
@@ -96,7 +97,10 @@ func buildModel(viewer bool) (*menu.Model, error) {
 		{ID: CmdHideOthers, Title: P("menu bar", "Hide Others"), Role: menu.RoleHideOthers, Shortcut: prim('H', ui.ModAlt)},
 		{ID: CmdShowAll, Title: P("menu bar", "Show All"), Role: menu.RoleShowAll},
 		{ID: CmdNewChat, Title: P("menu bar", "New Chat…"), Shortcut: prim('N', 0)},
-		{ID: CmdCloseWindow, Title: P("menu bar", "Close Window"), Role: menu.RoleCloseWindow, Shortcut: prim('W', 0)},
+		// ⌘W closes the open chat's tab, as a browser's; the window moves to
+		// ⇧⌘W, as Safari's.
+		{ID: CmdCloseTab, Title: P("menu bar", "Close Tab"), Shortcut: prim('W', 0)},
+		{ID: CmdCloseWindow, Title: P("menu bar", "Close Window"), Role: menu.RoleCloseWindow, Shortcut: prim('W', sh)},
 		{ID: CmdUndo, Title: P("menu bar", "Undo"), Role: menu.RoleUndo, Shortcut: prim('Z', 0)},
 		{ID: CmdRedo, Title: P("menu bar", "Redo"), Role: menu.RoleRedo, Shortcut: prim('Z', sh)},
 		{ID: CmdCut, Title: P("menu bar", "Cut"), Role: menu.RoleCut, Shortcut: prim('X', 0)},
@@ -163,7 +167,7 @@ func buildModel(viewer bool) (*menu.Model, error) {
 	// menu's system roles and Services submenu.
 	menus := []menu.Menu{
 		{Title: "Zap", Items: []menu.Item{item(CmdAbout), sep, item(CmdSettings), sep, item(CmdQuit)}},
-		{Title: P("menu bar", "File"), Items: []menu.Item{item(CmdNewChat), sep, item(CmdCloseWindow)}},
+		{Title: P("menu bar", "File"), Items: []menu.Item{item(CmdNewChat), sep, item(CmdCloseTab), item(CmdCloseWindow)}},
 		{Title: P("menu bar", "Edit"), Items: []menu.Item{item(CmdUndo), item(CmdRedo), sep, item(CmdCut), item(CmdCopy), item(CmdPaste), item(CmdSelectAll), sep, item(CmdFind)}},
 		{Title: P("menu bar", "View"), Items: []menu.Item{item(CmdToggleSidebar), sep, item(zoomIn), item(zoomOut), item(actual), sep, item(CmdFullScreen)}},
 		{Title: P("menu bar", "Window"), Role: menu.MenuWindow, Items: []menu.Item{item(CmdMinimize), item(CmdZoom), sep, item(CmdShowWindow)}},
@@ -270,6 +274,9 @@ func (sh *Shell) Commands(e *screen.Env) {
 	}
 	if k.Command(CmdHelp) {
 		openLink(s, helpURL)
+	}
+	if k.Command(CmdCloseTab) {
+		sh.closeTab(e, a, main)
 	}
 	if k.Command(CmdZoomIn) {
 		zoomBy(s, 0.1)
@@ -471,4 +478,32 @@ func fieldAltStep(c *ui.Context) int {
 		}
 	}
 	return 0
+}
+
+// closeTab is ⌘W. In the main window it closes the open chat: its tab, and
+// the next tab opens (state.CloseChatTab). With no chat open, or in another
+// window, it closes the window, as Close Window does.
+func (sh *Shell) closeTab(e *screen.Env, a *state.Account, main bool) {
+	s := sh.S
+	if e.A == sh.a && main && s.Page == state.PageChats && a.Open != 0 {
+		for i, ref := range a.ChatTabs() {
+			if ref == a.Open {
+				a.CloseChatTab(i)
+				s.Touch()
+				return
+			}
+		}
+		a.OpenChat(0) // an open chat without a tab
+		s.Touch()
+		return
+	}
+	for w := state.Window(0); w < state.NumWindows; w++ {
+		if h := sh.wins[w]; h != nil && h.App() == e.A {
+			s.CloseWindow(w)
+			return
+		}
+	}
+	if win := e.A.Window(); win != nil {
+		win.Close()
+	}
 }

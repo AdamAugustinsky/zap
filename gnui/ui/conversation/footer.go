@@ -42,8 +42,84 @@ const (
 type footerMarks struct {
 	starred, pinned, edited, failed bool
 	stamp                           []byte
-	tick                            string
+	tick                            tickMark
 	read                            bool
+}
+
+// tickMark is our message's delivery mark in its footer.
+type tickMark uint8
+
+const (
+	tickNone tickMark = iota
+	tickPending
+	tickFailed
+	tickSent
+	tickBoth // delivered, read or played: two checks
+)
+
+func tickOf(d abi.Delivery) tickMark {
+	switch d {
+	case abi.DeliveryPending:
+		return tickPending
+	case abi.DeliveryFailed:
+		return tickFailed
+	case abi.DeliveryDelivered, abi.DeliveryRead, abi.DeliveryPlayed:
+		return tickBoth
+	}
+	return tickSent
+}
+
+// tickStep is how far right of the first check the second of a pair sits.
+func tickStep(e *screen.Env) float32 { return theme.Snap(e.Pt(4)) }
+
+// tickWidth is the width of the mark as drawn.
+func (s *Screen) tickWidth(e *screen.Env, t tickMark) float32 {
+	k := e.K.Kit
+	switch t {
+	case tickNone:
+		return 0
+	case tickFailed:
+		return k.TextWidthBytes(s.look.small, base.StrBytes("!"))
+	case tickPending:
+		w, _ := k.IconSize(s.icons.waitSmall)
+		return w
+	}
+	w, _ := k.IconSize(s.icons.tick)
+	if t == tickBoth {
+		w += tickStep(e)
+	}
+	return w
+}
+
+// tickMarks draws the mark in the footer's row: icons, as the chat list
+// draws them, rather than text checks, whose pair the font sets apart.
+func (s *Screen) tickMarks(e *screen.Env, t tickMark, ink uint32, key ui.Key) {
+	c, k := e.C(), e.K.Kit
+	if t == tickFailed {
+		c.NextFont(s.look.small)
+		c.NextTextColor(ink)
+		c.NextSize(ui.TextSize(0), ui.TextSize(0))
+		c.BoxKeyed(ui.DrawText, ui.KeyN(key, 20), base.StrBytes("!"))
+		return
+	}
+	ic := s.icons.tick
+	if t == tickPending {
+		ic = s.icons.waitSmall
+	}
+	iw, ih := k.IconSize(ic)
+	c.NextSize(ui.Px(s.tickWidth(e, t)), ui.Px(ih))
+	c.Push(c.BoxKeyed(0, ui.KeyN(key, 21), nil))
+	one := func(n uint64, x float32) {
+		theme.At(c, x, 0, iw, ih)
+		c.Push(c.BoxKeyed(base.Floating, ui.KeyN(key, 22+n), nil))
+		k.Icon(ic, ink)
+		c.Pop()
+	}
+	one(0, 0)
+	if t == tickBoth {
+		one(1, tickStep(e))
+	}
+	c.Pop()
 }
 
 func (s *Screen) marks(e *screen.Env, a *state.Account, ch model.Chat, m model.Message, out bool) footerMarks {
@@ -55,7 +131,7 @@ func (s *Screen) marks(e *screen.Env, a *state.Account, ch model.Chat, m model.M
 		stamp:   clock(e.C().Fmt(), m.Time()).Bytes(),
 	}
 	if out {
-		f.tick = ticks(m.Status())
+		f.tick = tickOf(m.Status())
 		// display_delivery: privacy masks only Read on outgoing DMs, not
 		// delivery, group reads or played receipts. The archive stays intact.
 		f.read = m.Status() == abi.DeliveryPlayed || m.Status() == abi.DeliveryRead &&
@@ -81,8 +157,8 @@ func (s *Screen) footWidth(e *screen.Env, f *footerMarks, over bool) float32 {
 	if f.failed && !over {
 		w += k.TextWidthBytes(s.look.smallMed, base.StrBytes(notSentText())) + gap
 	}
-	if f.tick != "" {
-		w += k.TextWidthBytes(font, base.StrBytes(f.tick)) + gap
+	if f.tick != tickNone {
+		w += s.tickWidth(e, f.tick) + gap
 	}
 	return theme.Snap(w) + 1
 }
@@ -192,12 +268,12 @@ func (s *Screen) footRow(e *screen.Env, m model.Message, f *footerMarks, out boo
 		k.Icon(s.icons.pinSmall, col)
 	}
 	small(2, f.stamp, s.look.time, col)
-	if f.tick != "" {
+	if f.tick != tickNone {
 		ink := col
 		if f.read {
 			ink = ztheme.OnBubble(out).Read
 		}
-		small(3, base.StrBytes(f.tick), font, ink)
+		s.tickMarks(e, f.tick, ink, key)
 	}
 	c.Pop()
 	if info && c.Signal(row).Clicked && !e.S.Panes.Selecting {

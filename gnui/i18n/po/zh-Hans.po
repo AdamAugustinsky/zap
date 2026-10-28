@@ -4592,3 +4592,9 @@ msgstr "正在等待此消息"
 #: gnui/ui/conversation/kinds/note.go
 msgid "This may take a while. Open WhatsApp on your phone."
 msgstr "这可能需要一些时间。请在手机上打开 WhatsApp。"
+
+#. Translators: the File menu: closes the open chat's tab (⌘W), as Safari's.
+#: gnui/ui/shell/menu.go
+msgctxt "menu bar"
+msgid "Close Tab"
+msgstr "关闭标签页"

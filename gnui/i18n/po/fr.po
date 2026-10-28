@@ -4793,3 +4793,9 @@ msgstr "En attente de ce message"
 #: gnui/ui/conversation/kinds/note.go
 msgid "This may take a while. Open WhatsApp on your phone."
 msgstr "Cela peut prendre un moment. Ouvrez WhatsApp sur votre téléphone."
+
+#. Translators: the File menu: closes the open chat's tab (⌘W), as Safari's.
+#: gnui/ui/shell/menu.go
+msgctxt "menu bar"
+msgid "Close Tab"
+msgstr "Fermer l’onglet"
