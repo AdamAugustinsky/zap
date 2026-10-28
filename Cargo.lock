@@ -9116,6 +9116,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
+ "wacore",
  "whatsapp-rust",
  "zapfast",
 ]
