@@ -118,6 +118,8 @@ func summary(c *abi.Content) string {
 		return "This message was deleted"
 	case abi.ContentTagUnsupported:
 		return "Unsupported message (" + string(c.Unsupported.What) + ")"
+	case abi.ContentTagWaiting:
+		return "Waiting for this message"
 	case abi.ContentTagPhoneOnly:
 		p := &c.PhoneOnly
 		switch {

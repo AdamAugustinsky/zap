@@ -4536,3 +4536,13 @@ msgstr ""
 #: gnui/ui/settings/rows.go
 msgid "The desktop shows softly through the window's background. The system's Reduce transparency setting turns it off too."
 msgstr ""
+
+#. Translators: a message this device could not decrypt yet; the sender's phone is asked to send it again.
+#: gnui/ui/conversation/kinds/note.go
+msgid "Waiting for this message"
+msgstr ""
+
+#. Translators: the line under "Waiting for this message".
+#: gnui/ui/conversation/kinds/note.go
+msgid "This may take a while. Open WhatsApp on your phone."
+msgstr ""

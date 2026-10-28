@@ -13,6 +13,10 @@ import (
 	"zapfast/gocore/store"
 )
 
+// rustWaiting is what the Rust core stored for a message it could not
+// decrypt yet (zf:src/backend/worker.rs:4770).
+const rustWaiting = "Waiting for this message. Open WhatsApp on your phone"
+
 type rustMedia struct {
 	MIME   string `json:"mime"`
 	Size   uint64 `json:"size"`
@@ -250,6 +254,12 @@ func (imp *importer) message(row map[string]any) (store.Message, bool) {
 		m.Text = "Open this message on your phone"
 		unsupported = true
 	case "unsupported":
+		// The Rust core filed a message it could not decrypt yet as
+		// unsupported with this text; the Go engine has a kind for it.
+		if content.What == rustWaiting {
+			m.Kind, m.Text = "waiting", ""
+			break
+		}
 		if m.Text = content.What; m.Text == "" {
 			m.Text = "Unsupported imported message"
 		}

@@ -334,7 +334,7 @@ func (s *Screen) affordances(e *screen.Env, a *state.Account, ch model.Chat, m m
 	if x < (b[0]+b[2])/2 {
 		step = -step
 	}
-	canReply := !ch.ReadOnly() && !ch.Left() && m.Kind() != abi.ContentTagPhoneOnly && !s.revoking(e, m)
+	canReply := !ch.ReadOnly() && !ch.Left() && m.Kind() != abi.ContentTagPhoneOnly && m.Kind() != abi.ContentTagWaiting && !s.revoking(e, m)
 	rx := x + step
 	canReply = canReply && fits(rx)
 	// shown while the pointer is on the bubble or the controls

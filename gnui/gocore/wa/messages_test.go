@@ -503,3 +503,43 @@ func storeMessage(t *testing.T, h *harness, m store.Message) {
 		t.Fatal(err)
 	}
 }
+
+func TestAMessageWaitedForNotifiesWhenItArrives(t *testing.T) {
+	h := newHarness(t, options{})
+	h.start()
+	info := message(group, peer, "W1", t0, nil).Info
+	// Not decrypted yet: a placeholder in the chat, counted unread, silent.
+	h.inject(&events.UndecryptableMessage{Info: info})
+	evs := h.take()
+	expectTags(t, evs, "Messages ChatUpdated")
+	if m := evs[0].Messages.Messages[0]; m.Content.Tag != abi.ContentTagWaiting {
+		t.Fatalf("placeholder: %+v", m.Content)
+	}
+	if c := evs[1].ChatUpdated.Chat; c.Unread != 1 {
+		t.Fatalf("placeholder unread: %d", c.Unread)
+	}
+	// A repeat, as whatsmeow sends when the resend fails too, changes nothing.
+	h.inject(&events.UndecryptableMessage{Info: info})
+	expectTags(t, h.take(), "")
+	// The resend replaces the row and notifies, without counting it twice.
+	h.inject(message(group, peer, "W1", t0, text("the real one")))
+	evs = h.take()
+	expectTags(t, evs, "MessageUpdated ChatUpdated Incoming")
+	if m := evs[2].Incoming.Message; m.Content.Tag != abi.ContentTagText || string(m.Content.Text.Text) != "the real one" {
+		t.Fatalf("incoming: %+v", m.Content)
+	}
+	if c := evs[1].ChatUpdated.Chat; c.Unread != 1 {
+		t.Fatalf("unread after the resend: %d", c.Unread)
+	}
+	// Hidden traffic and view-once messages never wait.
+	hidden := message(group, peer, "W2", t0, nil).Info
+	h.inject(&events.UndecryptableMessage{Info: hidden, DecryptFailMode: events.DecryptFailHide})
+	expectTags(t, h.take(), "")
+	once := message(group, peer, "W3", t0.Add(time.Second), nil).Info
+	h.inject(&events.UndecryptableMessage{Info: once, IsUnavailable: true, UnavailableType: events.UnavailableTypeViewOnce})
+	evs = h.take()
+	expectTags(t, evs, "Messages ChatUpdated Incoming")
+	if m := evs[0].Messages.Messages[0]; m.Content.Tag != abi.ContentTagPhoneOnly || !m.Content.PhoneOnly.ViewOnce {
+		t.Fatalf("view once: %+v", m.Content)
+	}
+}

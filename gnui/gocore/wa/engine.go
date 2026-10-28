@@ -653,12 +653,21 @@ func (e *Engine) emitMessages(chat string, messages []store.Message, older, comp
 func (e *Engine) live(m store.Message, unread bool) {
 	e.emitMessages(m.ChatID, []store.Message{m}, false, false)
 	e.emitChat(m.ChatID)
-	if unread && !e.syncing {
-		r := e.out.Record()
-		ev := abi.Event{Tag: abi.EventTagIncoming}
-		ev.Incoming = abi.EventIncoming{Chat: b(m.ChatID), Message: e.conv().message(r, m)}
-		r.Emit(&ev)
+	if unread {
+		e.announce(m)
 	}
+}
+
+// announce sends Incoming for a message the app may notify about, unless a
+// sync is storing it.
+func (e *Engine) announce(m store.Message) {
+	if e.syncing {
+		return
+	}
+	r := e.out.Record()
+	ev := abi.Event{Tag: abi.EventTagIncoming}
+	ev.Incoming = abi.EventIncoming{Chat: b(m.ChatID), Message: e.conv().message(r, m)}
+	r.Emit(&ev)
 }
 
 // receiptTimes gives one of our messages in a direct chat the times its

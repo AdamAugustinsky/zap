@@ -94,6 +94,9 @@ func (b *blk) noteOf() (n note) {
 	case abi.ContentTagUnsupported:
 		n = note{icon: icAlert, iconCol: b.faint(), titleF: fBody, titleC: b.dim()}
 		n.title = expand(c.Fmt(), i18n.T("Unsupported: {what}"), phBytes("what", b.m.Text())).Bytes()
+	case abi.ContentTagWaiting:
+		n = note{icon: icClock, iconCol: b.faint(), title: base.StrBytes(i18n.T("Waiting for this message")), titleF: fBody, titleC: b.dim(),
+			detail: base.StrBytes(i18n.T("This may take a while. Open WhatsApp on your phone."))}
 	case abi.ContentTagPhoneOnly:
 		d := b.decoded()
 		p := &d.Content.PhoneOnly
