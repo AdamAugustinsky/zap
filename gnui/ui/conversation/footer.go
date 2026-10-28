@@ -1,6 +1,7 @@
 package conversation
 
 import (
+	"gonativeui/icon"
 	"gonativeui/rexui"
 	"gonativeui/text"
 	"gonativeui/theme"
@@ -72,47 +73,58 @@ func tickOf(d abi.Delivery) tickMark {
 // tickStep is how far right of the first check the second of a pair sits.
 func tickStep(e *screen.Env) float32 { return theme.Snap(e.Pt(4)) }
 
-// tickWidth is the width of the mark as drawn.
-func (s *Screen) tickWidth(e *screen.Env, t tickMark) float32 {
+// tickIcons are a kit's icons for the delivery marks: the chat list's
+// (chatlist/rows.go), a check, and a pair of them one overlapping the other.
+type tickIcons struct{ tick, wait icon.ID }
+
+func addTickIcons(k interface{ AddIcon(icon.Spec) icon.ID }) tickIcons {
+	return tickIcons{
+		tick: k.AddIcon(icon.Spec{Symbol: "checkmark", Fallback: '✓', Pt: 11, Weight: 0.3}),
+		wait: k.AddIcon(icon.Spec{Symbol: "clock", Fallback: '◷', Pt: 11}),
+	}
+}
+
+// width is the width of mark t as drawn; a failed message's "!" is in font.
+func (ic tickIcons) width(e *screen.Env, font text.FontKey, t tickMark) float32 {
 	k := e.K.Kit
 	switch t {
 	case tickNone:
 		return 0
 	case tickFailed:
-		return k.TextWidthBytes(s.look.small, base.StrBytes("!"))
+		return k.TextWidthBytes(font, base.StrBytes("!"))
 	case tickPending:
-		w, _ := k.IconSize(s.icons.waitSmall)
+		w, _ := k.IconSize(ic.wait)
 		return w
 	}
-	w, _ := k.IconSize(s.icons.tick)
+	w, _ := k.IconSize(ic.tick)
 	if t == tickBoth {
 		w += tickStep(e)
 	}
 	return w
 }
 
-// tickMarks draws the mark in the footer's row: icons, as the chat list
-// draws them, rather than text checks, whose pair the font sets apart.
-func (s *Screen) tickMarks(e *screen.Env, t tickMark, ink uint32, key ui.Key) {
+// draw draws mark t in the row being built: icons rather than text checks,
+// whose pair the font sets apart.
+func (ic tickIcons) draw(e *screen.Env, font text.FontKey, t tickMark, ink uint32, key ui.Key) {
 	c, k := e.C(), e.K.Kit
 	if t == tickFailed {
-		c.NextFont(s.look.small)
+		c.NextFont(font)
 		c.NextTextColor(ink)
 		c.NextSize(ui.TextSize(0), ui.TextSize(0))
 		c.BoxKeyed(ui.DrawText, ui.KeyN(key, 20), base.StrBytes("!"))
 		return
 	}
-	ic := s.icons.tick
+	id := ic.tick
 	if t == tickPending {
-		ic = s.icons.waitSmall
+		id = ic.wait
 	}
-	iw, ih := k.IconSize(ic)
-	c.NextSize(ui.Px(s.tickWidth(e, t)), ui.Px(ih))
+	iw, ih := k.IconSize(id)
+	c.NextSize(ui.Px(ic.width(e, font, t)), ui.Px(ih))
 	c.Push(c.BoxKeyed(0, ui.KeyN(key, 21), nil))
 	one := func(n uint64, x float32) {
 		theme.At(c, x, 0, iw, ih)
 		c.Push(c.BoxKeyed(base.Floating, ui.KeyN(key, 22+n), nil))
-		k.Icon(ic, ink)
+		k.Icon(id, ink)
 		c.Pop()
 	}
 	one(0, 0)
@@ -158,7 +170,7 @@ func (s *Screen) footWidth(e *screen.Env, f *footerMarks, over bool) float32 {
 		w += k.TextWidthBytes(s.look.smallMed, base.StrBytes(notSentText())) + gap
 	}
 	if f.tick != tickNone {
-		w += s.tickWidth(e, f.tick) + gap
+		w += s.icons.ticks.width(e, font, f.tick) + gap
 	}
 	return theme.Snap(w) + 1
 }
@@ -273,7 +285,7 @@ func (s *Screen) footRow(e *screen.Env, m model.Message, f *footerMarks, out boo
 		if f.read {
 			ink = ztheme.OnBubble(out).Read
 		}
-		s.tickMarks(e, f.tick, ink, key)
+		s.icons.ticks.draw(e, font, f.tick, ink, key)
 	}
 	c.Pop()
 	if info && c.Signal(row).Clicked && !e.S.Panes.Selecting {

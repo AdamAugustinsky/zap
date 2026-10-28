@@ -80,7 +80,7 @@ func installRig(t *testing.T, self *fakeSelf) (r *rig, f *feed, quits *atomic.In
 	old := quitApp
 	quitApp = func() { quits.Add(1) }
 	t.Cleanup(func() { quitApp = old })
-	f, pub := makeFeed(t, "0.20.0", []byte("the update"))
+	f, pub := makeFeed(t, "0.21.0", []byte("the update"))
 	r = newRig(t, 760, 1100, func(s *state.State, _ *fake.Core, scr *Screen) {
 		s.Settings.CheckForUpdates = false
 		scr.up.SetSystem(self)
@@ -189,12 +189,12 @@ func TestLastResultAfterARestart(t *testing.T) {
 		status  string
 		isError bool
 	}{
-		{"rolled back", selfupdate.Result{Status: selfupdate.RolledBack, To: "0.20.0", Reason: "the new version did not report in"},
+		{"rolled back", selfupdate.Result{Status: selfupdate.RolledBack, To: "0.21.0", Reason: "the new version did not report in"},
 			"The update could not start. The previous version has been restored.",
-			"Updating to 0.20.0 failed and Zap went back to the previous version: the new version did not report in", true},
-		{"failed", selfupdate.Result{Status: selfupdate.Failed, To: "0.20.0", Reason: "the volume is read-only"},
+			"Updating to 0.21.0 failed and Zap went back to the previous version: the new version did not report in", true},
+		{"failed", selfupdate.Result{Status: selfupdate.Failed, To: "0.21.0", Reason: "the volume is read-only"},
 			"The update could not be installed: the volume is read-only", "The update could not be installed: the volume is read-only", true},
-		{"updated", selfupdate.Result{Status: selfupdate.Updated, To: "0.20.0"}, "Zap was updated to 0.20.0.", "", false},
+		{"updated", selfupdate.Result{Status: selfupdate.Updated, To: "0.21.0"}, "Zap was updated to 0.21.0.", "", false},
 		{"none", selfupdate.Result{}, "", "", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -256,7 +256,7 @@ func TestBothPublisherKeysAreEmbedded(t *testing.T) {
 // UP-004: a release signed by the next key is accepted at both checks, the
 // download's and the one before Prepare; with only the current key it is not.
 func TestNextPublisherKeyIsAcceptedAtBothChecks(t *testing.T) {
-	f, nextPub := makeFeed(t, "0.20.0", []byte("the update")) // signed by a key standing for the next one
+	f, nextPub := makeFeed(t, "0.21.0", []byte("the update")) // signed by a key standing for the next one
 	currentPub, _, _ := ed25519.GenerateKey(nil)
 	setup := func(keys ...ed25519.PublicKey) (*rig, *fakeSelf, *atomic.Int32) {
 		self := &fakeSelf{}
@@ -309,12 +309,12 @@ func TestNextPublisherKeyIsAcceptedAtBothChecks(t *testing.T) {
 // name has to be the version's: an older release's authentic package, name
 // and signature replayed under a newer version are refused before any download.
 func TestAnOlderReleaseReplayedUnderANewerVersionIsRefused(t *testing.T) {
-	old, pub := makeFeed(t, "0.19.5", []byte("an older, vulnerable release")) // really signed, by the publisher's key
+	old, pub := makeFeed(t, "0.20.5", []byte("an older, vulnerable release")) // really signed, by the publisher's key
 	for name, mangle := range map[string]func(r *Release){
-		"the older package under a newer version": func(r *Release) { r.Version = "0.21.0" },
+		"the older package under a newer version": func(r *Release) { r.Version = "0.22.0" },
 		"another file name altogether":            func(r *Release) { r.File = "evil.zip" },
-		"a path in the name":                      func(r *Release) { r.File = "../ZapFast-0.19.5.zip" },
-		"a lower case name":                       func(r *Release) { r.File = "zapfast-0.19.5.zip" },
+		"a path in the name":                      func(r *Release) { r.File = "../ZapFast-0.20.5.zip" },
+		"a lower case name":                       func(r *Release) { r.File = "zapfast-0.20.5.zip" },
 	} {
 		t.Run(name, func(t *testing.T) {
 			rf := &recordingFeed{rel: old.rel}
@@ -341,7 +341,7 @@ func TestAnOlderReleaseReplayedUnderANewerVersionIsRefused(t *testing.T) {
 	}
 	// the replay, with a signature over exactly what it names, fails on the name alone
 	rel := old.rel
-	rel.Version = "0.21.0"
+	rel.Version = "0.22.0"
 	if err := verifyManifest(&rel, []ed25519.PublicKey{pub}); err == nil || !strings.Contains(err.Error(), "does not belong to the version") {
 		t.Errorf("a validly signed older file under a newer version: %v", err)
 	}
@@ -353,8 +353,8 @@ func TestAnOlderReleaseReplayedUnderANewerVersionIsRefused(t *testing.T) {
 			t.Errorf("releaseFileName(%q) = %q", v, releaseFileName(v))
 		}
 	}
-	if releaseFileName("0.20.0") != "ZapFast-0.20.0.zip" || releaseFileName("v0.20.0") != "ZapFast-0.20.0.zip" {
-		t.Error("the name of 0.20.0")
+	if releaseFileName("0.21.0") != "ZapFast-0.21.0.zip" || releaseFileName("v0.21.0") != "ZapFast-0.21.0.zip" {
+		t.Error("the name of 0.21.0")
 	}
 }
 
@@ -364,7 +364,7 @@ func TestStagedVersionMustBeTheAnnouncedOne(t *testing.T) {
 	for _, tc := range []struct {
 		staged  string
 		install bool
-	}{{"0.19.5", false}, {"0.21.0", false}, {"0.20.0", true}, {"0.20", true}} {
+	}{{"0.20.5", false}, {"0.22.0", false}, {"0.21.0", true}, {"0.21", true}} {
 		t.Run(tc.staged, func(t *testing.T) {
 			self := &fakeSelf{stagedVersion: tc.staged}
 			r, _, quits := installRig(t, self)

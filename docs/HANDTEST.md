@@ -219,7 +219,7 @@ Use the release bundle, built from the same revision and installed as in HANDTES
 
 - [ ] **[HT-37]** `open "$APP"`. Expect: it starts like the hand-test build, on your chats (or the sign-in card if no account is linked), and the menu bar has no Debug menu.
 - [ ] **[HT-38]** Open a chat, send Phone B a message, then quit with ⌘Q. Expect: Phone B receives it, and ZapFast quits at once (`pgrep -f 'Contents/MacOS/zapfast'` prints nothing).
-- [ ] **[HT-39]** Open Settings > About, then ZapFast > About ZapFast. Expect: "ZapFast 0.19.0" and "Version 0.19.0", the version that `defaults read "$APP/Contents/Info.plist" CFBundleShortVersionString` prints.
+- [ ] **[HT-39]** Open Settings > About, then ZapFast > About ZapFast. Expect: "ZapFast 0.20.0" and "Version 0.20.0", the version that `defaults read "$APP/Contents/Info.plist" CFBundleShortVersionString` prints.
 - [ ] **[HT-35]** Release size: `ls -l "$APP/Contents/MacOS/zapfast"`. Record the exact byte count. Expect: never over about 12.2 MB; 12,029,504 B is a historical reference, not a measurement of the current build.
 - [ ] **[HT-40]** Optional: `"$APP/Contents/MacOS/zapfast" -demo; echo $?`. Expect: "flag provided but not defined: -demo", then `2`. Release builds have no demo, as upstream's.
 

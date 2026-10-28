@@ -94,7 +94,7 @@ type fakeSelf struct {
 	prepare       error
 	install       error
 	result        selfupdate.Result
-	stagedVersion string // the version the staged bundle has: 0.20.0 when empty
+	stagedVersion string // the version the staged bundle has: 0.21.0 when empty
 	calls         []string
 	started       int
 }
@@ -123,7 +123,7 @@ func (s *fakeStaged) Version() string {
 	if s.f.stagedVersion != "" {
 		return s.f.stagedVersion
 	}
-	return "0.20.0"
+	return "0.21.0"
 }
 
 func (s *fakeStaged) InstallAndRelaunch(args []string) error {

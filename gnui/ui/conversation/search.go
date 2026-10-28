@@ -267,7 +267,7 @@ func hitKind(m *abi.Message) string {
 // there.
 // hitLabel is a hit's line with the query's first match in it, past pre
 // bytes, in bold (CS-002).
-func hitLabel(e *screen.Env, line []byte, pre int, q []byte, tint rexui.Tint) {
+func hitLabel(e *screen.Env, line []byte, pre int, q []byte, tint rexui.Tint, w ui.Size) {
 	c, k := e.C(), e.K.Kit
 	r := k.Theme()
 	col := tint.RGBA(r)
@@ -277,7 +277,7 @@ func hitLabel(e *screen.Env, line []byte, pre int, q []byte, tint rexui.Tint) {
 		return
 	}
 	at, end = at+pre, end+pre
-	c.NextSize(ui.Pct(1), ui.Children(1))
+	c.NextSize(w, ui.Children(1))
 	c.NextAxis(ui.AxisX)
 	c.NextRole(ui.RoleLabel)
 	c.NextSemNameBytes(line)
@@ -296,7 +296,9 @@ func hitLabel(e *screen.Env, line []byte, pre int, q []byte, tint rexui.Tint) {
 		w := ui.TextSize(0)
 		flags := ui.DrawText
 		if last {
-			w = ui.TextSize(0).Strict(0)
+			// the rest of the line's width: a box exactly as wide as its
+			// text faded its last letters even when they fitted
+			w = ui.Grow(1)
 			flags |= ui.FadeOverflowX
 		}
 		c.NextSize(w, ui.Px(st.Line))
@@ -361,6 +363,7 @@ type Search struct {
 	nextIc  icon.ID
 	calIc   icon.ID
 	findIc  icon.ID
+	ticks   tickIcons  // our hits' delivery marks
 	calAt   [4]float32 // the calendar button, where the calendar hangs
 	// the weekday headings, for headsLoc
 	heads    [7]string
@@ -441,6 +444,7 @@ func (p *Search) Init(e *screen.Env) error {
 	p.nextIc = e.K.AddIcon(icon.Spec{Symbol: "chevron.right", Fallback: '›', Pt: 15})
 	p.calIc = e.K.AddIcon(icon.Spec{Symbol: "calendar", Fallback: '▦', Pt: 15})
 	p.findIc = e.K.AddIcon(icon.Spec{Symbol: "magnifyingglass", Fallback: '⌕', Pt: 28})
+	p.ticks = addTickIcons(e.K.Kit)
 	return nil
 }
 
@@ -593,13 +597,28 @@ func (p *Search) results(e *screen.Env, a *state.Account, ch model.Chat, st *sea
 		rexui.LabelBytes(k, chatStamp(c.Fmt(), h.ts, e.S.Now()).Bytes(), rexui.LabelOpts{Style: rexui.TextCaption, Color: rexui.Of(theme.Label2)})
 		lf := c.Fmt()
 		if h.fromMe {
-			lf.Str(ticks(h.status)).Byte(' ')
+			// our marks before the line, drawn as the bubble's footer draws them
+			c.NextSize(ui.Pct(1), ui.Children(1))
+			c.NextAxis(ui.AxisX)
+			c.NextCross(ui.CrossCenter)
+			c.NextGap(e.Pt(4))
+			c.Push(c.Box(0, "ours"))
+			// in the line's colour, as the text marks were: the footer's blue
+			// for read follows the receipts setting, which a hit does not carry
+			p.ticks.draw(e, k.Theme().Styles[theme.StyleBody].Font, tickOf(h.status), l.Text().RGBA(k.Theme()), ui.KeyN(c.ParentKey(), 40))
 		} else if h.who.Len > 0 {
 			lf.Str(model.S(st.at(h.who))).Str(": ")
 		}
 		pre := len(lf.Bytes())
 		lf.Str(model.S(st.at(h.line)))
-		hitLabel(e, lf.Bytes(), pre, st.sent, l.Text())
+		w := ui.Pct(1)
+		if h.fromMe {
+			w = ui.Grow(1) // the rest of the row, after the marks
+		}
+		hitLabel(e, lf.Bytes(), pre, st.sent, l.Text(), w)
+		if h.fromMe {
+			c.Pop()
+		}
 		c.Pop()
 	}
 	rexui.EndList(k, &l)

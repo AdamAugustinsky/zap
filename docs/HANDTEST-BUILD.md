@@ -2,7 +2,7 @@
 
 How to build Zap as an app bundle on the Mac mini and run it on
 the MacBook. The bundle is `Zap.app` (gnui.json's bundleName; the app shows
-as Zap), id `ai.a3lab.zap`, version 0.19.0, arm64 only, macOS 14 or
+as Zap), id `ai.a3lab.zap`, version 0.20.0, arm64 only, macOS 14 or
 later.
 
 **Delivery status (2026-10-23).** Certified ZapFast source `b8789025` with shared
@@ -55,11 +55,11 @@ inside out with the hardened runtime) and then
 `dist/dev/` with `--dev` and in `dist/` without:
 
 - `Zap.app`
-- `ZapFast-0.19.0.zip`: the update archive (its name is the one installed
+- `ZapFast-0.20.0.zip`: the update archive (its name is the one installed
   updaters accept, so it keeps ZapFast's); the pinned framework supports
   `-zip`, which the wrapper enables automatically. A local/dev ZIP is not a
   distribution-ready update or proof of an operational update feed.
-- `ZapFast-0.19.0.dmg`: the app and an Applications link, as upstream's
+- `ZapFast-0.20.0.dmg`: the app and an Applications link, as upstream's
   DMG. Unsigned: only a Developer ID can sign it.
 
 `dist/` and `target/` are ignored by git.
@@ -105,7 +105,7 @@ for that task; do not overwrite Applications during measurement preparation.
 rsync -a --delete dist/dev/Zap.app/ macbook:"/Applications/Zap.app/"
 ```
 
-**Or by AirDrop, Messages or a download** of `dist/dev/ZapFast-0.19.0.dmg`. Open
+**Or by AirDrop, Messages or a download** of `dist/dev/ZapFast-0.20.0.dmg`. Open
 the DMG on the MacBook and drag Zap to Applications. Files that arrive this way are quarantined, so see
 step 3.
 

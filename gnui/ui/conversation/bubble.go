@@ -854,19 +854,6 @@ func (s *Screen) messageInfo(e *screen.Env, m model.Message) {
 	e.S.Touch()
 }
 
-// ticks are the delivery marks of our message.
-func ticks(d abi.Delivery) string {
-	switch d {
-	case abi.DeliveryPending:
-		return "🕓"
-	case abi.DeliveryFailed:
-		return "!"
-	case abi.DeliveryDelivered, abi.DeliveryRead, abi.DeliveryPlayed:
-		return "✓✓"
-	}
-	return "✓"
-}
-
 // reactions is the row of reaction pills under the bubble: a click on one
 // reacts with its emoji, or takes ours back (zf:src/ui/conversation.rs
 // reactions).

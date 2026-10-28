@@ -146,7 +146,7 @@ func updRig(t *testing.T, f *feed, pub ed25519.PublicKey, install Installer) *ri
 // it; the download is verified; Restart to update installs the file.
 func TestUpdateFlow(t *testing.T) {
 	body := []byte(strings.Repeat("payload", 1000))
-	f, pub := makeFeed(t, "0.20.0", body)
+	f, pub := makeFeed(t, "0.21.0", body)
 	var got string
 	var read []byte
 	r := updRig(t, f, pub, func(path string) error { got = path; read, _ = os.ReadFile(path); return nil })
@@ -161,12 +161,12 @@ func TestUpdateFlow(t *testing.T) {
 		t.Error("Settings does not say the feed is a test feed")
 	}
 	r.click(ui.RoleButton, "Check now")
-	r.wait("the release", func() bool { return r.text("Update to 0.20.0") && r.has(ui.RoleButton, "Download update") })
-	if !r.text("0.19.0 → 0.20.0") || !r.has(ui.RoleLink, "Release notes") {
+	r.wait("the release", func() bool { return r.text("Update to 0.21.0") && r.has(ui.RoleButton, "Download update") })
+	if !r.text("0.20.0 → 0.21.0") || !r.has(ui.RoleLink, "Release notes") {
 		t.Error("the update block lacks the versions or the notes")
 	}
 	// the banner of the main window reads the same
-	if rel, ok := r.scr.Updates().Available(); !ok || rel.Version != "0.20.0" {
+	if rel, ok := r.scr.Updates().Available(); !ok || rel.Version != "0.21.0" {
 		t.Errorf("available %v %v", rel, ok)
 	}
 	r.click(ui.RoleButton, "Download update")
@@ -204,7 +204,7 @@ func TestUpdateIsVerified(t *testing.T) {
 		{"unsigned", func(f *feed, t *testing.T) { f.rel.Signature = ""; f.write(t) }, "is not signed"},
 	} {
 		t.Run(bad.name, func(t *testing.T) {
-			f, pub := makeFeed(t, "0.20.0", body)
+			f, pub := makeFeed(t, "0.21.0", body)
 			bad.break_(f, t)
 			installed := false
 			r := updRig(t, f, pub, func(string) error { installed = true; return nil })
@@ -288,7 +288,7 @@ func TestUpdateCheckIsDailyAndSendsOnlyTheVersion(t *testing.T) {
 // UP-005: Download updates automatically fetches and verifies without a click;
 // restarting stays the person's choice.
 func TestAutomaticDownload(t *testing.T) {
-	f, pub := makeFeed(t, "0.20.0", []byte("update"))
+	f, pub := makeFeed(t, "0.21.0", []byte("update"))
 	installed := false
 	r := updRig(t, f, pub, func(string) error { installed = true; return nil })
 	connect(r)
@@ -307,11 +307,11 @@ func stateTime() time.Time { return time.Date(2026, 10, 20, 12, 0, 0, 0, time.UT
 
 // UP-001: with Check for updates on, the window's updater asks by itself.
 func TestUpdateChecksByItself(t *testing.T) {
-	f, pub := makeFeed(t, "0.20.0", []byte("update"))
+	f, pub := makeFeed(t, "0.21.0", []byte("update"))
 	r := updRig(t, f, pub, nil)
 	r.s.Settings.CheckForUpdates = true
 	connect(r)
-	r.wait("the release", func() bool { return r.text("Update to 0.20.0") })
+	r.wait("the release", func() bool { return r.text("Update to 0.21.0") })
 }
 
 // The state saves the settings when they change: what the window changes is
@@ -482,18 +482,18 @@ func TestUpdaterProxy(t *testing.T) {
 func TestReleaseURLIsHTTPSOrTheReleasesPage(t *testing.T) {
 	for _, bad := range []string{
 		"file:///Applications/Calculator.app", "javascript:alert(1)", "x-man-page://ls", "tel:+5511999990000",
-		"/releases/v0.20.0", "releases/v0.20.0", "http://example.test/release", "", "   ", "https://", "https:///x",
+		"/releases/v0.21.0", "releases/v0.21.0", "http://example.test/release", "", "   ", "https://", "https:///x",
 		"https://github.com@evil.example/x", "HTTP://example.test", "mailto:a@example.test", "https:example.test",
 	} {
 		if got := releaseURL(bad); got != releasesPage {
 			t.Errorf("releaseURL(%q) = %q, want the releases page", bad, got)
 		}
-		rel, err := parseRelease([]byte(`{"version":"0.20.0","url":` + strconv.Quote(bad) + `}`))
+		rel, err := parseRelease([]byte(`{"version":"0.21.0","url":` + strconv.Quote(bad) + `}`))
 		if err != nil || rel == nil || rel.URL != releasesPage {
 			t.Errorf("parseRelease with url %q: %+v, %v", bad, rel, err)
 		}
 	}
-	if got := releaseURL("https://github.com/crmne/zapfast/releases/tag/v0.20.0"); got != "https://github.com/crmne/zapfast/releases/tag/v0.20.0" {
+	if got := releaseURL("https://github.com/crmne/zapfast/releases/tag/v0.21.0"); got != "https://github.com/crmne/zapfast/releases/tag/v0.21.0" {
 		t.Errorf("a GitHub release page: %q", got)
 	}
 	if got := releaseURL("HTTPS://Example.test/r?x=1"); got != "https://Example.test/r?x=1" {
@@ -503,7 +503,7 @@ func TestReleaseURLIsHTTPSOrTheReleasesPage(t *testing.T) {
 
 // Release notes opens the releases page when the feed's address is not https.
 func TestReleaseNotesNeverOpensAFileURL(t *testing.T) {
-	f, pub := makeFeed(t, "0.20.0", []byte("update"))
+	f, pub := makeFeed(t, "0.21.0", []byte("update"))
 	f.rel.URL = "file:///Applications/Calculator.app"
 	f.write(t)
 	r := updRig(t, f, pub, nil)
@@ -536,7 +536,7 @@ func (f *recordingFeed) Fetch(ctx context.Context, r *Release, w io.Writer, limi
 // UP-004: a release whose signature is bad (or missing, or on a mangled
 // manifest) is never downloaded at all: nothing unauthenticated is fetched.
 func TestBadSignatureNeverStartsTheDownload(t *testing.T) {
-	good, pub := makeFeed(t, "0.20.0", []byte("update"))
+	good, pub := makeFeed(t, "0.21.0", []byte("update"))
 	_, other, _ := ed25519.GenerateKey(nil)
 	for name, mangle := range map[string]func(r *Release){
 		"signed by another key": func(r *Release) { r.Signature = hex.EncodeToString(ed25519.Sign(other, manifestLine(r))) },
@@ -581,7 +581,7 @@ func TestOversizedUpdateStopsAtTheCap(t *testing.T) {
 	maxUpdateBytes = 64 << 10
 	t.Cleanup(func() { maxUpdateBytes = old })
 	body := make([]byte, 1<<20)
-	f, pub := makeFeed(t, "0.20.0", body)
+	f, pub := makeFeed(t, "0.21.0", body)
 	serve := func(announce bool) *httptest.Server {
 		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			if strings.HasSuffix(req.URL.Path, "latest.json") {
