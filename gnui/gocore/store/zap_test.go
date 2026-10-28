@@ -429,3 +429,71 @@ func TestCanonicalizeMovesZapRows(t *testing.T) {
 		}
 	}
 }
+
+// Labels from the phone keep their own ids; a chat wears one at a time.
+func TestPhoneLabels(t *testing.T) {
+	s, _, _ := testStore(t)
+	if err := s.UpsertChat(Chat{ID: "c", Name: "Chat"}); err != nil {
+		t.Fatal(err)
+	}
+	if ok, err := s.PutLabel(Label{ID: "wa-3", Name: " New customer ", Color: "#0f0", CreatedAt: 5}); !ok || err != nil {
+		t.Fatalf("put %v %v", ok, err)
+	}
+	if ok, _ := s.PutLabel(Label{ID: "wa-3", Name: "New customer", Color: "#00ff00", CreatedAt: 9}); ok {
+		t.Fatal("an unchanged label changed")
+	}
+	if ok, _ := s.LabelChat("c", "wa-3", true); !ok {
+		t.Fatal("label a chat")
+	}
+	if ok, _ := s.LabelChat("c", "wa-gone", true); ok {
+		t.Fatal("a missing label was put on")
+	}
+	if c, _ := s.Chat("c"); !reflect.DeepEqual(c.Labels, []string{"wa-3"}) {
+		t.Fatalf("labels %v", c.Labels)
+	}
+	if ok, _ := s.LabelChat("c", "wa-3", false); !ok {
+		t.Fatal("unlabel")
+	}
+	if l, _ := s.Labels(); len(l) != 1 || l[0].Name != "New customer" || l[0].CreatedAt != 5 {
+		t.Fatalf("labels %+v", l)
+	}
+}
+
+// Stickers are listed newest first by side; Clear leaves nothing behind.
+func TestStickersAndClear(t *testing.T) {
+	s, _, _ := testStore(t)
+	if err := s.SaveMessages([]Message{
+		{ID: "a", ChatID: "c", Timestamp: 1, Kind: "sticker", FromMe: true, Media: &Media{Path: "/a.webp"}},
+		{ID: "b", ChatID: "c", Timestamp: 2, Kind: "sticker", FromMe: true},
+		{ID: "c", ChatID: "c", Timestamp: 3, Kind: "sticker"},
+		{ID: "d", ChatID: "c", Timestamp: 4, Kind: "text", Text: "hi", FromMe: true},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if ours, _ := s.Stickers(true, 10); !reflect.DeepEqual(ids(ours), []string{"b", "a"}) {
+		t.Fatalf("ours %v", ids(ours))
+	}
+	if theirs, _ := s.Stickers(false, 10); !reflect.DeepEqual(ids(theirs), []string{"c"}) {
+		t.Fatalf("theirs %v", ids(theirs))
+	}
+	if _, _, err := s.CreateLabel("Work", "", 1); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpsertChat(Chat{ID: "c", Name: "Chat"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.SetMetadata("k", []byte("v")); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Clear(); err != nil {
+		t.Fatal(err)
+	}
+	for _, table := range []string{"messages", "chats", "local_labels", "metadata", "message_flags", "tokens"} {
+		if n := count(t, s, "SELECT count(*) FROM "+table); n != 0 {
+			t.Errorf("%s keeps %d rows", table, n)
+		}
+	}
+	if n := count(t, s, "PRAGMA user_version"); n != SchemaVersion {
+		t.Fatalf("schema %d", n)
+	}
+}

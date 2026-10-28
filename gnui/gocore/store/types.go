@@ -31,6 +31,18 @@ type Chat struct {
 	Labels           []string `json:"labels,omitempty"`
 	EphemeralSeconds uint32   `json:"ephemeral_seconds"`
 	HistoryStart     bool     `json:"history_start"`
+	// Zap: a group's description, nil until WhatsApp has said (empty: it
+	// has none).
+	Description *string `json:"description,omitempty"`
+	// Zap: the chat's own notification sound, nil for the app's.
+	Sound *Sound `json:"sound,omitempty"`
+}
+
+// Sound is a chat's notification sound (Zap): Kind is "receive", "alert",
+// "system", "none" or "custom", with the file's Path for a custom one.
+type Sound struct {
+	Kind string `json:"kind"`
+	Path string `json:"path,omitempty"`
 }
 
 func (c Chat) CanSend() bool { return !c.Locked && !c.ReadOnly && !c.Left && c.Kind != "channel" }
@@ -55,6 +67,11 @@ type Quote struct {
 	Sender string `json:"sender"`
 	Text   string `json:"text"`
 	Kind   string `json:"kind"`
+	// Zap: the quoted message's chat when it is another one, the name its
+	// sender went by, and the people it mentions.
+	Chat       string    `json:"chat,omitempty"`
+	SenderName string    `json:"sender_name,omitempty"`
+	Mentions   []Mention `json:"mentions,omitempty"`
 }
 
 type PollOption struct {
@@ -180,8 +197,18 @@ type Message struct {
 	// Zap: the link card, indexed with the links of the text (Shared).
 	LinkPreview *LinkPreview `json:"link_preview,omitempty"`
 	// Zap: set on a call-log entry (Kind "call").
-	Call *Call  `json:"call,omitempty"`
-	Raw  []byte `json:"-"`
+	Call *Call `json:"call,omitempty"`
+	// Zap: a motion photo's clip, on the photo's row.
+	Motion *Motion `json:"motion,omitempty"`
+	Raw    []byte  `json:"-"`
+}
+
+// Motion is the video half of a motion photo (Zap): the clip's message as
+// WhatsApp sent it (a protobuf holding its download keys) and the file it
+// was downloaded to.
+type Motion struct {
+	Clip []byte `json:"clip,omitempty"`
+	Path string `json:"path,omitempty"`
 }
 
 // Label is a local chat label. CreatedAt (Zap) orders them.

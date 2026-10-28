@@ -236,3 +236,56 @@ func CleanLabelColor(color string) string {
 	}
 	return "#" + strings.ToLower(raw)
 }
+
+// PutLabel files a label the phone keeps (a WhatsApp label from app
+// state) under its own id: added, or renamed and recoloured in place. The
+// name is cleaned as CreateLabel's; an empty one is refused (false). Labels
+// from the phone are not counted against LabelLimit, which bounds the ones
+// made here.
+func (s *Archive) PutLabel(l Label) (bool, error) {
+	l.Name = cleanLabelName(l.Name)
+	if l.Name == "" || l.ID == "" {
+		return false, nil
+	}
+	l.Color = CleanLabelColor(l.Color)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	r, err := s.db.Exec(`INSERT INTO local_labels(id,name,color,created_at) VALUES(?,?,?,?)
+ON CONFLICT(id) DO UPDATE SET name=excluded.name,color=excluded.color
+WHERE local_labels.name<>excluded.name OR local_labels.color<>excluded.color`, l.ID, l.Name, l.Color, l.CreatedAt)
+	if err != nil {
+		return false, err
+	}
+	n, err := r.RowsAffected()
+	return n > 0, err
+}
+
+// LabelChat puts one label on a chat or takes it off, keeping the others;
+// a label that does not exist is not put on. It reports whether the chat's
+// labels changed.
+func (s *Archive) LabelChat(chat, id string, on bool) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	tx, err := s.db.Begin()
+	if err != nil {
+		return false, err
+	}
+	defer tx.Rollback()
+	var r sql.Result
+	if on {
+		r, err = tx.Exec("INSERT OR IGNORE INTO local_chat_labels(chat,label) SELECT ?,id FROM local_labels WHERE id=?", chat, id)
+	} else {
+		r, err = tx.Exec("DELETE FROM local_chat_labels WHERE chat=? AND label=?", chat, id)
+	}
+	if err != nil {
+		return false, err
+	}
+	n, err := r.RowsAffected()
+	if err != nil || n == 0 {
+		return false, err
+	}
+	if err = syncChatLabels(tx, chat); err != nil {
+		return false, err
+	}
+	return true, tx.Commit()
+}

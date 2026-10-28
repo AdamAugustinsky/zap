@@ -294,6 +294,9 @@ func save(tx *sql.Tx, m Message) error {
 		if len(m.Reactions) == 0 {
 			m.Reactions = old.Reactions
 		}
+		if m.Motion == nil {
+			m.Motion = old.Motion
+		}
 		if len(m.Raw) == 0 {
 			m.Raw = oldRaw
 		}
