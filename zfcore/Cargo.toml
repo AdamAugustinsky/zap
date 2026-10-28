@@ -39,3 +39,13 @@ keyring-core = "1"
 # A second connection to a test archive, holding its writer lock. Upstream's
 # SQLCipher build; already in Cargo.lock.
 rusqlite = "0.40"
+# The migration fixtures (tests/migration_fixtures.rs): whatsapp-rust's own
+# store and Signal code writes the synthetic session.db files. All already in
+# Cargo.lock through upstream, at these versions.
+whatsapp-rust = { git = "https://github.com/oxidezap/whatsapp-rust", rev = "5e72baf000aa4fb65ed89d1c955a54029a7f29a6", default-features = false, features = ["sqlite-storage", "tokio-runtime"] }
+tokio = { version = "1", features = ["rt-multi-thread"] }
+rand = "0.10"
+sha2 = "0.11"
+hmac = "0.13"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
