@@ -38,7 +38,7 @@ func TestCloseWhileAHandlerSendsDoesNotDeadlock(t *testing.T) {
 	closing := make(chan struct{})
 	closeHook = func() { close(closing) }
 	defer func() { closeHook = nil }()
-	h := &sendingHandler{c: s.c, inside: make(chan struct{}), closing: closing, sent: make(chan error, 1)}
+	h := &sendingHandler{c: s.rust(), inside: make(chan struct{}), closing: closing, sent: make(chan error, 1)}
 
 	closed := make(chan error, 1)
 	drained := make(chan error, 1)

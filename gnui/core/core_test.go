@@ -51,25 +51,51 @@ func (w *wakes) wake() {
 // session is a demo core and what its events said.
 type session struct {
 	t testing.TB
-	c *Core
+	c DemoConn
 	w *wakes
 	h *recorder
 }
 
+// DemoConn is what the demo tests use of a demo core: *Core, or the Go
+// demo's (gocore/demo).
+type DemoConn interface {
+	Conn
+	Frames
+	CallNumbers
+	VoiceDecoder
+	Done() <-chan struct{}
+}
+
+// GoDemo opens the Go demo, for openDemo with ZAPFAST_ENGINE=go; set by
+// godemo_test.go, which may import it (package core_test).
+var GoDemo func(Config) (DemoConn, error)
+
+// rust is the session's core as *Core, for a test of the Rust core's own
+// mechanics; with the Go demo it skips.
+func (s *session) rust() *Core {
+	s.t.Helper()
+	c, ok := s.c.(*Core)
+	if !ok {
+		s.t.Skip("tests core.Core's own mechanics")
+	}
+	return c
+}
+
 func openDemo(t testing.TB) *session {
 	t.Helper()
-	l := loadLib(t)
 	w := newWakes()
-	c, err := l.Open(Config{Demo: true, Wake: w.wake})
+	var c DemoConn
+	var err error
+	if os.Getenv("ZAPFAST_ENGINE") == "go" {
+		c, err = GoDemo(Config{Demo: true, Wake: w.wake})
+	} else {
+		c, err = loadLib(t).Open(Config{Demo: true, Wake: w.wake})
+	}
 	if err != nil {
 		t.Fatal(err)
 	}
 	s := &session{t: t, c: c, w: w, h: &recorder{}}
-	t.Cleanup(func() {
-		if !c.closing.Load() {
-			c.Close(5 * time.Second)
-		}
-	})
+	t.Cleanup(func() { c.Close(5 * time.Second) })
 	return s
 }
 

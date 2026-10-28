@@ -29,4 +29,6 @@
 // encoded at startup with gocore/av.
 //
 // [Open] opens a demo Conn; [New] is the bare Engine for gocore.Open.
+// [OpenChosen] opens the demo core $ZAPFAST_ENGINE picks ("go" for this
+// one; zfcore's by default, for now), which is how the Demo tests choose.
 package demo

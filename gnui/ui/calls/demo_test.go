@@ -9,6 +9,7 @@ import (
 
 	"zapfast/abi"
 	"zapfast/core"
+	"zapfast/gocore/demo"
 	"zapfast/state"
 	"zapfast/ui/screen"
 )
@@ -23,10 +24,10 @@ func TestTheDemoCoresCalls(t *testing.T) {
 	if testing.Short() {
 		t.Skip("the demo core's calls take seconds")
 	}
-	if _, err := core.FindLibrary(); err != nil {
+	if err := demo.Ready(""); err != nil {
 		t.Skipf("no core library: %v", err)
 	}
-	c, err := core.Open(core.Config{Demo: true, Wake: func() {}})
+	c, err := demo.OpenChosen(core.Config{Wake: func() {}})
 	if err != nil {
 		t.Fatal(err)
 	}

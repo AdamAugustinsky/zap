@@ -174,7 +174,7 @@ func blobber(c *Core, g int, rounds int, untilClosed bool, bad *atomic.Int64, no
 // nor leaves the event goroutine behind.
 func TestStressSendDrainBlobsUnderSignalsThenCloseMidTraffic(t *testing.T) {
 	s := openDemo(t)
-	c := s.c
+	c := s.rust()
 	stop := profile(t)
 	defer stop()
 	var bad atomic.Int64
