@@ -157,8 +157,10 @@ func ConvertSession(ctx context.Context, source, target string, key []byte) (rep
 	if target, err = filepath.Abs(target); err != nil || target == source {
 		return report, errors.New("migrate: invalid session destination")
 	}
-	if found, err := exists(target); err != nil || found {
-		return report, errors.Join(ErrDestinationExists, err)
+	if found, err := exists(target); err != nil {
+		return report, err
+	} else if found {
+		return report, ErrDestinationExists
 	}
 	if err = os.MkdirAll(filepath.Dir(target), 0o700); err != nil {
 		return report, err
