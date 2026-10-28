@@ -1,0 +1,150 @@
+package wa
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"sync"
+	"testing"
+	"time"
+
+	waBinary "go.mau.fi/whatsmeow/binary"
+	"go.mau.fi/whatsmeow/types"
+	"go.mau.fi/whatsmeow/types/events"
+
+	"zapfast/abi"
+	"zapfast/core"
+	"zapfast/gocore/calls"
+)
+
+// The call bridge inside the engine: whatsmeow's call events reach the
+// signaling, the call commands are answered, a finished call is filed in
+// its chat and the call log, and the frames come from the call media. The
+// signaling itself is gocore/calls' tests'.
+
+type fakeCallMedia struct {
+	mu       sync.Mutex
+	opened   []calls.OpenParams
+	released int
+}
+
+func (m *fakeCallMedia) Open(p calls.OpenParams) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.opened = append(m.opened, p)
+	return nil
+}
+func (m *fakeCallMedia) Command(uint64, calls.MediaCommand) error { return nil }
+func (m *fakeCallMedia) Close(uint64) error                       { return nil }
+func (m *fakeCallMedia) Next(d time.Duration) (calls.MediaEvent, bool, error) {
+	time.Sleep(d)
+	return calls.MediaEvent{}, false, nil
+}
+func (m *fakeCallMedia) Devices() (abi.DeviceList, error) { return abi.DeviceList{}, nil }
+func (m *fakeCallMedia) Frame(stream uint32) (core.Frame, bool) {
+	return core.Frame{W: 2, H: 2, PTS: int64(stream)}, true
+}
+func (m *fakeCallMedia) ReleaseFrame(uint32) { m.mu.Lock(); m.released++; m.mu.Unlock() }
+func (m *fakeCallMedia) Free()               {}
+
+type fakeCallClient struct {
+	mu   sync.Mutex
+	sent []string
+	ids  int
+}
+
+func (c *fakeCallClient) Own() (types.JID, types.JID) {
+	pn, lid := me, meLID
+	pn.Device, lid.Device = 4, 4
+	return pn, lid
+}
+func (c *fakeCallClient) NewID() string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.ids++
+	return fmt.Sprint("CALL-", c.ids)
+}
+func (c *fakeCallClient) Send(_ context.Context, n waBinary.Node) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.sent = append(c.sent, n.GetChildren()[0].Tag)
+	return nil
+}
+func (c *fakeCallClient) SendAwait(context.Context, waBinary.Node, time.Duration) (*waBinary.Node, error) {
+	return nil, fmt.Errorf("no server")
+}
+func (c *fakeCallClient) DecryptKey(context.Context, *waBinary.Node, types.JID, time.Time) ([]byte, error) {
+	return bytes.Repeat([]byte{1}, 32), nil
+}
+func (c *fakeCallClient) EncryptKey(context.Context, []types.JID, []byte, string) ([]calls.DeviceKey, []byte, error) {
+	return nil, nil, nil
+}
+func (c *fakeCallClient) PeerLID(_ context.Context, u types.JID) (types.JID, error) { return u, nil }
+func (c *fakeCallClient) Devices(context.Context, types.JID) ([]types.JID, error)   { return nil, nil }
+func (c *fakeCallClient) PrivacyToken(context.Context, types.JID) []byte            { return nil }
+func (c *fakeCallClient) Offered(context.Context, types.JID)                        {}
+
+func (c *fakeCallClient) tags() []string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return append([]string(nil), c.sent...)
+}
+
+func TestACallRingsIsFiledAndListed(t *testing.T) {
+	media, cli := &fakeCallMedia{}, &fakeCallClient{}
+	h := newHarness(t, options{callMedia: media, callClient: cli})
+	h.start()
+
+	from := peer
+	from.Device = 3
+	offer := &waBinary.Node{Tag: "offer", Attrs: waBinary.Attrs{"call-id": "00CA11", "call-creator": from}, Content: []waBinary.Node{
+		{Tag: "audio", Attrs: waBinary.Attrs{"enc": "opus", "rate": "16000"}},
+		{Tag: "enc", Attrs: waBinary.Attrs{"v": "2", "type": "msg", "count": "0"}, Content: []byte("ct")},
+		{Tag: "relay", Attrs: waBinary.Attrs{"uuid": "u"}},
+	}}
+	h.inject(&events.CallOffer{BasicCallMeta: types.BasicCallMeta{From: from, CallCreator: from, CallID: "00CA11",
+		StanzaID: "S1", Timestamp: t0}, Data: offer})
+	h.settle()
+	ring := only(h.take(), abi.EventTagCall)
+	if len(ring) != 1 || ring[0].Call.Update.Phase != abi.CallPhaseIncoming || string(ring[0].Call.Update.Chat) != peer.String() {
+		t.Fatalf("ringing: %+v", ring)
+	}
+
+	h.send(abi.Command{Tag: abi.CommandTagAnswerCall})
+	h.settle()
+	if u := only(h.take(), abi.EventTagCall); len(u) != 1 || u[0].Call.Update.Phase != abi.CallPhaseAccepted {
+		t.Fatalf("answered: %+v", u)
+	}
+	if len(media.opened) != 1 || media.opened[0].PeerLID != from.String() {
+		t.Fatalf("media %+v", media.opened)
+	}
+	if f, ok := h.e.Frame(1); !ok || f.W != 2 {
+		t.Fatal("the frames are not the call's")
+	}
+	h.e.ReleaseFrame(1)
+
+	h.send(abi.Command{Tag: abi.CommandTagHangupCall})
+	h.settle()
+	evs := h.take()
+	if u := only(evs, abi.EventTagCall); len(u) != 1 || u[0].Call.Update.Phase != abi.CallPhaseEnded {
+		t.Fatalf("hung up: %s", tags(evs))
+	}
+	filed := only(evs, abi.EventTagMessages)
+	if len(filed) != 1 || len(filed[0].Messages.Messages) != 1 {
+		t.Fatalf("filed: %s", tags(evs))
+	}
+	m := filed[0].Messages.Messages[0]
+	if m.Content.Tag != abi.ContentTagCall || m.Content.Call.Status != abi.CallStatusMissed || m.FromMe {
+		t.Fatalf("the entry %+v", m.Content)
+	}
+	if got := cli.tags(); fmt.Sprint(got) != "[offer preaccept accept terminate]" {
+		t.Fatalf("sent %q", got)
+	}
+
+	h.send(abi.Command{Tag: abi.CommandTagLoadCallLog})
+	h.settle()
+	log := only(h.take(), abi.EventTagCallLog)
+	if len(log) != 1 || len(log[0].CallLog.Messages) != 1 || string(log[0].CallLog.Messages[0].ID) != "zapfast-call-00CA11" {
+		t.Fatalf("the call log %+v", log)
+	}
+}

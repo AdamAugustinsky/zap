@@ -20,6 +20,8 @@ import (
 	"go.mau.fi/whatsmeow/types/events"
 	waLog "go.mau.fi/whatsmeow/util/log"
 	"google.golang.org/protobuf/proto"
+
+	"zapfast/gocore/calls"
 )
 
 // Client is the part of a whatsmeow client the engine uses: whatsmeow's own
@@ -30,6 +32,8 @@ type Client interface {
 	// OwnID is the account's phone-number and privacy (LID) ids, without a
 	// device; both empty while unlinked.
 	OwnID() (pn, lid types.JID)
+	// Calls is the call signaling's view of the client (gocore/calls).
+	Calls() calls.Client
 	// PushName is the account's own display name, as the phone set it.
 	PushName() string
 	// PNForLID is the phone-number id of a privacy id, empty when unknown.
@@ -152,6 +156,8 @@ type waClient struct {
 	mu    sync.Mutex
 	proxy string // SetProxy's, for the uploads whatsmeow does not make
 }
+
+func (w *waClient) Calls() calls.Client { return calls.Whatsmeow(w.c) }
 
 func (w *waClient) OwnID() (types.JID, types.JID) {
 	var pn types.JID

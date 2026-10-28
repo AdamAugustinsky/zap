@@ -16,6 +16,7 @@ import (
 
 	"zapfast/abi"
 	"zapfast/gocore"
+	"zapfast/gocore/calls"
 	"zapfast/gocore/out"
 	"zapfast/gocore/store"
 )
@@ -38,11 +39,14 @@ type Options struct {
 	// Log is whatsmeow's logger, for its client and its store; nil: none
 	// (waLog.Noop). The app gives a redacting one (sys.WhatsmeowLog).
 	Log waLog.Logger
+	// CallMedia makes the account's call media; nil: libzfcalls'. An
+	// error turns calls off (calls.NotAvailable).
+	CallMedia func() (calls.Media, error)
 }
 
-// answers are the commands this engine handles: every command of the
-// schema but the calls, which WP7's call bridge answers, and the demo's.
-// PickAnswer never reaches an engine (the Conn's broker takes it).
+// answers are the commands this engine handles by tag: every command of
+// the schema but the calls, which acceptCall decides (calls.go), and the
+// demo's. PickAnswer never reaches an engine (the Conn's broker takes it).
 var answers = func() gocore.Table {
 	var tags []abi.CommandTag
 	for i := range 1 << 10 {
@@ -53,15 +57,6 @@ var answers = func() gocore.Table {
 	}
 	return gocore.Answers(tags...)
 }()
-
-// callCommands are refused (ZF_E_STATE) until WP7.
-var callCommands = map[abi.CommandTag]bool{
-	abi.CommandTagStartCall: true, abi.CommandTagJoinCallLink: true, abi.CommandTagCancelCall: true,
-	abi.CommandTagAnswerCall: true, abi.CommandTagDeclineCall: true, abi.CommandTagHangupCall: true,
-	abi.CommandTagSetCallMuted: true, abi.CommandTagSetCallCamera: true, abi.CommandTagSetCallMicrophone: true,
-	abi.CommandTagSetCallSpeaker: true, abi.CommandTagSetCallCameraDevice: true, abi.CommandTagRefreshCallDevices: true,
-	abi.CommandTagLoadCallLog: true,
-}
 
 var demoCommands = map[abi.CommandTag]bool{
 	abi.CommandTagDemoIncoming: true, abi.CommandTagDemoTyping: true, abi.CommandTagDemoPanic: true,
@@ -136,6 +131,10 @@ type Engine struct {
 	prefetched   map[string]bool        // chats the prefetch filled this session
 	typing       []chatState            // chat states to send, in order
 
+	// calls is WP7's call bridge (calls.go): set by Open, before any
+	// command, and never replaced.
+	calls *calls.Calls
+
 	// Timings, shortened by the tests.
 	syncQuiet     time.Duration
 	olderPatience time.Duration
@@ -181,14 +180,21 @@ const (
 // Name names the engine in its refusals.
 func (e *Engine) Name() string { return "WhatsApp" }
 
-// Accept answers every command but the calls and the demo's.
-func (e *Engine) Accept(cmd *abi.Command) error { return answers.Accept(cmd) }
+// Accept answers every command but the demo's; a call command as the call
+// bridge can take it (acceptCall).
+func (e *Engine) Accept(cmd *abi.Command) error {
+	if callCommands[cmd.Tag] {
+		return e.acceptCall(cmd)
+	}
+	return answers.Accept(cmd)
+}
 
 // Open keeps h and starts the engine's goroutine, which opens the account
 // (the Keychain may ask the user, so never on the UI thread) and lists the
 // cached chats before the startup permit.
 func (e *Engine) Open(h *gocore.Host) error {
 	e.h, e.out = h, h.Out()
+	e.openCalls()
 	// First in the inbox: before Start and every command.
 	e.post(e.open)
 	if !h.Go("whatsapp", e.run) {
@@ -285,6 +291,7 @@ func (e *Engine) shutdown() {
 	if e.qrCancel != nil {
 		e.qrCancel()
 	}
+	e.hangUpCalls()
 	if e.cli != nil {
 		e.cli.Disconnect()
 	}
@@ -343,6 +350,7 @@ func (e *Engine) newClient(device *wastore.Device) {
 	} else {
 		e.cli = newClient(device, e.opts.DeviceName, e.opts.Log)
 	}
+	e.calls.SetClient(e.cli.Calls())
 	if e.proxy != "" {
 		if err := e.cli.SetProxy(e.proxy); err != nil {
 			slog.Warn("zapfast wa: the proxy setting was not applied", "err", err)
@@ -482,6 +490,10 @@ func (e *Engine) command(cmd *gocore.Command) {
 	case abi.CommandTagSearchChatMessages:
 		e.searchChatMessages(&cmd.SearchChatMessages)
 	default:
+		if callCommands[cmd.Tag] {
+			e.callCommand(cmd)
+			return
+		}
 		e.more(cmd)
 	}
 }

@@ -47,8 +47,9 @@ bundle (and from `$ZAPFAST_*` or `target/` in development):
 Opus voice encoding and decoding use the system's AudioToolbox, so nothing is
 bundled for it. `packaging/macos/gnui-package.sh` builds both (when missing or
 older than their scripts) and bundles them beside `libzapfast_core.dylib`,
-which stays for the fallback and for calls; `gnui-verify.sh` checks each is
-signed by the app's signer and links only system libraries.
+which stays for the fallback, and `libzfcalls.dylib` (WP7, the call media);
+`gnui-verify.sh` checks each is signed by the app's signer and links only
+system libraries.
 
 ## Choosing the backend (WP6b)
 
@@ -58,8 +59,9 @@ or migration.json: Go; session.db alone: Rust) and a new account, and the
 demo, run on Go. `-engine=go` takes a Rust account over first
 (`migrate.Account`, holding the single-instance lock); a failure is the
 account's open error, and Try again retries it, or links afresh when the
-session itself cannot be converted. Calls are refused on the Go backend until
-WP7: run `-engine=rust` for them. The wiring is `gnui/cmd/zapfast/engine.go`.
+session itself cannot be converted. 1:1 calls run on the Go backend through
+WP7's bridge ([calls-bridge.md](calls-bridge.md) section 5); group calls and
+call links need `-engine=rust`. The wiring is `gnui/cmd/zapfast/engine.go`.
 
 ## Layout and packages
 

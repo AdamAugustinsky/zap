@@ -116,6 +116,10 @@ func (e *Engine) handle(evt any) {
 		chat := e.canonical(v.JID)
 		e.ensureChat(chat, v.Name)
 		e.applyGroup(chat, &v.GroupInfo)
+
+	default:
+		// Call signaling (calls.go).
+		e.callSignal(evt)
 	}
 	if err != nil {
 		slog.Warn("zapfast wa: an update was not stored", "event", eventName(evt), "err", err)

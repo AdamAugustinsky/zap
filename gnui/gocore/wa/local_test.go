@@ -147,15 +147,16 @@ func TestMessagePins(t *testing.T) {
 }
 
 // TestEveryCommandButTheCallsIsAnswered: the engine takes every command of
-// the schema but WP7's calls and the demo's, and none of them, empty,
-// upsets it.
+// the schema but the calls (refused without the call library, which an
+// engine never opened has not loaded; the call log is listed regardless)
+// and the demo's, and none of them, empty, upsets it.
 func TestEveryCommandButTheCallsIsAnswered(t *testing.T) {
 	refused := map[abi.CommandTag]bool{}
 	for _, tag := range []abi.CommandTag{
 		abi.CommandTagStartCall, abi.CommandTagJoinCallLink, abi.CommandTagCancelCall, abi.CommandTagAnswerCall,
 		abi.CommandTagDeclineCall, abi.CommandTagHangupCall, abi.CommandTagSetCallMuted, abi.CommandTagSetCallCamera,
 		abi.CommandTagSetCallMicrophone, abi.CommandTagSetCallSpeaker, abi.CommandTagSetCallCameraDevice,
-		abi.CommandTagRefreshCallDevices, abi.CommandTagLoadCallLog,
+		abi.CommandTagRefreshCallDevices,
 		abi.CommandTagDemoIncoming, abi.CommandTagDemoTyping, abi.CommandTagDemoPanic,
 	} {
 		refused[tag] = true

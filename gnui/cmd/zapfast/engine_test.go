@@ -273,8 +273,8 @@ func TestTheGoEngineTakesARustAccountOver(t *testing.T) {
 	if !ok {
 		t.Fatalf("a %T", c)
 	}
-	if _, ok := c.(core.Frames); ok {
-		t.Error("the Go engine claims video frames while it refuses calls")
+	if _, ok := c.(core.Frames); !ok {
+		t.Error("the Go engine hands out no call video frames")
 	}
 	if n := g.CallGeneration(); n == 0 || g.CallGeneration() == n {
 		t.Error("call numbers repeat")

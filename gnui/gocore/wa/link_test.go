@@ -2,6 +2,7 @@ package wa
 
 import (
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 
 	"zapfast/abi"
 	"zapfast/core"
+	"zapfast/gocore/calls"
 	"zapfast/gocore/store"
 )
 
@@ -276,17 +278,33 @@ func TestWrongKeyFailsTheLink(t *testing.T) {
 	}
 }
 
+// TestCallAndDemoCommandsAreRefused: without the call library a call is
+// refused as unavailable (the call log still lists the calls), a call link
+// always, and the demo's commands are not this engine's.
 func TestCallAndDemoCommandsAreRefused(t *testing.T) {
 	h := newHarness(t, options{})
-	for _, cmd := range []abi.Command{
-		{Tag: abi.CommandTagStartCall},
-		{Tag: abi.CommandTagLoadCallLog},
-		{Tag: abi.CommandTagDemoIncoming},
+	for _, tc := range []struct {
+		cmd  abi.Command
+		code int32
+	}{
+		{abi.Command{Tag: abi.CommandTagStartCall}, core.ERefused},
+		{abi.Command{Tag: abi.CommandTagAnswerCall}, core.ERefused},
+		{abi.Command{Tag: abi.CommandTagJoinCallLink}, core.ERefused},
+		{abi.Command{Tag: abi.CommandTagDemoIncoming}, core.EState},
 	} {
-		err := h.c.Send(&cmd)
+		err := h.c.Send(&tc.cmd)
 		var ce *core.Error
-		if !errors.As(err, &ce) || ce.Code != core.EState {
-			t.Errorf("%v: %v", cmd.Tag, err)
+		if !errors.As(err, &ce) || ce.Code != tc.code {
+			t.Errorf("%v: %v", tc.cmd.Tag, err)
 		}
+	}
+	var ce *core.Error
+	if err := h.c.Send(&abi.Command{Tag: abi.CommandTagStartCall}); !errors.As(err, &ce) || !strings.Contains(ce.Msg, calls.LibName) {
+		t.Errorf("the refusal does not say why: %v", err)
+	}
+	h.send(abi.Command{Tag: abi.CommandTagLoadCallLog})
+	h.settle()
+	if len(only(h.take(), abi.EventTagCallLog)) != 1 {
+		t.Error("the call log is not listed")
 	}
 }

@@ -24,6 +24,7 @@ import (
 	"zapfast/abi"
 	"zapfast/core"
 	"zapfast/gocore"
+	"zapfast/gocore/calls"
 )
 
 // The tests run the engine in a real gocore.Conn, on a real archive and
@@ -83,7 +84,11 @@ type fakeClient struct {
 	pictureBytes                                          []byte
 
 	x *fakeMore // WP4b's answers (fake_more_test.go)
+
+	callClient calls.Client // the call signaling's (calls_test.go); nil: none
 }
+
+func (f *fakeClient) Calls() calls.Client { return f.callClient }
 
 func newFake(linked bool) *fakeClient {
 	f := &fakeClient{pushName: "Ada", lids: map[types.JID]types.JID{}, x: newFakeMore()}
@@ -350,6 +355,10 @@ type options struct {
 	keys     *memKeys
 	state    string
 	cache    string
+	// callMedia and callClient are the calls' (calls_test.go); without
+	// media, calls are off as without the library.
+	callMedia  calls.Media
+	callClient calls.Client
 }
 
 func newHarness(t *testing.T, o options) *harness {
@@ -364,11 +373,17 @@ func newHarness(t *testing.T, o options) *harness {
 	linked := !o.unlinked
 	h.e = New(Options{Keys: h.keys, NewClient: func(*wastore.Device) Client {
 		f := newFake(linked)
+		f.callClient = o.callClient
 		// A client made after a logout belongs to a device not linked yet.
 		linked = false
 		h.f = f
 		h.fakes = append(h.fakes, f)
 		return f
+	}, CallMedia: func() (calls.Media, error) {
+		if o.callMedia == nil {
+			return nil, calls.ErrNoLibrary
+		}
+		return o.callMedia, nil
 	}})
 	h.e.syncQuiet = 30 * time.Millisecond
 	h.e.olderPatience = 30 * time.Millisecond

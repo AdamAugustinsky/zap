@@ -11,8 +11,7 @@ package main
 //   - a folder with whatsmeow's store (whatsmeow.db) or a migration's
 //     marker (migration.json) is the Go backend's;
 //   - a folder with the Rust core's session store (session.db) and neither
-//     stays on the Rust core, which remains the fallback, and the backend
-//     of calls until the call bridge (WP7);
+//     stays on the Rust core, which remains the fallback;
 //   - anything else is new: the Go backend.
 //
 // -engine=go runs every account on the Go backend, and takes an account the
@@ -20,9 +19,11 @@ package main
 // failing closed). -engine=rust runs every account on the Rust core, the
 // demo's too.
 //
-// The Go backend refuses calls for now (ZF_E_STATE, "the WhatsApp core does
-// not answer StartCall"): its cores have no video frames (core.Frames), and
-// number their calls only so the hub's numbers stay apart.
+// On the Go backend, calls are WP7's bridge (gocore/calls): whatsmeow carries
+// the 1:1 signaling and libzfcalls the media and the video frames
+// (core.Frames). Without libzfcalls every call command is refused
+// (ZF_E_REFUSED, naming the missing library); group calls and call links are
+// not bridged.
 
 import (
 	"context"
@@ -33,7 +34,6 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	wastore "go.mau.fi/whatsmeow/store"
@@ -42,6 +42,7 @@ import (
 	"zapfast/core"
 	"zapfast/gocore"
 	"zapfast/gocore/av"
+	"zapfast/gocore/calls"
 	"zapfast/gocore/demo"
 	"zapfast/gocore/migrate"
 	"zapfast/gocore/store"
@@ -200,7 +201,7 @@ func (o *coreOpener) openGo(cfg core.Config, dir string, t *core.Timing) (core.C
 	if err != nil {
 		return nil, err
 	}
-	return newGoConn(c), nil
+	return newGoConn(c, eng), nil
 }
 
 func (o *coreOpener) keychain() store.Keys {
@@ -290,22 +291,23 @@ func (e *migrationError) Unwrap() error { return e.Err }
 
 // goConn is a real account's core on the Go backend: the Conn, with what
 // the UI asks of a core besides core.Conn. Voice notes decode with
-// gocore/av from the account's folders; calls are refused, so there are no
-// frames (core.Frames), and the numbers only keep the hub's apart.
+// gocore/av from the account's folders; a call's video frames are the
+// engine's call media's.
 type goConn struct {
 	*gocore.Conn
+	eng   *wa.Engine
 	voice av.VoiceDecoder
-	calls atomic.Uint64
 }
 
 var (
 	_ core.Conn         = (*goConn)(nil)
 	_ core.CallNumbers  = (*goConn)(nil)
+	_ core.Frames       = (*goConn)(nil)
 	_ core.VoiceDecoder = (*goConn)(nil)
 )
 
-func newGoConn(c *gocore.Conn) *goConn {
-	g := &goConn{Conn: c}
+func newGoConn(c *gocore.Conn, eng *wa.Engine) *goConn {
+	g := &goConn{Conn: c, eng: eng}
 	st, cache := c.Host().AccountDirs()
 	g.voice = av.VoiceDecoder{
 		Roots: func() []string { return []string{st, cache} },
@@ -314,8 +316,13 @@ func newGoConn(c *gocore.Conn) *goConn {
 	return g
 }
 
-// CallGeneration is a generation no call has had yet (core.CallNumbers).
-func (g *goConn) CallGeneration() uint64 { return 1<<47 + g.calls.Add(1) }
+// CallGeneration is a generation no call has had yet (core.CallNumbers),
+// from the counter the engine numbers the calls it is offered with.
+func (g *goConn) CallGeneration() uint64 { return calls.NextGeneration() }
+
+// Frame and ReleaseFrame are the call's video frames (core.Frames).
+func (g *goConn) Frame(stream uint32) (core.Frame, bool) { return g.eng.Frame(stream) }
+func (g *goConn) ReleaseFrame(stream uint32)             { g.eng.ReleaseFrame(stream) }
 
 // DecodeVoice decodes a voice note in the account's folders, as zfcore's
 // zf_voice_decode does.
