@@ -88,8 +88,11 @@ func (e *Engine) emitMe() {
 	if !lid.IsEmpty() {
 		me.LID, me.HasLID = b(lid.String()), true
 	}
-	if name := e.cli.PushName(); name != "" {
+	if name := e.meName(); name != "" {
 		me.Name, me.HasName = b(out.Clip(name, 1024)), true
+	}
+	if about := e.meAbout(); about != "" {
+		me.About, me.HasAbout = b(out.Clip(about, 1024)), true
 	}
 	e.out.Emit(&ev)
 }
@@ -226,8 +229,9 @@ func (e *Engine) unlink() {
 }
 
 // loggedOut ends the session (the phone removed this device, or Unlink):
-// LoggedOut, then a new device that links again. The archive stays, as
-// gocore/store keeps it on unlinking.
+// the archive and the media and avatar caches are cleared, as upstream's
+// on_logged_out does, the lists emptied, LoggedOut, then a new device that
+// links again.
 func (e *Engine) loggedOut() {
 	if e.qrCancel != nil {
 		e.qrCancel()
@@ -243,6 +247,7 @@ func (e *Engine) loggedOut() {
 	clear(e.presence)
 	clear(e.avatars)
 	e.watch = nil
+	e.forgetAccount()
 	e.setStatus(linkTag(abi.LinkStatusTagLoggedOut))
 	e.newClient(e.acct.Devices.NewDevice())
 	if e.started {
@@ -325,4 +330,6 @@ func (e *Engine) connected() {
 	e.emitMe()
 	e.announcePresence()
 	e.retryAvatars()
+	e.announcePinLimit()
+	e.pumpPrefetch()
 }

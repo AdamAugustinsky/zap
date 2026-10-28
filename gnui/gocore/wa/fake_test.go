@@ -3,6 +3,7 @@ package wa
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"strings"
@@ -80,10 +81,12 @@ type fakeClient struct {
 	downloaded                                            []byte
 	picture                                               *types.ProfilePictureInfo
 	pictureBytes                                          []byte
+
+	x *fakeMore // WP4b's answers (fake_more_test.go)
 }
 
 func newFake(linked bool) *fakeClient {
-	f := &fakeClient{pushName: "Ada", lids: map[types.JID]types.JID{}}
+	f := &fakeClient{pushName: "Ada", lids: map[types.JID]types.JID{}, x: newFakeMore()}
 	if linked {
 		f.pn, f.lid = me, meLID
 	}
@@ -264,7 +267,8 @@ func (f *fakeClient) Upload(_ context.Context, data []byte, kind whatsmeow.Media
 	defer f.mu.Unlock()
 	f.uploads = append(f.uploads, kind)
 	f.uploaded = append(f.uploaded, bytes.Clone(data))
-	return whatsmeow.UploadResponse{URL: "https://mmg.example/x", DirectPath: "/v/x", MediaKey: []byte("key"), FileLength: uint64(len(data))}, nil
+	sum := sha256.Sum256(data)
+	return whatsmeow.UploadResponse{URL: "https://mmg.example/x", DirectPath: "/v/x", MediaKey: []byte("key"), FileSHA256: sum[:], FileLength: uint64(len(data))}, nil
 }
 
 func (f *fakeClient) Download(context.Context, whatsmeow.DownloadableMessage) ([]byte, error) {
@@ -398,6 +402,12 @@ func (h *harness) settle() {
 		}
 		time.Sleep(time.Millisecond)
 	}
+	h.drain()
+}
+
+// drain keeps what the Conn queued, without waiting for the engine.
+func (h *harness) drain() {
+	h.t.Helper()
 	if _, err := h.c.Drain(handlerFunc(func(ev *abi.Event) {
 		rec, err := ev.Encode(nil)
 		if err != nil {

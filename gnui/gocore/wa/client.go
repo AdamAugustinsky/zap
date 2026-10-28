@@ -66,11 +66,48 @@ type Client interface {
 	SendAppState(ctx context.Context, patch appstate.PatchInfo) error
 
 	Upload(ctx context.Context, data []byte, kind whatsmeow.MediaType) (whatsmeow.UploadResponse, error)
+	// UploadStickerPack uploads a sticker pack's zip and its thumbnail,
+	// which share one media key.
+	UploadStickerPack(ctx context.Context, zip, thumbnail []byte) (pack, thumb whatsmeow.UploadResponse, err error)
 	Download(ctx context.Context, msg whatsmeow.DownloadableMessage) ([]byte, error)
 	// ProfilePicture is GetProfilePictureInfo: nil, nil when there is none.
 	ProfilePicture(ctx context.Context, jid types.JID, preview bool) (*types.ProfilePictureInfo, error)
 	// Fetch reads an https URL (a profile picture), at most limit bytes.
 	Fetch(ctx context.Context, rawURL string, limit int64) ([]byte, error)
+
+	// Groups.
+	GroupInfo(ctx context.Context, group types.JID) (*types.GroupInfo, error)
+	LeaveGroup(ctx context.Context, group types.JID) error
+	SetGroupName(ctx context.Context, group types.JID, name string) error
+	// SetGroupPhoto sets a group's picture, or with the account's own id
+	// its profile picture; nil jpeg removes it. It returns the picture id.
+	SetGroupPhoto(ctx context.Context, jid types.JID, jpeg []byte) (string, error)
+	// GroupInfoFromLink previews the group an invite code opens.
+	GroupInfoFromLink(ctx context.Context, code string) (*types.GroupInfo, error)
+	// JoinGroupWithLink joins with an invite code; pending is set when the
+	// group's admins must approve the request first.
+	JoinGroupWithLink(ctx context.Context, code string) (group types.JID, pending bool, err error)
+
+	// Contacts, from whatsmeow's contact store.
+	Contacts(ctx context.Context) (map[types.JID]types.ContactInfo, error)
+	Contact(ctx context.Context, user types.JID) (types.ContactInfo, error)
+	PutContactName(ctx context.Context, user types.JID, fullName, firstName string) error
+	IsOnWhatsApp(ctx context.Context, phones []string) ([]types.IsOnWhatsAppResponse, error)
+	UserInfo(ctx context.Context, jids []types.JID) (map[types.JID]types.UserInfo, error)
+
+	// The account.
+	// PrivacySettings fetches the account's privacy settings from WhatsApp.
+	PrivacySettings(ctx context.Context) (*types.PrivacySettings, error)
+	SetPrivacySetting(ctx context.Context, name types.PrivacySettingType, value types.PrivacySetting) (types.PrivacySettings, error)
+	// SetAbout sets the account's About text.
+	SetAbout(ctx context.Context, about string) error
+	// SetProxy routes the connection through a proxy URL (empty: none),
+	// from the next connection on.
+	SetProxy(addr string) error
+
+	// Polls: a vote encrypted for the poll it answers, and decrypted.
+	BuildPollVote(ctx context.Context, poll *types.MessageInfo, options []string) (*waE2E.Message, error)
+	DecryptPollVote(ctx context.Context, vote *events.Message) (*waE2E.PollVoteMessage, error)
 }
 
 // NewClient returns whatsmeow's client over device, named name on the
@@ -105,6 +142,9 @@ func configureDevice(name string) {
 type waClient struct {
 	c    *whatsmeow.Client
 	http *http.Client
+
+	mu    sync.Mutex
+	proxy string // SetProxy's, for the uploads whatsmeow does not make
 }
 
 func (w *waClient) OwnID() (types.JID, types.JID) {
@@ -192,6 +232,85 @@ func (w *waClient) ProfilePicture(ctx context.Context, jid types.JID, preview bo
 		return nil, nil
 	}
 	return info, err
+}
+
+func (w *waClient) GroupInfo(ctx context.Context, group types.JID) (*types.GroupInfo, error) {
+	return w.c.GetGroupInfo(ctx, group)
+}
+
+func (w *waClient) LeaveGroup(ctx context.Context, group types.JID) error {
+	return w.c.LeaveGroup(ctx, group)
+}
+
+func (w *waClient) SetGroupName(ctx context.Context, group types.JID, name string) error {
+	return w.c.SetGroupName(ctx, group, name)
+}
+
+func (w *waClient) SetGroupPhoto(ctx context.Context, jid types.JID, jpeg []byte) (string, error) {
+	return w.c.SetGroupPhoto(ctx, jid, jpeg)
+}
+
+func (w *waClient) GroupInfoFromLink(ctx context.Context, code string) (*types.GroupInfo, error) {
+	return w.c.GetGroupInfoFromLink(ctx, code)
+}
+
+func (w *waClient) JoinGroupWithLink(ctx context.Context, code string) (types.JID, bool, error) {
+	// whatsmeow answers a request waiting for approval with the group's id
+	// too; the preview says whether the group asks for one.
+	info, _ := w.c.GetGroupInfoFromLink(ctx, code)
+	jid, err := w.c.JoinGroupWithLink(ctx, code)
+	return jid, err == nil && info != nil && info.IsJoinApprovalRequired, err
+}
+
+func (w *waClient) Contacts(ctx context.Context) (map[types.JID]types.ContactInfo, error) {
+	return w.c.Store.Contacts.GetAllContacts(ctx)
+}
+
+func (w *waClient) Contact(ctx context.Context, user types.JID) (types.ContactInfo, error) {
+	return w.c.Store.Contacts.GetContact(ctx, user)
+}
+
+func (w *waClient) PutContactName(ctx context.Context, user types.JID, fullName, firstName string) error {
+	return w.c.Store.Contacts.PutContactName(ctx, user, fullName, firstName)
+}
+
+func (w *waClient) IsOnWhatsApp(ctx context.Context, phones []string) ([]types.IsOnWhatsAppResponse, error) {
+	return w.c.IsOnWhatsApp(ctx, phones)
+}
+
+func (w *waClient) UserInfo(ctx context.Context, jids []types.JID) (map[types.JID]types.UserInfo, error) {
+	return w.c.GetUserInfo(ctx, jids)
+}
+
+func (w *waClient) PrivacySettings(ctx context.Context) (*types.PrivacySettings, error) {
+	return w.c.TryFetchPrivacySettings(ctx, true)
+}
+
+func (w *waClient) SetPrivacySetting(ctx context.Context, name types.PrivacySettingType, value types.PrivacySetting) (types.PrivacySettings, error) {
+	return w.c.SetPrivacySetting(ctx, name, value)
+}
+
+func (w *waClient) SetAbout(ctx context.Context, about string) error {
+	return w.c.SetStatusMessage(ctx, types.SetStatusInput{Text: proto.String(about)})
+}
+
+func (w *waClient) SetProxy(addr string) error {
+	w.mu.Lock()
+	w.proxy = addr
+	w.mu.Unlock()
+	if addr == "" {
+		w.c.SetProxy(nil)
+		return nil
+	}
+	return w.c.SetProxyAddress(addr)
+}
+
+func (w *waClient) BuildPollVote(ctx context.Context, poll *types.MessageInfo, options []string) (*waE2E.Message, error) {
+	return w.c.BuildPollVote(ctx, poll, options)
+}
+
+func (w *waClient) DecryptPollVote(ctx context.Context, vote *events.Message) (*waE2E.PollVoteMessage, error) {
+	return w.c.DecryptPollVote(ctx, vote)
 }
 
 func (w *waClient) Fetch(ctx context.Context, rawURL string, limit int64) ([]byte, error) {

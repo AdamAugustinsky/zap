@@ -130,6 +130,8 @@ func (e *Engine) history(evt *events.HistorySync) error {
 			return err
 		}
 		batch := make([]store.Message, 0, 128)
+		var polls []*events.Message
+		var photos []string
 		count := 0
 		var latest store.Message
 		flush := func() error {
@@ -145,10 +147,35 @@ func (e *Engine) history(evt *events.HistorySync) error {
 			if err != nil {
 				continue
 			}
-			m := parseMessage(msg, id, e.canonical(msg.Info.Sender))
+			sender := e.canonical(msg.Info.Sender)
+			if parent, clip, ok := motionClip(unwrap(msg.Message)); ok {
+				if err := flush(); err != nil {
+					return err
+				}
+				if err := e.motionArrived(id, parent, clip); err != nil {
+					return err
+				}
+				continue
+			}
+			m := parseMessage(msg, id, sender)
 			m.Order = int64(item.GetMsgOrderID())
+			e.nameQuote(&m)
 			switch m.Kind {
-			case kindProtocol, kindPollUpdate:
+			case kindProtocol:
+				continue
+			case kindPollUpdate, kindPin:
+				if err := flush(); err != nil {
+					return err
+				}
+				var err error
+				if m.Kind == kindPin {
+					err = e.pinMessage(msg, id, sender)
+				} else {
+					err = e.pollVote(msg)
+				}
+				if err != nil {
+					return err
+				}
 				continue
 			case kindReaction:
 				if err := flush(); err != nil {
@@ -176,6 +203,12 @@ func (e *Engine) history(evt *events.HistorySync) error {
 				}
 				continue
 			}
+			if m.Kind == kindPoll && len(msg.SourceWebMsg.GetPollUpdates()) > 0 {
+				polls = append(polls, msg)
+			}
+			if m.Kind == store.KindImage {
+				photos = append(photos, m.ID)
+			}
 			batch = append(batch, m)
 			count++
 			if m.Timestamp > latest.Timestamp {
@@ -189,6 +222,14 @@ func (e *Engine) history(evt *events.HistorySync) error {
 		}
 		if err := flush(); err != nil {
 			return err
+		}
+		for _, p := range polls {
+			if err := e.pollSnapshots(p, id); err != nil {
+				return err
+			}
+		}
+		for _, photo := range photos {
+			e.pendingMotion(id, photo)
 		}
 		if latest.ID != "" {
 			if err := e.arch.UpdateChat(id, func(c *store.Chat) {
@@ -254,6 +295,7 @@ func (e *Engine) olderFetched(chat string, more, silent bool) {
 	ev := abi.Event{Tag: abi.EventTagOlderFetched}
 	ev.OlderFetched = abi.EventOlderFetched{Chat: b(chat), More: more, Silent: silent}
 	e.out.Emit(&ev)
+	e.pumpPrefetch()
 }
 
 // oldest is the chat's oldest archived message.

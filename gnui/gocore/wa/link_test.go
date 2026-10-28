@@ -47,7 +47,7 @@ func TestOpenListsTheArchiveBeforeStart(t *testing.T) {
 	}
 	h := newHarness(t, options{keys: keys, state: state, cache: cache})
 	evs := h.take()
-	expectTags(t, evs, "Me Chats Drafts")
+	expectTags(t, evs, "Me Chats Labels Drafts Contacts")
 	me := one(t, evs, abi.EventTagMe).Me
 	if string(me.ID) != "15550001111@s.whatsapp.net" || !me.HasLID || string(me.Name) != "Ada" {
 		t.Fatalf("Me: %+v", me)
@@ -71,7 +71,7 @@ func TestOpenListsTheArchiveBeforeStart(t *testing.T) {
 
 func TestLinkingWithAQRCode(t *testing.T) {
 	h := newHarness(t, options{unlinked: true})
-	expectTags(t, h.take(), "Chats Drafts")
+	expectTags(t, h.take(), "Chats Labels Drafts")
 	if err := h.c.Start(); err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +100,7 @@ func TestLinkingWithAQRCode(t *testing.T) {
 	h.f.setConnected(true)
 	h.inject(&events.Connected{})
 	evs = h.take()
-	expectTags(t, evs, "Link Me")
+	expectTags(t, evs, "Link Me PinLimit")
 	if s := linkOf(t, evs[0]); s.Tag != abi.LinkStatusTagConnected {
 		t.Fatalf("connected: %+v", s)
 	}
@@ -146,7 +146,7 @@ func TestConnectionStates(t *testing.T) {
 	}
 	h.f.setConnected(true)
 	h.inject(&events.Connected{})
-	expectTags(t, h.take(), "Link Me")
+	expectTags(t, h.take(), "Link Me PinLimit")
 
 	h.send(abi.Command{Tag: abi.CommandTagSetOnline, SetOnline: abi.CommandSetOnline{Online: true}})
 	h.take()
@@ -200,7 +200,9 @@ func TestLoggedOutLinksAgain(t *testing.T) {
 	old := h.f
 	h.inject(&events.LoggedOut{OnConnect: false, Reason: events.ConnectFailureLoggedOut})
 	evs := h.take()
-	expectTags(t, evs, "Link Link")
+	// The account's lists are emptied with its archive.
+	expectTags(t, evs, "Chats Labels Drafts Link Link")
+	evs = evs[3:]
 	if linkOf(t, evs[0]).Tag != abi.LinkStatusTagLoggedOut || linkOf(t, evs[1]).Tag != abi.LinkStatusTagUnlinked {
 		t.Fatalf("statuses: %+v", evs)
 	}
@@ -219,7 +221,8 @@ func TestUnlink(t *testing.T) {
 	h.start()
 	h.send(abi.Command{Tag: abi.CommandTagUnlink})
 	evs := h.take()
-	expectTags(t, evs, "Link Link")
+	expectTags(t, evs, "Chats Labels Drafts Link Link")
+	evs = evs[3:]
 	if linkOf(t, evs[0]).Tag != abi.LinkStatusTagLoggedOut || h.fakes[0].called("Logout") != 1 || h.fakes[0].called("Forget") != 0 {
 		t.Fatalf("unlink: %s %v", tags(evs), h.fakes[0].calls)
 	}
@@ -273,20 +276,11 @@ func TestWrongKeyFailsTheLink(t *testing.T) {
 	}
 }
 
-func TestDeferredCommandsAreRefused(t *testing.T) {
+func TestCallAndDemoCommandsAreRefused(t *testing.T) {
 	h := newHarness(t, options{})
 	for _, cmd := range []abi.Command{
-		{Tag: abi.CommandTagCreateLabel},
-		{Tag: abi.CommandTagSetStar},
-		{Tag: abi.CommandTagSetMessagePinned},
-		{Tag: abi.CommandTagLeaveGroup},
-		{Tag: abi.CommandTagFetchAccountPrivacy},
-		{Tag: abi.CommandTagRecentStickers},
-		{Tag: abi.CommandTagCreatePoll},
-		{Tag: abi.CommandTagLoadStorageStats},
-		{Tag: abi.CommandTagPickFiles},
-		{Tag: abi.CommandTagSetProxy},
 		{Tag: abi.CommandTagStartCall},
+		{Tag: abi.CommandTagLoadCallLog},
 		{Tag: abi.CommandTagDemoIncoming},
 	} {
 		err := h.c.Send(&cmd)

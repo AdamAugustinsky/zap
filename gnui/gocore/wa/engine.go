@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
+	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -29,30 +30,38 @@ type Options struct {
 	NewClient func(device *wastore.Device) Client
 	// DeviceName is what the phone lists this computer as; empty: "Zap".
 	DeviceName string
+	// Web reads what is not WhatsApp's: GIPHY's search and clips, Signal's
+	// sticker packs. nil: a client with a 30 s timeout over the proxy
+	// SetProxy names. Tests put a local server's here.
+	Web *http.Client
 }
 
-// answers are the commands this engine handles (WP4a). Labels, stars,
-// message pins, groups, contacts, privacy, stickers, GIFs, polls,
-// interactive replies, storage, pickers, settings and calls are refused by
-// the table (ZF_E_STATE) until WP4b.
-var answers = gocore.Answers(
-	// Linking and the connection.
-	abi.CommandTagPairWithPhone, abi.CommandTagUnlink, abi.CommandTagRemoveAccount,
-	abi.CommandTagReconnect, abi.CommandTagSetOnline, abi.CommandTagResumed,
-	// Chats and messages.
-	abi.CommandTagLoadChat, abi.CommandTagLoadUntil, abi.CommandTagFetchOlder, abi.CommandTagReloadHistory,
-	abi.CommandTagEnsureChat, abi.CommandTagSaveDraft, abi.CommandTagComposing,
-	abi.CommandTagMarkRead, abi.CommandTagMarkUnread, abi.CommandTagMarkPlayed, abi.CommandTagWatchReceipts,
-	abi.CommandTagSetArchived, abi.CommandTagSetPinned, abi.CommandTagSetMuted, abi.CommandTagSetFavorite,
-	abi.CommandTagDeleteChat, abi.CommandTagClearChat,
-	// Sending.
-	abi.CommandTagSendText, abi.CommandTagSendLocation, abi.CommandTagSendImage, abi.CommandTagSendFiles,
-	abi.CommandTagSendVoice, abi.CommandTagForward, abi.CommandTagForwardLimit,
-	abi.CommandTagEditText, abi.CommandTagRevoke, abi.CommandTagDeleteLocal, abi.CommandTagReact,
-	// Media and search.
-	abi.CommandTagDownload, abi.CommandTagFetchAvatar,
-	abi.CommandTagSearchMessages, abi.CommandTagSearchChatMessages,
-)
+// answers are the commands this engine handles: every command of the
+// schema but the calls, which WP7's call bridge answers, and the demo's.
+// PickAnswer never reaches an engine (the Conn's broker takes it).
+var answers = func() gocore.Table {
+	var tags []abi.CommandTag
+	for i := range 1 << 10 {
+		tag := abi.CommandTag(i)
+		if tag.String() != "unknown" && !callCommands[tag] && !demoCommands[tag] {
+			tags = append(tags, tag)
+		}
+	}
+	return gocore.Answers(tags...)
+}()
+
+// callCommands are refused (ZF_E_STATE) until WP7.
+var callCommands = map[abi.CommandTag]bool{
+	abi.CommandTagStartCall: true, abi.CommandTagJoinCallLink: true, abi.CommandTagCancelCall: true,
+	abi.CommandTagAnswerCall: true, abi.CommandTagDeclineCall: true, abi.CommandTagHangupCall: true,
+	abi.CommandTagSetCallMuted: true, abi.CommandTagSetCallCamera: true, abi.CommandTagSetCallMicrophone: true,
+	abi.CommandTagSetCallSpeaker: true, abi.CommandTagSetCallCameraDevice: true, abi.CommandTagRefreshCallDevices: true,
+	abi.CommandTagLoadCallLog: true,
+}
+
+var demoCommands = map[abi.CommandTag]bool{
+	abi.CommandTagDemoIncoming: true, abi.CommandTagDemoTyping: true, abi.CommandTagDemoPanic: true,
+}
 
 // Engine is the WhatsApp engine: a gocore.Engine over whatsmeow, the Go
 // archive and whatsmeow's store (gocore/store). One goroutine (run) owns
@@ -78,6 +87,7 @@ type Engine struct {
 	cli      Client
 	gen      uint64 // the client's generation: a new one after a logout
 	cacheDir string
+	stateDir string
 	dead     bool // the account could not open, or was removed
 	started  bool
 
@@ -99,6 +109,29 @@ type Engine struct {
 	failed    map[string]error // the last failed download of a message
 	avatars   map[avatarKey]int
 
+	// WP4b's state.
+	openFailed   bool                 // the account's storage did not open: Reconnect and StartOverArchive try again
+	keepArchived bool                 // SetKeepChatsArchived: a new message leaves an archived chat archived
+	prefetch     bool                 // SetHistoryPrefetch
+	focused      string               // the chat the reader looks at, for the prefetch
+	downloadDir  string               // SetDownloadFolder; "": the media cache
+	proxy        string               // SetProxy
+	stars        map[[2]string]uint64 // a star request in flight, by chat and message: its serial
+	pins         map[[2]string]uint64 // likewise for message pins
+	serial       uint64
+	groupsAsked  map[string]bool    // groups whose info was asked for this session
+	polls        map[[2]string]bool // votes in flight
+	replies      map[[2]string]bool // interactive replies in flight
+	recentHashes map[string]string  // a Recent sticker's file: its hash
+	privacy      map[abi.PrivacyKind]abi.PrivacyChoice
+	giphy        string                 // GIPHY's API, a test server's in the tests
+	signal       string                 // Signal's sticker CDN, likewise
+	stickerTags  map[string]stickerTags // the emojis of sticker files, by path
+	pinLimit     bool                   // PinLimit was announced this session
+	permitted    bool                   // Start came
+	prefetched   map[string]bool        // chats the prefetch filled this session
+	typing       []chatState            // chat states to send, in order
+
 	// Timings, shortened by the tests.
 	syncQuiet     time.Duration
 	olderPatience time.Duration
@@ -116,6 +149,17 @@ func New(opts Options) *Engine {
 		downloads:     map[downloadKey]bool{},
 		failed:        map[string]error{},
 		avatars:       map[avatarKey]int{},
+		stars:         map[[2]string]uint64{},
+		pins:          map[[2]string]uint64{},
+		groupsAsked:   map[string]bool{},
+		polls:         map[[2]string]bool{},
+		replies:       map[[2]string]bool{},
+		recentHashes:  map[string]string{},
+		privacy:       map[abi.PrivacyKind]abi.PrivacyChoice{},
+		giphy:         giphyAPI,
+		signal:        signalCDN,
+		stickerTags:   map[string]stickerTags{},
+		prefetched:    map[string]bool{},
 		syncQuiet:     syncQuiet,
 		olderPatience: olderPatience,
 	}
@@ -133,7 +177,7 @@ const (
 // Name names the engine in its refusals.
 func (e *Engine) Name() string { return "WhatsApp" }
 
-// Accept answers the commands of WP4a; the rest are refused.
+// Accept answers every command but the calls and the demo's.
 func (e *Engine) Accept(cmd *abi.Command) error { return answers.Accept(cmd) }
 
 // Open keeps h and starts the engine's goroutine, which opens the account
@@ -251,16 +295,18 @@ func (e *Engine) shutdown() {
 // archive holds: Me when linked, the chats and the drafts.
 func (e *Engine) open() {
 	state, cache := e.h.AccountDirs()
-	e.cacheDir = cache
+	e.cacheDir, e.stateDir = cache, state
 	keys := e.opts.Keys
 	if keys == nil {
 		keys = store.Keychain(e.h.Config().KeyringService)
 	}
 	acct, err := store.OpenAccount(e.ctx, state, keys, nil)
 	if err != nil {
+		e.openFailed = true
 		e.fail("Could not open this account's archive: " + err.Error())
 		return
 	}
+	e.openFailed = false
 	e.acct, e.arch = acct, acct.Archive
 	device, err := acct.Devices.GetFirstDevice(e.ctx)
 	if err != nil {
@@ -271,8 +317,10 @@ func (e *Engine) open() {
 		slog.Warn("zapfast wa: recovering the outbox", "err", err)
 	}
 	e.newClient(device)
+	e.loadSettings()
 	e.emitMe()
 	e.emitChats()
+	e.emitContacts()
 }
 
 // fail stops the engine for good: the account cannot be used.
@@ -291,6 +339,11 @@ func (e *Engine) newClient(device *wastore.Device) {
 	} else {
 		e.cli = NewClient(device, e.opts.DeviceName)
 	}
+	if e.proxy != "" {
+		if err := e.cli.SetProxy(e.proxy); err != nil {
+			slog.Warn("zapfast wa: the proxy setting was not applied", "err", err)
+		}
+	}
 	e.cli.AddEventHandler(func(evt any) {
 		e.post(func() {
 			if gen == e.gen && !e.dead {
@@ -301,6 +354,7 @@ func (e *Engine) newClient(device *wastore.Device) {
 }
 
 func (e *Engine) start() {
+	e.permitted = true
 	if e.dead || e.started {
 		return
 	}
@@ -311,6 +365,11 @@ func (e *Engine) start() {
 // command handles one command from the UI.
 func (e *Engine) command(cmd *gocore.Command) {
 	if e.dead {
+		// The storage did not open: the reader may try again, or set the
+		// unreadable archive aside.
+		if e.openFailed && (cmd.Tag == abi.CommandTagReconnect || cmd.Tag == abi.CommandTagStartOverArchive) {
+			e.reopen(cmd.Tag == abi.CommandTagStartOverArchive)
+		}
 		return
 	}
 	switch cmd.Tag {
@@ -418,6 +477,8 @@ func (e *Engine) command(cmd *gocore.Command) {
 		e.searchMessages(string(cmd.SearchMessages.Query))
 	case abi.CommandTagSearchChatMessages:
 		e.searchChatMessages(&cmd.SearchChatMessages)
+	default:
+		e.more(cmd)
 	}
 }
 
@@ -476,7 +537,10 @@ func (e *Engine) isMe(id string) bool {
 	return id == pn.String() || id == lid.String()
 }
 
-func (e *Engine) conv() conv { return conv{isMe: e.isMe, state: e.mediaState} }
+func (e *Engine) conv() conv {
+	return conv{isMe: e.isMe, state: e.mediaState, motion: e.motionState, cardState: e.cardState,
+		refreshing: func(chat string) bool { return e.older[chat] != nil }}
+}
 
 // --- emitting ------------------------------------------------------------------
 
@@ -507,7 +571,8 @@ func (e *Engine) chatRow(c store.Chat) abi.Chat {
 	return e.conv().chat(c, last, mention)
 }
 
-// emitChats sends the whole chat list, newest first, then every draft.
+// emitChats sends the whole chat list, newest first, then the labels and
+// every draft, as upstream's emit_chats does.
 func (e *Engine) emitChats() {
 	chats, err := e.arch.Chats()
 	if err != nil {
@@ -518,6 +583,7 @@ func (e *Engine) emitChats() {
 		func(batch uint32, last bool, chunk []abi.Chat) *abi.Event {
 			return &abi.Event{Tag: abi.EventTagChats, Chats: abi.EventChats{Batch: batch, Last: last, Chats: chunk}}
 		})
+	e.emitLabels()
 	var drafts []abi.Draft
 	for _, c := range chats {
 		if text, err := e.arch.Draft(c.ID); err == nil && text != "" {

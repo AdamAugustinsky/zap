@@ -34,8 +34,8 @@ func TestEnsureChatAndDrafts(t *testing.T) {
 	}
 	again := newHarness(t, options{keys: h.keys, state: h.state, cache: h.cache})
 	evs := again.take()
-	expectTags(t, evs, "Me Chats Drafts")
-	d := evs[2].Drafts
+	expectTags(t, evs, "Me Chats Labels Drafts Contacts")
+	d := evs[3].Drafts
 	if !d.Last || len(d.Drafts) != 1 || string(d.Drafts[0].Chat) != peer2.String() || string(d.Drafts[0].Text) != "half a thought" {
 		t.Fatalf("drafts: %+v", d)
 	}

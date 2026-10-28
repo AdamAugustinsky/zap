@@ -7,7 +7,9 @@
 package wa
 
 import (
+	"encoding/json"
 	"math"
+	"net/url"
 	"strings"
 
 	"go.mau.fi/whatsmeow/proto/waE2E"
@@ -37,6 +39,7 @@ const (
 	kindPollUpdate   = "poll-update"
 	kindProtocol     = "protocol"
 	kindDeleted      = "deleted"
+	kindPin          = "pin"
 	kindViewOnce     = "view-once"
 	kindUnsupported  = "unsupported"
 )
@@ -98,11 +101,16 @@ func parseDepth(e *events.Message, chat, sender string, depth int) store.Message
 			m.Status = "failed"
 		}
 	}
+	// Business messages come wrapped as view-once ones: their cards are
+	// not once-media.
+	if inner := viewOnceInner(p); inner != nil && isInteractive(inner) {
+		p = inner
+	}
 	if raw, err := proto.Marshal(p); err == nil {
 		m.Raw = raw
 	}
 	var ctx *waE2E.ContextInfo
-	if e.IsViewOnce || p.GetViewOnceMessage() != nil || p.GetViewOnceMessageV2() != nil || p.GetViewOnceMessageV2Extension() != nil {
+	if !isInteractive(p) && (e.IsViewOnce || viewOnceInner(p) != nil) {
 		m.Kind = kindViewOnce
 		m.Text = viewOnceKind(p)
 		m.Raw = nil
@@ -245,9 +253,26 @@ func parseDepth(e *events.Message, chat, sender string, depth int) store.Message
 		}
 	case p.GetInteractiveMessage() != nil:
 		x := p.GetInteractiveMessage()
-		m.Kind = kindInteractive
-		m.Text = x.GetBody().GetText()
+		parseInteractive(&m, x)
 		ctx = x.GetContextInfo()
+	case p.GetButtonsResponseMessage() != nil:
+		x := p.GetButtonsResponseMessage()
+		m.Kind, m.Text = kindText, x.GetSelectedDisplayText()
+		ctx = x.GetContextInfo()
+	case p.GetListResponseMessage() != nil:
+		x := p.GetListResponseMessage()
+		m.Kind, m.Text = kindText, x.GetTitle()
+		ctx = x.GetContextInfo()
+	case p.GetTemplateButtonReplyMessage() != nil:
+		x := p.GetTemplateButtonReplyMessage()
+		m.Kind, m.Text = kindText, x.GetSelectedDisplayText()
+		ctx = x.GetContextInfo()
+	case p.GetInteractiveResponseMessage() != nil:
+		x := p.GetInteractiveResponseMessage()
+		m.Kind, m.Text = kindText, x.GetBody().GetText()
+		ctx = x.GetContextInfo()
+	case p.GetPinInChatMessage() != nil:
+		m.Kind = kindPin
 	case p.GetReactionMessage() != nil:
 		m.Kind = kindReaction
 		m.Text = p.GetReactionMessage().GetText()
@@ -294,7 +319,12 @@ func parseDepth(e *events.Message, chat, sender string, depth int) store.Message
 			if depth < 8 {
 				quoted = parseDepth(q, chat, ctx.GetParticipant(), depth+1)
 			}
-			m.Quote = &store.Quote{ID: ctx.GetStanzaID(), Sender: ctx.GetParticipant(), Text: quoted.Text, Kind: quoted.Kind}
+			m.Quote = &store.Quote{ID: ctx.GetStanzaID(), Sender: ctx.GetParticipant(), Text: quoted.Text, Kind: quoted.Kind, Mentions: quoted.Mentions}
+			if remote := ctx.GetRemoteJID(); remote != "" {
+				if j, err := types.ParseJID(remote); err == nil && j.ToNonAD().String() != chat {
+					m.Quote.Chat = j.ToNonAD().String()
+				}
+			}
 		}
 		for _, jid := range ctx.GetMentionedJID() {
 			if len(m.Mentions) == mentionsMax {
@@ -322,6 +352,23 @@ func mentionOf(jid string) store.Mention {
 		return store.Mention{User: jid, ID: jid}
 	}
 	return store.Mention{User: j.User, ID: j.ToNonAD().String()}
+}
+
+// viewOnceInner is what a view-once wrapper holds, nil for none.
+func viewOnceInner(p *waE2E.Message) *waE2E.Message {
+	switch {
+	case p.GetViewOnceMessage() != nil:
+		return p.GetViewOnceMessage().GetMessage()
+	case p.GetViewOnceMessageV2() != nil:
+		return p.GetViewOnceMessageV2().GetMessage()
+	case p.GetViewOnceMessageV2Extension() != nil:
+		return p.GetViewOnceMessageV2Extension().GetMessage()
+	}
+	return nil
+}
+
+func isInteractive(p *waE2E.Message) bool {
+	return p.GetInteractiveMessage() != nil || p.GetButtonsMessage() != nil || p.GetListMessage() != nil || p.GetTemplateMessage() != nil
 }
 
 // viewOnceKind records which once-media a view-once message held, for
@@ -360,6 +407,147 @@ func parsePoll(m *store.Message, p *waE2E.PollCreationMessage) {
 	for _, option := range p.GetOptions() {
 		m.Poll = append(m.Poll, store.PollOption{Name: option.GetOptionName()})
 	}
+}
+
+// parseInteractive reads a native-flow message: its body, its header
+// picture, its reply, list, copy and link buttons, and a carousel's cards
+// (from zapfast-go 3104c46 internal/backend/interactive.go, MIT).
+func parseInteractive(m *store.Message, im *waE2E.InteractiveMessage) {
+	m.Kind = kindInteractive
+	m.Text = im.GetBody().GetText()
+	if t := im.GetHeader().GetTitle(); t != "" && m.Text == "" {
+		m.Text = t
+	}
+	m.Media = interactiveMedia(im)
+	for i, c := range nativeChoices(im) {
+		m.Actions = append(m.Actions, store.InteractiveAction{Label: c.label, Kind: c.kind, Value: c.value, Index: i, Group: c.group, Description: c.description})
+	}
+	for _, card := range im.GetCarouselMessage().GetCards() {
+		if len(m.Cards) >= 10 {
+			break
+		}
+		view := store.InteractiveCard{Title: card.GetHeader().GetTitle(), Text: card.GetBody().GetText(), Media: interactiveMedia(card)}
+		for i, c := range nativeChoices(card) {
+			kind := c.kind
+			if kind != "url" && kind != "copy" {
+				// A card's reply goes from the phone.
+				kind = "unavailable"
+			}
+			view.Actions = append(view.Actions, store.InteractiveAction{Label: c.label, Kind: kind, Value: c.value, Index: i, Group: c.group, Description: c.description})
+		}
+		m.Cards = append(m.Cards, view)
+	}
+}
+
+func interactiveMedia(im *waE2E.InteractiveMessage) *store.Media {
+	header := im.GetHeader()
+	var md *store.Media
+	switch {
+	case header.GetImageMessage() != nil:
+		x := header.GetImageMessage()
+		md = &store.Media{MIME: x.GetMimetype(), Size: x.GetFileLength(), Width: x.GetWidth(), Height: x.GetHeight(), Thumbnail: x.GetJPEGThumbnail()}
+	case header.GetVideoMessage() != nil:
+		x := header.GetVideoMessage()
+		md = &store.Media{MIME: x.GetMimetype(), Size: x.GetFileLength(), Width: x.GetWidth(), Height: x.GetHeight(), Seconds: x.GetSeconds(), Thumbnail: x.GetJPEGThumbnail()}
+	case header.GetDocumentMessage() != nil:
+		x := header.GetDocumentMessage()
+		md = &store.Media{MIME: x.GetMimetype(), Name: x.GetFileName(), Size: x.GetFileLength(), Thumbnail: x.GetJPEGThumbnail()}
+	}
+	if md != nil && len(md.Thumbnail) > thumbnailMax {
+		md.Thumbnail = nil
+	}
+	return md
+}
+
+type nativeChoice struct{ label, id, kind, value, group, description string }
+
+// nativeChoices are a native-flow message's buttons this app can show:
+// quick replies, a single-select list's rows, copy codes and web links.
+func nativeChoices(im *waE2E.InteractiveMessage) []nativeChoice {
+	var out []nativeChoice
+	for _, button := range im.GetNativeFlowMessage().GetButtons() {
+		if len(button.GetButtonParamsJSON()) > 65536 {
+			continue
+		}
+		var params struct {
+			ID       string `json:"id"`
+			Display  string `json:"display_text"`
+			Copy     string `json:"copy_code"`
+			URL      string `json:"url"`
+			Sections []struct {
+				Title string `json:"title"`
+				Rows  []struct {
+					ID          string `json:"id"`
+					Title       string `json:"title"`
+					Description string `json:"description"`
+				} `json:"rows"`
+			} `json:"sections"`
+		}
+		if json.Unmarshal([]byte(button.GetButtonParamsJSON()), &params) != nil {
+			continue
+		}
+		switch button.GetName() {
+		case "quick_reply":
+			if params.ID != "" && params.Display != "" {
+				out = append(out, nativeChoice{label: params.Display, id: params.ID, kind: "native-reply"})
+			}
+		case "single_select":
+			for _, section := range params.Sections {
+				for _, row := range section.Rows {
+					if row.ID != "" && row.Title != "" && len(out) < 256 {
+						out = append(out, nativeChoice{label: row.Title, id: row.ID, kind: "native-list", group: section.Title, description: row.Description})
+					}
+				}
+			}
+		case "cta_copy":
+			if params.Copy != "" {
+				out = append(out, nativeChoice{label: params.Display, kind: "copy", value: params.Copy})
+			}
+		case "cta_url":
+			if safeURL(params.URL) {
+				out = append(out, nativeChoice{label: params.Display, kind: "url", value: params.URL})
+			}
+		}
+	}
+	return out
+}
+
+// safeURL is a web address with a host and no credentials.
+func safeURL(raw string) bool {
+	u, err := url.Parse(raw)
+	return err == nil && u.Host != "" && (u.Scheme == "http" || u.Scheme == "https") && u.User == nil
+}
+
+// motionClip is the video half of a motion photo that arrived as a message
+// of its own: the photo's id and the clip as a bare video message, as
+// upstream's motion_clip finds them.
+func motionClip(p *waE2E.Message) (string, []byte, bool) {
+	child := p.GetAssociatedChildMessage().GetMessage()
+	if child == nil {
+		return "", nil, false
+	}
+	isMotion := func(m *waE2E.Message) bool {
+		return m.GetMessageContextInfo().GetMessageAssociation().GetAssociationType() == waE2E.MessageAssociation_MOTION_PHOTO
+	}
+	if !isMotion(p) && !isMotion(child) && child.GetVideoMessage().GetContextInfo().GetPairedMediaType() != waE2E.ContextInfo_MOTION_PHOTO_CHILD {
+		return "", nil, false
+	}
+	video := child.GetVideoMessage()
+	if video == nil {
+		return "", nil, false
+	}
+	parent := p.GetMessageContextInfo().GetMessageAssociation().GetParentMessageKey().GetID()
+	if parent == "" {
+		parent = child.GetMessageContextInfo().GetMessageAssociation().GetParentMessageKey().GetID()
+	}
+	if parent == "" {
+		return "", nil, false
+	}
+	raw, err := proto.Marshal(&waE2E.Message{VideoMessage: video})
+	if err != nil {
+		return "", nil, false
+	}
+	return parent, raw, true
 }
 
 func clonePointer[T any](value *T) *T {

@@ -210,7 +210,9 @@ func (e *Engine) store(m store.Message) bool {
 		if m.Timestamp >= c.LastActivity {
 			c.LastActivity, c.Preview = m.Timestamp, summary(m)
 		}
-		c.Archived = false
+		if !e.keepArchived {
+			c.Archived = false
+		}
 	}); err != nil {
 		slog.Warn("zapfast wa: updating a chat", "err", err)
 	}
@@ -327,6 +329,11 @@ type upload struct {
 	seconds uint32
 	wave    []byte
 	ptt     bool
+	// sticker sends an image as a sticker (animated: an animated one), gif
+	// a video as a looping GIF.
+	sticker  bool
+	animated bool
+	gif      bool
 }
 
 // message is the media message of an upload, with its caption.
@@ -335,6 +342,12 @@ func (u *upload) message(caption string) *waE2E.Message {
 	var capt *string
 	if caption != "" {
 		capt = proto.String(caption)
+	}
+	switch {
+	case u.sticker:
+		return &waE2E.Message{StickerMessage: &waE2E.StickerMessage{URL: proto.String(r.URL), DirectPath: proto.String(r.DirectPath), MediaKey: r.MediaKey, FileEncSHA256: r.FileEncSHA256, FileSHA256: r.FileSHA256, FileLength: proto.Uint64(r.FileLength), Mimetype: proto.String(u.mime), Width: nonzero(u.width), Height: nonzero(u.height), IsAnimated: proto.Bool(u.animated)}}
+	case u.gif:
+		return &waE2E.Message{VideoMessage: &waE2E.VideoMessage{URL: proto.String(r.URL), DirectPath: proto.String(r.DirectPath), MediaKey: r.MediaKey, FileEncSHA256: r.FileEncSHA256, FileSHA256: r.FileSHA256, FileLength: proto.Uint64(r.FileLength), Mimetype: proto.String(u.mime), Caption: capt, Width: nonzero(u.width), Height: nonzero(u.height), GifPlayback: proto.Bool(true)}}
 	}
 	switch u.kind {
 	case whatsmeow.MediaImage:
@@ -356,10 +369,10 @@ func nonzero(n uint32) *uint32 {
 
 // sendUpload uploads on a job, then stores and sends the message: the
 // caption, mentions and quote given, and the attachment kept in the cache.
-func (e *Engine) sendUpload(chat string, j types.JID, prepare func() (*upload, error), caption string, ctx *waE2E.ContextInfo, mentions []string, what string) {
+func (e *Engine) sendUpload(chat string, j types.JID, prepare func(ctx context.Context) (*upload, error), caption string, ctx *waE2E.ContextInfo, mentions []string, what string) {
 	cli, gen := e.cli, e.gen
 	e.job(func(c context.Context) func() {
-		u, err := prepare()
+		u, err := prepare(c)
 		if err == nil {
 			u.resp, err = cli.Upload(c, u.data, u.kind)
 		}
@@ -396,7 +409,7 @@ func (e *Engine) sendImage(c *abi.CommandSendImage, rgba []byte) {
 		return
 	}
 	mentions := e.mentioned(strs(c.Mentions))
-	e.sendUpload(string(c.Chat), j, func() (*upload, error) {
+	e.sendUpload(string(c.Chat), j, func(context.Context) (*upload, error) {
 		data, err := encodeRGBA(rgba, int(w), int(h), jpegQuality)
 		if err != nil {
 			return nil, err
@@ -426,7 +439,7 @@ func (e *Engine) sendFiles(c *abi.CommandSendFiles) {
 			quote, names = nil, nil
 		}
 		documents := c.Documents
-		e.sendUpload(string(c.Chat), j, func() (*upload, error) { return readFile(path, documents) }, caption, quote, names, "file")
+		e.sendUpload(string(c.Chat), j, func(context.Context) (*upload, error) { return readFile(path, documents) }, caption, quote, names, "file")
 	}
 }
 
@@ -479,7 +492,7 @@ func (e *Engine) sendVoice(c *abi.CommandSendVoice, pcm []byte) {
 	if !ok {
 		return
 	}
-	e.sendUpload(string(c.Chat), j, func() (*upload, error) {
+	e.sendUpload(string(c.Chat), j, func(context.Context) (*upload, error) {
 		samples, err := av.SamplesFromPCM(pcm)
 		if err != nil {
 			return nil, err

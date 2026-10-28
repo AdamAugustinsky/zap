@@ -16,6 +16,7 @@ import (
 	_ "image/gif" // pictures sent as files
 	"image/jpeg"
 	_ "image/png"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -57,14 +58,25 @@ type avatarKey struct {
 }
 
 // mediaState is a message's attachment state: downloading, failed, idle.
-func (e *Engine) mediaState(chat, id string) abi.MediaState {
-	if e.downloads[downloadKey{chat, id, -1}] {
+func (e *Engine) mediaState(chat, id string) abi.MediaState { return e.cardState(chat, id, -1) }
+
+// cardState is the state of a message's attachment (card -1) or of one
+// carousel card's picture.
+func (e *Engine) cardState(chat, id string, card int) abi.MediaState {
+	if e.downloads[downloadKey{chat, id, card}] {
 		return abi.MediaState{Tag: abi.MediaStateTagDownloading}
 	}
-	if err := e.failed[chat+"\x00"+id]; err != nil {
+	if err := e.failed[failKey(chat, id, card)]; err != nil {
 		return failedState(err)
 	}
 	return abi.MediaState{Tag: abi.MediaStateTagIdle}
+}
+
+func failKey(chat, id string, card int) string {
+	if card < 0 {
+		return chat + "\x00" + id
+	}
+	return fmt.Sprintf("%s\x00%s\x00%d", chat, id, card)
 }
 
 func cacheName(parts ...string) string {
@@ -96,7 +108,26 @@ func extension(mime string) string {
 
 // keepMedia writes an attachment into the account's media cache.
 func (e *Engine) keepMedia(chat, id, mime string, data []byte) (string, error) {
-	dir := filepath.Join(e.cacheDir, "media")
+	return keepMediaIn(e.mediaCache(), chat, id, mime, data)
+}
+
+// mediaCache is the account's media cache folder.
+func (e *Engine) mediaCache() string { return filepath.Join(e.cacheDir, "media") }
+
+// downloadFolder is where downloads go: the folder SetDownloadFolder
+// named, or the media cache when there is none or it cannot be made, as
+// upstream's download_dir.
+func (e *Engine) downloadFolder() string {
+	if e.downloadDir != "" {
+		if err := os.MkdirAll(e.downloadDir, 0o700); err == nil {
+			return e.downloadDir
+		}
+		slog.Warn("zapfast wa: the download folder is unavailable; using the cache")
+	}
+	return e.mediaCache()
+}
+
+func keepMediaIn(dir, chat, id, mime string, data []byte) (string, error) {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return "", err
 	}
@@ -193,7 +224,7 @@ func (e *Engine) download(chat, id string, card int, manual bool) {
 		mime = m.Media.MIME
 	}
 	e.downloads[key] = true
-	delete(e.failed, chat+"\x00"+id)
+	delete(e.failed, failKey(chat, id, card))
 	if card < 0 {
 		e.emitMessage(chat, id)
 	}
@@ -214,7 +245,7 @@ func (e *Engine) download(chat, id string, card int, manual bool) {
 				if card >= 0 {
 					name = fmt.Sprintf("%s/card:%d", id, card)
 				}
-				path, err = e.keepMedia(chat, name, mime, data)
+				path, err = keepMediaIn(e.downloadFolder(), chat, name, mime, data)
 			}
 			e.downloaded(key, path, err)
 		}
@@ -225,15 +256,18 @@ func (e *Engine) download(chat, id string, card int, manual bool) {
 // failure.
 func (e *Engine) downloaded(key downloadKey, path string, err error) {
 	delete(e.downloads, key)
-	if err == nil && key.card < 0 {
+	if err == nil {
 		err = e.arch.UpdateMessage(key.chat, key.id, func(m *store.Message) {
-			if m.Media != nil {
+			switch {
+			case key.card < 0 && m.Media != nil:
 				m.Media.Path = path
+			case key.card >= 0 && key.card < len(m.Cards) && m.Cards[key.card].Media != nil:
+				m.Cards[key.card].Media.Path = path
 			}
 		})
 	}
-	if err != nil && key.card < 0 {
-		e.failed[key.chat+"\x00"+key.id] = err
+	if err != nil {
+		e.failed[failKey(key.chat, key.id, key.card)] = err
 	}
 	ev := abi.Event{Tag: abi.EventTagMedia}
 	ev.Media = abi.EventMedia{Chat: b(key.chat), Message: b(key.id), Result: pathResult(path, err)}

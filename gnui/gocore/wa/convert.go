@@ -22,8 +22,21 @@ import (
 // conv is what a conversion needs from the engine: who the account is,
 // and the transient state of a message's attachment.
 type conv struct {
-	isMe  func(id string) bool
-	state func(chat, id string) abi.MediaState
+	isMe   func(id string) bool
+	state  func(chat, id string) abi.MediaState
+	motion func(chat, id string) abi.MediaState
+	// refreshing reports whether a chat's history is being asked for, which
+	// a poll's refresh waits on.
+	refreshing func(chat string) bool
+	// cardState is a carousel card's picture's.
+	cardState func(chat, id string, card int) abi.MediaState
+}
+
+func (cv conv) motionState(chat, id string) abi.MediaState {
+	if cv.motion == nil {
+		return abi.MediaState{Tag: abi.MediaStateTagIdle}
+	}
+	return cv.motion(chat, id)
 }
 
 func b(s string) []byte { return []byte(s) }
@@ -148,7 +161,53 @@ func (cv conv) chat(c store.Chat, last *store.Message, mention string) abi.Chat 
 	if mention != "" {
 		x.UnreadMention, x.HasUnreadMention = b(mention), true
 	}
+	if kind == abi.ChatKindGroup && c.Description != nil {
+		x.GroupDescription, x.HasGroupDescription = b(out.Clip(*c.Description, 8192)), true
+	}
+	if c.Sound != nil {
+		x.NotificationSound, x.HasNotificationSound = soundToABI(*c.Sound)
+	}
 	return x
+}
+
+// soundToABI is a chat's stored sound as the schema's; a custom sound
+// whose path cannot be carried is left off.
+func soundToABI(s store.Sound) (abi.NotificationSound, bool) {
+	var n abi.NotificationSound
+	switch s.Kind {
+	case "receive":
+		n.Tag = abi.NotificationSoundTagReceive
+	case "alert":
+		n.Tag = abi.NotificationSoundTagAlert
+	case "system":
+		n.Tag = abi.NotificationSoundTagSystem
+	case "none":
+		n.Tag = abi.NotificationSoundTagNone
+	case "custom":
+		if s.Path == "" || len(s.Path) > 4096 {
+			return n, false
+		}
+		n.Tag = abi.NotificationSoundTagCustom
+		n.Custom.Path = b(s.Path)
+	default:
+		return n, false
+	}
+	return n, true
+}
+
+// soundFromABI is SetChatSound's sound as the archive keeps it.
+func soundFromABI(n abi.NotificationSound) store.Sound {
+	switch n.Tag {
+	case abi.NotificationSoundTagAlert:
+		return store.Sound{Kind: "alert"}
+	case abi.NotificationSoundTagSystem:
+		return store.Sound{Kind: "system"}
+	case abi.NotificationSoundTagNone:
+		return store.Sound{Kind: "none"}
+	case abi.NotificationSoundTagCustom:
+		return store.Sound{Kind: "custom", Path: string(n.Custom.Path)}
+	}
+	return store.Sound{Kind: "receive"}
 }
 
 func (cv conv) lastMessage(m store.Message) abi.LastMessage {
@@ -173,7 +232,7 @@ func (cv conv) message(r *out.Record, m store.Message) abi.Message {
 		Sender:    b(m.Sender),
 		FromMe:    m.FromMe,
 		Timestamp: m.Timestamp,
-		Content:   cv.content(m),
+		Content:   cv.content(r, m),
 		Status:    delivery(m.Status, m.FromMe),
 		Edited:    m.Edited && !m.Deleted,
 		Forwarded: m.Forwarded,
@@ -198,8 +257,17 @@ func (cv conv) message(r *out.Record, m store.Message) abi.Message {
 			Sender:  b(q.Sender),
 			Summary: b(out.Clip(summary(store.Message{Kind: q.Kind, Text: q.Text}), 1024)),
 		}, true
-		if cv.isMe(q.Sender) {
+		switch {
+		case cv.isMe(q.Sender):
 			x.Quoted.SenderName, x.Quoted.HasSenderName = b("You"), true
+		case q.SenderName != "":
+			x.Quoted.SenderName, x.Quoted.HasSenderName = b(out.Clip(q.SenderName, 1024)), true
+		}
+		if q.Chat != "" && q.Chat != m.ChatID {
+			x.Quoted.Chat, x.Quoted.HasChat = b(q.Chat), true
+		}
+		for _, mention := range q.Mentions[:min(len(q.Mentions), mentionsMax)] {
+			x.Quoted.Mentions = append(x.Quoted.Mentions, abi.MentionRef{User: b(mention.User), ID: b(mention.ID)})
 		}
 	}
 	// A message in a large group can hold more reactions than the bound;
@@ -247,8 +315,9 @@ func seconds(m store.Message) (uint32, bool) {
 	return m.Media.Seconds, true
 }
 
-// content is dto.rs content() over the archive's kinds.
-func (cv conv) content(m store.Message) abi.Content {
+// content is dto.rs content() over the archive's kinds; a card's
+// thumbnails become event blobs of r.
+func (cv conv) content(r *out.Record, m store.Message) abi.Content {
 	var c abi.Content
 	if m.Deleted || m.Kind == kindDeleted {
 		c.Tag = abi.ContentTagRevoked
@@ -272,13 +341,20 @@ func (cv conv) content(m store.Message) abi.Content {
 	case kindInteractive:
 		c.Tag = abi.ContentTagInteractive
 		c.Interactive.Text = b(m.Text)
-		if card, ok := interactiveCard(m); ok {
+		if card, ok := cv.interactiveCard(r, m); ok {
 			c.Interactive.Card, c.Interactive.HasCard = card, true
 		}
 	case store.KindImage:
 		c.Tag = abi.ContentTagImage
 		c.Image.Caption, c.Image.HasCaption = caption(m.Text)
 		c.Image.Media = cv.media(m)
+		if mo := m.Motion; mo != nil {
+			c.Image.HasMotion = true
+			c.Image.Motion.State = cv.motionState(m.ChatID, m.ID)
+			if mo.Path != "" {
+				c.Image.Motion.Path, c.Image.Motion.HasPath = b(mo.Path), true
+			}
+		}
 	case store.KindVideo, kindVideoNote:
 		c.Tag = abi.ContentTagVideo
 		c.Video.Caption, c.Video.HasCaption = caption(m.Text)
@@ -345,7 +421,7 @@ func (cv conv) content(m store.Message) abi.Content {
 	case kindPoll:
 		c.Tag = abi.ContentTagPoll
 		c.Poll.Question = b(m.Text)
-		c.Poll.State = pollState(m)
+		c.Poll.State = cv.pollState(m)
 		for _, o := range m.Poll[:min(len(m.Poll), 12)] {
 			c.Poll.Options = append(c.Poll.Options, b(o.Name))
 		}
@@ -374,19 +450,42 @@ func (cv conv) content(m store.Message) abi.Content {
 	return c
 }
 
-func pollState(m store.Message) abi.PollState {
-	s := abi.PollState{Selectable: uint64(max(m.PollSelectable, 0)), HistoryComplete: m.PollHistoryComplete, CanVote: true}
-	voters := map[string]bool{}
+// pollState is a poll's counts and who voted for what (each voter once,
+// newest vote first, as the votes were counted).
+func (cv conv) pollState(m store.Message) abi.PollState {
+	s := abi.PollState{Selectable: uint64(max(m.PollSelectable, 0)), HistoryComplete: m.PollHistoryComplete, CanVote: true, RefreshNeeded: !m.PollHistoryComplete && !m.FromMe}
+	if cv.refreshing != nil {
+		s.Refreshing = cv.refreshing(m.ChatID)
+	}
+	type voter struct {
+		at      int64
+		choices []uint64
+	}
+	voters := map[string]*voter{}
+	var order []string
 	for i, o := range m.Poll[:min(len(m.Poll), 12)] {
 		s.Counts = append(s.Counts, uint64(max(o.Votes, 0)))
 		if o.Selected {
 			s.Selected = append(s.Selected, uint64(i))
 		}
-		for _, v := range o.Voters {
-			voters[v] = true
+		for k, v := range o.Voters {
+			x := voters[v]
+			if x == nil {
+				x = &voter{}
+				voters[v] = x
+				order = append(order, v)
+			}
+			if k < len(o.VoterTimes) {
+				x.at = max(x.at, o.VoterTimes[k])
+			}
+			x.choices = append(x.choices, uint64(i))
 		}
 	}
 	s.Voters = uint64(len(voters))
+	for _, id := range order[:min(len(order), 256)] {
+		v := voters[id]
+		s.Votes = append(s.Votes, abi.PollVoter{ID: b(id), FromMe: cv.isMe(id), Timestamp: v.at, Choices: v.choices})
+	}
 	return s
 }
 
@@ -412,45 +511,122 @@ func callStatus(s string) abi.CallStatus {
 	return abi.CallStatusAnswered
 }
 
-// interactiveCard is the card of a buttons, list or template message: its
-// reply buttons, its links, and a list's rows as one Select button.
-func interactiveCard(m store.Message) (abi.InteractiveCard, bool) {
-	if len(m.Actions) == 0 {
+// interactiveCard is the card of a buttons, list, template or native-flow
+// message: its reply buttons, its links and copy codes, a list's rows as
+// one Select button, its header picture, and a carousel's cards.
+func (cv conv) interactiveCard(r *out.Record, m store.Message) (abi.InteractiveCard, bool) {
+	if len(m.Actions) == 0 && len(m.Cards) == 0 && m.Media == nil {
 		return abi.InteractiveCard{}, false
 	}
-	card := abi.InteractiveCard{Body: b(m.Text)}
+	card := abi.InteractiveCard{Body: b(out.Clip(m.Text, 16384)), Buttons: cardButtons(m.Actions, 10)}
+	if m.Media != nil {
+		card.Image, card.HasImage = cv.media(m), true
+		if len(m.Media.Thumbnail) > 0 && r != nil {
+			card.Thumbnail, card.HasThumbnail = r.Blob(m.Media.Thumbnail), true
+		}
+	}
+	for i, c := range m.Cards[:min(len(m.Cards), 10)] {
+		x := abi.CarouselCard{Body: b(out.Clip(strings.TrimSpace(c.Title+"\n"+c.Text), 2048)), Buttons: cardButtons(c.Actions, 2)}
+		if c.Media != nil {
+			x.Image, x.HasImage = cv.cardMedia(m, i, c.Media), true
+			if len(c.Media.Thumbnail) > 0 && r != nil {
+				x.Thumbnail, x.HasThumbnail = r.Blob(c.Media.Thumbnail), true
+			}
+		}
+		// A card with no button this app can carry out still opens on
+		// the phone.
+		x.NeedsPhone = len(c.Actions) > 0 && len(x.Buttons) == 0
+		card.Carousel = append(card.Carousel, x)
+	}
+	card.NeedsPhone = len(card.Buttons) == 0 && len(card.Carousel) == 0 && len(m.Actions) > 0
+	return card, true
+}
+
+// cardMedia is a carousel card's picture, with its own download's state.
+func (cv conv) cardMedia(m store.Message, card int, md *store.Media) abi.Media {
+	x := abi.Media{Mime: b(md.MIME), Size: md.Size, State: abi.MediaState{Tag: abi.MediaStateTagIdle}}
+	if cv.cardState != nil {
+		x.State = cv.cardState(m.ChatID, m.ID, card)
+	}
+	if md.Width > 0 {
+		x.Width, x.HasWidth = md.Width, true
+	}
+	if md.Height > 0 {
+		x.Height, x.HasHeight = md.Height, true
+	}
+	if md.Path != "" {
+		x.Path, x.HasPath = b(md.Path), true
+	}
+	return x
+}
+
+// cardButtons are actions as at most limit buttons: replies, links and
+// copy codes in order, then a list's rows as one Select button.
+func cardButtons(actions []store.InteractiveAction, limit int) []abi.InteractiveButton {
+	var buttons []abi.InteractiveButton
 	var list abi.InteractiveButton
-	for _, a := range m.Actions {
+	for _, a := range actions {
 		switch a.Kind {
-		case "list":
+		case "list", "native-list":
 			if len(list.Action.Select.Options) < 10 {
 				list.Action.Select.Options = append(list.Action.Select.Options, abi.InteractiveOption{Section: b(out.Clip(a.Group, 128)), Title: b(out.Clip(a.Label, 128)), Description: b(out.Clip(a.Description, 384))})
 			}
 			continue
 		}
-		if len(card.Buttons) == 10 {
+		if len(buttons) == limit {
 			continue
 		}
 		bt := abi.InteractiveButton{Label: b(out.Clip(a.Label, 128))}
 		switch a.Kind {
-		case "reply", "template-reply":
+		case "reply", "template-reply", "native-reply":
 			bt.Action.Tag = abi.InteractiveActionTagReply
 		case "url":
-			if len(a.Value) <= 1024 {
-				bt.URL, bt.HasURL = b(a.Value), true
+			if len(a.Value) > 1024 {
+				continue
 			}
+			bt.URL, bt.HasURL = b(a.Value), true
+		case "copy":
+			if len(a.Value) > 1024 {
+				continue
+			}
+			bt.Action.Tag = abi.InteractiveActionTagCopy
+			bt.Action.Copy.Code = b(a.Value)
 		}
-		card.Buttons = append(card.Buttons, bt)
+		buttons = append(buttons, bt)
 	}
-	if len(list.Action.Select.Options) > 0 && len(card.Buttons) < 10 {
+	if len(list.Action.Select.Options) > 0 && len(buttons) < limit {
 		list.Label = b("Select")
 		list.Action.Tag = abi.InteractiveActionTagSelect
-		card.Buttons = append(card.Buttons, list)
+		buttons = append(buttons, list)
 	}
-	if len(card.Body) > 16384 {
-		card.Body = b(out.Clip(m.Text, 16384))
+	return buttons
+}
+
+// replyIndex is the action a pressed button (and a Select's choice) stands
+// for, as cardButtons laid them out: its Index in the original message.
+func replyIndex(actions []store.InteractiveAction, button int, choice int) (store.InteractiveAction, bool) {
+	var buttons []store.InteractiveAction
+	var list []store.InteractiveAction
+	for _, a := range actions {
+		switch a.Kind {
+		case "list", "native-list":
+			if len(list) < 10 {
+				list = append(list, a)
+			}
+			continue
+		}
+		if len(buttons) == 10 || (a.Kind == "url" || a.Kind == "copy") && len(a.Value) > 1024 {
+			continue
+		}
+		buttons = append(buttons, a)
 	}
-	return card, true
+	if button < len(buttons) {
+		return buttons[button], choice < 0
+	}
+	if button == len(buttons) && len(list) > 0 && choice >= 0 && choice < len(list) {
+		return list[choice], true
+	}
+	return store.InteractiveAction{}, false
 }
 
 // summary is upstream's Content::summary: the line a chat row and a quote
@@ -467,8 +643,16 @@ func summary(m store.Message) string {
 		return deletedText
 	}
 	switch m.Kind {
-	case kindText, kindInteractive:
+	case kindText:
 		return firstOf(m.Text)
+	case kindInteractive:
+		if t := firstOf(m.Text); t != "" {
+			return t
+		}
+		if len(m.Cards) > 0 {
+			return firstOf(strings.TrimSpace(m.Cards[0].Title + "\n" + m.Cards[0].Text))
+		}
+		return "Interactive message"
 	case store.KindImage:
 		return withCaption("Photo")
 	case store.KindVideo:

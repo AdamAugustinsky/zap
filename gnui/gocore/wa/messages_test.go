@@ -113,7 +113,12 @@ func TestIncomingContentKinds(t *testing.T) {
 			id := fmt.Sprintf("IN%02d", i)
 			h.inject(message(peer, peer, id, t0.Add(time.Duration(i)*time.Second), c.msg))
 			evs := h.take()
-			expectTags(t, evs, "Messages ChatUpdated Incoming")
+			want := "Messages ChatUpdated Incoming"
+			if c.name == "text" || c.name == "image" || c.name == "document" {
+				// A link, a picture or a document joins the chat's shared media.
+				want += " ChatSharedChanged"
+			}
+			expectTags(t, evs, want)
 			batch := evs[0].Messages
 			if string(batch.Chat) != peer.String() || batch.Older || batch.Complete || !batch.Last || len(batch.Messages) != 1 {
 				t.Fatalf("batch: %+v", batch)
@@ -218,7 +223,7 @@ func TestHistorySync(t *testing.T) {
 		Conversations: []*waHistorySync.Conversation{conversation(peer, "Grace", msgs...), conversation(group, "Rust Berlin")},
 	}})
 	evs := h.take()
-	expectTags(t, evs, "Syncing SyncProgress Chats Drafts")
+	expectTags(t, evs, "Syncing SyncProgress Chats Labels Drafts")
 	if !evs[0].Syncing.Syncing || evs[1].SyncProgress.Percent != 40 {
 		t.Fatalf("sync: %+v", evs[:2])
 	}

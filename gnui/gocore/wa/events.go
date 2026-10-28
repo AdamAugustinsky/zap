@@ -98,6 +98,24 @@ func (e *Engine) handle(evt any) {
 	case *events.DeleteChat:
 		chat := e.canonical(v.JID)
 		e.deleted(chat, v.Action.GetMessageRange().GetLastMessageTimestamp())
+	case *events.Star:
+		err = e.starred(v)
+	case *events.LabelEdit:
+		err = e.labelEdited(v)
+	case *events.LabelAssociationChat:
+		err = e.chatLabelled(v)
+	case *events.UnarchiveChatsSetting:
+		e.unarchiveSetting(v)
+	case *events.Contact, *events.PushName:
+		e.contactEvent(evt)
+
+	// Groups.
+	case *events.GroupInfo:
+		err = e.groupChanged(v)
+	case *events.JoinedGroup:
+		chat := e.canonical(v.JID)
+		e.ensureChat(chat, v.Name)
+		e.applyGroup(chat, &v.GroupInfo)
 	}
 	if err != nil {
 		slog.Warn("zapfast wa: an update was not stored", "event", eventName(evt), "err", err)
@@ -114,6 +132,8 @@ func eventName(evt any) string {
 		return "HistorySync"
 	case *events.Receipt:
 		return "Receipt"
+	case *events.GroupInfo, *events.JoinedGroup:
+		return "group"
 	}
 	return "app state"
 }
@@ -174,7 +194,11 @@ func (e *Engine) deleted(chat string, through int64) bool {
 // or applies what it changes: a reaction, a revocation, an edit.
 func (e *Engine) incoming(evt *events.Message) error {
 	chat, sender := e.canonical(evt.Info.Chat), e.canonical(evt.Info.Sender)
+	if parent, clip, ok := motionClip(unwrap(evt.Message)); ok {
+		return e.motionArrived(chat, parent, clip)
+	}
 	m := parseMessage(evt, chat, sender)
+	e.nameQuote(&m)
 	switch m.Kind {
 	case kindReaction:
 		x := unwrap(evt.Message).GetReactionMessage()
@@ -190,9 +214,12 @@ func (e *Engine) incoming(evt *events.Message) error {
 			e.emitMessage(chat, x.GetKey().GetID())
 		}
 		return err
-	case kindPollUpdate, kindProtocol:
-		// Poll votes are WP4b's; other protocol messages change nothing
-		// shown.
+	case kindPollUpdate:
+		return e.pollVote(evt)
+	case kindPin:
+		return e.pinMessage(evt, chat, sender)
+	case kindProtocol:
+		// Other protocol messages change nothing shown.
 		return nil
 	}
 	_, existsErr := e.arch.Message(chat, m.ID)
@@ -246,9 +273,9 @@ func (e *Engine) incoming(evt *events.Message) error {
 			c.LastActivity = stored.Timestamp
 			c.Preview = summary(stored)
 		}
-		if !existed {
+		if !existed && !e.keepArchived {
 			// A new message brings the chat back, as WhatsApp does unless
-			// chats are kept archived (WP4b's setting).
+			// chats are kept archived.
 			c.Archived = false
 		}
 		if unread {
@@ -260,12 +287,16 @@ func (e *Engine) incoming(evt *events.Message) error {
 	}); err != nil {
 		return err
 	}
+	e.pendingMotion(chat, m.ID)
 	if existed {
 		e.emitMessage(chat, m.ID)
 		e.emitChat(chat)
 		return nil
 	}
 	e.live(stored, unread)
+	if shared(stored) {
+		e.sharedChanged(chat)
+	}
 	return nil
 }
 

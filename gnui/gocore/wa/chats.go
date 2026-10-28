@@ -47,6 +47,11 @@ func (e *Engine) loadChat(chat string, before *abi.PageKey) {
 	}
 	e.emitMessages(chat, messages, before != nil, !more)
 	if before == nil {
+		// Opening a chat: its stars and pins, and a group's info (upstream's
+		// load_chat).
+		e.emitStars(chat)
+		e.emitPins(chat)
+		e.requestGroupInfo(chat, false)
 		e.followPresence(chat)
 	}
 }
@@ -129,12 +134,32 @@ func (e *Engine) composing(chat string, composing bool) {
 	if composing {
 		state = types.ChatPresenceComposing
 	}
-	cli := e.cli
+	// In order, one at a time: a pause overtaking its composing would
+	// leave the contact seeing "typing…".
+	e.typing = append(e.typing, chatState{j, state})
+	if len(e.typing) == 1 {
+		e.sendTyping()
+	}
+}
+
+type chatState struct {
+	chat  types.JID
+	state types.ChatPresence
+}
+
+// sendTyping sends the first queued chat state, then the next.
+func (e *Engine) sendTyping() {
+	next, cli := e.typing[0], e.cli
 	e.job(func(ctx context.Context) func() {
-		if err := cli.SendChatPresence(ctx, j, state); err != nil {
+		if err := cli.SendChatPresence(ctx, next.chat, next.state); err != nil {
 			slog.Debug("zapfast wa: chat state not sent", "err", err)
 		}
-		return nil
+		return func() {
+			e.typing = e.typing[1:]
+			if len(e.typing) > 0 {
+				e.sendTyping()
+			}
+		}
 	})
 }
 
