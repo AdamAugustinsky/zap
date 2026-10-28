@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zap: WhatsApp, native on your Mac</title>
+<meta name="description" content="Zap is a fast, native WhatsApp app for macOS. It opens in about a tenth of a second and idles in 85 MB.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="Zap: WhatsApp, native on your Mac">
+<meta property="og:description" content="A fast, native WhatsApp app for macOS. Opens in about a tenth of a second, idles in 85 MB.">
+<meta property="og:image" content="https://zap.a3lab.ai/assets/chat-light.jpg">
+<meta property="og:url" content="https://zap.a3lab.ai/">
+<link rel="icon" href="/assets/favicon-64.png">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="field" aria-hidden="true"></div>
+
+<header class="bar">
+  <a class="brand" href="/"><img src="/assets/icon-256.png" alt="" width="28" height="28">Zap</a>
+  <nav>
+    <a href="#features">Features</a>
+    <a href="#privacy">Privacy</a>
+    <a class="pill small" href="#download">Download</a>
+  </nav>
+</header>
+
+<main>
+  <section class="hero">
+    <img class="icon" src="/assets/icon-256.png" alt="Zap's icon" width="128" height="128">
+    <h1>WhatsApp, native on your Mac.</h1>
+    <p class="lede">Zap is a WhatsApp app built for macOS. It opens in about a tenth of a second, sits in 85&nbsp;MB while it waits, and keeps your chats on your Mac.</p>
+    <div class="cta">
+      <a class="pill primary" href="https://github.com/A3-Media/zap/releases/latest/download/Zap.dmg" data-download>Download for Mac</a>
+      <span class="req">Free · macOS 14 or later · Apple silicon</span>
+    </div>
+    <figure class="shot">
+      <picture>
+        <source srcset="/assets/chat-dark.jpg" media="(prefers-color-scheme: dark)">
+        <img src="/assets/chat-light.jpg" alt="Zap showing the chat list and a conversation with a video, a document, a link preview and a voice message" width="2880" height="1800">
+      </picture>
+    </figure>
+  </section>
+
+  <section class="numbers" aria-label="Measured performance">
+    <div class="glass stat"><b>0.14&nbsp;s</b><span>from launch to its window, half the time of the egui app it grew from</span></div>
+    <div class="glass stat"><b>85&nbsp;MB</b><span>of memory at idle, against 186&nbsp;MB for that app</span></div>
+    <div class="glass stat"><b>0%</b><span>CPU when nothing is happening. No timers, no redraws</span></div>
+  </section>
+
+  <section id="features" class="features">
+    <h2>Everything you use on your phone</h2>
+    <div class="grid">
+      <article class="glass card">
+        <h3>Messages</h3>
+        <p>Formatted text, replies, edits, reactions, forwards, pictures, files, stickers, GIFs, polls and voice messages.</p>
+      </article>
+      <article class="glass card">
+        <h3>Media in place</h3>
+        <p>Voice messages, videos, round videos, GIFs and animated stickers play right in the chat.</p>
+      </article>
+      <article class="glass card">
+        <h3>Calls</h3>
+        <p>Voice and video calls, in a window of their own.</p>
+      </article>
+      <article class="glass card">
+        <h3>Your history</h3>
+        <p>Chats stay in an encrypted archive on your Mac. Older messages come from your phone as you scroll.</p>
+      </article>
+      <article class="glass card">
+        <h3>Several numbers</h3>
+        <p>Link more than one WhatsApp number and switch between them in one window.</p>
+      </article>
+      <article class="glass card">
+        <h3>A real Mac app</h3>
+        <p>The menu bar, keyboard shortcuts, notifications, light and dark mode, and text you can select across messages.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="privacy" class="privacy glass">
+    <div>
+      <h2>Your chats stay with you</h2>
+      <p>Zap links to your phone as a companion device, the way WhatsApp's own desktop app does, and talks to WhatsApp directly. There is no server of ours in between, and no account to make.</p>
+      <p>Lock chats behind a code, or the whole window behind an app lock.</p>
+    </div>
+    <ol class="steps">
+      <li><b>Open Zap.</b> It shows a QR code.</li>
+      <li><b>On your phone,</b> open WhatsApp, then Settings, Linked devices, Link a device, and scan it.</li>
+      <li><b>Your recent chats arrive.</b> Older ones follow as you scroll up.</li>
+    </ol>
+  </section>
+
+  <section id="download" class="download glass">
+    <img src="/assets/icon-256.png" alt="" width="96" height="96">
+    <h2>Get Zap</h2>
+    <p>Signed by A3 Direct Solutions and notarized by Apple. Open the disk image and drag Zap to Applications.</p>
+    <a class="pill primary" href="https://github.com/A3-Media/zap/releases/latest/download/Zap.dmg" data-download>Download for Mac</a>
+    <p class="req">macOS 14 or later, on a Mac with Apple silicon (M1 or newer).<br><a href="https://github.com/A3-Media/zap/releases">All releases</a></p>
+  </section>
+</main>
+
+<footer>
+  <p>Zap is an unofficial client and is not affiliated with WhatsApp or Meta. Using an unofficial client may be against WhatsApp's terms of service and could get an account suspended. Use it at your own risk. WhatsApp is a trademark of WhatsApp LLC.</p>
+  <p>Zap is based on <a href="https://github.com/crmne/zapfast">ZapFast</a> by Carmine Paolino, under the MIT licence, and built with <a href="https://github.com/AdamAugustinsky/go-native-ui">go-native-ui</a>. Its messaging core uses <a href="https://github.com/oxidezap/whatsapp-rust">whatsapp-rust</a>.</p>
+  <p>© 2026 A3 Direct Solutions LLP · <a href="https://a3lab.ai">A3 Lab</a></p>
+</footer>
+</body>
+</html>
