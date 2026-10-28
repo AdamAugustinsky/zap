@@ -13,14 +13,17 @@ type Pending struct {
 	done atomic.Bool
 	ch   chan struct{}
 	core *Core
+	conn Conn // another backend's (OpenAsyncWith)
 	err  error
 
 	// Timing is when each step finished (monotonic times); valid once Done.
 	Timing Timing
 }
 
-// Timing is when OpenAsync's steps happened.
+// Timing is when OpenAsync's steps happened (OpenAsyncWith's: Loaded is
+// when the backend's own libraries and preparation were done).
 type Timing struct {
+	Engine  string        // "rust" (OpenAsync), or OpenAsyncWith's engine
 	Library string        // the path loaded
 	Began   time.Time     // OpenAsync was called
 	Prewarm time.Duration // of loading, the part before dlopen (Lib.PrewarmTime)
@@ -34,13 +37,40 @@ type Timing struct {
 // in main, before the window exists. When it is done it calls cfg.Wake.
 func OpenAsync(cfg Config) *Pending {
 	p := &Pending{ch: make(chan struct{})}
-	p.Timing.Began = time.Now()
+	p.Timing.Engine, p.Timing.Began = "rust", time.Now()
 	go func() {
 		p.core, p.err = p.open(cfg)
 		p.done.Store(true)
 		close(p.ch)
 		if cfg.Wake != nil {
 			cfg.Wake()
+		}
+	}()
+	return p
+}
+
+// OpenAsyncWith is OpenAsync for a backend other than the Rust library (the
+// Go backend, gocore): open runs on a new goroutine and may set t's Library
+// and Loaded (zero: Began); Opened is when it returned. engine names the
+// backend in Timing. When it is done it calls wake (nil: none).
+func OpenAsyncWith(engine string, wake func(), open func(t *Timing) (Conn, error)) *Pending {
+	p := &Pending{ch: make(chan struct{})}
+	p.Timing.Engine, p.Timing.Began = engine, time.Now()
+	go func() {
+		c, err := open(&p.Timing)
+		p.Timing.Opened = time.Now()
+		if p.Timing.Loaded.IsZero() {
+			p.Timing.Loaded = p.Timing.Began
+		}
+		if err != nil {
+			p.err = err
+		} else {
+			p.conn = c
+		}
+		p.done.Store(true)
+		close(p.ch)
+		if wake != nil {
+			wake()
 		}
 	}()
 	return p
@@ -66,8 +96,9 @@ func (p *Pending) open(cfg Config) (*Core, error) {
 // Done reports whether opening has finished, successfully or not.
 func (p *Pending) Done() bool { return p.done.Load() }
 
-// Result returns the core, or why it could not be opened. It is valid once
-// Done; before that it returns nil, nil.
+// Result returns the Rust core, or why it could not be opened. It is valid
+// once Done; before that it returns nil, nil. A Pending of OpenAsyncWith has
+// no *Core: use Conn.
 func (p *Pending) Result() (*Core, error) {
 	if !p.done.Load() {
 		return nil, nil
@@ -92,4 +123,21 @@ func (p *Pending) Wait(d time.Duration) bool {
 	case <-t.C:
 		return false
 	}
+}
+
+// Conn returns the open core, whichever backend opened it, or why it could
+// not be opened. It is valid once Done; before that, and never otherwise, it
+// returns nil, nil: a failed open is never a non-nil Conn.
+func (p *Pending) Conn() (Conn, error) {
+	switch {
+	case !p.done.Load():
+		return nil, nil
+	case p.err != nil:
+		return nil, p.err
+	case p.conn != nil:
+		return p.conn, nil
+	case p.core != nil:
+		return p.core, nil
+	}
+	return nil, nil
 }

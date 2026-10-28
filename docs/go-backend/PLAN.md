@@ -45,7 +45,21 @@ bundle (and from `$ZAPFAST_*` or `target/` in development):
   write WebP.
 
 Opus voice encoding and decoding use the system's AudioToolbox, so nothing is
-bundled for it.
+bundled for it. `packaging/macos/gnui-package.sh` builds both (when missing or
+older than their scripts) and bundles them beside `libzapfast_core.dylib`,
+which stays for the fallback and for calls; `gnui-verify.sh` checks each is
+signed by the app's signer and links only system libraries.
+
+## Choosing the backend (WP6b)
+
+`-engine=go|rust`, else `$ZAPFAST_ENGINE`, in development and release builds.
+With neither, an account keeps the backend its folder belongs to (whatsmeow.db
+or migration.json: Go; session.db alone: Rust) and a new account, and the
+demo, run on Go. `-engine=go` takes a Rust account over first
+(`migrate.Account`, holding the single-instance lock); a failure is the
+account's open error, and Try again retries it, or links afresh when the
+session itself cannot be converted. Calls are refused on the Go backend until
+WP7: run `-engine=rust` for them. The wiring is `gnui/cmd/zapfast/engine.go`.
 
 ## Layout and packages
 

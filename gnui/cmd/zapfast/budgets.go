@@ -186,7 +186,7 @@ type startupReport struct {
 	Demo    bool
 
 	ExecToMainMs      float64 // process start → main (the runtime and every package's init)
-	MainToAppMainMs   float64 // main → app.Main: flags, sys.Launch, the settings, shell.New, core.OpenAsync
+	MainToAppMainMs   float64 // main → app.Main: flags, sys.Launch, the settings, shell.New, the cores' open begun
 	AppMainToStartMs  float64 // app.Main → Handler.Start (the application object)
 	StartToOpenMs     float64 // Start → the window starts opening (sys.Start: notifications, status item, login, instance)
 	OpenMs            float64 // platform.Open (NSApplication, NSWindow, the view)
@@ -201,10 +201,16 @@ type startupReport struct {
 
 	OpenStages map[string]float64 // platform.Open's stages, ms from exec
 
+	// The account's core, opened on a goroutine: the Rust core's
+	// (CoreEngine "rust": the library's resolve, prewarm, dlopen, lookups
+	// and version check, then zf_core_open) or the Go backend's ("go": for
+	// a real account, loading SQLCipher and any migration, then
+	// gocore.Open; the demo has no load).
+	CoreEngine       string
 	CoreLibrary      string
-	CoreLoadMs       float64 // resolve, prewarm, dlopen, lookups, version check (on a goroutine)
+	CoreLoadMs       float64
 	CorePrewarmMs    float64
-	CoreOpenMs       float64 // zf_core_open
+	CoreOpenMs       float64 // zf_core_open, or gocore.Open
 	ExecToCoreOpenMs float64
 
 	// What the first frame showed: the gate needs chat rows and no
@@ -381,7 +387,7 @@ func (r *startupRun) finish() {
 	rep.CoreLoadMs, rep.CorePrewarmMs, rep.CoreOpenMs, rep.ExecToCoreOpenMs = -1, -1, -1, -1
 	if p := r.pending; p != nil && p.Done() {
 		t := p.Timing
-		rep.CoreLibrary = t.Library
+		rep.CoreEngine, rep.CoreLibrary = t.Engine, t.Library
 		rep.CoreLoadMs = float64(t.Loaded.Sub(t.Began).Microseconds()) / 1000
 		rep.CorePrewarmMs = float64(t.Prewarm.Microseconds()) / 1000
 		rep.CoreOpenMs = float64(t.Opened.Sub(t.Loaded).Microseconds()) / 1000

@@ -58,7 +58,7 @@ func terminate(s *state.State, lg *sys.Log) func() {
 func closeCores(s *state.State) {
 	for _, a := range s.Accounts {
 		if a.Conn == nil && a.Pending != nil && a.Pending.Wait(5*time.Second) {
-			if c, err := a.Pending.Result(); err == nil && c != nil {
+			if c, err := a.Pending.Conn(); err == nil && c != nil {
 				a.Conn = c
 			}
 			a.Pending = nil
