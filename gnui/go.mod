@@ -4,6 +4,12 @@ go 1.27.1
 
 require (
 	github.com/ebitengine/purego v0.12.0-alpha.1.0.20261015130536-d456b1bb95e8
+	github.com/pion/datachannel v1.6.3
+	github.com/pion/dtls/v3 v3.1.15
+	github.com/pion/logging v0.2.4
+	github.com/pion/rtcp v1.2.20
+	github.com/pion/rtp v1.10.6
+	github.com/pion/sctp v1.12.0
 	go.mau.fi/libsignal v0.2.2
 	go.mau.fi/whatsmeow v0.0.0-20261007111105-c386243a72ba
 	golang.org/x/image v0.23.0
@@ -22,6 +28,8 @@ require (
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/petermattis/goid v0.0.0-20260820044319-269ab09b5261 // indirect
+	github.com/pion/randutil v0.1.0 // indirect
+	github.com/pion/transport/v5 v5.1.1 // indirect
 	github.com/rs/zerolog v1.35.1 // indirect
 	github.com/vektah/gqlparser/v2 v2.5.27 // indirect
 	go.mau.fi/util v0.10.1 // indirect
