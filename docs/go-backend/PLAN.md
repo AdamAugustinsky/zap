@@ -65,9 +65,9 @@ kept (session.db and no whatsmeow.db), or one whose migration began
 (migration.json), is taken over first (`migrate.Account`, holding the
 single-instance lock); a failure is the account's open error, and Try again
 retries it, or links afresh when the session itself cannot be converted.
-1:1 calls run through WP7's bridge on the Go call engine
-([calls-bridge.md](calls-bridge.md) section 5); group calls and call links
-are not bridged. The wiring is `gnui/cmd/zapfast/engine.go`.
+Calls, one to one and group, and call links run through WP7's bridge on
+the Go call engine ([calls-bridge.md](calls-bridge.md) section 5, WP8e for
+groups and links). The wiring is `gnui/cmd/zapfast/engine.go`.
 
 ## Layout and packages
 
@@ -81,6 +81,7 @@ are not bridged. The wiring is `gnui/cmd/zapfast/engine.go`.
 | WP6 Wiring and migration | `gnui/gocore/migrate/`, `gnui/cmd/zapfast/` | WP1, WP3 | `-engine=go|rust`; pickers; taking over an existing session and archive, copy-first and failing closed |
 | WP7 Call bridge | `gnui/gocore/calls/`, a media-only Rust crate | WP4 | 1:1 calls through whatsmeow signaling and the Rust media engine |
 | WP8 Call engine in Go (**done**) | `gnui/gocore/voip/` | WP7 | the Rust crate is gone: the call engine, MLow and the media pipeline are Go |
+| WP8e Group calls and call links (**done**) | `gnui/gocore/calls/`, `gnui/gocore/voip/` | WP8 | group calls rung, answered, placed from a group and keyed by epochs; call links joined through their waiting room; filed as 0.19.0 filed them |
 | WP9 No Rust (**done**) | the whole repository | WP8 | no `.rs` or Cargo file; no `-engine=rust`; the core binding (`gnui/core`'s purego loader of `libzapfast_core.dylib`) gone, `core.Conn` and its types kept; the schema, ABI fixtures and translations under `gnui/`; the demo checked against zfcore's recorded answers (`gocore/demo/testdata`); the bundle carries SQLCipher and libwebp only; GPL-3.0 |
 
 The details of each package, the gaps and the order are in
