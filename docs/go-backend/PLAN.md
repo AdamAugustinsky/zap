@@ -32,6 +32,21 @@ whatsmeow, and the size of a Go port).
 - Tests run without a live WhatsApp account: the demo, `core/fake`, injected
   whatsmeow events, and synthetic fixtures.
 
+## Bundled libraries
+
+All arm64, built by pinned, checksum-verified scripts into `target/`, linking
+only system libraries, loaded with purego from `Contents/Frameworks` in a
+bundle (and from `$ZAPFAST_*` or `target/` in development):
+
+- `libsqlcipher.dylib`: SQLCipher 4.14.0 on CommonCrypto
+  (`packaging/macos/sqlcipher/build.sh`). The archive and the whatsmeow store.
+- `libzfwebp.dylib`: libwebp 1.6.0 plus a small shim
+  (`packaging/macos/libwebp/build.sh`). Sticker encoding; ImageIO cannot
+  write WebP.
+
+Opus voice encoding and decoding use the system's AudioToolbox, so nothing is
+bundled for it.
+
 ## Layout and packages
 
 | Package | Directory | Depends on | Done when |
