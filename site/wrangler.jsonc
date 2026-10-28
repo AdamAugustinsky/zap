@@ -2,5 +2,6 @@
   "$schema": "https://unpkg.com/wrangler/config-schema.json",
   "name": "zap-a3lab",
   "compatibility_date": "2026-10-23",
-  "assets": { "directory": "./public" }
+  "assets": { "directory": "./public" },
+  "routes": [{ "pattern": "zap.a3lab.ai", "custom_domain": true }]
 }
