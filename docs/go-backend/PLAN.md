@@ -47,7 +47,8 @@ bundle (and from `$ZAPFAST_*` or `target/` in development):
 Opus voice encoding and decoding use the system's AudioToolbox, so nothing is
 bundled for it. `packaging/macos/gnui-package.sh` builds both (when missing or
 older than their scripts) and bundles them beside `libzapfast_core.dylib`,
-which stays for the fallback, and `libzfcalls.dylib` (WP7, the call media);
+which stays for the fallback (the call media, WP7's `libzfcalls.dylib`, is Go
+since WP8d: gocore/voip/engine);
 `gnui-verify.sh` checks each is signed by the app's signer and links only
 system libraries.
 

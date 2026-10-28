@@ -63,9 +63,9 @@ type Timing struct {
 // DefaultTiming is whatsapp-rust's: a 10 s offer ack, a 5 s video upgrade.
 var DefaultTiming = Timing{Ack: 10 * time.Second, Ring: 75 * time.Second, Upgrade: 5 * time.Second, Poll: 250 * time.Millisecond}
 
-// NotAvailable is the refusal of a call command when the media library is
-// missing.
-const NotAvailable = "Calls are not available in this build of Zap: the call library (" + LibName + ") is missing"
+// NotAvailable is the refusal of a call command when the account has no
+// call media.
+const NotAvailable = "Calls are not available in this build of Zap: the call media could not start"
 
 // generations is the process's call counter: the calls the UI places
 // (NextGeneration, through the Conn's CallGeneration) and the ones rung in.
@@ -209,6 +209,9 @@ func (c *Calls) emit(k *call) {
 	if !k.started.IsZero() {
 		u.ActiveForMS, u.HasActiveForMS = uint64(time.Since(k.started).Milliseconds()), true
 	}
+	if w, ok := c.media.(updateWatcher); ok {
+		w.OnUpdate(&u)
+	}
 	ev := abi.Event{Tag: abi.EventTagCall}
 	ev.Call.Update = u
 	c.h.Emit(&ev)
@@ -254,6 +257,9 @@ func notPlaced(u abi.CallUpdate) abi.CallUpdate {
 }
 
 func (c *Calls) emitUpdate(u abi.CallUpdate) {
+	if w, ok := c.media.(updateWatcher); ok {
+		w.OnUpdate(&u)
+	}
 	ev := abi.Event{Tag: abi.EventTagCall}
 	ev.Call.Update = u
 	c.h.Emit(&ev)
@@ -572,26 +578,23 @@ func (c *Calls) placed(k *call, p placement, err error) {
 // openMedia opens k's media over the relay node holds.
 func (c *Calls) openMedia(k *call, key []byte, relay *waBinary.Node, peer types.JID) {
 	_, own := c.cli.Own()
-	packed, err := waBinary.Marshal(*relay)
-	if err == nil {
-		str := func(b []byte, has bool) *string {
-			if !has {
-				return nil
-			}
-			s := string(b)
-			return &s
+	str := func(b []byte, has bool) *string {
+		if !has {
+			return nil
 		}
-		var cam *string
-		if id, ok := c.cameraID(k).(string); ok {
-			cam = &id
-		}
-		err = c.media.Open(OpenParams{
-			CallID: k.id, Generation: k.u.Generation, Outgoing: k.outgoing,
-			SelfLID: own.String(), PeerLID: peer.String(), CallKey: key, Relay: packed,
-			MLow: k.mlow, Video: k.u.Video, CameraOn: k.u.Video && k.u.CameraOn,
-			Microphone: str(k.u.Microphone, k.u.HasMicrophone), Speaker: str(k.u.Speaker, k.u.HasSpeaker), Camera: cam,
-		})
+		s := string(b)
+		return &s
 	}
+	var cam *string
+	if id, ok := c.cameraID(k).(string); ok {
+		cam = &id
+	}
+	err := c.media.Open(OpenParams{
+		CallID: k.id, Generation: k.u.Generation, Outgoing: k.outgoing,
+		SelfLID: own.String(), PeerLID: peer.String(), CallKey: key, Relay: relay,
+		MLow: k.mlow, Video: k.u.Video, CameraOn: k.u.Video && k.u.CameraOn,
+		Microphone: str(k.u.Microphone, k.u.HasMicrophone), Speaker: str(k.u.Speaker, k.u.HasSpeaker), Camera: cam,
+	})
 	if err != nil {
 		slog.Error("zapfast calls: the media did not open", "err", err)
 		c.h.Error("The call could not be connected: " + err.Error())

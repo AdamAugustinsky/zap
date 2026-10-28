@@ -20,10 +20,9 @@ package main
 // demo's too.
 //
 // On the Go backend, calls are WP7's bridge (gocore/calls): whatsmeow carries
-// the 1:1 signaling and libzfcalls the media and the video frames
-// (core.Frames). Without libzfcalls every call command is refused
-// (ZF_E_REFUSED, naming the missing library); group calls and call links are
-// not bridged.
+// the 1:1 signaling and the Go call engine (gocore/voip/engine) the media and
+// the video frames (core.Frames). Group calls and call links are not
+// bridged.
 
 import (
 	"context"

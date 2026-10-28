@@ -16,7 +16,7 @@ import (
 )
 
 // Calls (WP7): the 1:1 call signaling of gocore/calls over the client,
-// with the media of libzfcalls. Without the library every call command but
+// with the media of the Go call engine. Without media every call command but
 // LoadCallLog is refused, and an offer is refused to its caller. Group
 // calls and call links are not bridged: StartCall to a group fails as the
 // worker fails it, a group's offer is refused, and JoinCallLink is refused.
@@ -48,12 +48,12 @@ func (e *Engine) acceptCall(cmd *abi.Command) error {
 	return nil
 }
 
-// openCalls makes the account's calls, before any command: the media
-// library is loaded here, once.
+// openCalls makes the account's calls, before any command: the media is
+// made here, once.
 func (e *Engine) openCalls() {
 	newMedia := e.opts.CallMedia
 	if newMedia == nil {
-		newMedia = libMedia
+		newMedia = systemMedia
 	}
 	media, err := newMedia()
 	if err != nil {
@@ -75,14 +75,8 @@ func (e *Engine) openCalls() {
 	}, media, calls.DefaultTiming)
 }
 
-// libMedia is libzfcalls' context for the account.
-func libMedia() (calls.Media, error) {
-	lib, err := calls.LoadLib()
-	if err != nil {
-		return nil, err
-	}
-	return lib.New()
-}
+// systemMedia is the Go call engine on this system's devices.
+func systemMedia() (calls.Media, error) { return calls.NewSystemMedia(), nil }
 
 // callStatusName is a call's outcome as the archive files it
 // (store.Call.Status), the inverse of callStatus.

@@ -23,9 +23,9 @@
 #   GNUI               a built gnui CLI (default: built from the framework
 #                      checkout gnui/go.mod resolves gonativeui to)
 #
-# The core, and the call media (libzfcalls.dylib, WP7), are copied to
-# target/core-release/, where gnui.json's `frameworks` entries point; --skip-core
-# keeps both as they are. The Go backend's libraries, libsqlcipher.dylib and
+# The core is copied to target/core-release/, where gnui.json's first
+# `frameworks` entry points; --skip-core keeps it as it is. The call media is
+# Go (gocore/voip/engine), in the executable. The Go backend's libraries, libsqlcipher.dylib and
 # libzfwebp.dylib, are built by their pinned scripts (sqlcipher/build.sh,
 # libwebp/build.sh) into target/sqlcipher/ and target/libwebp/, the other
 # `frameworks` entries, unless a library there is newer than its script.
@@ -61,18 +61,15 @@ if [ "$dev" = 1 ]; then
 fi
 lib_name=libzapfast_core.dylib
 staged="$root/target/core-release/$lib_name"
-calls_name=libzfcalls.dylib
-calls_staged="$root/target/core-release/$calls_name"
 
 if [ "$(uname -s)/$(uname -m)" != "Darwin/arm64" ]; then
     echo "ZapFast's Go UI packages on Apple silicon macOS only" >&2
     exit 1
 fi
 
-# 1. The core, and the call media (zfcalls: whatsapp-rust's media engine
-# behind a C ABI, docs/go-backend/calls-bridge.md): each cdylib alone (-p, so
-# upstream's egui client is not unified in), the core-release profile
-# (panic = "unwind" for the C entry points).
+# 1. The core: the cdylib alone (-p, so upstream's egui client is not
+# unified in), the core-release profile (panic = "unwind" for the C entry
+# points).
 stage_cargo() { # stage_cargo <package> <library> <staged path>
     local package="$1" name="$2" dest="$3"
     if [ "$skip_core" = 0 ]; then
@@ -90,7 +87,7 @@ stage_cargo() { # stage_cargo <package> <library> <staged path>
         exit 1
     fi
     # dlopen takes the bundle's path, and the install name keeps any link to
-    # it relative to Contents/Frameworks (zfcore/build.rs, zfcalls/build.rs).
+    # it relative to Contents/Frameworks (zfcore/build.rs).
     local install_name
     install_name="$(otool -D "$dest" | sed -n 2p)"
     if [ "$install_name" != "@rpath/$name" ]; then
@@ -103,8 +100,7 @@ stage_cargo() { # stage_cargo <package> <library> <staged path>
     fi
 }
 stage_cargo zapfast_core "$lib_name" "$staged"
-stage_cargo zfcalls "$calls_name" "$calls_staged"
-python3 "$root/scripts/gnui/check_gpl_sounds.py" "$staged" "$calls_staged"
+python3 "$root/scripts/gnui/check_gpl_sounds.py" "$staged"
 
 # 1b. The Go backend's libraries, loaded with purego from Contents/Frameworks
 # (docs/go-backend/PLAN.md "Bundled libraries"). Each script verifies its
@@ -164,7 +160,7 @@ else
     # and mapped file (non-platform) have different Team IDs"). This build
     # keeps the hardened runtime and lets the app load its own core and the
     # Go backend's libraries (the app loads only Contents/Frameworks' copies:
-    # core.ResolveLibrary, sqlite.FindLibrary, av's WebP loader, calls.LoadLib). A Developer
+    # core.ResolveLibrary, sqlite.FindLibrary, av's WebP loader). A Developer
     # ID signs them all with one Team ID and gets no such exception. The derived
     # manifest sits beside gnui.json, whose relative paths it keeps.
     derived="$root/gnui/.gnui-package.json"

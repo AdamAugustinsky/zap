@@ -5,8 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 	"slices"
 	"sync"
 	"testing"
@@ -546,9 +544,11 @@ func TestAnIncomingCallRingsIsAnsweredAndHungUp(t *testing.T) {
 	}
 }
 
-func decodeRelay(t *testing.T, packed []byte) *waBinary.Node {
+func decodeRelay(t *testing.T, n *waBinary.Node) *waBinary.Node {
 	t.Helper()
-	n := decode(t, packed)
+	if n == nil {
+		return nil
+	}
 	var find func(n *waBinary.Node) *waBinary.Node
 	find = func(n *waBinary.Node) *waBinary.Node {
 		if n.Tag == "relay" {
@@ -928,9 +928,9 @@ func TestPeerAudioHealth(t *testing.T) {
 	}
 }
 
-// --- without the library --------------------------------------------------------
+// --- without media --------------------------------------------------------
 
-func TestWithoutTheLibraryOffersAreRefused(t *testing.T) {
+func TestWithoutMediaOffersAreRefused(t *testing.T) {
 	h := newHarness(t, false)
 	if h.c.Available() {
 		t.Fatal("calls without media")
@@ -939,40 +939,5 @@ func TestWithoutTheLibraryOffersAreRefused(t *testing.T) {
 	h.expectSent("receipt:offer→"+peerDev3.String(), "call:reject→"+peerDev3.String()+"(busy)")
 	if len(h.updates) != 0 {
 		t.Fatal("an offer rang without media")
-	}
-}
-
-func TestTheLibraryIsFoundAsTheCoreIs(t *testing.T) {
-	dir := t.TempDir()
-	env := func(m map[string]string) func(string) string { return func(k string) string { return m[k] } }
-	app := dir + "/Zap.app/Contents/MacOS/zap"
-	if _, err := resolveLib(app, dir, env(map[string]string{EnvLibrary: "/elsewhere/" + LibName})); !errors.Is(err, ErrNoLibrary) {
-		t.Fatalf("a bundle without the library: %v", err)
-	}
-	if _, err := resolveLib(dir+"/zap", dir, env(nil)); !errors.Is(err, ErrNoLibrary) {
-		t.Fatalf("nothing to load: %v", err)
-	}
-	if _, err := resolveLib(dir+"/zap", dir, env(map[string]string{EnvLibrary: dir + "/none.dylib"})); !errors.Is(err, ErrNoLibrary) {
-		t.Fatalf("a missing $%s: %v", EnvLibrary, err)
-	}
-	built := dir + "/target/core-release/" + LibName
-	mkfile(t, built)
-	if p, err := resolveLib(dir+"/zap", dir+"/gnui", env(nil)); err != nil || p != built {
-		t.Fatalf("the cargo build: %q %v", p, err)
-	}
-	other := dir + "/ssd/debug/" + LibName
-	mkfile(t, other)
-	if p, err := resolveLib(dir+"/zap", "/", env(map[string]string{"CARGO_TARGET_DIR": dir + "/ssd"})); err != nil || p != other {
-		t.Fatalf("$CARGO_TARGET_DIR's build: %q %v", p, err)
-	}
-}
-
-func mkfile(t *testing.T, path string) {
-	t.Helper()
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path, nil, 0o644); err != nil {
-		t.Fatal(err)
 	}
 }

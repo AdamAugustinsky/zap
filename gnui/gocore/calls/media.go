@@ -1,16 +1,17 @@
 package calls
 
 import (
-	"encoding/json"
 	"time"
+
+	waBinary "go.mau.fi/whatsmeow/binary"
 
 	"zapfast/abi"
 	"zapfast/core"
 )
 
-// Media is a call's media: libzfcalls (Lib.Open), or a test's fake. One
-// account has one, and it carries at most one call at a time. Its methods
-// are safe from any goroutine.
+// Media is a call's media: the Go call engine (NewMedia), or a test's
+// fake. One account has one, and it carries at most one call at a time.
+// Its methods are safe from any goroutine.
 type Media interface {
 	// Open starts call p.Generation's media over p.Relay.
 	Open(p OpenParams) error
@@ -32,28 +33,33 @@ type Media interface {
 	Free()
 }
 
-// OpenParams are zc_open's (zfcalls/src/wire.rs, Open).
-type OpenParams struct {
-	CallID     string `json:"call_id"`
-	Generation uint64 `json:"generation"`
-	Outgoing   bool   `json:"outgoing"`
-	SelfLID    string `json:"self_lid"`
-	PeerLID    string `json:"peer_lid"`
-	CallKey    []byte `json:"call_key"` // base64 in JSON, as the library reads it
-	// Relay is binary.Marshal of the <relay> node or of a node holding one.
-	Relay      []byte  `json:"relay"`
-	MLow       bool    `json:"mlow"`
-	Video      bool    `json:"video"`
-	CameraOn   bool    `json:"camera_on,omitempty"`
-	Microphone *string `json:"microphone,omitempty"`
-	Speaker    *string `json:"speaker,omitempty"`
-	Camera     *string `json:"camera,omitempty"`
-	// Silent opens no device at all (tests).
-	Silent bool `json:"silent,omitempty"`
+// updateWatcher is a Media that follows the call's updates (which call is
+// live, whose pictures still arrive), as the engine's video frames do.
+type updateWatcher interface {
+	OnUpdate(u *abi.CallUpdate)
 }
 
-// MediaCommand is one zc_command (wire.rs, Command): an "op" and its
-// fields.
+// OpenParams are one call's media, as the signaling found them.
+type OpenParams struct {
+	CallID     string
+	Generation uint64
+	Outgoing   bool
+	SelfLID    string
+	PeerLID    string
+	CallKey    []byte
+	// Relay is the <relay> node or a node holding one (the offer, the
+	// offer's ack).
+	Relay      *waBinary.Node
+	MLow       bool
+	Video      bool
+	CameraOn   bool
+	Microphone *string
+	Speaker    *string
+	Camera     *string
+}
+
+// MediaCommand is one command to the live call: an "op" and its fields
+// (the names zfcalls' wire.rs had).
 type MediaCommand map[string]any
 
 func op(name string, kv ...any) MediaCommand {
@@ -104,7 +110,7 @@ func microphoneCommand(dev any) MediaCommand   { return op("microphone", "device
 func speakerCommand(dev any) MediaCommand      { return op("speaker", "device", dev) }
 func cameraDeviceCommand(dev any) MediaCommand { return op("camera_device", "device", dev) }
 
-// The kinds of MediaEvent (wire.rs, Kind).
+// The kinds of MediaEvent.
 const (
 	MediaConnected     = "connected"
 	MediaFailed        = "failed"
@@ -118,11 +124,11 @@ const (
 	MediaEnded = "ended"
 )
 
-// MediaEvent is one zc_next_event.
+// MediaEvent is one event of the call's media.
 type MediaEvent struct {
-	Generation uint64 `json:"generation"`
-	Kind       string `json:"kind"`
-	Reason     string `json:"reason,omitempty"`
+	Generation uint64
+	Kind       string
+	Reason     string
 }
 
 // silenceReason is a MediaSilent event's reason as the schema names it.
@@ -140,31 +146,4 @@ func silenceReason(reason string) abi.SilenceReason {
 		return abi.SilenceReasonCodecFlapping
 	}
 	return abi.SilenceReasonUnknown
-}
-
-type wireDevice struct {
-	ID    string `json:"id"`
-	Label string `json:"label"`
-}
-
-type wireDevices struct {
-	Microphones []wireDevice `json:"microphones"`
-	Speakers    []wireDevice `json:"speakers"`
-	Cameras     []wireDevice `json:"cameras"`
-}
-
-// decodeDevices reads zc_devices' JSON as the schema's DeviceList.
-func decodeDevices(data []byte) (abi.DeviceList, error) {
-	var w wireDevices
-	if err := json.Unmarshal(data, &w); err != nil {
-		return abi.DeviceList{}, err
-	}
-	list := func(ds []wireDevice) []abi.Device {
-		out := make([]abi.Device, len(ds))
-		for i, d := range ds {
-			out[i] = abi.Device{ID: []byte(d.ID), Label: []byte(d.Label)}
-		}
-		return out
-	}
-	return abi.DeviceList{Microphones: list(w.Microphones), Speakers: list(w.Speakers), Cameras: list(w.Cameras)}, nil
 }
