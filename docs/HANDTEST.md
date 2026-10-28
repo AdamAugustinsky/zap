@@ -1,6 +1,6 @@
 # Hand test (macOS, Apple silicon)
 
-The checklist for testing ZapFast's Go UI by hand, once, on the MacBook. Read it top to bottom and tick each box. Everything the automated tests can see is not here: these are the checks that only a real screen, speaker, microphone, Keychain, Dock, menu bar or phone can show.
+The checklist for testing Zap (the Go app, on its Go backend since WP9) by hand, once, on the MacBook. Read it top to bottom and tick each box. Everything the automated tests can see is not here: these are the checks that only a real screen, speaker, microphone, Keychain, Dock, menu bar or phone can show.
 
 Each check reads `[id] steps. Expect: result`. The id is a row of `docs/PARITY.md` where one exists, or an `HT-nn` number of this file. Groups 1 to 9 use the demo core and need no phone. Groups 10 to 17 use dedicated test accounts, never Adam's personal account. Group 18 closes with translations and the final numbers. Group 19 repeats a few checks on the release build.
 

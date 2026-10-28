@@ -1,19 +1,12 @@
+# Built libraries (packaging/macos/*/build.sh) and bundles (gnui-package.sh)
 /target/
-**/target/
+/dist/
 .idea/
 .vscode/
 .claude/
 .direnv/
 
 /.cache/
-
-/dist/
-
-/packaging/flatpak/built/
-/packaging/flatpak/cargo-sources.json
-/packaging/flatpak/flatpak-cargo-generator.py
-/.flatpak-builder/
-/build-dir/
 
 # The site
 .wrangler/

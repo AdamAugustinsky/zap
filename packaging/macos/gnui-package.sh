@@ -1,8 +1,8 @@
 #!/bin/bash
-# Build Zap.app, the Go UI, for Apple silicon: the release core, then
+# Build Zap.app for Apple silicon: the two bundled C libraries, then
 # `gnui package` over gnui/gnui.json, then the bundle checks.
 #
-#   packaging/macos/gnui-package.sh [--dev] [--dmg] [--notarize] [--skip-core]
+#   packaging/macos/gnui-package.sh [--dev] [--dmg] [--notarize]
 #
 # Writes dist/Zap.app (bundleName; and with --dmg dist/ZapFast-<version>.dmg, as
 # upstream's: the app and an Applications link; with the framework's -zip,
@@ -11,37 +11,34 @@
 # the dmg: docs/HANDTEST-BUILD.md.
 #
 # --dev writes the hand test's development bundle to dist/dev/ instead: the
-# same bundle (id, signature, entitlements, core), with the executable built
+# same bundle (id, signature, entitlements, libraries), with the executable built
 # without gnui_release, so it keeps the demo and measurement flags and the
 # framework's Debug menu. Not for distribution: it refuses --notarize.
 #
-# Needs on PATH: cargo (rust-toolchain.toml's version) and go. Environment:
+# Needs on PATH: go (1.27) and the Xcode Command Line Tools (cc, for the two
+# libraries). Environment:
 #   CODESIGN_IDENTITY  signing identity (a Developer ID for distribution);
 #                      unset: the framework's development identity, gnui-dev,
 #                      for this Mac and hand tests (step 3)
-#   CARGO_TARGET_DIR   cargo's target directory (default: target/)
 #   GNUI               a built gnui CLI (default: built from the framework
 #                      checkout gnui/go.mod resolves gonativeui to)
 #
-# The core is copied to target/core-release/, where gnui.json's first
-# `frameworks` entry points; --skip-core keeps it as it is. The call media is
-# Go (gocore/voip/engine), in the executable. The Go backend's libraries, libsqlcipher.dylib and
-# libzfwebp.dylib, are built by their pinned scripts (sqlcipher/build.sh,
-# libwebp/build.sh) into target/sqlcipher/ and target/libwebp/, the other
-# `frameworks` entries, unless a library there is newer than its script.
+# Everything but two C libraries is Go, in the executable (calls included:
+# gocore/voip/engine). Those two, libsqlcipher.dylib and libzfwebp.dylib, are
+# built by their pinned scripts (sqlcipher/build.sh, libwebp/build.sh) into
+# target/sqlcipher/ and target/libwebp/, gnui.json's `frameworks`, unless a
+# library there is newer than its script.
 set -euo pipefail
 
 dev=0
 dmg=0
 notarize=0
-skip_core=0
 for arg in "$@"; do
     case "$arg" in
     --dev) dev=1 ;;
     --dmg) dmg=1 ;;
     --notarize) notarize=1 ;;
-    --skip-core) skip_core=1 ;;
-    *) echo "usage: $0 [--dev] [--dmg] [--notarize] [--skip-core]" >&2; exit 2 ;;
+    *) echo "usage: $0 [--dev] [--dmg] [--notarize]" >&2; exit 2 ;;
     esac
 done
 if [ "$dev" = 1 ] && [ "$notarize" = 1 ]; then
@@ -59,50 +56,13 @@ dist="$root/dist"
 if [ "$dev" = 1 ]; then
     dist="$root/dist/dev"
 fi
-lib_name=libzapfast_core.dylib
-staged="$root/target/core-release/$lib_name"
 
 if [ "$(uname -s)/$(uname -m)" != "Darwin/arm64" ]; then
-    echo "ZapFast's Go UI packages on Apple silicon macOS only" >&2
+    echo "Zap packages on Apple silicon macOS only" >&2
     exit 1
 fi
 
-# 1. The core: the cdylib alone (-p, so upstream's egui client is not
-# unified in), the core-release profile (panic = "unwind" for the C entry
-# points).
-stage_cargo() { # stage_cargo <package> <library> <staged path>
-    local package="$1" name="$2" dest="$3"
-    if [ "$skip_core" = 0 ]; then
-        echo "building $name (cargo build -p $package --profile core-release)"
-        (cd "$root" && cargo build --locked -p "$package" --profile core-release)
-        local built="${CARGO_TARGET_DIR:-$root/target}/core-release/$name"
-        if ! [ "$built" -ef "$dest" ]; then
-            mkdir -p "$(dirname "$dest")"
-            cp -f "$built" "$dest.tmp"
-            mv -f "$dest.tmp" "$dest"
-        fi
-    fi
-    if [ ! -f "$dest" ]; then
-        echo "$dest is missing: build it (drop --skip-core)" >&2
-        exit 1
-    fi
-    # dlopen takes the bundle's path, and the install name keeps any link to
-    # it relative to Contents/Frameworks (zfcore/build.rs).
-    local install_name
-    install_name="$(otool -D "$dest" | sed -n 2p)"
-    if [ "$install_name" != "@rpath/$name" ]; then
-        echo "$dest: install name $install_name, want @rpath/$name" >&2
-        exit 1
-    fi
-    if [ "$(lipo -archs "$dest")" != arm64 ]; then
-        echo "$dest: architectures $(lipo -archs "$dest"), want arm64" >&2
-        exit 1
-    fi
-}
-stage_cargo zapfast_core "$lib_name" "$staged"
-python3 "$root/scripts/gnui/check_gpl_sounds.py" "$staged"
-
-# 1b. The Go backend's libraries, loaded with purego from Contents/Frameworks
+# 1. The bundled C libraries, loaded with purego from Contents/Frameworks
 # (docs/go-backend/PLAN.md "Bundled libraries"). Each script verifies its
 # pinned source and that the library links only system libraries; a library
 # newer than its script (and the WebP shim) is kept.
@@ -147,20 +107,21 @@ if [ -z "${GNUI:-}" ]; then
 fi
 
 # 3. The bundle: gnui package builds darwin/arm64 with -trimpath,
-# -ldflags "-s -w" and -tags gnui_release (--dev: without that tag), signs inside out (the core, the
-# call media and the Go backend's libraries, then the app) with the hardened runtime and gnui.json's entitlements, and
-# verifies with codesign --verify --deep --strict.
+# -ldflags "-s -w" and -tags gnui_release (--dev: without that tag), signs
+# inside out (the two libraries, then the app) with the hardened runtime and
+# gnui.json's entitlements, and verifies with codesign --verify --deep
+# --strict.
 config="$root/gnui/gnui.json"
 if [ -n "${CODESIGN_IDENTITY:-}" ]; then
     args=(-identity "$CODESIGN_IDENTITY")
 else
     args=(-dev-cert)
-    # gnui-dev is self-signed, so neither binary has a Team ID, and the
-    # hardened runtime's library validation refuses the core ("mapping process
+    # gnui-dev is self-signed, so no binary has a Team ID, and the hardened
+    # runtime's library validation refuses the libraries ("mapping process
     # and mapped file (non-platform) have different Team IDs"). This build
-    # keeps the hardened runtime and lets the app load its own core and the
-    # Go backend's libraries (the app loads only Contents/Frameworks' copies:
-    # core.ResolveLibrary, sqlite.FindLibrary, av's WebP loader). A Developer
+    # keeps the hardened runtime and lets the app load its own libraries (the
+    # app loads only Contents/Frameworks' copies: sqlite.FindLibrary, av's
+    # WebP loader). A Developer
     # ID signs them all with one Team ID and gets no such exception. The derived
     # manifest sits beside gnui.json, whose relative paths it keeps.
     derived="$root/gnui/.gnui-package.json"

@@ -5,9 +5,14 @@ Decided 2026-10-28 (Adam):
 - **Remove Rust in stages.** Messaging, linking, the archive and media move
   to a Go backend on whatsmeow. Calls stay on a media-only Rust library,
   bridged from Go, until the call engine is ported to Go. Then Rust goes.
+  **Done (WP9, 2026-10-28):** the repository has no Rust; the app always
+  runs gocore, and an account the Rust core kept is taken over by
+  gocore/migrate (pure Go) on its first open.
 - **Licence.** whatsmeow depends on `go.mau.fi/libsignal` (GPL-3.0), so
   distributed Zap builds are GPL-3.0 once the Go backend ships. Upstream's
-  MIT notice stays.
+  MIT notice stays. Since WP9: `COPYING` (GPL-3.0), `LICENSE` (the notice
+  and upstream's MIT text) and `THIRD-PARTY-NOTICES.md`, all three in the
+  bundle's Resources.
 - **Workers.** Claude Code subagents, one per work package, each in its own
   worktree and directories.
 
@@ -23,9 +28,9 @@ whatsmeow, and the size of a Go port).
 - `CGO_ENABLED=0`, always. Native libraries are loaded at runtime with
   purego, as go-native-ui does. A new bundled dylib needs a build script
   under `packaging/macos/` and a line in this file.
-- The Go backend speaks the existing ABI (`zfcore/abi/zf.schema`,
-  `gnui/abi`). Neither changes, so the Rust core stays a fallback for
-  side-by-side runs until the Go backend reaches parity.
+- The Go backend speaks the existing ABI (`gnui/abi/zf.schema`, `gnui/abi`;
+  the schema was `zfcore/abi/zf.schema` until WP9). Until WP9 the Rust core
+  was a fallback for side-by-side runs.
 - Code copied from ZapFast Go (`~/Documents/projects/a3-lab/zapfast-go`, MIT,
   read only) comes from its commit 3104c46. Each copied file says so in its
   header.
@@ -46,23 +51,23 @@ bundle (and from `$ZAPFAST_*` or `target/` in development):
 
 Opus voice encoding and decoding use the system's AudioToolbox, so nothing is
 bundled for it. `packaging/macos/gnui-package.sh` builds both (when missing or
-older than their scripts) and bundles them beside `libzapfast_core.dylib`,
-which stays for the fallback (the call media, WP7's `libzfcalls.dylib`, is Go
-since WP8d: gocore/voip/engine);
+older than their scripts) and bundles them; they are the bundle's only
+libraries (`libzapfast_core.dylib` went with WP9, and the call media, WP7's
+`libzfcalls.dylib`, is Go since WP8d: gocore/voip/engine).
 `gnui-verify.sh` checks each is signed by the app's signer and links only
 system libraries.
 
-## Choosing the backend (WP6b)
+## Choosing the backend (WP6b, then WP9)
 
-`-engine=go|rust`, else `$ZAPFAST_ENGINE`, in development and release builds.
-With neither, an account keeps the backend its folder belongs to (whatsmeow.db
-or migration.json: Go; session.db alone: Rust) and a new account, and the
-demo, run on Go. `-engine=go` takes a Rust account over first
-(`migrate.Account`, holding the single-instance lock); a failure is the
-account's open error, and Try again retries it, or links afresh when the
-session itself cannot be converted. 1:1 calls run on the Go backend through
-WP7's bridge ([calls-bridge.md](calls-bridge.md) section 5); group calls and
-call links need `-engine=rust`. The wiring is `gnui/cmd/zapfast/engine.go`.
+Since WP9 there is no choice: every account, and the demo, runs on gocore
+(`-engine` and `$ZAPFAST_ENGINE` are gone). An account folder the Rust core
+kept (session.db and no whatsmeow.db), or one whose migration began
+(migration.json), is taken over first (`migrate.Account`, holding the
+single-instance lock); a failure is the account's open error, and Try again
+retries it, or links afresh when the session itself cannot be converted.
+1:1 calls run through WP7's bridge on the Go call engine
+([calls-bridge.md](calls-bridge.md) section 5); group calls and call links
+are not bridged. The wiring is `gnui/cmd/zapfast/engine.go`.
 
 ## Layout and packages
 
@@ -75,7 +80,8 @@ call links need `-engine=rust`. The wiring is `gnui/cmd/zapfast/engine.go`.
 | WP4 WhatsApp engine | `gnui/gocore/wa/` | WP1, WP3, WP5 | whatsmeow behind a fakeable client; every non-call command, tested with injected events |
 | WP6 Wiring and migration | `gnui/gocore/migrate/`, `gnui/cmd/zapfast/` | WP1, WP3 | `-engine=go|rust`; pickers; taking over an existing session and archive, copy-first and failing closed |
 | WP7 Call bridge | `gnui/gocore/calls/`, a media-only Rust crate | WP4 | 1:1 calls through whatsmeow signaling and the Rust media engine |
-| WP8 Call engine in Go | | WP7 | the Rust crate is gone |
+| WP8 Call engine in Go (**done**) | `gnui/gocore/voip/` | WP7 | the Rust crate is gone: the call engine, MLow and the media pipeline are Go |
+| WP9 No Rust (**done**) | the whole repository | WP8 | no `.rs` or Cargo file; no `-engine=rust`; the core binding (`gnui/core`'s purego loader of `libzapfast_core.dylib`) gone, `core.Conn` and its types kept; the schema, ABI fixtures and translations under `gnui/`; the demo checked against zfcore's recorded answers (`gocore/demo/testdata`); the bundle carries SQLCipher and libwebp only; GPL-3.0 |
 
 The details of each package, the gaps and the order are in
 [backend-map.md §4](backend-map.md#4-proposed-layout-and-work-packages).

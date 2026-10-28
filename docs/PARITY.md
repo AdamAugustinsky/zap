@@ -1,5 +1,10 @@
 # ZapFast parity checklist
 
+> Since WP9 (2026-10-28) Zap's backend is Go (gocore) and the Rust core is
+> gone from the repository. Rows whose evidence ran on the Rust core keep it
+> as recorded; the Go demo answers as zfcore's did
+> (`gnui/gocore/demo/testdata`).
+
 What the Go UI (`gnui/`) must do to match upstream ZapFast's egui client, on macOS. It follows `docs/GNUI-MIGRATION-PLAN.md`, "The parity checklist", and was built on 2026-10-20 from upstream as merged into `gnui` at `ba4a1d9`. This file holds the status of record for every row; the evidence for each is in the package doc named in its Evidence column (`docs/parity/<package>.md`). Rows are re-triaged at every upstream merge (the plan's UI drift alarm): new rows get the next free id in their area, changed rows are edited in place, and a removed behaviour keeps its row with the status `removed`.
 
 **Done** means the row's verification passes, or Adam waives the row in writing (exit criterion 1 of checkpoint 2).

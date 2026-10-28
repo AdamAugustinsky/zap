@@ -1,12 +1,16 @@
-# gnui: ZapFast's Go UI
+# gnui: Zap
 
-The Go module `zapfast`: the app on go-native-ui (`gonativeui`) over the Rust
-core in `../zfcore`. The plan is `../docs/GNUI-MIGRATION-PLAN.md`.
+The Go module `zapfast`: the app on go-native-ui (`gonativeui`) and its
+backend, gocore (the demo, or whatsmeow). The plans are
+`../docs/GNUI-MIGRATION-PLAN.md` (the UI) and `../docs/go-backend/PLAN.md`
+(the backend).
 
 ## Against upstream ZapFast
 
 These are measured on macOS, Apple M4, with the same 0.19.0 core and the
-demo's sample chats. Each figure is the median of six interleaved runs.
+demo's sample chats, before WP9: Zap then ran on ZapFast's Rust core, which
+the bundle's 45.2 MB included. Each figure is the median of six interleaved
+runs.
 
 | | Zap (Go) | ZapFast (egui) |
 |---|---:|---:|
@@ -22,8 +26,9 @@ launch tour) are still to be measured on a live screen.
 
 | Path | What |
 |---|---|
-| `abi/` | the records, generated from `../zfcore/abi/zf.schema` (`go run ./tools/abigen`) |
-| `core/` | the bindings: loading the library, `Send`, `Drain`, blobs, `OpenAsync`, `OpenPath`; `core.Conn` is what screens use |
+| `abi/` | the records, generated from `abi/zf.schema` (`go run ./tools/abigen`); `abi/testdata`, the encoder fixtures zfcore's Rust wrote |
+| `core/` | what screens use of a backend: `core.Conn`, `Config`, `OpenAsync`/`Pending`, the errors, frames and voice types, `OpenPath` |
+| `gocore/` | the backend: the Conn (`gocore.Conn`), the demo (`demo/`), WhatsApp on whatsmeow (`wa/`), the stores on SQLCipher (`store/`), audio and pictures (`av/`), calls (`calls/`, `voip/`), taking over an account the Rust core kept (`migrate/`) |
 | `core/fake/` | a `core.Conn` without the library, for UI tests on any OS: replays scripted events and fixtures, records commands |
 | `model/` | one account's pointer-free stores (chats, messages, contacts, link status) applied from the core's events |
 | `state/` | the app's UI state: accounts, open chat, page, panes, dialog, windows, lock, settings; command helpers; event listeners |
@@ -33,7 +38,9 @@ launch tour) are still to be measured on a live screen.
 | `format/` | upstream's util.rs text helpers the screens share: phone numbers, stamps, dates, durations, the 12/24-hour clock |
 | `lockhash/` | the app lock's and locked chats' password verifiers, the only implementation |
 | `theme/`, `sys/`, `logic/` | upstream's themes on Rex; the process's services; upstream's reducers |
-| `cmd/zapfast/` | the app: `app.Main`, the core opened async, `screens.go` wires every screen |
+| `cmd/zapfast/` | the app: `app.Main`, the core opened async (`engine.go`), `screens.go` wires every screen |
+| `i18n/` | the strings and their translations, generated from `i18n/po/*.po` (`go generate ./i18n`) |
+| `third_party/whatsmeow/` | whatsmeow with Zap's call patch (`ZAP-PATCH.md`) |
 | `internal/procinfo/` | exec-relative times for the startup numbers |
 
 ## The framework
@@ -55,27 +62,18 @@ replace github.com/go-text/typesetting => /Users/you/Projects/go-native-ui/third
 
 ## Building and testing
 
-Build the core first, from the repository root (always with `-p`, see
-`../zfcore/README.md`):
+With `CGO_ENABLED=0`, here:
 
 ```sh
-cargo build -p zapfast_core                          # target/debug/libzapfast_core.dylib
-cargo build -p zapfast_core --profile core-release   # what ships, and the startup numbers
-```
-
-Then, here, with `CGO_ENABLED=0`:
-
-```sh
-go test ./...                    # core's tests load the newest cargo build, demo core only
+go test ./...                           # the demo, fakes and fixtures; no account, no network
 go run ./cmd/zapfast -demo              # the app on the demo core
 go run ./cmd/zapfast -demo -o out.png   # the main window offscreen, once the chat list is in
 ```
 
-The loading policy (`core.ResolveLibrary`): a bundled app (its executable
-in `X.app/Contents/MacOS`) loads only `Contents/Frameworks/libzapfast_core.dylib`
-and fails closed without it; `$ZAPFAST_CORE`, `-core` and the cargo search are
-ignored or refused there. An unbundled run takes an explicit path (`-core`),
-then `$ZAPFAST_CORE`, then the newest of `target/{core-release,debug,release}`
-above the working directory or the executable. Without one, the tests skip
-(unless `$ZAPFAST_CORE` is set). Without `-demo` the app opens the real account (its own data,
-`ai.a3lab.zap`); the tests use the demo core only.
+A real account (without `-demo`) and the store tests need SQLCipher, and
+stickers need libwebp: `../packaging/macos/sqlcipher/build.sh` and
+`../packaging/macos/libwebp/build.sh` build them into `../target/`, where
+unbundled runs find them (or `$ZAPFAST_SQLCIPHER`, `$ZAPFAST_LIBWEBP`); a
+bundled app loads only its own `Contents/Frameworks` copies. Without them
+those tests skip. Without `-demo` the app opens the real account (its own
+data, `ai.a3lab.zap`); the tests use the demo core only.

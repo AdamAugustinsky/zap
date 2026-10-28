@@ -1,16 +1,15 @@
 #!/bin/bash
-# Check the Go UI's Zap.app as users receive it (gnui-package.sh runs it):
+# Check Zap.app as users receive it (gnui-package.sh runs it):
 #
 #   packaging/macos/gnui-verify.sh dist/Zap.app
 #
 # The Info.plist keys upstream's bundle has (usage strings, version,
 # category, copyright, minimum macOS) plus the URL types; the login agent;
-# the core and the Go backend's libraries
-# (libsqlcipher.dylib, libzfwebp.dylib) in Frameworks, each signed by the
-# app's signer, hardened,
-# named @rpath/<file> and linking only system libraries; the icon; no stray
-# files; arm64 only; the hardened runtime and the entitlements; codesign's
-# strict verification. Prints the sizes and Gatekeeper's verdict, which
+# the two bundled C libraries (libsqlcipher.dylib, libzfwebp.dylib) in
+# Frameworks, each signed by the app's signer, hardened, named
+# @rpath/<file> and linking only system libraries; the licences; the icon; no
+# stray files; arm64 only; the hardened runtime and the entitlements;
+# codesign's strict verification. Prints the sizes and Gatekeeper's verdict, which
 # rejects anything but a notarized Developer ID build (reported, not failed).
 set -euo pipefail
 
@@ -23,10 +22,9 @@ trap 'rm -rf "$temporary"' EXIT
 
 codesign --verify --deep --strict --verbose=2 "$app"
 exe="$app/Contents/MacOS/zapfast"
-lib="$app/Contents/Frameworks/libzapfast_core.dylib"
-# The Go backend's libraries, loaded with purego (docs/go-backend/PLAN.md).
+# The bundled C libraries, loaded with purego (docs/go-backend/PLAN.md).
 go_libs=(libsqlcipher.dylib libzfwebp.dylib)
-frameworks=("$lib")
+frameworks=()
 for name in "${go_libs[@]}"; do
     frameworks+=("$app/Contents/Frameworks/$name")
 done
@@ -115,12 +113,12 @@ check(os.path.isfile(icon) and os.path.getsize(icon) > 0, f"no icon at {icon}")
 allowed = {
     "Info.plist",
     "MacOS/zapfast",
-    "Frameworks/libzapfast_core.dylib",
     "Frameworks/libsqlcipher.dylib",
     "Frameworks/libzfwebp.dylib",
     f"Library/LaunchAgents/{label}.plist",
     "Resources/" + os.path.basename(icon),
-    "Resources/LICENSE",  # MIT: upstream's notice travels with the app
+    "Resources/COPYING",  # GPL-3.0: the app's licence
+    "Resources/LICENSE",  # the notice of the licence, and upstream's MIT notice
     "Resources/THIRD-PARTY-NOTICES.md",
     "_CodeSignature/CodeResources",
 }
@@ -131,7 +129,8 @@ for directory, dirs, files in os.walk(contents):
 check(found == allowed, f"bundle files: stray {sorted(found - allowed)}, missing {sorted(allowed - found)}")
 check(sorted(os.listdir(app)) == ["Contents"], f"stray entries beside Contents: {sorted(os.listdir(app))}")
 
-# The core: signed by the app's signer, hardened, loaded through its rpath name.
+# The libraries: signed by the app's signer, hardened, loaded through their
+# rpath names.
 def signature(name):
     fields = {}
     with open(os.path.join(tmp, name + ".sig"), encoding="utf-8") as f:
@@ -142,9 +141,9 @@ def signature(name):
     return fields
 
 exe_sig = signature("zapfast")
-libs = {name: signature(name) for name in ("libzapfast_core.dylib", "libsqlcipher.dylib", "libzfwebp.dylib")}
+libs = {name: signature(name) for name in ("libsqlcipher.dylib", "libzfwebp.dylib")}
 # Only a signer without a Team ID (gnui-dev) needs library validation off to
-# load the core under the hardened runtime; a Developer ID build must not
+# load the libraries under the hardened runtime; a Developer ID build must not
 # carry the exception.
 wanted = dict(config["entitlements"])
 if exe_sig.get("TeamIdentifier", "not set") == "not set":
@@ -159,8 +158,8 @@ for name, sig in [("app", exe_sig)] + list(libs.items()):
 for name in libs:
     with open(os.path.join(tmp, name + ".install-name"), encoding="utf-8") as f:
         check(f.read().strip() == f"@rpath/{name}", f"{name}'s install name is not @rpath/{name}")
-# The Go backend's libraries see every key and message: they link only the
-# system's libraries (and name themselves).
+# The libraries see every key and message: they link only the system's
+# libraries (and name themselves).
 for name in ("libsqlcipher.dylib", "libzfwebp.dylib"):
     with open(os.path.join(tmp, name + ".links"), encoding="utf-8") as f:
         links = [line.strip() for line in f if line.strip()]
@@ -174,15 +173,13 @@ PY
 
 # Sizes: the plan's budget is a Go executable under 10 MB.
 exe_bytes="$(stat -f %z "$exe")"
-lib_bytes="$(stat -f %z "$lib")"
 go_lib_bytes=0
 for name in "${go_libs[@]}"; do
     go_lib_bytes=$((go_lib_bytes + $(stat -f %z "$app/Contents/Frameworks/$name")))
 done
 bundle_kib="$(du -sk "$app" | cut -f1)"
-printf 'sizes: executable %s B (%.1f MiB), core %s B (%.1f MiB), Go backend libraries %s B (%.1f MiB), bundle %s KiB on disk (%.1f MiB)\n' \
+printf 'sizes: executable %s B (%.1f MiB), libraries %s B (%.1f MiB), bundle %s KiB on disk (%.1f MiB)\n' \
     "$exe_bytes" "$(echo "$exe_bytes / 1048576" | bc -l)" \
-    "$lib_bytes" "$(echo "$lib_bytes / 1048576" | bc -l)" \
     "$go_lib_bytes" "$(echo "$go_lib_bytes / 1048576" | bc -l)" \
     "$bundle_kib" "$(echo "$bundle_kib / 1024" | bc -l)"
 if [ "$exe_bytes" -ge 10000000 ]; then

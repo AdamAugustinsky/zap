@@ -46,9 +46,9 @@ func TestTheBundleDescriptionServesWhatTheServicesNeed(t *testing.T) {
 	if len(c.LoginAgents) != 1 || c.LoginAgents[0].Name != agentName || !slices.Equal(c.LoginAgents[0].Arguments, []string{"--start-hidden"}) {
 		t.Errorf("login agents %+v", c.LoginAgents)
 	}
-	// The Rust core (the fallback) and the Go backend's SQLCipher and WebP
-	// libraries; the call media is Go (gocore/voip/engine).
-	frameworks := []string{"../target/core-release/libzapfast_core.dylib", "../target/sqlcipher/libsqlcipher.dylib", "../target/libwebp/libzfwebp.dylib"}
+	// The two bundled C libraries, SQLCipher and WebP; everything else
+	// (calls included: gocore/voip/engine) is Go, in the executable.
+	frameworks := []string{"../target/sqlcipher/libsqlcipher.dylib", "../target/libwebp/libzfwebp.dylib"}
 	if !slices.Equal(c.Frameworks, frameworks) || c.Usage["NSMicrophoneUsageDescription"] == "" || c.Usage["NSCameraUsageDescription"] == "" {
 		t.Errorf("frameworks %v usage %v", c.Frameworks, c.Usage)
 	}

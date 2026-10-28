@@ -1,5 +1,15 @@
 # ZapFast on go-native-ui: the migration plan (phase 7)
 
+> **Status (2026-10-28, WP9).** The core is no longer Rust. This plan kept
+> ZapFast's Rust core behind a C ABI; the backend has since been rewritten in
+> Go (`gnui/gocore`, [docs/go-backend/PLAN.md](go-backend/PLAN.md)) and the
+> Rust core, upstream's egui app and their tooling (`zfcore/`, `src/`,
+> Cargo, the `scripts/gnui` gates) are gone from the repository. The ABI it
+> describes lives on as `gnui/abi/zf.schema`, spoken by gocore. What follows
+> is the plan as it was written; read "the core" as gocore today, and its
+> Rust-specific gates (cargo, the headless tree, the GPL-sounds check, the
+> crate licence audit) as retired.
+
 Drafted 2026-10-18, for your approval. It carries out D33 (the framework's DECISIONS.md):
 - ZapFast keeps its Rust core, built as a library inside the app bundle behind a small C ABI;
 - the whole UI is rewritten in Go on go-native-ui, with the Rex design system (`rexui`), and it should feel native on macOS. Other OSes come afterwards.
