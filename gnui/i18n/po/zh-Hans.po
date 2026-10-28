@@ -4582,3 +4582,13 @@ msgstr "透明度"
 #: gnui/ui/settings/rows.go
 msgid "The desktop shows softly through the window's background. The system's Reduce transparency setting turns it off too."
 msgstr "桌面会柔和地透过窗口背景显示。系统的“降低透明度”设置也会将其关闭。"
+
+#. Translators: a message this device could not decrypt yet; the sender's phone is asked to send it again.
+#: gnui/ui/conversation/kinds/note.go
+msgid "Waiting for this message"
+msgstr "正在等待此消息"
+
+#. Translators: the line under "Waiting for this message".
+#: gnui/ui/conversation/kinds/note.go
+msgid "This may take a while. Open WhatsApp on your phone."
+msgstr "这可能需要一些时间。请在手机上打开 WhatsApp。"

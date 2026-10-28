@@ -42,6 +42,8 @@ const (
 	kindPin          = "pin"
 	kindViewOnce     = "view-once"
 	kindUnsupported  = "unsupported"
+	// kindWaiting is a message this device could not decrypt yet.
+	kindWaiting = "waiting"
 )
 
 // deletedText is what a revoked message's row says.

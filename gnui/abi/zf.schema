@@ -363,6 +363,9 @@ union Content {
     duration: u64
     group: bool
   }
+  # A message this device could not decrypt yet: the sender's phone is
+  # asked to send it again, and the real message replaces this row.
+  Waiting = 16 {}
 }
 
 struct Message {

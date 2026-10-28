@@ -4726,3 +4726,13 @@ msgstr "Saydamlık"
 #: gnui/ui/settings/rows.go
 msgid "The desktop shows softly through the window's background. The system's Reduce transparency setting turns it off too."
 msgstr "Masaüstü pencerenin arka planından hafifçe görünür. Sistemin Saydamlığı azalt ayarı da bunu kapatır."
+
+#. Translators: a message this device could not decrypt yet; the sender's phone is asked to send it again.
+#: gnui/ui/conversation/kinds/note.go
+msgid "Waiting for this message"
+msgstr "Bu mesaj bekleniyor"
+
+#. Translators: the line under "Waiting for this message".
+#: gnui/ui/conversation/kinds/note.go
+msgid "This may take a while. Open WhatsApp on your phone."
+msgstr "Bu biraz zaman alabilir. Telefonunuzda WhatsApp'ı açın."

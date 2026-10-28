@@ -42,6 +42,8 @@ func (e *Engine) handle(evt any) {
 
 	case *events.Message:
 		err = e.incoming(v)
+	case *events.UndecryptableMessage:
+		err = e.undecryptable(v)
 	case *events.HistorySync:
 		err = e.history(v)
 	case *events.Receipt:
@@ -226,7 +228,7 @@ func (e *Engine) incoming(evt *events.Message) error {
 		// Other protocol messages change nothing shown.
 		return nil
 	}
-	_, existsErr := e.arch.Message(chat, m.ID)
+	old, existsErr := e.arch.Message(chat, m.ID)
 	existed := existsErr == nil
 	if m.Deleted {
 		if !existed {
@@ -252,6 +254,36 @@ func (e *Engine) incoming(evt *events.Message) error {
 		e.emitChat(chat)
 		return nil
 	}
+	return e.keep(m, evt.Info, existed, existed && old.Kind == kindWaiting)
+}
+
+// undecryptable stores a placeholder for a message this device could not
+// decrypt, so that it does not vanish (zf:src/backend/worker.rs:4703).
+// whatsmeow has asked the sender's phone to send it again; when it comes,
+// incoming replaces the row and notifies then, so the placeholder does not.
+func (e *Engine) undecryptable(evt *events.UndecryptableMessage) error {
+	// The sender marks internal traffic, such as reactions, as hidden.
+	if evt.Info.Chat == types.StatusBroadcastJID || evt.DecryptFailMode == events.DecryptFailHide {
+		return nil
+	}
+	chat, sender := e.canonical(evt.Info.Chat), e.canonical(evt.Info.Sender)
+	if _, err := e.arch.Message(chat, evt.Info.ID); !noRows(err) {
+		return err // stored already, or the archive failed
+	}
+	m := store.Message{ID: evt.Info.ID, ChatID: chat, Sender: sender, SenderName: evt.Info.PushName, FromMe: evt.Info.IsFromMe,
+		Timestamp: evt.Info.Timestamp.Unix(), Kind: kindWaiting, Status: "delivered"}
+	if evt.UnavailableType == events.UnavailableTypeViewOnce {
+		// The phone never shares these with linked devices: no use waiting.
+		m.Kind = kindViewOnce
+	}
+	return e.keep(m, evt.Info, false, false)
+}
+
+// keep stores a message that is new, or replaces one (existed), and
+// announces it. A message replacing a placeholder (waited) is announced as
+// it would have been when the placeholder came.
+func (e *Engine) keep(m store.Message, info types.MessageInfo, existed, waited bool) error {
+	chat := m.ChatID
 	if blocked, err := e.arch.Blocked(chat, m.ID, m.Timestamp); err != nil || blocked {
 		return err
 	}
@@ -270,8 +302,8 @@ func (e *Engine) incoming(evt *events.Message) error {
 		if c.Kind == "" {
 			c.Kind = archiveKind(chat)
 		}
-		if c.Name == "" && !evt.Info.IsGroup && !m.FromMe {
-			c.Name = evt.Info.PushName
+		if c.Name == "" && !info.IsGroup && !m.FromMe {
+			c.Name = info.PushName
 		}
 		if stored.Timestamp >= c.LastActivity {
 			c.LastActivity = stored.Timestamp
@@ -295,9 +327,12 @@ func (e *Engine) incoming(evt *events.Message) error {
 	if existed {
 		e.emitMessage(chat, m.ID)
 		e.emitChat(chat)
+		if waited && !m.FromMe {
+			e.announce(stored)
+		}
 		return nil
 	}
-	e.live(stored, unread)
+	e.live(stored, unread && m.Kind != kindWaiting)
 	if shared(stored) {
 		e.sharedChanged(chat)
 	}
