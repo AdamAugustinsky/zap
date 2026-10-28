@@ -179,12 +179,27 @@ func (e *Engine) tellPhone(patch appstate.PatchInfo) {
 	if !e.cli.IsConnected() {
 		return
 	}
-	cli := e.cli
+	// In order, one at a time: an older favourites list or archive state
+	// overtaking a newer one would leave the phone with the older.
+	e.settings = append(e.settings, patch)
+	if len(e.settings) == 1 {
+		e.sendSetting()
+	}
+}
+
+// sendSetting sends the first queued chat setting, then the next.
+func (e *Engine) sendSetting() {
+	next, cli := e.settings[0], e.cli
 	e.job(func(ctx context.Context) func() {
-		if err := cli.SendAppState(ctx, patch); err != nil {
+		if err := cli.SendAppState(ctx, next); err != nil {
 			slog.Warn("zapfast wa: could not synchronize a chat preference", "err", err)
 		}
-		return nil
+		return func() {
+			e.settings = e.settings[1:]
+			if len(e.settings) > 0 {
+				e.sendSetting()
+			}
+		}
 	})
 }
 

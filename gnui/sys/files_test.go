@@ -233,6 +233,9 @@ func TestACoreLibraryWithoutALogIsSaidOnceAndNotAnError(t *testing.T) {
 // the app's, whole.
 func TestTheRealCoreWritesIntoTheAppsLog(t *testing.T) {
 	path, err := core.FindLibrary()
+	if err == nil {
+		_, err = os.Stat(path) // $ZAPFAST_CORE is taken as given
+	}
 	if err != nil {
 		t.Skipf("no core library: %v", err)
 	}

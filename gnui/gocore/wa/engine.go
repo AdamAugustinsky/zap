@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"go.mau.fi/whatsmeow/appstate"
 	wastore "go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/types"
 	waLog "go.mau.fi/whatsmeow/util/log"
@@ -130,6 +131,7 @@ type Engine struct {
 	permitted    bool                   // Start came
 	prefetched   map[string]bool        // chats the prefetch filled this session
 	typing       []chatState            // chat states to send, in order
+	settings     []appstate.PatchInfo   // chat settings to send to the phone, in order
 
 	// calls is WP7's call bridge (calls.go): set by Open, before any
 	// command, and never replaced.
