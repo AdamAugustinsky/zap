@@ -19,7 +19,9 @@ import (
 )
 
 // fixtures is testdata/fixtures.json: what zfcore/tests/migration_fixtures.rs
-// wrote, all synthetic.
+// (zapfast_core over whatsapp-rust 5e72baf) wrote, all synthetic, with the
+// session and archive beside it. They are committed data: the generator
+// went with the Rust tree in WP9, so they can no longer be regenerated here.
 type fixtures struct {
 	ArchiveKey string `json:"archive_key"`
 	Accounts   struct {

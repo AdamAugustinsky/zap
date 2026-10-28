@@ -324,7 +324,7 @@ func TestChunksPanicsForARecordWithNoList(t *testing.T) {
 // The chunk limits are the schema's: one per chunk(N, B) list, and none
 // that the schema does not have.
 func TestLimitsMatchTheSchema(t *testing.T) {
-	schema, err := os.ReadFile("../../../zfcore/abi/zf.schema")
+	schema, err := os.ReadFile("../../abi/zf.schema")
 	if err != nil {
 		t.Fatal(err)
 	}

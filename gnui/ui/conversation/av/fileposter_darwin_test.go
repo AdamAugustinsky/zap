@@ -20,7 +20,7 @@ import (
 
 func firstFrame(t *testing.T) (string, *image.RGBA) {
 	t.Helper()
-	path, err := filepath.Abs("../../../../assets/demo/videos/launch.mp4")
+	path, err := filepath.Abs("../../../gocore/demo/assets/videos/launch.mp4")
 	if err != nil {
 		t.Fatal(err)
 	}

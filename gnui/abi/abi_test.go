@@ -10,12 +10,15 @@ import (
 	"weak"
 )
 
-// The fixtures are written by zfcore's Rust tests
-// (fixtures_round_trip_and_are_current): every variant, over enough rounds
-// that each union variant appears.
+// The fixtures (testdata/) were written by zfcore's Rust encoder
+// (zapfast_core over whatsapp-rust 5e72baf, its
+// fixtures_round_trip_and_are_current test): every variant, over enough
+// rounds that each union variant appears. They are committed data: the Rust
+// core is gone (WP9), so they can no longer be regenerated here, and they
+// pin the Go codec to the encoding the Rust side wrote.
 func readFrames(t testing.TB, name string) [][]byte {
 	t.Helper()
-	buf, err := os.ReadFile("../../zfcore/abi/fixtures/" + name)
+	buf, err := os.ReadFile("testdata/" + name)
 	if err != nil {
 		t.Fatal(err)
 	}

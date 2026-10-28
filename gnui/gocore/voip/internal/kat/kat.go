@@ -1,7 +1,9 @@
 // Package kat loads the VoIP test vectors for the gocore/voip tests:
 // testdata/kats.json, copied verbatim from whatsapp-rust 5e72baf
 // wacore/src/voip/testdata (MIT), and testdata/golden.json, written by the
-// real Rust code through zfcalls/tests/voip_golden.rs.
+// real Rust code through zapfast_core's zfcalls/tests/voip_golden.rs. Both
+// are committed data: zfcalls went with the Rust tree in WP9, so golden.json
+// can no longer be regenerated here.
 package kat
 
 import (

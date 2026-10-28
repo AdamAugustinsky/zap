@@ -1,5 +1,9 @@
 # MLow codec runtime tables
 
+> Copied from whatsapp-rust 5e72baf `wacore/src/voip/mlow/testdata` (MIT).
+> Paths, Rust names and regeneration commands below are that repository's;
+> Zap has no Rust (WP9), so nothing here is regenerated in this repository.
+
 The `*.bin` files here are the MLow (smpl_audio_codec) **runtime constant tables**, not test
 fixtures. The codec loads each one once at startup (via `OnceLock`). Each `.bin` is a
 **zlib-compressed protobuf blob** (`tables.proto`).

@@ -9,5 +9,6 @@
 //
 // The study behind it is docs/go-backend/storage.md (§3). The fixtures in
 // testdata were written by the Rust core's own code
-// (zfcore/tests/migration_fixtures.rs); they are synthetic.
+// (zfcore/tests/migration_fixtures.rs, removed in WP9); they are synthetic,
+// and can no longer be regenerated here.
 package migrate

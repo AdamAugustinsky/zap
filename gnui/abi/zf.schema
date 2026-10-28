@@ -1,8 +1,10 @@
-# ZapFast core ABI: every record that crosses zfcore's C ABI.
+# Zap's core ABI: every record between the UI and its backend (gocore). It
+# began as the C ABI of ZapFast's Rust core (zfcore, removed in WP9), whose
+# call names (zf_send, zf_blob_put, ...) the comments below still use for
+# the Conn methods that took their place.
 #
-# One file generates both sides: `go run ./tools/abigen` in gnui/ writes
-# zfcore/src/abi_gen.rs and gnui/abi/abi_gen.go, and `-check` fails when
-# either is stale. The grammar (one declaration or field per line):
+# `go run ./tools/abigen` in gnui/ writes abi/abi_gen.go from this file, and
+# `-check` fails when it is stale. The grammar (one declaration or field per line):
 #
 #   enum Name u8 { Variant = n ... }        a plain enum, one byte
 #   struct Name { field: type ... }

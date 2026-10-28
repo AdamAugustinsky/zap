@@ -29,8 +29,8 @@
 // bitstream.
 //
 // What the tests hold the port to (rust_golden_test.go against vectors from
-// zfcalls/tests/mlow_golden.rs, plus the per-stage fixture suites ported
-// from the Rust module):
+// zfcalls/tests/mlow_golden.rs, committed data since WP9 removed zfcalls,
+// plus the per-stage fixture suites ported from the Rust module):
 //
 //   - Bit for bit: the range coder, the TOC, multiframe and SplitRed
 //     framing, the decoder's frame reports and declared lengths, and the
@@ -42,7 +42,7 @@
 //     above 140 dB).
 //   - By quality: the encoder's packets must decode as coded frames, with
 //     nothing concealed, in both the Go decoder and Rust's (the Rust test
-//     decodes testdata/go_encoded.json), and reach the spectral SNR against
+//     decoded testdata/go_encoded.json until WP9), and reach the spectral SNR against
 //     the input that Rust's encoder reaches on the same input, less 1 dB.
 //     Where the arithmetic agrees the packets are Rust's byte for byte; a
 //     last-bit difference that flips one of the encoder's tie-breaking

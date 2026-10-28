@@ -9,7 +9,7 @@ import (
 	"zapfast/core"
 )
 
-const fixtures = "../../../zfcore/abi/fixtures/events.bin"
+const fixtures = "../../abi/testdata/events.bin" // written by zfcore's Rust encoder (abi/abi_test.go)
 
 // log records what a screen would: the tags, and copies of a few fields.
 type log struct {
@@ -40,7 +40,7 @@ func (l *log) Event(e *abi.Event) {
 	}
 }
 
-// zfcore's fixtures hold every event variant: all of them replay.
+// The ABI fixtures hold every event variant: all of them replay.
 func TestReplaysEveryFixtureEvent(t *testing.T) {
 	stream, err := os.ReadFile(fixtures)
 	if err != nil {

@@ -2,7 +2,7 @@ package srtp
 
 // Byte-for-byte checks against testdata/golden.json, written by
 // whatsapp-rust 5e72baf's own MediaPipeline, VideoPipeline, e2e_srtp and
-// hbh_srtp (zfcalls/tests/voip_golden.rs).
+// hbh_srtp (zfcalls/tests/voip_golden.rs). The vectors are committed data: zfcalls went with the Rust tree in WP9, so they can no longer be regenerated here.
 
 import (
 	"bytes"

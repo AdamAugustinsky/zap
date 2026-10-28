@@ -1,9 +1,8 @@
-// Command abigen generates both sides of ZapFast's core ABI from
-// zfcore/abi/zf.schema: the Rust records (zfcore/src/abi_gen.rs) and the Go
-// records (gnui/abi/abi_gen.go). Run it from gnui/:
+// Command abigen generates the Go records of Zap's core ABI
+// (abi/abi_gen.go) from abi/zf.schema. Run it from gnui/:
 //
-//	go run ./tools/abigen          write both files
-//	go run ./tools/abigen -check   fail if either is stale
+//	go run ./tools/abigen          write the file
+//	go run ./tools/abigen -check   fail if it is stale
 //	go run ./tools/abigen -sizes   list every type's and record's largest encoding
 package main
 
@@ -18,10 +17,9 @@ import (
 )
 
 func main() {
-	schemaPath := flag.String("schema", "../zfcore/abi/zf.schema", "the schema")
-	rustOut := flag.String("rust", "../zfcore/src/abi_gen.rs", "generated Rust")
+	schemaPath := flag.String("schema", "abi/zf.schema", "the schema")
 	goOut := flag.String("go", "abi/abi_gen.go", "generated Go")
-	check := flag.Bool("check", false, "fail if a generated file is stale instead of writing it")
+	check := flag.Bool("check", false, "fail if the generated file is stale instead of writing it")
 	sizes := flag.Bool("sizes", false, "print the largest encoding of every type and record")
 	flag.Parse()
 
@@ -47,7 +45,6 @@ func main() {
 		path string
 		data []byte
 	}{
-		{*rustOut, []byte(genRust(s))},
 		{*goOut, goSrc},
 	}
 	stale := false

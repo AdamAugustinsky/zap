@@ -1,5 +1,9 @@
 # MLOW oracle fixtures
 
+> Copied from whatsapp-rust 5e72baf `wacore/src/voip/mlow/testdata` (MIT).
+> Paths, Rust names and regeneration commands below are that repository's;
+> Zap has no Rust (WP9), so nothing here is regenerated in this repository.
+
 The primary oracle is the shipped WhatsApp VoIP wasm. Every primary fixture below is now
 regenerated from `synth_mic.raw` through the original encoder/decoder, including intermediate DSP
 inputs, outputs and state. There is no recorded call audio or real PII in this corpus.

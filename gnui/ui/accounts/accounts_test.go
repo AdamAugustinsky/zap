@@ -292,7 +292,7 @@ func TestTheRowsShowProfilePictures(t *testing.T) {
 	before := r.pictures() // the icons and the like
 
 	r.f[0].Emit(ev(abi.EventTagAvatar, func(e *abi.Event) {
-		e.Avatar = abi.EventAvatar{ID: []byte("5511912345678@s.whatsapp.net"), Path: []byte("../../../assets/demo/avatars/ada.jpg"), HasPath: true}
+		e.Avatar = abi.EventAvatar{ID: []byte("5511912345678@s.whatsapp.net"), Path: []byte("../../gocore/demo/assets/avatars/ada.jpg"), HasPath: true}
 	}))
 	for i := 0; i < 200 && r.pictures() < before+2; i++ {
 		r.Frames(1)

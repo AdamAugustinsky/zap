@@ -1,0 +1,119 @@
+LoadChat	ok
+SendText	ok
+SendLocation	ok
+Composing	ok
+SaveDraft	ok
+MarkRead	ok
+SetMuted	ok
+SendImage	ok (blob taken)
+SendVoice	ok (blob taken)
+SetOnline	ok
+Reconnect	ok
+RefreshPoll	ZF_E_STATE: the demo core does not answer RefreshPoll
+CreatePoll	ZF_E_STATE: the demo core does not answer CreatePoll
+VotePoll	ok
+ReplyInteractive	ZF_E_STATE: the demo core does not answer ReplyInteractive
+Forward	ZF_E_STATE: the demo core does not answer Forward
+ForwardLimit	ZF_E_STATE: the demo core does not answer ForwardLimit
+MarkUnread	ZF_E_STATE: the demo core does not answer MarkUnread
+WatchReceipts	ok
+LoadPins	ZF_E_STATE: the demo core does not answer LoadPins
+FetchOlder	ZF_E_STATE: the demo core does not answer FetchOlder
+ReloadHistory	ZF_E_STATE: the demo core does not answer ReloadHistory
+SetHistoryPrefetch	ok
+LoadChatMedia	ok
+Download	ZF_E_STATE: the demo core does not answer Download
+DownloadMotion	ZF_E_STATE: the demo core does not answer DownloadMotion
+FetchAvatar	ok
+LoadUntil	ZF_E_STATE: the demo core does not answer LoadUntil
+SearchMessages	ZF_E_STATE: the demo core does not answer SearchMessages
+SearchChatMessages	ZF_E_STATE: the demo core does not answer SearchChatMessages
+SetStar	ZF_E_STATE: the demo core does not answer SetStar
+LoadStarred	ZF_E_STATE: the demo core does not answer LoadStarred
+ListChatShared	ok
+EnsureChat	ok
+EditText	ZF_E_STATE: the demo core does not answer EditText
+Revoke	ZF_E_STATE: the demo core does not answer Revoke
+DeleteLocal	ZF_E_STATE: the demo core does not answer DeleteLocal
+PickFiles	ZF_E_STATE: the demo core does not answer PickFiles
+SendFiles	ZF_E_STATE: the demo core does not answer SendFiles
+SetLocked	ok
+CreateLabel	ZF_E_STATE: the demo core does not answer CreateLabel
+UpdateLabel	ZF_E_STATE: the demo core does not answer UpdateLabel
+DeleteLabel	ZF_E_STATE: the demo core does not answer DeleteLabel
+SetChatLabels	ZF_E_STATE: the demo core does not answer SetChatLabels
+StartCall	ok
+JoinCallLink	ok
+CancelCall	ok
+AnswerCall	ok
+DeclineCall	ok
+HangupCall	ok
+SetCallMuted	ok
+SetCallCamera	ok
+SetCallMicrophone	ok
+SetCallSpeaker	ok
+SetCallCameraDevice	ok
+RefreshCallDevices	ok
+LoadCallLog	ok
+MarkPlayed	ok
+SendSticker	ok
+SaveSticker	ok
+RemoveRecentSticker	ok
+ForgetSticker	ok
+ImportStickerUrl	ZF_E_STATE: the demo core does not answer ImportStickerUrl
+PickStickerArchive	ZF_E_STATE: the demo core does not answer PickStickerArchive
+PickNotificationSound	ZF_E_STATE: the demo core does not answer PickNotificationSound
+SetChatSound	ZF_E_STATE: the demo core does not answer SetChatSound
+PickChatSound	ZF_E_STATE: the demo core does not answer PickChatSound
+PickDownloadFolder	ZF_E_STATE: the demo core does not answer PickDownloadFolder
+PickWallpaperImage	ZF_E_STATE: the demo core does not answer PickWallpaperImage
+RemoveWallpaperImage	ZF_E_STATE: the demo core does not answer RemoveWallpaperImage
+SetProfile	ZF_E_STATE: the demo core does not answer SetProfile
+PickProfilePicture	ZF_E_STATE: the demo core does not answer PickProfilePicture
+SetGroupName	ZF_E_STATE: the demo core does not answer SetGroupName
+PickGroupPicture	ZF_E_STATE: the demo core does not answer PickGroupPicture
+SetGroupPicture	ZF_E_STATE: the demo core does not answer SetGroupPicture (blob kept)
+SetDownloadFolder	ZF_E_STATE: the demo core does not answer SetDownloadFolder
+SetKeepChatsArchived	ZF_E_STATE: the demo core does not answer SetKeepChatsArchived
+Resumed	ok
+SaveAttachmentAs	ZF_E_STATE: the demo core does not answer SaveAttachmentAs
+OpenLog	ok
+SaveAttachments	ZF_E_STATE: the demo core does not answer SaveAttachments
+PrepareClipboardImage	ZF_E_STATE: the demo core does not answer PrepareClipboardImage
+DeleteStickerPack	ZF_E_STATE: the demo core does not answer DeleteStickerPack
+ViewStickerPack	ok
+AddStickerPack	ok
+SendStickerPack	ok
+PickStickerPicture	ZF_E_STATE: the demo core does not answer PickStickerPicture
+MakeSticker	ZF_E_STATE: the demo core does not answer MakeSticker
+InspectPicture	ZF_E_STATE: the demo core does not answer InspectPicture
+ApplyPictureEdit	ZF_E_STATE: the demo core does not answer ApplyPictureEdit (blob kept)
+CreateStickerPack	ZF_E_STATE: the demo core does not answer CreateStickerPack
+SetStickerPack	ZF_E_STATE: the demo core does not answer SetStickerPack
+SaveContact	ZF_E_STATE: the demo core does not answer SaveContact
+NewContact	ZF_E_STATE: the demo core does not answer NewContact
+SendGif	ok
+SearchGifs	ok
+RecentStickers	ok
+React	ZF_E_STATE: the demo core does not answer React
+SetArchived	ZF_E_STATE: the demo core does not answer SetArchived
+LeaveGroup	ZF_E_STATE: the demo core does not answer LeaveGroup
+DeleteChat	ZF_E_STATE: the demo core does not answer DeleteChat
+ClearChat	ZF_E_STATE: the demo core does not answer ClearChat
+SetPinned	ZF_E_STATE: the demo core does not answer SetPinned
+SetMessagePinned	ZF_E_STATE: the demo core does not answer SetMessagePinned
+SetFavorite	ZF_E_STATE: the demo core does not answer SetFavorite
+PairWithPhone	ZF_E_STATE: the demo core does not answer PairWithPhone
+Unlink	ZF_E_STATE: the demo core does not answer Unlink
+RemoveAccount	ZF_E_STATE: the demo core does not answer RemoveAccount
+SetProxy	ZF_E_STATE: the demo core does not answer SetProxy
+StartOverArchive	ZF_E_STATE: the demo core does not answer StartOverArchive
+LoadStorageStats	ok
+ClearMediaCache	ok
+FetchAccountPrivacy	ok
+SetAccountPrivacy	ok
+PreviewInvite	ZF_E_STATE: the demo core does not answer PreviewInvite
+JoinInvite	ZF_E_STATE: the demo core does not answer JoinInvite
+PickAnswer	ok
+DemoIncoming	ok
+DemoTyping	ok

@@ -1,5 +1,6 @@
 // Package i18n holds ZapFast's interface strings and their translations,
-// ported from zf:src/i18n.rs and generated from zf:assets/i18n/*.po.
+// ported from zf:src/i18n.rs and generated from po/*.po (upstream ZapFast's
+// catalogs, zf:assets/i18n, with the Go UI's own messages added).
 //
 // Screens call T, P and N with upstream's English source strings, exactly as
 // upstream calls gettext, pgettext and ngettext. A string with no
@@ -15,7 +16,7 @@
 // that allocates nothing.
 package i18n
 
-//go:generate go run ../tools/i18ngen -po ../../assets/i18n -out tables_gen.go
+//go:generate go run ../tools/i18ngen -po po -out tables_gen.go
 
 import (
 	"compress/flate"

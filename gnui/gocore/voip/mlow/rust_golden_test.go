@@ -1,7 +1,10 @@
 // Checks the Go port against vectors the Rust codec wrote
 // (zfcalls/tests/mlow_golden.rs, whatsapp-rust 5e72baf) over synthetic input,
 // packet loss, multiframe envelopes, SplitRed, corrupted packets, every TOC
-// byte, and encoder/decoder resets.
+// byte, and encoder/decoder resets. The vectors (testdata/rust_golden.json)
+// are committed data: zfcalls went with the Rust tree in WP9, so they can no
+// longer be regenerated here, and go_encoded.json is no longer decoded by
+// Rust's decoder.
 //
 // What must match exactly: the generated input (its hash), and the framing
 // of every decode call (sample count, frame report, declared packet length).
@@ -566,8 +569,8 @@ func goldenGoEncodedCases(t *testing.T, doc val) (names []string, inputs map[str
 // spectral SNR Rust's packets reach (both through the Go decoder, which
 // TestRustGolden_DecoderMatchesRust ties to Rust's), less
 // goldenSnrMarginDb. It also checks testdata/go_encoded.json, which
-// zfcalls/tests/mlow_golden.rs decodes with Rust's decoder, is current;
-// ZF_WRITE_MLOW_GO=1 rewrites it.
+// zfcalls/tests/mlow_golden.rs decoded with Rust's decoder until WP9, is
+// current; ZF_WRITE_MLOW_GO=1 rewrites it.
 func TestRustGolden_GoEncoder(t *testing.T) {
 	doc := loadJSON(t, "rust_golden.json")
 	rust := map[string][][]byte{}

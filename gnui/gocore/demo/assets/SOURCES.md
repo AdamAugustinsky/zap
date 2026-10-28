@@ -1,8 +1,8 @@
 # Demo media
 
-Stock pictures, clips and stickers for the offline demo (`--demo`, the demo
-tours and their screenshots). They are compiled in only with the `demo`
-feature; release builds do not carry them.
+Stock pictures, clips and stickers for the offline demo (`-demo`, the demo
+tours and their screenshots), from upstream ZapFast's `assets/demo`. Only the
+files the Go demo uses are kept; they are embedded in package demo.
 
 Everything here is CC0 or in the public domain, so it needs no attribution;
 the sources are listed anyway. Works of US federal agencies (NASA, the Fish

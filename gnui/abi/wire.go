@@ -1,6 +1,5 @@
-// Package abi holds the records that cross ZapFast's core ABI, generated
-// from zfcore/abi/zf.schema (abi_gen.go), and the encoding they share with
-// the Rust side. It is pure Go: no FFI.
+// Package abi holds the records that cross Zap's core ABI, generated from
+// zf.schema (abi_gen.go), and their encoding. It is pure Go: no FFI.
 //
 // Decoding allocates nothing once warm: every byte field is a sub-slice of
 // the record being decoded (valid while that buffer is unchanged), and lists

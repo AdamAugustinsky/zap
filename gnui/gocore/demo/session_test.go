@@ -16,11 +16,12 @@ import (
 	"zapfast/core"
 )
 
-// A session is one demo core, Go or Rust, and the events it queued, each
-// as a normalised tree (rec): its tags and fields by name, a union's live
-// variant only, an absent optional left out, an event blob as its length
-// and hash. Batch ids, call generations and timestamps are relative to the
-// session, so two cores' records compare equal when they say the same.
+// A session is one demo core and the events it queued, each as a
+// normalised tree (rec): its tags and fields by name, a union's live variant
+// only, an absent optional left out, an event blob as its length and hash.
+// Batch ids, call generations and timestamps are relative to the session, so
+// two runs' records compare equal when they say the same (show writes one as
+// a line of a golden file).
 
 type conn interface {
 	core.Conn
@@ -64,20 +65,6 @@ func newSession(t *testing.T, name string, open func(core.Config) (conn, error))
 }
 
 func openGo(cfg core.Config) (conn, error) { return Open(cfg) }
-
-// openRust opens zfcore's demo, from $ZAPFAST_CORE or a cargo build, or
-// skips.
-func openRust(t *testing.T) func(core.Config) (conn, error) {
-	path, err := core.FindLibrary()
-	if err != nil {
-		t.Skipf("no core library: %v", err)
-	}
-	l, err := core.Load(path)
-	if err != nil {
-		t.Skipf("the core library does not load: %v", err)
-	}
-	return func(cfg core.Config) (conn, error) { return l.Open(cfg) }
-}
 
 func (s *session) Event(e *abi.Event) {
 	s.raw = append(s.raw, e.Tag)
@@ -242,41 +229,9 @@ func (s *session) norm(v reflect.Value, field string) any {
 	return v.Interface()
 }
 
-// relative is a time in seconds from the session's start.
+// relative is a time in seconds from the session's start: show writes it
+// t+N, and goldenLine compares it within two seconds.
 type relative int64
-
-// same compares two records: relative times within two seconds.
-func same(a, b any) bool {
-	switch x := a.(type) {
-	case rec:
-		y, ok := b.(rec)
-		if !ok || len(x) != len(y) {
-			return false
-		}
-		for k, v := range x {
-			w, ok := y[k]
-			if !ok || !same(v, w) {
-				return false
-			}
-		}
-		return true
-	case []any:
-		y, ok := b.([]any)
-		if !ok || len(x) != len(y) {
-			return false
-		}
-		for i := range x {
-			if !same(x[i], y[i]) {
-				return false
-			}
-		}
-		return true
-	case relative:
-		y, ok := b.(relative)
-		return ok && x-y <= 2 && y-x <= 2
-	}
-	return reflect.DeepEqual(a, b)
-}
 
 func show(v any) string {
 	switch x := v.(type) {
@@ -303,34 +258,8 @@ func show(v any) string {
 		return "[" + strings.Join(parts, " ") + "]"
 	case string:
 		return strconv.Quote(x)
+	case relative:
+		return fmt.Sprintf("t%+d", int64(x))
 	}
 	return fmt.Sprint(v)
-}
-
-// compare reports where the Go demo's records differ from the Rust demo's.
-func compare(t *testing.T, flow string, rust, gos *session) {
-	t.Helper()
-	n := max(len(rust.events), len(gos.events))
-	t.Logf("%s: rust %d records, go %d", flow, len(rust.events), len(gos.events))
-	if testing.Verbose() && len(rust.events) > 2 {
-		t.Logf("%s: record 1: %s", flow, show(rust.events[1]))
-	}
-	bad := 0
-	for i := range n {
-		var r, g any = "(none)", "(none)"
-		if i < len(rust.events) {
-			r = rust.events[i]
-		}
-		if i < len(gos.events) {
-			g = gos.events[i]
-		}
-		if !same(r, g) {
-			if bad++; bad <= 4 {
-				t.Errorf("%s: record %d differs\nrust %s\ngo   %s", flow, i, show(r), show(g))
-			}
-		}
-	}
-	if bad > 4 {
-		t.Errorf("%s: %d records differ in all (rust %d records, go %d)", flow, bad, len(rust.events), len(gos.events))
-	}
 }

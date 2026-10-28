@@ -12,8 +12,10 @@ import (
 	"go.mau.fi/whatsmeow/types"
 )
 
-// The golden stanzas are whatsapp-rust's own builders' (zfcalls/tests/
-// golden.rs writes testdata/golden.json). whatsmeow's encoder writes a
+// The golden stanzas are whatsapp-rust's own builders' (whatsapp-rust
+// 5e72baf through zapfast_core's zfcalls/tests/golden.rs, which wrote
+// testdata/golden.json). They are committed data: zfcalls went with the
+// Rust tree in WP9, so they can no longer be regenerated here. whatsmeow's encoder writes a
 // node's attributes in map order, so the comparison is of the decoded
 // nodes: same tags, attributes, children (in order) and bytes.
 

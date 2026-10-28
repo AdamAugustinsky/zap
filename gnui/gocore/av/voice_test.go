@@ -17,8 +17,11 @@ import (
 	"zapfast/core/fake"
 )
 
-// lcg is voice_rs_golden.rs's generator: samples exactly representable in
-// float32, so Go and Rust start from the same bits.
+// lcg is the generator of the Rust program that wrote testdata/voice_rs.json
+// (upstream's src/voice.rs, run over these samples; the program was
+// testdata/voice_rs_golden.rs until WP9 removed the repository's Rust, so
+// the vectors can no longer be regenerated here): samples exactly
+// representable in float32, so Go and Rust start from the same bits.
 type lcg uint32
 
 func (r *lcg) next() float32 {
@@ -48,7 +51,7 @@ func fnv(samples []float32) uint64 {
 }
 
 // TestVoiceMatchesUpstream runs Waveform, Normalize and MonoAtRate on the
-// inputs testdata/voice_rs_golden.rs gave upstream's voice.rs, and compares
+// inputs the Rust program gave upstream's voice.rs (lcg), and compares
 // the results bit for bit.
 func TestVoiceMatchesUpstream(t *testing.T) {
 	f, err := os.Open("testdata/voice_rs.json")

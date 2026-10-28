@@ -22,7 +22,7 @@ func TestI420Layout(t *testing.T) {
 		if f.Format != core.FrameI420 || f.W != w || f.H != h || f.PTS != 7 {
 			t.Fatalf("Core = %+v", f)
 		}
-		// What core.Core.Frame computes for the C side's frame.
+		// The size of the three planes, as the UI computes it (ui/calls).
 		n := f.Stride[0]*f.H + (f.Stride[1]+f.Stride[2])*((f.H+1)/2)
 		if n != len(f.Px) || n != I420Len(w, h) {
 			t.Fatalf("%dx%d: %d bytes, the layout says %d", w, h, len(f.Px), n)

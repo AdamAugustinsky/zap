@@ -1,10 +1,17 @@
 package demo
 
 import (
+	"bufio"
 	"encoding/binary"
 	"errors"
+	"flag"
+	"fmt"
 	"math"
+	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -12,27 +19,113 @@ import (
 	"zapfast/core"
 )
 
-// The Go demo against zfcore's, flow by flow: each flow runs on a fresh
-// demo core of each, and their records must be equal, record for record
-// (after session.norm). They need the Rust library ($ZAPFAST_CORE or a
-// cargo build) and skip without it.
+// The Go demo against zfcore's, flow by flow. Each flow runs on a fresh Go
+// demo core, and its records must equal, record for record (after
+// session.norm, relative times within two seconds), the ones zfcore's demo
+// queued for the same flow: testdata/flows/<flow>.txt, one show(record) a
+// line. Those files, testdata/send-answers.txt and testdata/disposition.txt
+// were captured from zfcore's demo (zapfast_core over whatsapp-rust 5e72baf,
+// the Rust core this repository carried until WP9) and can no longer be
+// regenerated here: the Rust core is gone. -update rewrites them from the Go
+// demo, for a deliberate change to the demo; the diff is then the review.
+
+var update = flag.Bool("update", false, "rewrite testdata from the Go demo")
+
+// openFlow opens the demo core the golden files are compared with (or, with
+// -update, written from).
+var openFlow = openGo
 
 // flow is a script of commands, each with the event that ends its step.
 type flow func(s *session)
 
-func runBoth(t *testing.T, name string, f flow) {
+func runFlow(t *testing.T, name string, f flow) {
 	t.Helper()
-	rust := openRust(t)
 	if testing.Short() {
 		t.Skip("the flows take seconds")
 	}
 	t.Run(name, func(t *testing.T) {
-		r := newSession(t, "rust", rust)
-		f(r)
-		g := newSession(t, "go", openGo)
-		f(g)
-		compare(t, name, r, g)
+		s := newSession(t, "go", openFlow)
+		f(s)
+		got := make([]string, len(s.events))
+		for i, r := range s.events {
+			got[i] = show(r)
+		}
+		golden(t, filepath.Join("testdata", "flows", name+".txt"), got, sameLine)
 	})
+}
+
+// golden compares got with the lines of path (equal: same), or writes them
+// with -update.
+func golden(t *testing.T, path string, got []string, equal func(want, got string) bool) {
+	t.Helper()
+	if *update {
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(strings.Join(got, "\n")+"\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return
+	}
+	want := readLines(t, path)
+	t.Logf("%s: want %d records, go %d", path, len(want), len(got))
+	bad := 0
+	for i := range max(len(want), len(got)) {
+		w, g := "(none)", "(none)"
+		if i < len(want) {
+			w = want[i]
+		}
+		if i < len(got) {
+			g = got[i]
+		}
+		if !equal(w, g) {
+			if bad++; bad <= 4 {
+				t.Errorf("%s: record %d differs\nzfcore %s\ngo     %s", path, i, w, g)
+			}
+		}
+	}
+	if bad > 4 {
+		t.Errorf("%s: %d records differ in all (zfcore %d records, go %d)", path, bad, len(want), len(got))
+	}
+}
+
+func readLines(t *testing.T, path string) []string {
+	t.Helper()
+	f, err := os.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	var lines []string
+	sc := bufio.NewScanner(f)
+	sc.Buffer(nil, 1<<24)
+	for sc.Scan() {
+		lines = append(lines, sc.Text())
+	}
+	if err := sc.Err(); err != nil {
+		t.Fatal(err)
+	}
+	return lines
+}
+
+// relativeTime is show's form of a relative time.
+var relativeTime = regexp.MustCompile(`\bt[+-]\d+\b`)
+
+// sameLine compares two shown records: equal but for their relative times,
+// which may differ by two seconds.
+func sameLine(want, got string) bool {
+	if relativeTime.ReplaceAllString(want, "t") != relativeTime.ReplaceAllString(got, "t") {
+		return false
+	}
+	w, g := relativeTime.FindAllString(want, -1), relativeTime.FindAllString(got, -1)
+	for i := range w {
+		a, _ := strconv.ParseInt(w[i][1:], 10, 64)
+		b, _ := strconv.ParseInt(g[i][1:], 10, 64)
+		if a-b > 2 || b-a > 2 {
+			return false
+		}
+	}
+	return true
 }
 
 func cmdOf(tag abi.CommandTag) *abi.Command { return &abi.Command{Tag: tag} }
@@ -101,14 +194,14 @@ func load(s *session, chat string) {
 var chats = []string{ada, berlin, grace, katherine, family, margaret, dorothy}
 
 func TestTheOpeningIsZfcores(t *testing.T) {
-	runBoth(t, "opening", func(s *session) {
+	runFlow(t, "opening", func(s *session) {
 		started(s)
 		s.settle(100 * time.Millisecond)
 	})
 }
 
 func TestEveryChatLoadsAsZfcoresDoes(t *testing.T) {
-	runBoth(t, "load", func(s *session) {
+	runFlow(t, "load", func(s *session) {
 		started(s)
 		for _, c := range chats {
 			load(s, c)
@@ -123,7 +216,7 @@ func TestEveryChatLoadsAsZfcoresDoes(t *testing.T) {
 }
 
 func TestSendsGoAsZfcoresDo(t *testing.T) {
-	runBoth(t, "sends", func(s *session) {
+	runFlow(t, "sends", func(s *session) {
 		started(s)
 		c := cmdOf(abi.CommandTagSendText)
 		c.SendText = abi.CommandSendText{Chat: []byte(ada), Text: []byte("hi @393331234567\nsecond line"),
@@ -190,7 +283,7 @@ func TestSendsGoAsZfcoresDo(t *testing.T) {
 }
 
 func TestInjectedMessagesAndTypingComeAsZfcoresDo(t *testing.T) {
-	runBoth(t, "inject", func(s *session) {
+	runFlow(t, "inject", func(s *session) {
 		started(s)
 		c := cmdOf(abi.CommandTagDemoIncoming)
 		c.DemoIncoming = abi.CommandDemoIncoming{DelayMS: 40, Chat: []byte(ada), Sender: []byte(ada), Text: []byte("hello")}
@@ -209,7 +302,7 @@ func TestInjectedMessagesAndTypingComeAsZfcoresDo(t *testing.T) {
 }
 
 func TestTheChatsSharedMediaAndReceiptsAreZfcores(t *testing.T) {
-	runBoth(t, "shared", func(s *session) {
+	runFlow(t, "shared", func(s *session) {
 		started(s)
 		for i, chat := range []string{ada, grace, dorothy, "1@s.whatsapp.net"} {
 			c := cmdOf(abi.CommandTagListChatShared)
@@ -247,7 +340,7 @@ func TestTheChatsSharedMediaAndReceiptsAreZfcores(t *testing.T) {
 }
 
 func TestStickersAndGifsAreZfcores(t *testing.T) {
-	runBoth(t, "stickers", func(s *session) {
+	runFlow(t, "stickers", func(s *session) {
 		started(s)
 		stickers := filepath.Join(MediaDir(), "stickers")
 		s.send(cmdOf(abi.CommandTagRecentStickers))
@@ -305,7 +398,7 @@ func TestStickersAndGifsAreZfcores(t *testing.T) {
 }
 
 func TestTheRestIsZfcores(t *testing.T) {
-	runBoth(t, "rest", func(s *session) {
+	runFlow(t, "rest", func(s *session) {
 		started(s)
 		one := func(tag abi.EventTag, cmd *abi.Command) {
 			s.send(cmd)
@@ -380,7 +473,7 @@ func phaseIs(p abi.CallPhase) func(*abi.Event) bool {
 // connecting, active, the peer's picture; muted, camera off, hung up, and
 // filed.
 func TestAPlacedCallIsZfcores(t *testing.T) {
-	runBoth(t, "placed", func(s *session) {
+	runFlow(t, "placed", func(s *session) {
 		started(s)
 		c := cmdOf(abi.CommandTagStartCall)
 		c.StartCall = abi.CommandStartCall{Chat: []byte(ada), Video: true, Generation: 1<<40 + 1, Cancel: 1}
@@ -428,7 +521,7 @@ func TestAPlacedCallIsZfcores(t *testing.T) {
 // members' pictures, one missed while busy; a cancelled call is never
 // placed; a call link is joined and filed in the call log.
 func TestCallsRungInAndCancelledAreZfcores(t *testing.T) {
-	runBoth(t, "rung", func(s *session) {
+	runFlow(t, "rung", func(s *session) {
 		started(s)
 		ring := func(chat, caller string, video bool) {
 			c := cmdOf(abi.CommandTagDemoIncoming)
@@ -507,41 +600,38 @@ func sampleCommand(t *testing.T, c core.Conn, tag abi.CommandTag) (*abi.Command,
 	return cmd, ref, ref.ID != 0
 }
 
-// Every command gets the Rust demo core's answer from Send: refused with
-// its code and words (taking no blob), or taken.
+// Every command gets zfcore's demo core's answer from Send
+// (testdata/send-answers.txt): refused with its code and words (taking no
+// blob), or taken.
 func TestSendAnswersEveryCommandAsZfcoresDoes(t *testing.T) {
-	rust := openRust(t)
-	r := newSession(t, "rust", rust)
-	g := newSession(t, "go", openGo)
+	g := newSession(t, "go", openFlow)
+	var got []string
 	for _, tag := range allTags() {
 		if tag == abi.CommandTagDemoPanic {
 			continue // poisons the core: TestDemoPanic
 		}
-		var got [2]string
-		for i, s := range []*session{r, g} {
-			cmd, ref, named := sampleCommand(t, s.c, tag)
-			err := s.c.Send(cmd)
-			var ce *core.Error
-			switch {
-			case err == nil:
-				got[i] = "ok"
-			case errors.As(err, &ce):
-				got[i] = core.CodeName(ce.Code) + ": " + ce.Msg
-			default:
-				got[i] = err.Error()
-			}
-			if named {
-				buf := make([]byte, ref.Len)
-				_, rerr := s.c.ReadBlob(ref.ID, 0, buf)
-				got[i] += map[bool]string{true: " (blob kept)", false: " (blob taken)"}[rerr == nil]
-				s.c.FreeBlob(ref.ID)
-			}
+		cmd, ref, named := sampleCommand(t, g.c, tag)
+		err := g.c.Send(cmd)
+		var answer string
+		var ce *core.Error
+		switch {
+		case err == nil:
+			answer = "ok"
+		case errors.As(err, &ce):
+			answer = core.CodeName(ce.Code) + ": " + ce.Msg
+		default:
+			answer = err.Error()
 		}
-		if got[0] != got[1] {
-			t.Errorf("%v: rust %q, go %q", tag, got[0], got[1])
+		if named {
+			buf := make([]byte, ref.Len)
+			_, rerr := g.c.ReadBlob(ref.ID, 0, buf)
+			answer += map[bool]string{true: " (blob kept)", false: " (blob taken)"}[rerr == nil]
+			g.c.FreeBlob(ref.ID)
 		}
-		if want := DispositionOf(tag) == Refuses; want != (got[1] != "ok" && got[1] != "ok (blob taken)") {
-			t.Errorf("%v: %v, but Send says %q", tag, DispositionOf(tag), got[1])
+		if want := DispositionOf(tag) == Refuses; want != (answer != "ok" && answer != "ok (blob taken)") {
+			t.Errorf("%v: %v, but Send says %q", tag, DispositionOf(tag), answer)
 		}
+		got = append(got, fmt.Sprintf("%v\t%s", tag, answer))
 	}
+	golden(t, filepath.Join("testdata", "send-answers.txt"), got, func(w, g string) bool { return w == g })
 }
