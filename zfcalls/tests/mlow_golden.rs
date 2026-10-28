@@ -1,6 +1,7 @@
 //! Golden MLow vectors for the Go port (gnui/gocore/voip/mlow), written by
 //! whatsapp-rust 5e72baf's own encoder and decoder
-//! (wacore/src/voip/mlow).
+//! (wacore/src/voip/mlow), and the check that the Go port's packets are
+//! valid MLow for the real Rust decoder.
 //!
 //! `mlow_matches_the_go_golden_files` writes Rust's packets, decode reports
 //! and decoded PCM. gnui/gocore/voip/mlow/rust_golden_test.go regenerates the
@@ -9,6 +10,12 @@
 //! samples within a small tolerance (the transcendentals differ in the last
 //! bits from the platform libm Rust calls), and the Go encoder to the audio
 //! quality Rust's encoder reaches.
+//!
+//! `go_encoded_packets_are_valid_mlow` decodes the Go encoder's packets
+//! (testdata/go_encoded.json, written by the Go test) with Rust's
+//! MlowDecoder: every packet must decode as three coded frames with nothing
+//! concealed, and the audio must reach the spectral SNR Rust's own encoder
+//! reaches on the same input, less GO_SNR_MARGIN_DB.
 //!
 //! The input is synthetic only: tones, a sweep, LCG noise, a harmonic
 //! "speech-like" signal with pauses, clipping and non-finite samples. The
@@ -451,3 +458,122 @@ fn mlow_matches_the_go_golden_files() {
     assert!(committed == pcm, "the MLow golden PCM changed: rewrite it with ZF_WRITE_MLOW_GOLDEN=1");
 }
 
+/// The codec's delay from input to decoded output, in samples: where the
+/// decoded noise stream correlates best with its input.
+const CODEC_DELAY: usize = 80;
+
+/// How far below Rust's own encoder the Go encoder's spectral SNR may land.
+const GO_SNR_MARGIN_DB: f64 = 1.0;
+
+/// Spectral SNR in dB of `output` (delayed by CODEC_DELAY) against `input`:
+/// 320-sample Hann frames at a 160-sample hop, signal = sum of |X|^2, noise
+/// = sum of (|X| - |Y|)^2 over bins 0..=160. A CELP codec with noise fill
+/// does not keep the waveform's phase, so this compares the magnitude
+/// spectra. None for a silent input.
+fn spectral_snr_db(input: &[f32], output: &[f32]) -> Option<f64> {
+    const N: usize = 320;
+    const BINS: usize = N / 2 + 1;
+    let mut cos = vec![0.0f64; N * BINS];
+    let mut sin = vec![0.0f64; N * BINS];
+    for k in 0..BINS {
+        for j in 0..N {
+            let a = 2.0 * std::f64::consts::PI * ((k * j) % N) as f64 / N as f64;
+            cos[k * N + j] = a.cos();
+            sin[k * N + j] = a.sin();
+        }
+    }
+    let win: Vec<f64> =
+        (0..N).map(|j| 0.5 - 0.5 * (2.0 * std::f64::consts::PI * j as f64 / N as f64).cos()).collect();
+    let (mut sig, mut err) = (0.0f64, 0.0f64);
+    let mut off = 0;
+    while off + N <= input.len() && off + CODEC_DELAY + N <= output.len() {
+        let x: Vec<f64> = (0..N).map(|j| win[j] * clean(input[off + j])).collect();
+        let y: Vec<f64> = (0..N).map(|j| win[j] * f64::from(output[off + CODEC_DELAY + j])).collect();
+        for k in 0..BINS {
+            let (c, s) = (&cos[k * N..(k + 1) * N], &sin[k * N..(k + 1) * N]);
+            let mag = |v: &[f64]| {
+                let re: f64 = v.iter().zip(c).map(|(a, b)| a * b).sum();
+                let im: f64 = v.iter().zip(s).map(|(a, b)| a * b).sum();
+                re.hypot(im)
+            };
+            let (mx, my) = (mag(&x), mag(&y));
+            sig += mx * mx;
+            err += (mx - my) * (mx - my);
+        }
+        off += N / 2;
+    }
+    (sig > 0.0).then(|| 10.0 * (sig / err).log10())
+}
+
+/// The encoder's view of an input sample: NaN is zero, the rest is clamped
+/// to full scale.
+fn clean(x: f32) -> f64 {
+    if x.is_nan() { 0.0 } else { f64::from(x.clamp(-1.0, 1.0)) }
+}
+
+fn unhex(s: &str) -> Vec<u8> {
+    (0..s.len()).step_by(2).map(|i| u8::from_str_radix(&s[i..i + 2], 16).unwrap()).collect()
+}
+
+/// Decodes a stream of bare packets, requiring each to decode as three
+/// coded frames with nothing concealed or refused.
+fn decode_clean(who: &str, packets: &[Vec<u8>]) -> Vec<f32> {
+    let mut dec = MlowDecoder::new();
+    let mut pcm = Vec::new();
+    for (i, p) in packets.iter().enumerate() {
+        let out = dec.decode(p);
+        let r = dec.take_frame_report();
+        assert_eq!(out.len(), FRAME, "{who}: packet {i} decoded to {} samples", out.len());
+        assert!(
+            r.decoded == 3 && r.concealed == 0 && r.off_point == 0,
+            "{who}: packet {i} report {r:?}: not three coded frames"
+        );
+        assert!(out.iter().all(|s| s.is_finite()), "{who}: packet {i} decoded to non-finite samples");
+        pcm.extend_from_slice(&out);
+    }
+    pcm
+}
+
+#[test]
+fn go_encoded_packets_are_valid_mlow() {
+    let path = testdata().join("go_encoded.json");
+    let doc: Value = serde_json::from_str(
+        &std::fs::read_to_string(&path)
+            .unwrap_or_else(|e| panic!("{}: {e}; the Go test writes it with ZF_WRITE_MLOW_GO=1", path.display())),
+    )
+    .unwrap();
+    let streams = streams();
+    let speech16 = speech16();
+    let speech16_norm: Vec<f32> = speech16.iter().map(|&s| s as f32 / 32768.0).collect();
+    let mut seen = 0;
+    for entry in doc["streams"].as_array().unwrap() {
+        let name = entry["name"].as_str().unwrap();
+        let go: Vec<Vec<u8>> = entry["packets"].as_array().unwrap().iter().map(|p| unhex(p.as_str().unwrap())).collect();
+        let (input, rust): (Vec<f32>, Vec<Vec<u8>>) = match name {
+            "speech_i16" => (speech16_norm.clone(), encode_i16(&speech16)),
+            "reset_at_6" => (streams[4].1[..12 * FRAME].to_vec(), reset_at_6(&streams[4].1)),
+            "alternating_apis" => (speech16_norm.clone(), alternating_apis(&speech16)),
+            _ => {
+                let pcm = &streams.iter().find(|(n, _)| *n == name).unwrap_or_else(|| panic!("unknown {name}")).1;
+                (pcm.clone(), encode_f32(pcm))
+            }
+        };
+        assert_eq!(go.len(), rust.len(), "{name}: {} Go packets for {} Rust packets", go.len(), rust.len());
+        let go_pcm = decode_clean(&format!("{name} (Go encoder)"), &go);
+        let rust_pcm = decode_clean(&format!("{name} (Rust encoder)"), &rust);
+        match (spectral_snr_db(&input, &go_pcm), spectral_snr_db(&input, &rust_pcm)) {
+            (Some(g), Some(r)) => {
+                println!("{name}: spectral SNR Go encoder {g:.2} dB, Rust encoder {r:.2} dB");
+                assert!(g >= r - GO_SNR_MARGIN_DB, "{name}: Go encoder {g:.2} dB, Rust encoder {r:.2} dB");
+            }
+            (None, None) => {
+                let rms = (go_pcm.iter().map(|s| f64::from(*s).powi(2)).sum::<f64>() / go_pcm.len() as f64).sqrt();
+                println!("{name}: silent input, Go encoder output rms {rms:.2e}");
+                assert!(rms < 3.2e-4, "{name}: silence decoded to rms {rms:.2e}, above -70 dBFS");
+            }
+            _ => unreachable!(),
+        }
+        seen += 1;
+    }
+    assert_eq!(seen, 11, "go_encoded.json should carry all 9 streams and both encoder scenarios");
+}
