@@ -9,6 +9,7 @@ require (
 	golang.org/x/image v0.23.0
 	golang.org/x/text v0.42.0
 	gonativeui v0.0.0-00010101000000-000000000000
+	google.golang.org/protobuf v1.36.12
 )
 
 require (
@@ -29,7 +30,6 @@ require (
 	golang.org/x/net v0.59.0 // indirect
 	golang.org/x/sync v0.23.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
-	google.golang.org/protobuf v1.36.12 // indirect
 )
 
 // gonativeui's module path is a placeholder (D1), so it is never fetched: this
