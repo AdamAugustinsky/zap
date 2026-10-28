@@ -1,6 +1,7 @@
 package state_test
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -187,4 +188,45 @@ func TestAFailedFileCleanupSaysSo(t *testing.T) {
 		}
 	}
 	t.Errorf("no error toast; toasts %d", len(s.Toasts))
+}
+
+// A core that failed to open shows why; Try again (Reconnect) opens it
+// again, and it gets its startup permit once open, the cores having
+// started.
+func TestTryAgainReopensACoreThatFailedToOpen(t *testing.T) {
+	s := state.New()
+	opens := 0
+	var c *fake.Core
+	s.OpenCore = func(id string) (*core.Pending, core.Conn) {
+		opens++
+		if opens == 1 {
+			return core.OpenAsyncWith("go", nil, func(*core.Timing) (core.Conn, error) {
+				return nil, errors.New("the account could not move")
+			}), nil
+		}
+		return core.OpenAsyncWith("go", nil, func(*core.Timing) (core.Conn, error) {
+			c = fake.New(nil)
+			return c, nil
+		}), nil
+	}
+	p, _ := s.OpenCore("1")
+	a := s.AddAccount("1", p, nil)
+	p.Wait(5 * time.Second)
+	s.Pump(0)
+	s.StartCores()
+	if a.Conn != nil || a.Err != "the account could not move" {
+		t.Fatalf("conn %v, err %q", a.Conn, a.Err)
+	}
+	if err := a.Send(a.Cmd(abi.CommandTagReconnect)); err != nil || opens != 2 || a.Err != "" || a.Pending == nil {
+		t.Fatalf("Try again: %v, %d opens, err %q", err, opens, a.Err)
+	}
+	a.Pending.Wait(5 * time.Second)
+	s.Pump(0)
+	if a.Conn != c || c == nil || !c.Started() || !a.Started {
+		t.Fatalf("reopened: conn %v, started %v", a.Conn, a.Started)
+	}
+	// An open core's Reconnect goes to it.
+	if a.Send(a.Cmd(abi.CommandTagReconnect)); opens != 2 || countTag(c, abi.CommandTagReconnect) != 1 {
+		t.Errorf("%d opens, %d reconnects", opens, countTag(c, abi.CommandTagReconnect))
+	}
 }
