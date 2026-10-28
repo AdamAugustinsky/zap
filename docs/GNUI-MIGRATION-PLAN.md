@@ -9,7 +9,7 @@ Your request (2026-10-18): "clone the codebase of zapfast in this computer and m
 **Your decisions:**
 - the Rust core is bundled as a library, with a Go UI (D33);
 - **full parity before your first look**;
-- a private repository (this one, `AdamAugustinsky/zapfast-gnui`, branch `gnui`, with crmne/zapfast as the `upstream` remote);
+- a private repository (`AdamAugustinsky/zapfast-gnui`, branch `gnui`, with crmne/zapfast as the `upstream` remote). Since 2026-10-28 the work happens in this public repository, `AdamAugustinsky/zap`, which started from zapfast-gnui 23c1b7d without its history; the private repository is archived. Upstream is merged up to crmne/zapfast a95d8f0 (2026-10-19, v0.19.0-198);
 - the development loop uses the capture helper now; you create an Apple signing identity later;
 - the defaults for the five former open questions (2026-10-18, revisable): a separate identity with its own data, the updater on a local test feed, the split kept private, full Rex, no plaintext chat-list snapshot ("Open questions").
 

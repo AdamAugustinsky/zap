@@ -40,7 +40,7 @@ launch tour) are still to be measured on a live screen.
 
 `go.mod` replaces `gonativeui` with `../../go-native-ui`, the framework's
 checkout beside this repository's (`~/Projects/go-native-ui` next to
-`~/Projects/zapfast-gnui`). A worktree anywhere else uses a `go.work` here,
+`~/Projects/zap`). A worktree anywhere else uses a `go.work` here,
 which is ignored by git:
 
 ```
