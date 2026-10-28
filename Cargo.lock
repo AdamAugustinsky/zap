@@ -9107,6 +9107,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "zfcalls"
+version = "0.1.0"
+dependencies = [
+ "async-channel",
+ "base64 0.22.1",
+ "log",
+ "serde",
+ "serde_json",
+ "tokio",
+ "whatsapp-rust",
+ "zapfast",
+]
+
+[[package]]
 name = "zip"
 version = "9.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"

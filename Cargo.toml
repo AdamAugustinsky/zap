@@ -1,7 +1,8 @@
-# The Go UI's core (`zfcore/`, the `zapfast_core` cdylib) builds in the same
-# workspace, so it shares this lock file, the patches below, and the profiles.
+# The Go UI's core (`zfcore/`, the `zapfast_core` cdylib) and the Go backend's
+# call media (`zfcalls/`, the `zfcalls` cdylib) build in the same workspace, so
+# they share this lock file, the patches below, and the profiles.
 [workspace]
-members = ["zfcore"]
+members = ["zfcore", "zfcalls"]
 
 [package]
 name = "zapfast"

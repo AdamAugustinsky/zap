@@ -656,7 +656,7 @@ impl Drop for CaptureAlive {
 }
 
 /// The `VideoSource` the engine pulls access units from.
-struct LocalVideoSource {
+pub struct LocalVideoSource {
     timed: async_channel::Receiver<TimedVideoFrame>,
     /// Never fed: the engine uses the timestamped channel above.
     empty: async_channel::Receiver<Vec<u8>>,
@@ -677,7 +677,7 @@ impl VideoSource for LocalVideoSource {
 }
 
 /// The `VideoSink` the engine hands the peer's access units to.
-struct RemoteVideoSink {
+pub struct RemoteVideoSink {
     tx: async_channel::Sender<VideoFrame>,
 }
 
@@ -776,6 +776,92 @@ impl VideoPipeline {
         )
     }
 
+    /// One media-plane event, read for what it says about our video: the peer's RTCP reports,
+    /// which the camera's rate follows, and the relay connection's own drops. Every other event is
+    /// left alone.
+    pub fn media(&mut self, call_id: &str, event: &CallEvent) {
+        match event {
+            CallEvent::RtcpReceived {
+                reports_audio,
+                reports_video,
+                report_blocks,
+                feedback,
+                ..
+            } => {
+                for item in feedback {
+                    self.feedback.note(item.packet_type, item.fmt, &item.fci);
+                }
+                // The peer's native video report covers our video stream alone.
+                if *reports_video
+                    && !*reports_audio
+                    && let Some(block) = report_blocks.first()
+                    && !block.profile_extension.is_empty()
+                {
+                    self.report_extension.clone_from(&block.profile_extension);
+                }
+                if *reports_video
+                    && !*reports_audio
+                    && let Some(block) = report_blocks.first()
+                {
+                    self.peer_jitter = Some(block.jitter);
+                }
+                // Every block answering one of our sender reports measures the same path, audio's
+                // as well as video's; the shortest is the one least held up on the way.
+                let now = crate::video_rate::ntp_middle(std::time::SystemTime::now());
+                let round_trip = report_blocks
+                    .iter()
+                    .filter_map(|block| {
+                        crate::video_rate::round_trip(
+                            block.last_sender_report,
+                            block.delay_since_last_sender_report,
+                            now,
+                        )
+                    })
+                    .min();
+                if let Some(round_trip) = round_trip
+                    && let Some(change) = self.rate.on_round_trip(round_trip, Instant::now())
+                {
+                    log_rate_change(call_id, change);
+                }
+                let blocks: Vec<(u32, u8)> = report_blocks
+                    .iter()
+                    .map(|block| (block.ssrc, block.fraction_lost))
+                    .collect();
+                let estimates: Vec<u32> = feedback
+                    .iter()
+                    .filter(|item| item.packet_type == RTCP_PAYLOAD_SPECIFIC && item.fmt == 15)
+                    .filter_map(|item| crate::video_rate::remb_bitrate(&item.fci))
+                    .collect();
+                if let Some(change) =
+                    self.on_rtcp(*reports_audio, *reports_video, &blocks, &estimates)
+                {
+                    log_rate_change(call_id, change);
+                }
+            }
+            // The relay connection could not take all the video queued for it.
+            CallEvent::OutboundMediaDropped {
+                video_access_units, ..
+            } if *video_access_units > 0 => {
+                if let Some(change) = self.on_send_drops() {
+                    log_rate_change(call_id, change);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    /// Frames the camera thread could not hand to the engine since the last check count as the
+    /// path carrying less than is sent, once the call is `active`: while the peer's phone rings
+    /// nothing drains the queue yet, and what overflows then says nothing about the path.
+    pub fn check_queue(&mut self, call_id: &str, active: bool) {
+        if self.rate_share.take_queue_drops() > 0
+            && active
+            && let Some(change) = self.on_capture_drops()
+        {
+            log_rate_change(call_id, change);
+        }
+    }
+
     /// The relay connection could not take all the video queued for it.
     fn on_send_drops(&mut self) -> Option<RateChange> {
         self.rate.on_send_drops(Instant::now())
@@ -786,7 +872,9 @@ impl VideoPipeline {
         self.rate.on_capture_drops(Instant::now())
     }
 
-    fn source(&self) -> LocalVideoSource {
+    /// The camera's access units, for the engine (or for a host that feeds the engine itself,
+    /// as zfcalls does).
+    pub fn source(&self) -> LocalVideoSource {
         let (empty_tx, empty) = async_channel::bounded::<Vec<u8>>(1);
         drop(empty_tx);
         let timed = match &self.camera {
@@ -801,7 +889,8 @@ impl VideoPipeline {
         LocalVideoSource { timed, empty }
     }
 
-    fn sink(&self) -> RemoteVideoSink {
+    /// Where the engine hands the peer's access units, to be decoded.
+    pub fn sink(&self) -> RemoteVideoSink {
         RemoteVideoSink {
             tx: self.remote_tx.clone(),
         }
@@ -2499,73 +2588,10 @@ impl Call {
                 }
                 None
             }
-            // The peer's reports on what it received, which is what the camera's rate follows.
-            CallEvent::RtcpReceived {
-                reports_audio,
-                reports_video,
-                report_blocks,
-                feedback,
-                ..
-            } => {
-                let pipe = self.video_pipe.as_mut()?;
-                for item in feedback {
-                    pipe.feedback.note(item.packet_type, item.fmt, &item.fci);
-                }
-                // The peer's native video report covers our video stream alone.
-                if *reports_video
-                    && !*reports_audio
-                    && let Some(block) = report_blocks.first()
-                    && !block.profile_extension.is_empty()
-                {
-                    pipe.report_extension.clone_from(&block.profile_extension);
-                }
-                if *reports_video
-                    && !*reports_audio
-                    && let Some(block) = report_blocks.first()
-                {
-                    pipe.peer_jitter = Some(block.jitter);
-                }
-                // Every block answering one of our sender reports measures the same path, audio's
-                // as well as video's; the shortest is the one least held up on the way.
-                let now = crate::video_rate::ntp_middle(std::time::SystemTime::now());
-                let round_trip = report_blocks
-                    .iter()
-                    .filter_map(|block| {
-                        crate::video_rate::round_trip(
-                            block.last_sender_report,
-                            block.delay_since_last_sender_report,
-                            now,
-                        )
-                    })
-                    .min();
-                if let Some(round_trip) = round_trip
-                    && let Some(change) = pipe.rate.on_round_trip(round_trip, Instant::now())
-                {
-                    log_rate_change(&self.call_id, change);
-                }
-                let blocks: Vec<(u32, u8)> = report_blocks
-                    .iter()
-                    .map(|block| (block.ssrc, block.fraction_lost))
-                    .collect();
-                let estimates: Vec<u32> = feedback
-                    .iter()
-                    .filter(|item| item.packet_type == RTCP_PAYLOAD_SPECIFIC && item.fmt == 15)
-                    .filter_map(|item| crate::video_rate::remb_bitrate(&item.fci))
-                    .collect();
-                if let Some(change) =
-                    pipe.on_rtcp(*reports_audio, *reports_video, &blocks, &estimates)
-                {
-                    log_rate_change(&self.call_id, change);
-                }
-                None
-            }
-            // The relay connection could not take all the video queued for it.
-            CallEvent::OutboundMediaDropped {
-                video_access_units, ..
-            } if *video_access_units > 0 => {
-                if let Some(change) = self.video_pipe.as_mut()?.on_send_drops() {
-                    log_rate_change(&self.call_id, change);
-                }
+            // The peer's reports on what it received, which is what the camera's rate follows, and
+            // the relay connection that could not take all the video queued for it.
+            CallEvent::RtcpReceived { .. } | CallEvent::OutboundMediaDropped { .. } => {
+                self.video_pipe.as_mut()?.media(&self.call_id, event);
                 None
             }
             _ => None,
@@ -2580,14 +2606,8 @@ impl Call {
     /// what overflows then says nothing about the path.
     pub fn check_video_queue(&mut self) {
         let active = self.phase == CallPhase::Active;
-        let Some(pipe) = self.video_pipe.as_mut() else {
-            return;
-        };
-        if pipe.rate_share.take_queue_drops() > 0
-            && active
-            && let Some(change) = pipe.on_capture_drops()
-        {
-            log_rate_change(&self.call_id, change);
+        if let Some(pipe) = self.video_pipe.as_mut() {
+            pipe.check_queue(&self.call_id, active);
         }
     }
 
