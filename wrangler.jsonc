@@ -1,0 +1,6 @@
+{
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "zap-a3lab",
+  "compatibility_date": "2026-10-23",
+  "assets": { "directory": "./public" }
+}
