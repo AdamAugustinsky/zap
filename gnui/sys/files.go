@@ -76,7 +76,8 @@ func (l *Log) File() *os.File {
 
 // StartLog replaces dir/zapfast.log with this run's log, which records
 // warnings and errors (never message contents, numbers or keys: the code
-// that logs names none), makes it the default logger, and sends a crash's
+// that logs names none, and every record is redacted on its way in,
+// RedactHandler), makes it the default logger, and sends a crash's
 // goroutine dump to dir/panic.log. When load is not nil, the core library's
 // own log (warnings and errors) goes to the same file: load runs on a
 // goroutine, since loading the library takes a while, and may be the loader
@@ -96,7 +97,7 @@ func StartLog(dir string, load func() (CoreLog, error)) (*Log, error) {
 		note(err)
 	} else {
 		l.log = f
-		slog.SetDefault(slog.New(slog.NewTextHandler(io.MultiWriter(f, os.Stderr), &slog.HandlerOptions{Level: slog.LevelWarn})))
+		slog.SetDefault(slog.New(RedactHandler(slog.NewTextHandler(io.MultiWriter(f, os.Stderr), &slog.HandlerOptions{Level: slog.LevelWarn}))))
 		if load != nil {
 			l.core.Add(1)
 			go l.attachCore(load)

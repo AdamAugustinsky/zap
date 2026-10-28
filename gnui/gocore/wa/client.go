@@ -75,9 +75,15 @@ type Client interface {
 
 // NewClient returns whatsmeow's client over device, named name on the
 // phone's list of linked devices (empty: "Zap").
-func NewClient(device *wastore.Device, name string) Client {
+func NewClient(device *wastore.Device, name string) Client { return newClient(device, name, nil) }
+
+// newClient is NewClient logging to log (nil: nowhere).
+func newClient(device *wastore.Device, name string, log waLog.Logger) Client {
+	if log == nil {
+		log = waLog.Noop
+	}
 	configureDevice(name)
-	c := whatsmeow.NewClient(device, waLog.Noop)
+	c := whatsmeow.NewClient(device, log)
 	c.EmitAppStateEventsOnFullSync = true
 	return &waClient{c: c, http: &http.Client{Timeout: 30 * time.Second}}
 }

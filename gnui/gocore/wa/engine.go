@@ -11,6 +11,7 @@ import (
 
 	wastore "go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/types"
+	waLog "go.mau.fi/whatsmeow/util/log"
 
 	"zapfast/abi"
 	"zapfast/gocore"
@@ -29,6 +30,9 @@ type Options struct {
 	NewClient func(device *wastore.Device) Client
 	// DeviceName is what the phone lists this computer as; empty: "Zap".
 	DeviceName string
+	// Log is whatsmeow's logger, for its client and its store; nil: none
+	// (waLog.Noop). The app gives a redacting one (sys.WhatsmeowLog).
+	Log waLog.Logger
 }
 
 // answers are the commands this engine handles (WP4a). Labels, stars,
@@ -256,7 +260,7 @@ func (e *Engine) open() {
 	if keys == nil {
 		keys = store.Keychain(e.h.Config().KeyringService)
 	}
-	acct, err := store.OpenAccount(e.ctx, state, keys, nil)
+	acct, err := store.OpenAccount(e.ctx, state, keys, e.opts.Log)
 	if err != nil {
 		e.fail("Could not open this account's archive: " + err.Error())
 		return
@@ -289,7 +293,7 @@ func (e *Engine) newClient(device *wastore.Device) {
 	if e.opts.NewClient != nil {
 		e.cli = e.opts.NewClient(device)
 	} else {
-		e.cli = NewClient(device, e.opts.DeviceName)
+		e.cli = newClient(device, e.opts.DeviceName, e.opts.Log)
 	}
 	e.cli.AddEventHandler(func(evt any) {
 		e.post(func() {
