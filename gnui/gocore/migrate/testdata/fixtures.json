@@ -1,0 +1,47 @@
+{
+  "accounts": {
+    "group": "120363000000000001@g.us",
+    "ours": {
+      "lid": "100000000001001:7@lid",
+      "pn": "15550001001:7@s.whatsapp.net"
+    },
+    "peer": {
+      "lid": "100000000002002:3@lid",
+      "pn": "15550002002:3@s.whatsapp.net"
+    },
+    "third": {
+      "pn": "15550003003:1@s.whatsapp.net"
+    }
+  },
+  "archive": {
+    "labels": [
+      "label-1760000301",
+      "label-1760000302"
+    ]
+  },
+  "archive_key": "5a61702d6d6967726174696f6e2d666978747572652d6b65792d73796e746821",
+  "files": {
+    "archive.db": "3fd9eefcbd64cdcd46f061d876532d1a22ea415cb17d92f20842227ad401f7b6",
+    "peer-session.db": "b66636dcf0a3c716caf8544918dd6f8c84f07af8cb72600947e6b0dd2cf85865",
+    "session.db": "9cd17944cd3fe46678cda5d7e6b7ae16e5dbfc6e96336d713f385548fa661373"
+  },
+  "generator": "zfcore/tests/migration_fixtures.rs",
+  "messages": {
+    "dm_skipped": [
+      [
+        "330a2105ea5b95d9467fe16d4127fd5cb35180c0753a27a0cba7d9ec495c36b78d91fc5a100018002220cde55aa8b2db2ed6d999aba69f083c405bacefdd4867b47c1291332e395fb6092aad54588f183863",
+        "synthetic skipped 1"
+      ],
+      [
+        "330a2105ea5b95d9467fe16d4127fd5cb35180c0753a27a0cba7d9ec495c36b78d91fc5a1001180022205d60ec3b4b779364c9e8b67ca4fb253385b9a6234ec9f4fe3aed9013302dcf845c19343e5f1da4e0",
+        "synthetic skipped 2"
+      ]
+    ],
+    "group_skipped": [
+      "3308ddd6bce60210001a2039a1d5632e6383883e18d80f4747ee190d3eb034212576929daebfc13b0b8cc2756120955de9789fd4e69ff390b7ae0e597b3a5f55011590cf18d4c1071c9d4d3cb242faf217a7f1d70d23385272e6f01483d4ebe896d7ff314d6a253eda9582",
+      "synthetic group skipped"
+    ]
+  },
+  "synthetic": true,
+  "whatsapp_rust": "5e72baf000aa4fb65ed89d1c955a54029a7f29a6"
+}

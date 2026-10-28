@@ -8892,12 +8892,19 @@ dependencies = [
 name = "zapfast_core"
 version = "0.1.0"
 dependencies = [
+ "hmac 0.13.0",
  "keyring-core",
  "libc",
  "log",
+ "rand 0.10.2",
  "rusqlite",
+ "serde",
+ "serde_json",
+ "sha2",
  "tempfile",
+ "tokio",
  "unicode-segmentation",
+ "whatsapp-rust",
  "zapfast",
 ]
 
