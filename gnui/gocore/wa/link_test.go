@@ -2,7 +2,6 @@ package wa
 
 import (
 	"errors"
-	"strings"
 	"testing"
 	"time"
 
@@ -299,7 +298,7 @@ func TestCallAndDemoCommandsAreRefused(t *testing.T) {
 		}
 	}
 	var ce *core.Error
-	if err := h.c.Send(&abi.Command{Tag: abi.CommandTagStartCall}); !errors.As(err, &ce) || !strings.Contains(ce.Msg, calls.LibName) {
+	if err := h.c.Send(&abi.Command{Tag: abi.CommandTagStartCall}); !errors.As(err, &ce) || ce.Msg != calls.NotAvailable {
 		t.Errorf("the refusal does not say why: %v", err)
 	}
 	h.send(abi.Command{Tag: abi.CommandTagLoadCallLog})

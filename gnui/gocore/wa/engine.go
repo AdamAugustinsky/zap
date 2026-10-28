@@ -39,7 +39,7 @@ type Options struct {
 	// Log is whatsmeow's logger, for its client and its store; nil: none
 	// (waLog.Noop). The app gives a redacting one (sys.WhatsmeowLog).
 	Log waLog.Logger
-	// CallMedia makes the account's call media; nil: libzfcalls'. An
+	// CallMedia makes the account's call media; nil: the Go engine's. An
 	// error turns calls off (calls.NotAvailable).
 	CallMedia func() (calls.Media, error)
 }

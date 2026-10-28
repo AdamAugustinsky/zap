@@ -381,7 +381,7 @@ func newHarness(t *testing.T, o options) *harness {
 		return f
 	}, CallMedia: func() (calls.Media, error) {
 		if o.callMedia == nil {
-			return nil, calls.ErrNoLibrary
+			return nil, errors.New("no call media in this test")
 		}
 		return o.callMedia, nil
 	}})
