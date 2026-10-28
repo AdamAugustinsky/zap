@@ -17,19 +17,15 @@ import (
 	"zapfast/ui/conversation/av"
 )
 
-// The demo core end to end (the real library: $ZAPFAST_CORE or a cargo
-// build; skipped without one, and with -short): a demo voice note's Play
-// decodes its Ogg/Opus file through zf_voice_decode on a worker and plays
+// The demo core end to end (skipped with -short): a demo voice note's Play
+// decodes its Ogg/Opus file through DecodeVoice on a worker and plays
 // the PCM the core gives, mono float32 at 48 kHz. The Player is the rig's,
 // so nothing sounds.
 func TestTheDemoCoresVoiceNotesPlay(t *testing.T) {
 	if testing.Short() {
 		t.Skip("the demo core takes a second")
 	}
-	if err := demo.Ready(""); err != nil {
-		t.Skipf("no core library: %v", err)
-	}
-	c, err := demo.OpenChosen(core.Config{Wake: func() {}})
+	c, err := demo.Open(core.Config{Wake: func() {}})
 	if err != nil {
 		t.Fatal(err)
 	}

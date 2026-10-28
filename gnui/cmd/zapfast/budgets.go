@@ -201,16 +201,12 @@ type startupReport struct {
 
 	OpenStages map[string]float64 // platform.Open's stages, ms from exec
 
-	// The account's core, opened on a goroutine: the Rust core's
-	// (CoreEngine "rust": the library's resolve, prewarm, dlopen, lookups
-	// and version check, then zf_core_open) or the Go backend's ("go": for
-	// a real account, loading SQLCipher and any migration, then
-	// gocore.Open; the demo has no load).
-	CoreEngine       string
+	// The account's core, opened on a goroutine: for a real account,
+	// loading SQLCipher and any migration, then gocore.Open; the demo has
+	// no load.
 	CoreLibrary      string
 	CoreLoadMs       float64
-	CorePrewarmMs    float64
-	CoreOpenMs       float64 // zf_core_open, or gocore.Open
+	CoreOpenMs       float64 // gocore.Open
 	ExecToCoreOpenMs float64
 
 	// What the first frame showed: the gate needs chat rows and no
@@ -384,12 +380,11 @@ func (r *startupRun) finish() {
 	rep.MainToAppMainMs = msSince(mainNs, r.tAppMain)
 	rep.ExecToChatsShownMs = msSince(execNs, r.tChats)
 	rep.FirstFrameComplete = rep.FirstFrameChatRows > 0 && !rep.FirstFrameSkeleton
-	rep.CoreLoadMs, rep.CorePrewarmMs, rep.CoreOpenMs, rep.ExecToCoreOpenMs = -1, -1, -1, -1
+	rep.CoreLoadMs, rep.CoreOpenMs, rep.ExecToCoreOpenMs = -1, -1, -1
 	if p := r.pending; p != nil && p.Done() {
 		t := p.Timing
-		rep.CoreEngine, rep.CoreLibrary = t.Engine, t.Library
+		rep.CoreLibrary = t.Library
 		rep.CoreLoadMs = float64(t.Loaded.Sub(t.Began).Microseconds()) / 1000
-		rep.CorePrewarmMs = float64(t.Prewarm.Microseconds()) / 1000
 		rep.CoreOpenMs = float64(t.Opened.Sub(t.Loaded).Microseconds()) / 1000
 		if exec, ok := procinfo.ExecTime(); ok {
 			rep.ExecToCoreOpenMs = float64(t.Opened.Sub(exec).Microseconds()) / 1000

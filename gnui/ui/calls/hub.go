@@ -482,8 +482,8 @@ func (h *hub) tick(now time.Time) {
 
 // next is a generation no call has had yet, from the counter a's core
 // numbers the calls it is offered with (core.CallNumbers), so the two never
-// collide; a library too old for one falls back inside core. With no core
-// yet (the send fails anyway) the hub numbers from 1<<48, as core does.
+// collide. With no core yet (the send fails anyway) the hub numbers from
+// 1<<48.
 func (h *hub) next(a *state.Account) uint64 {
 	if n, ok := a.Conn.(core.CallNumbers); ok {
 		return n.CallGeneration()

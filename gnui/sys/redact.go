@@ -12,8 +12,7 @@ import (
 )
 
 // The run's log is the user's to read and to send with a bug report, so
-// what goes into it from Go is redacted on the way in (the Rust core
-// reduces its own lines to fixed categories): message text, phone numbers
+// what goes into it is redacted on the way in: message text, phone numbers
 // and keys never reach the file, whatever a caller or a library put in a
 // message or an error.
 //
@@ -26,8 +25,8 @@ import (
 //     key, a token, a digest) becomes [key].
 //   - Bytes are logged as their length only.
 //
-// The Go backend's lines (gocore) carry source=gocore, and whatsmeow's
-// source=whatsmeow, as the Rust core's carry source=core.
+// The backend's lines (gocore) carry source=gocore, and whatsmeow's
+// source=whatsmeow.
 
 const redacted = "[redacted]"
 

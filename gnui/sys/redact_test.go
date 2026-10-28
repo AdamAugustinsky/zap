@@ -13,7 +13,7 @@ import (
 // logs them: the app, the Go backend or whatsmeow.
 func TestTheLogRedactsMessageTextNumbersAndKeys(t *testing.T) {
 	dir := t.TempDir()
-	l, err := StartLog(dir, nil)
+	l, err := StartLog(dir)
 	if err != nil {
 		t.Fatal(err)
 	}

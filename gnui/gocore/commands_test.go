@@ -194,7 +194,7 @@ func TestSendChecksFieldsAndBlobsAsTheRustCoreDoes(t *testing.T) {
 	refused("another error", &abi.Command{Tag: abi.CommandTagSendText}, core.ERefused, "busy")
 	s.e.accept = nil
 
-	// A field over its bound fails as core.Core.Send does.
+	// A field over its bound fails as the Rust core's Send did.
 	long := &abi.Command{Tag: abi.CommandTagMarkRead}
 	long.MarkRead.Chat = make([]byte, 129)
 	if err := s.c.Send(long); !errors.Is(err, abi.ErrTooLarge) {

@@ -350,7 +350,7 @@ func (q *queue) Push(rec []byte) bool {
 }
 
 // Drain hands every waiting event to h, in order, and returns how many,
-// as core.Core.Drain does: call it on the UI thread when the Wake came.
+// as the Rust core's Drain did: call it on the UI thread when the Wake came.
 // With a budget above 0 it stops once that much time has passed (after at
 // least one event) and calls Wake, so the next frame goes on; 0 drains
 // until the queue is empty, which re-arms the wake: the next event queued

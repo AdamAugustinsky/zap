@@ -6,8 +6,6 @@
 //
 //	zapfast -demo            the demo core: a synthetic account, no network, no disk
 //	zapfast -demo -o out.png render the main window offscreen once the chat list is in, and quit
-//	zapfast -core PATH       load this libzapfast_core.dylib (default: $ZAPFAST_CORE, the bundle, or the cargo build)
-//	zapfast -engine=go|rust  the backend: Go (gocore) or the Rust core (default: $ZAPFAST_ENGINE, else engine.go's rules)
 //
 // Without -demo it opens the real account in the app's own data folder
 // (ai.a3lab.zap). Tests and screenshots use -demo only.
@@ -33,11 +31,9 @@ import (
 
 // options are the command line's flags.
 type options struct {
-	core   string
-	engine string // -engine: engineGo, engineRust or "" (engine.go)
-	demo   bool
-	out    string
-	dark   bool
+	demo bool
+	out  string
+	dark bool
 	// page is upstream's --demo-page list (demopage.go).
 	page string
 	tour tourOptions // -demo-tour (tour.go)
@@ -47,12 +43,10 @@ type options struct {
 }
 
 // parseOptions parses args (without the program name) with package flag's
-// syntax: -core PATH, -core=PATH, --core PATH and --core=PATH alike.
+// syntax: -o PATH, -o=PATH, --o PATH and --o=PATH alike.
 func parseOptions(args []string) (options, error) {
 	var o options
 	fs := flag.NewFlagSet("zapfast", flag.ContinueOnError)
-	fs.StringVar(&o.core, "core", "", "the libzapfast_core.dylib to load (unbundled runs only)")
-	fs.StringVar(&o.engine, "engine", "", "the backend: go (the Go backend) or rust (the Rust core); default $ZAPFAST_ENGINE, else each account's own, and go for a new one and the demo")
 	fs.BoolVar(&o.demo, "demo", false, "open the demo core: a synthetic account, no network, no disk")
 	fs.StringVar(&o.out, "o", "", "render the main window offscreen into this PNG once the chat list is in, and quit")
 	fs.BoolVar(&o.dark, "dark", false, "with -o: render in dark mode")
@@ -63,10 +57,6 @@ func parseOptions(args []string) (options, error) {
 	o.budget.register(fs)
 	err := fs.Parse(args)
 	o.args = fs.Args()
-	if err == nil && !validEngine(o.engine) {
-		err = fmt.Errorf("-engine=%s: want go or rust", o.engine)
-		fmt.Fprintln(fs.Output(), err)
-	}
 	if *shot != "" {
 		o.demo, o.out = true, *shot
 	}
@@ -87,7 +77,6 @@ func main() {
 	if err != nil {
 		os.Exit(2) // flag has printed why
 	}
-	o.engine = chooseEngine(o.engine, os.Getenv)
 	if o.out == "" {
 		// One linked copy: a second launch hands its arguments to the first and
 		// exits. Notifications opt in here, before app.Main (package sys).
@@ -107,7 +96,7 @@ func main() {
 				fmt.Fprintln(os.Stderr, "zapfast:", err)
 				os.Exit(1)
 			}
-			lg, err = sys.StartLog(p.Data, coreLog(o.engine, o.core))
+			lg, err = sys.StartLog(p.Data)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, "zapfast: the log:", err)
 			}
@@ -153,8 +142,8 @@ func main() {
 	// then the cores close and the log ends (terminate).
 	h.Terminate = terminate(s, lg)
 	// Each account's core loads and opens on its own goroutine, so the
-	// window never waits for the dylib, the Keychain or a migration.
-	cores := &coreOpener{choice: o.engine, library: o.core, demo: o.demo, wake: h.Wake}
+	// window never waits for SQLCipher, the Keychain or a migration.
+	cores := &coreOpener{demo: o.demo, wake: h.Wake}
 	s.OpenCore = cores.open
 	if !o.demo {
 		s.ArchiveKeys = secret.Open(core.KeyringService) // a removed account's key goes with its archive

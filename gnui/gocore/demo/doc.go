@@ -24,11 +24,10 @@
 // Its files are written once into the system's temporary directory
 // (zapfast-demo-media and zapfast-demo-avatars), the same folders and
 // names as zfcore's, never the account's. The pictures, clips and stickers
-// are embedded (assets/, from the repository's assets/demo and
-// zfcore/assets/posters; see assets/SOURCES.md); the voice notes are
+// are embedded (assets/; see assets/SOURCES.md); the voice notes are
 // encoded at startup with gocore/av.
 //
-// [Open] opens a demo Conn; [New] is the bare Engine for gocore.Open.
-// [OpenChosen] opens the demo core $ZAPFAST_ENGINE picks ("go" for this
-// one; zfcore's by default, for now), which is how the Demo tests choose.
+// [Open] opens a demo Conn; [New] is the bare Engine for gocore.Open. Its
+// tests compare it with zfcore's demo as that demo answered before WP9
+// removed the Rust core (testdata/).
 package demo

@@ -3,7 +3,7 @@
 package main
 
 import (
-	"path/filepath"
+	"errors"
 	"testing"
 	"time"
 
@@ -12,18 +12,18 @@ import (
 	"zapfast/ui/shell"
 )
 
-// Every form package flag accepts names the library.
-func TestCoreFlagInEveryFlagForm(t *testing.T) {
-	for _, args := range [][]string{
-		{"-core", "/x/lib.dylib"},
-		{"--core", "/x/lib.dylib"},
-		{"-core=/x/lib.dylib"},
-		{"--core=/x/lib.dylib"},
-		{"-demo", "-core=/x/lib.dylib"},
-	} {
+// Every form package flag accepts parses, and an unknown flag (the removed
+// -core and -engine among them) is refused.
+func TestFlagsInEveryForm(t *testing.T) {
+	for _, args := range [][]string{{"-o", "/x/out.png"}, {"--o", "/x/out.png"}, {"-o=/x/out.png"}, {"--o=/x/out.png"}} {
 		o, err := parseOptions(args)
-		if err != nil || o.core != "/x/lib.dylib" {
-			t.Errorf("%q: core %q, %v", args, o.core, err)
+		if err != nil || o.out != "/x/out.png" {
+			t.Errorf("%q: out %q, %v", args, o.out, err)
+		}
+	}
+	for _, args := range [][]string{{"-core=/x/lib.dylib"}, {"-engine=rust"}} {
+		if _, err := parseOptions(args); err == nil {
+			t.Errorf("%q was accepted", args)
 		}
 	}
 	if o, err := parseOptions([]string{"-demo", "--start-hidden"}); err != nil || !o.demo {
@@ -53,16 +53,16 @@ func TestEverySlotIsWired(t *testing.T) {
 // A way out before the app ever started (here -bench without -demo; a
 // startup errors go the same way), with
 // a core that failed to open: the status is the error's, and closing the
-// cores does not panic (the failed open's nil *Core became a non-nil Conn,
-// and closing it dereferenced nil).
+// cores does not panic (a failed open once became a non-nil Conn, and
+// closing it dereferenced nil).
 func TestAnEarlyExitWithACoreThatFailedToOpen(t *testing.T) {
 	s := state.New()
-	p := core.OpenAsync(core.Config{Library: filepath.Join(t.TempDir(), "missing.dylib"), Demo: true, Account: "1"})
+	p := core.OpenAsync(nil, func(*core.Timing) (core.Conn, error) { return nil, errors.New("no storage library") })
 	if !p.Wait(5 * time.Second) {
 		t.Fatal("the open did not end")
 	}
-	if _, err := p.Result(); err == nil {
-		t.Fatal("a missing library opened")
+	if c, err := p.Conn(); err == nil || c != nil {
+		t.Fatal("a failed open has a core")
 	}
 	s.AddAccount("1", p, nil)
 	sh, err := shell.New(s, testScreens(false))

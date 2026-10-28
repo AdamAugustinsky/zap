@@ -1,14 +1,14 @@
-// Package gocore is Zap's backend in Go: a core.Conn that runs in the
-// process, in place of the Rust core (zfcore), over an Engine (the Go demo,
-// or whatsmeow). The plan and the research behind it are in
+// Package gocore is Zap's backend: a core.Conn that runs in the process,
+// over an Engine (the Go demo, or whatsmeow). It took the place of
+// ZapFast's Rust core (zfcore, removed in WP9), whose behaviour it keeps
+// where the notes below say "the Rust core". The plan and the research behind it are in
 // ../../docs/go-backend/.
 //
 // # The Conn
 //
-// [Open] opens one account's [Conn] over an [Engine], with the same
-// core.Config as core.Open. The Conn speaks the existing ABI unchanged
-// (gnui/abi): the UI drives it exactly as it drives the Rust core, and
-// gets the same errors (core.Error with the ZF_E_* codes, core.ErrClosed).
+// [Open] opens one account's [Conn] over an [Engine], with a core.Config.
+// The Conn speaks the ABI (gnui/abi) the Rust core spoke: the UI drives it
+// exactly as it drove the Rust core, and gets the same errors (core.Error with the ZF_E_* codes, core.ErrClosed).
 //
 //   - Send never blocks on the engine. It encodes the command (a field over
 //     its bound fails as it would with the Rust core), asks the engine's

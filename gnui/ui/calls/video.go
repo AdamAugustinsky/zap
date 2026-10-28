@@ -141,7 +141,7 @@ func (v *videoTex) size(stream uint32) (w, h int) {
 // stage copies f into stream's texture: made on the first frame and again
 // when the size changes, and written only when f is not the picture already
 // in it. The planes are the core's: the Y plane, then U and V, each with its
-// own stride (zfcore.h, limited-range BT.601).
+// own stride (limited-range BT.601).
 func (v *videoTex) stage(stream uint32, f *core.Frame) {
 	cw, ch := (f.W+1)/2, (f.H+1)/2
 	if f.Format != core.FrameI420 || f.W <= 0 || f.H <= 0 || f.Stride[0] < f.W || f.Stride[1] < cw || f.Stride[2] < cw {

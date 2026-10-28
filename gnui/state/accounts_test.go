@@ -200,11 +200,11 @@ func TestTryAgainReopensACoreThatFailedToOpen(t *testing.T) {
 	s.OpenCore = func(id string) (*core.Pending, core.Conn) {
 		opens++
 		if opens == 1 {
-			return core.OpenAsyncWith("go", nil, func(*core.Timing) (core.Conn, error) {
+			return core.OpenAsync(nil, func(*core.Timing) (core.Conn, error) {
 				return nil, errors.New("the account could not move")
 			}), nil
 		}
-		return core.OpenAsyncWith("go", nil, func(*core.Timing) (core.Conn, error) {
+		return core.OpenAsync(nil, func(*core.Timing) (core.Conn, error) {
 			c = fake.New(nil)
 			return c, nil
 		}), nil

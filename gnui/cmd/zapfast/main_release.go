@@ -18,23 +18,15 @@ import (
 )
 
 type options struct {
-	core   string
-	engine string // -engine: engineGo, engineRust or "" (engine.go)
-	args   []string
+	args []string
 }
 
 func parseOptions(args []string) (options, error) {
 	var o options
 	fs := flag.NewFlagSet("zapfast", flag.ContinueOnError)
-	fs.StringVar(&o.core, "core", "", "the libzapfast_core.dylib to load (unbundled runs only)")
-	fs.StringVar(&o.engine, "engine", "", "the backend: go (the Go backend) or rust (the Rust core); default $ZAPFAST_ENGINE, else each account's own, and go for a new one")
 	fs.Bool("start-hidden", false, "start without a window (the login item)")
 	err := fs.Parse(args)
 	o.args = fs.Args()
-	if err == nil && !validEngine(o.engine) {
-		err = fmt.Errorf("-engine=%s: want go or rust", o.engine)
-		fmt.Fprintln(fs.Output(), err)
-	}
 	return o, err
 }
 
@@ -46,7 +38,6 @@ func main() {
 	if err != nil {
 		os.Exit(2)
 	}
-	o.engine = chooseEngine(o.engine, os.Getenv)
 	if code, done := sys.Launch(sys.LaunchOptions{AppID: AppID, Args: o.args}); done {
 		os.Exit(code)
 	}
@@ -57,7 +48,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, "zapfast:", err)
 			os.Exit(1)
 		}
-		lg, err = sys.StartLog(p.Data, coreLog(o.engine, o.core))
+		lg, err = sys.StartLog(p.Data)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "zapfast: the log:", err)
 		}
@@ -78,7 +69,7 @@ func main() {
 	s.Wake = h.Wake
 	s.Shell = opener{}
 	h.Terminate = terminate(s, lg)
-	cores := &coreOpener{choice: o.engine, library: o.core, wake: h.Wake}
+	cores := &coreOpener{wake: h.Wake}
 	s.OpenCore = cores.open
 	s.ArchiveKeys = secret.Open(core.KeyringService) // a removed account's key goes with its archive
 	roster := s.Roster()

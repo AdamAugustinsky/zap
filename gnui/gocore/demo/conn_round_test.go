@@ -1,10 +1,11 @@
-package core
+package demo_test
 
 import (
 	"testing"
 	"time"
 
 	"zapfast/abi"
+	"zapfast/core"
 )
 
 // sentMessages is a Handler keeping copies of the messages of ours the demo
@@ -47,7 +48,7 @@ func copyMentions(ms []abi.MentionRef) []abi.MentionRef {
 }
 
 // drainUntil drains into h until done holds.
-func (s *session) drainUntil(h Handler, what string, done func() bool) {
+func (s *session) drainUntil(h core.Handler, what string, done func() bool) {
 	s.t.Helper()
 	s.h.match, s.h.matched = func(*abi.Event) bool { return done() }, false
 	deadline := time.After(10 * time.Second)

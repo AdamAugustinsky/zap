@@ -19,16 +19,10 @@ import (
 	"zapfast/ui/shell"
 )
 
-// demoCore opens the demo core, or skips without the library.
+// demoCore opens the demo core.
 func demoCore(t *testing.T) core.Conn {
 	t.Helper()
-	if err := demo.Ready(""); err != nil {
-		if os.Getenv("ZAPFAST_CORE") != "" {
-			t.Fatal(err)
-		}
-		t.Skip("no core library:", err)
-	}
-	c, err := demo.OpenChosen(core.Config{})
+	c, err := demo.Open(core.Config{})
 	if err != nil {
 		t.Fatal(err)
 	}

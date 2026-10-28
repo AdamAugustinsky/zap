@@ -23,9 +23,8 @@ var (
 	_ core.VoiceDecoder = (*Conn)(nil)
 )
 
-// Open opens a demo core with cfg, as core.Open opens zfcore's with
-// cfg.Demo set (which Open sets): nothing of an account's is read or
-// written. Only Wake matters; Library is ignored.
+// Open opens a demo core with cfg (Demo set, which Open sets): nothing of an
+// account's is read or written. Only Wake matters.
 func Open(cfg core.Config) (*Conn, error) {
 	cfg.Demo = true
 	e := New()

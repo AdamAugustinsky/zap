@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -143,16 +142,10 @@ func TestOpensChatsAndRunsTheShortcuts(t *testing.T) {
 	}
 }
 
-// The demo core (the real library): the shell builds over it and its chat
+// The demo core: the shell builds over it and its chat
 // list shows the demo's chats by name.
 func TestShellOnTheDemoCore(t *testing.T) {
-	if err := demo.Ready(""); err != nil {
-		if os.Getenv("ZAPFAST_CORE") != "" {
-			t.Fatal(err)
-		}
-		t.Skip("no core library:", err)
-	}
-	c, err := demo.OpenChosen(core.Config{})
+	c, err := demo.Open(core.Config{})
 	if err != nil {
 		t.Fatal(err)
 	}

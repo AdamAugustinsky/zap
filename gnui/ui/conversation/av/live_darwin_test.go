@@ -32,7 +32,7 @@ func TestLiveGIFPausesWhenHidden(t *testing.T) {
 	if os.Getenv("AV_LIVE") == "" {
 		t.Skip("AV_LIVE=1 plays a muted demo GIF")
 	}
-	path, err := filepath.Abs("../../../../assets/demo/videos/launch.mp4")
+	path, err := filepath.Abs("../../../gocore/demo/assets/videos/launch.mp4")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -125,10 +125,7 @@ func TestLiveDemoVideos(t *testing.T) {
 	if os.Getenv("AV_LIVE") == "" {
 		t.Skip("AV_LIVE=1 plays video and sound")
 	}
-	if err := demo.Ready(""); err != nil {
-		t.Skipf("no core library: %v", err)
-	}
-	c, err := demo.OpenChosen(core.Config{Wake: func() {}})
+	c, err := demo.Open(core.Config{Wake: func() {}})
 	if err != nil {
 		t.Fatal(err)
 	}

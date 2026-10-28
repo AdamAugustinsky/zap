@@ -25,39 +25,9 @@ import (
 	"zapfast/gocore/wa"
 )
 
-func TestTheEngineIsTheFlagsThenTheEnvironments(t *testing.T) {
-	env := func(v string) func(string) string {
-		return func(k string) string {
-			if k == "ZAPFAST_ENGINE" {
-				return v
-			}
-			return ""
-		}
-	}
-	for _, c := range []struct{ flag, env, want string }{
-		{"", "", ""}, {"", "go", engineGo}, {"", "rust", engineRust}, {"", "zfcore", ""},
-		{"go", "rust", engineGo}, {"rust", "go", engineRust},
-	} {
-		if got := chooseEngine(c.flag, env(c.env)); got != c.want {
-			t.Errorf("-engine=%q, $ZAPFAST_ENGINE=%q: %q, want %q", c.flag, c.env, got, c.want)
-		}
-	}
-	for _, c := range []struct {
-		args []string
-		want string
-	}{{[]string{"-engine=go"}, engineGo}, {[]string{"-engine", "rust"}, engineRust}, {[]string{"--engine=go", "--start-hidden"}, engineGo}, {nil, ""}} {
-		if o, err := parseOptions(c.args); err != nil || o.engine != c.want {
-			t.Errorf("%q: %q, %v", c.args, o.engine, err)
-		}
-	}
-	if _, err := parseOptions([]string{"-engine=zfcore"}); err == nil {
-		t.Error("an unknown engine was accepted")
-	}
-}
-
-// Without a choice, an account keeps the backend its folder belongs to,
-// and a new one runs on Go; a choice applies to every account.
-func TestEachAccountKeepsItsBackendAndNewOnesRunOnGo(t *testing.T) {
+// A folder the Rust core kept, or one whose migration began, is taken over
+// before it opens; whatsmeow's own, and a new one, are not.
+func TestWhichFoldersAreTakenOver(t *testing.T) {
 	root := t.TempDir()
 	folder := func(name string, files ...string) string {
 		dir := filepath.Join(root, name)
@@ -71,31 +41,27 @@ func TestEachAccountKeepsItsBackendAndNewOnesRunOnGo(t *testing.T) {
 		}
 		return dir
 	}
-	rust := folder("rust", migrate.SessionFile, migrate.RustArchiveFile)
-	gone := folder("go", store.DevicesFile, store.ArchiveFile)
-	moving := folder("moving", migrate.SessionFile, migrate.MarkerFile)
-	fresh := filepath.Join(root, "new") // not created yet
 	for _, c := range []struct {
-		choice, dir, want string
-		migrate           bool
+		dir     string
+		migrate bool
 	}{
-		{"", rust, engineRust, true}, {"", gone, engineGo, false}, {"", moving, engineGo, true}, {"", fresh, engineGo, false},
-		{engineGo, rust, engineGo, true}, {engineRust, gone, engineRust, false},
+		{folder("rust", migrate.SessionFile, migrate.RustArchiveFile), true},
+		{folder("go", store.DevicesFile, store.ArchiveFile), false},
+		{folder("moving", migrate.SessionFile, migrate.MarkerFile), true},
+		{folder("done", migrate.SessionFile, store.DevicesFile), false},
+		{filepath.Join(root, "new"), false}, // not created yet
 	} {
-		if got := accountEngine(c.choice, c.dir); got != c.want {
-			t.Errorf("%q on %s: %q, want %q", c.choice, filepath.Base(c.dir), got, c.want)
-		}
 		if got := needsMigration(c.dir); got != c.migrate {
 			t.Errorf("%s needs a migration: %v, want %v", filepath.Base(c.dir), got, c.migrate)
 		}
 	}
 }
 
-func TestTheDemoRunsOnTheChosenEngine(t *testing.T) {
+func TestTheDemoRunsOnTheGoDemo(t *testing.T) {
 	o := &coreOpener{demo: true}
 	p, conn := o.open("1")
-	if conn != nil || p == nil || p.Timing.Engine != engineGo {
-		t.Fatalf("the default demo: %v, %+v", conn, p)
+	if conn != nil || p == nil {
+		t.Fatalf("the demo: %v, %+v", conn, p)
 	}
 	if !p.Wait(30 * time.Second) {
 		t.Fatal("the Go demo did not open")
@@ -106,14 +72,10 @@ func TestTheDemoRunsOnTheChosenEngine(t *testing.T) {
 	}
 	defer c.Close(5 * time.Second)
 	if _, ok := c.(*demo.Conn); !ok {
-		t.Fatalf("the default demo is a %T", c)
+		t.Fatalf("the demo is a %T", c)
 	}
 	if _, ok := c.(core.Frames); !ok {
 		t.Error("the Go demo has no frames")
-	}
-	o.choice = engineRust
-	if p, _ := o.open("1"); p.Timing.Engine != "rust" {
-		t.Errorf("-engine=rust opened %q", p.Timing.Engine)
 	}
 }
 
@@ -222,12 +184,12 @@ func copyFixture(t *testing.T, from, to string) {
 	}
 }
 
-// goOpener opens real accounts under root on the Go backend, with keys and
-// the stub client; devices receives each device a client was made over.
+// goOpener opens real accounts under root, with keys and the stub client;
+// devices receives each device a client was made over.
 func goOpener(root string, keys store.Keys, locked bool) (*coreOpener, chan *wastore.Device) {
 	devices := make(chan *wastore.Device, 4)
 	return &coreOpener{
-		choice: engineGo, stateDir: filepath.Join(root, "state"), cacheDir: filepath.Join(root, "cache"),
+		stateDir: filepath.Join(root, "state"), cacheDir: filepath.Join(root, "cache"),
 		keys:      keys,
 		holdsLock: func() bool { return locked },
 		newClient: func(d *wastore.Device) wa.Client {
@@ -240,8 +202,8 @@ func goOpener(root string, keys store.Keys, locked bool) (*coreOpener, chan *was
 func openNow(t *testing.T, o *coreOpener) (core.Conn, error) {
 	t.Helper()
 	p, conn := o.open("1")
-	if conn != nil || p.Timing.Engine != engineGo {
-		t.Fatalf("not opening on Go: %v, %+v", conn, p.Timing)
+	if conn != nil || p == nil {
+		t.Fatalf("not opening asynchronously: %v, %+v", conn, p)
 	}
 	if !p.Wait(60 * time.Second) {
 		t.Fatal("the open did not end")
@@ -260,9 +222,9 @@ func linkedDevice(t *testing.T, devices chan *wastore.Device) *wastore.Device {
 	return nil
 }
 
-// -engine=go takes the Rust core's account over before opening it, then
-// opens it on the converted session; a second open finds it done.
-func TestTheGoEngineTakesARustAccountOver(t *testing.T) {
+// An account the Rust core kept is taken over before it opens, then opens
+// on the converted session; a second open finds it done.
+func TestARustAccountIsTakenOver(t *testing.T) {
 	root, dir, keys := rustFolder(t)
 	o, devices := goOpener(root, keys, true)
 	c, err := openNow(t, o)
@@ -289,9 +251,6 @@ func TestTheGoEngineTakesARustAccountOver(t *testing.T) {
 		if got := exists(filepath.Join(dir, name)); got != want {
 			t.Errorf("%s exists: %v, want %v", name, got, want)
 		}
-	}
-	if accountEngine("", dir) != engineGo {
-		t.Error("the migrated account is not the Go backend's by default")
 	}
 	// Again: the marker says it is done.
 	c, err = openNow(t, o)
@@ -320,7 +279,7 @@ func TestNoMigrationWithoutTheInstanceLock(t *testing.T) {
 }
 
 // A session store this build cannot convert fails with a typed error,
-// changes nothing, and Try again links the account afresh on Go.
+// changes nothing, and Try again links the account afresh.
 func TestAnUnconvertibleSessionIsLinkedAfreshOnTryAgain(t *testing.T) {
 	root, dir, keys := rustFolder(t)
 	session := filepath.Join(dir, migrate.SessionFile)

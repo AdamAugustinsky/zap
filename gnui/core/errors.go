@@ -5,7 +5,9 @@ import (
 	"strconv"
 )
 
-// The status codes of zfcore.h: ZF_OK, ZF_EMPTY and the ZF_E_* errors.
+// The status codes of the core ABI (named as the C ABI zfcore.h named them,
+// ZF_OK, ZF_EMPTY and the ZF_E_* errors, which the UI and its messages still
+// use): what a refused or failed call's *Error carries.
 const (
 	StatusOK    int32 = 0
 	StatusEmpty int32 = 1
@@ -28,7 +30,7 @@ const (
 var codeNames = [...]string{"ZF_E_ARG", "ZF_E_SMALL", "ZF_E_MALFORMED", "ZF_E_TOO_LARGE", "ZF_E_VERSION",
 	"ZF_E_POISONED", "ZF_E_PANIC", "ZF_E_NOT_FOUND", "ZF_E_RANGE", "ZF_E_STATE", "ZF_E_IO", "ZF_E_TIMEOUT", "ZF_E_REFUSED"}
 
-// CodeName returns the zfcore.h name of a status code.
+// CodeName returns the ABI name of a status code.
 func CodeName(code int32) string {
 	switch {
 	case code == StatusOK:
@@ -44,16 +46,11 @@ func CodeName(code int32) string {
 var (
 	// ErrClosed is returned by every call on a core after Close.
 	ErrClosed = errors.New("zapfast core: closed")
-	// ErrFailed is returned by Drain once the event stream cannot be read
-	// any more (a record length over ZF_MAX_RECORD): the account needs a
-	// restart.
-	ErrFailed = errors.New("zapfast core: the event stream is corrupt; restart required")
 )
 
-// Error is a call the core refused or failed, with the code and message it
-// wrote into the call's zf_err.
+// Error is a call the core refused or failed, with its code and message.
 type Error struct {
-	Op   string // the C function
+	Op   string // the call, named as the C ABI named it (zf_send, ...)
 	Code int32  // a ZF_E_* code
 	Msg  string
 }
@@ -66,24 +63,4 @@ func (e *Error) Error() string {
 func IsCode(err error, code int32) bool {
 	var e *Error
 	return errors.As(err, &e) && e.Code == code
-}
-
-// zfErr is zf_err, laid out as in C:
-//
-//	typedef struct { int32_t code; uint32_t len; uint8_t msg[256]; } zf_err;
-//
-// It lives in the same heap struct as the clib.Call that passes it, so it has
-// one caller at a time, and the failing call has filled it before Do
-// returns.
-type zfErr struct {
-	code int32
-	len  uint32
-	msg  [256]byte
-}
-
-// error turns a failed call's status into a Go error (the only allocation
-// of a failure).
-func (e *zfErr) error(op string, status int32) error {
-	n := min(int(e.len), len(e.msg))
-	return &Error{Op: op, Code: status, Msg: string(e.msg[:n])}
 }

@@ -115,8 +115,7 @@ var _ core.VoiceDecoder = (*VoiceDecoder)(nil)
 // zf_voice_decode does, with its error codes: a relative path or one outside
 // the account's folders is EArg, a missing file ENotFound, one too long
 // ETooLarge, a damaged one EMalformed and a read that fails EIO. Without an
-// Opus decoder the error matches errors.ErrUnsupported, as core.Core's does
-// against an old library.
+// Opus decoder the error matches errors.ErrUnsupported (core.ErrUnsupported).
 func (d *VoiceDecoder) DecodeVoice(path string) (abi.BlobRef, core.VoiceFormat, error) {
 	fail := func(code int32, msg string) (abi.BlobRef, core.VoiceFormat, error) {
 		return abi.BlobRef{}, core.VoiceFormat{}, &core.Error{Op: "zf_voice_decode", Code: code, Msg: msg}

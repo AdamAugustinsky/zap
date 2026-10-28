@@ -14,8 +14,7 @@ import (
 	"zapfast/ui/screen"
 )
 
-// The demo core end to end (the real library: $ZAPFAST_CORE or a cargo
-// build; skipped without one, and with -short): its call log and devices
+// The demo core end to end (skipped with -short): its call log and devices
 // reach the hub; a video call placed here comes up under a number from the
 // core's counter, with frames on our stream and theirs, which the call window
 // takes and gives back; a group call it rings comes after it, and once
@@ -24,10 +23,7 @@ func TestTheDemoCoresCalls(t *testing.T) {
 	if testing.Short() {
 		t.Skip("the demo core's calls take seconds")
 	}
-	if err := demo.Ready(""); err != nil {
-		t.Skipf("no core library: %v", err)
-	}
-	c, err := demo.OpenChosen(core.Config{Wake: func() {}})
+	c, err := demo.Open(core.Config{Wake: func() {}})
 	if err != nil {
 		t.Fatal(err)
 	}

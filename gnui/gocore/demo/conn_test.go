@@ -1,8 +1,7 @@
-package core
+package demo_test
 
 import (
 	"bytes"
-	"os"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -10,27 +9,15 @@ import (
 	"time"
 
 	"zapfast/abi"
+	"zapfast/core"
+	"zapfast/gocore/demo"
 )
 
-// These tests load the real library (FindLibrary: $ZAPFAST_CORE or the
-// newest cargo build above this directory) and open only the demo core: no
-// account, no network, no disk, no keyring. Without a build they skip,
-// unless $ZAPFAST_CORE names one.
+// The demo core through core.Conn, as the UI uses it: no account, no
+// network, no disk, no keyring. These tests ran against zfcore's demo
+// (gnui/core, over the Rust library) until WP9; they now run on the Go demo.
 
 const ada = "393331234567@s.whatsapp.net" // a chat of the demo's
-
-func loadLib(t testing.TB) *Lib {
-	t.Helper()
-	path, err := FindLibrary()
-	if err != nil {
-		t.Skipf("no core library: %v", err)
-	}
-	l, err := Load(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return l
-}
 
 // wakes counts the core's wakes and lets a test wait for the next one.
 type wakes struct {
@@ -51,46 +38,15 @@ func (w *wakes) wake() {
 // session is a demo core and what its events said.
 type session struct {
 	t testing.TB
-	c DemoConn
+	c *demo.Conn
 	w *wakes
 	h *recorder
-}
-
-// DemoConn is what the demo tests use of a demo core: *Core, or the Go
-// demo's (gocore/demo).
-type DemoConn interface {
-	Conn
-	Frames
-	CallNumbers
-	VoiceDecoder
-	Done() <-chan struct{}
-}
-
-// GoDemo opens the Go demo, for openDemo with ZAPFAST_ENGINE=go; set by
-// godemo_test.go, which may import it (package core_test).
-var GoDemo func(Config) (DemoConn, error)
-
-// rust is the session's core as *Core, for a test of the Rust core's own
-// mechanics; with the Go demo it skips.
-func (s *session) rust() *Core {
-	s.t.Helper()
-	c, ok := s.c.(*Core)
-	if !ok {
-		s.t.Skip("tests core.Core's own mechanics")
-	}
-	return c
 }
 
 func openDemo(t testing.TB) *session {
 	t.Helper()
 	w := newWakes()
-	var c DemoConn
-	var err error
-	if os.Getenv("ZAPFAST_ENGINE") == "go" {
-		c, err = GoDemo(Config{Demo: true, Wake: w.wake})
-	} else {
-		c, err = loadLib(t).Open(Config{Demo: true, Wake: w.wake})
-	}
+	c, err := demo.Open(core.Config{Demo: true, Wake: w.wake})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -208,7 +164,7 @@ func TestDemoSession(t *testing.T) {
 	s.until("Connected", func(e *abi.Event) bool {
 		return e.Tag == abi.EventTagLink && e.Link.Status.Tag == abi.LinkStatusTagConnected
 	})
-	if err := s.c.Start(); !IsCode(err, EState) {
+	if err := s.c.Start(); !core.IsCode(err, core.EState) {
 		t.Errorf("a second Start: %v, want ZF_E_STATE", err)
 	}
 
@@ -250,7 +206,7 @@ func TestDemoSession(t *testing.T) {
 	// back in this call's zf_err.
 	cmd.Tag = abi.CommandTagUnlink
 	err := s.c.Send(&cmd)
-	if !IsCode(err, EState) || !bytes.Contains([]byte(err.Error()), []byte("Unlink")) {
+	if !core.IsCode(err, core.EState) || !bytes.Contains([]byte(err.Error()), []byte("Unlink")) {
 		t.Errorf("Unlink to the demo: %v", err)
 	}
 
@@ -262,13 +218,13 @@ func TestDemoSession(t *testing.T) {
 	default:
 		t.Error("the event goroutine is still running after Close")
 	}
-	if err := s.c.Send(&cmd); err != ErrClosed {
+	if err := s.c.Send(&cmd); err != core.ErrClosed {
 		t.Errorf("Send after Close: %v", err)
 	}
-	if _, err := s.c.Drain(s.h, 0); err != ErrClosed {
+	if _, err := s.c.Drain(s.h, 0); err != core.ErrClosed {
 		t.Errorf("Drain after Close: %v", err)
 	}
-	if err := s.c.Close(time.Second); err != ErrClosed {
+	if err := s.c.Close(time.Second); err != core.ErrClosed {
 		t.Errorf("a second Close: %v", err)
 	}
 }
@@ -309,43 +265,19 @@ func TestOpenPathGoesToTheShell(t *testing.T) {
 
 type openPathHandler struct {
 	rec *recorder
-	sh  Shell
+	sh  core.Shell
 }
 
 func (h *openPathHandler) Event(e *abi.Event) {
 	h.rec.Event(e)
 	if e.Tag == abi.EventTagOpenPath {
-		OpenPath(h.sh, &e.OpenPath, nil)
+		core.OpenPath(h.sh, &e.OpenPath, nil)
 	}
 }
 
 type fakeShell struct{ done chan string }
 
 func (f *fakeShell) Open(p string) error { f.done <- p; return nil }
-
-// A core opened with another schema hash or ABI is refused at open.
-func TestMismatchedSchemaIsRefusedAtOpen(t *testing.T) {
-	l := loadLib(t)
-	if _, err := l.open(Config{Demo: true}, abi.ABIVersion, abi.SchemaHash^1); !IsCode(err, EVersion) {
-		t.Errorf("another schema hash: %v, want ZF_E_VERSION", err)
-	}
-	if _, err := l.open(Config{Demo: true}, abi.ABIVersion+1, abi.SchemaHash); !IsCode(err, EVersion) {
-		t.Errorf("another ABI: %v, want ZF_E_VERSION", err)
-	}
-}
-
-// A real core refuses upstream's keyring service before touching anything.
-func TestARealCoreRefusesUpstreamsKeyringService(t *testing.T) {
-	l := loadLib(t)
-	dir := t.TempDir()
-	_, err := l.Open(Config{StateDir: dir, CacheDir: dir, KeyringService: "rocks.zapfast.ZapFast"})
-	if !IsCode(err, EArg) {
-		t.Fatalf("upstream's service: %v, want ZF_E_ARG", err)
-	}
-	if ents, _ := os.ReadDir(dir); len(ents) != 0 {
-		t.Errorf("the refused core wrote %v", ents)
-	}
-}
 
 func TestBlobsRoundTripInRanges(t *testing.T) {
 	s := openDemo(t)
@@ -376,52 +308,12 @@ func TestBlobsRoundTripInRanges(t *testing.T) {
 	if !bytes.Equal(got, src) {
 		t.Fatal("the blob read back differs")
 	}
-	if _, err := s.c.ReadBlob(ref.ID, uint64(len(src))+1, piece); !IsCode(err, ERange) {
+	if _, err := s.c.ReadBlob(ref.ID, uint64(len(src))+1, piece); !core.IsCode(err, core.ERange) {
 		t.Errorf("past the end: %v", err)
 	}
 	s.c.FreeBlob(ref.ID)
-	if _, err := s.c.ReadBlob(ref.ID, 0, piece); !IsCode(err, ENotFound) {
+	if _, err := s.c.ReadBlob(ref.ID, 0, piece); !core.IsCode(err, core.ENotFound) {
 		t.Errorf("a freed blob: %v", err)
-	}
-}
-
-// The event goroutine ends on Close, whether it waits in the poller or for
-// the UI's drain, and leaves no goroutine behind.
-func TestTheEventGoroutineExitsOnClose(t *testing.T) {
-	l := loadLib(t)
-	settle := func() int {
-		for range 50 {
-			runtime.GC()
-			time.Sleep(2 * time.Millisecond)
-		}
-		return runtime.NumGoroutine()
-	}
-	before := settle()
-	for _, drained := range []bool{false, true} {
-		w := newWakes()
-		c, err := l.Open(Config{Demo: true, Wake: w.wake})
-		if err != nil {
-			t.Fatal(err)
-		}
-		<-w.ch // signalled: it now waits for a drain
-		if drained {
-			// Drained to empty: it waits in the poller.
-			if _, err := c.Drain(&recorder{}, 0); err != nil {
-				t.Fatal(err)
-			}
-			time.Sleep(20 * time.Millisecond)
-		}
-		if err := c.Close(5 * time.Second); err != nil {
-			t.Fatal(err)
-		}
-		select {
-		case <-c.Done():
-		case <-time.After(5 * time.Second):
-			t.Fatalf("drained %v: the event goroutine did not exit", drained)
-		}
-	}
-	if after := settle(); after > before {
-		t.Errorf("%d goroutines before, %d after two opens and closes", before, after)
 	}
 }
 
@@ -497,13 +389,10 @@ func TestABudgetedDrainResumes(t *testing.T) {
 	}
 }
 
-// Errors come back in the zf_err of the call that failed, from many
-// goroutines on whatever threads they run, with the CPU profiler's SIGPROF
-// interrupting them and the core's threads.
+// Errors come back from the call that failed, from many goroutines at
+// once.
 func TestErrorsComeBackInTheirOwnCallAcrossGoroutines(t *testing.T) {
 	s := openDemo(t)
-	stop := profile(t)
-	defer stop()
 	var wg sync.WaitGroup
 	var bad atomic.Int64
 	for g := range 8 {
@@ -514,12 +403,12 @@ func TestErrorsComeBackInTheirOwnCallAcrossGoroutines(t *testing.T) {
 			for i := range 300 {
 				if (g+i)%2 == 0 {
 					cmd.Tag = abi.CommandTagUnlink
-					if err := s.c.Send(&cmd); !IsCode(err, EState) || !bytes.HasSuffix([]byte(err.(*Error).Msg), []byte("Unlink")) {
+					if err := s.c.Send(&cmd); !core.IsCode(err, core.EState) || !bytes.HasSuffix([]byte(err.(*core.Error).Msg), []byte("Unlink")) {
 						bad.Add(1)
 					}
 				} else {
 					cmd.Tag = abi.CommandTagRemoveAccount
-					if err := s.c.Send(&cmd); !IsCode(err, EState) || !bytes.HasSuffix([]byte(err.(*Error).Msg), []byte("RemoveAccount")) {
+					if err := s.c.Send(&cmd); !core.IsCode(err, core.EState) || !bytes.HasSuffix([]byte(err.(*core.Error).Msg), []byte("RemoveAccount")) {
 						bad.Add(1)
 					}
 				}

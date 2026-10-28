@@ -1,28 +1,17 @@
 package main
 
-// The backend each account runs on (docs/go-backend/PLAN.md, WP6): the Go
-// backend (gocore: the Go demo, or whatsmeow) or the Rust core (zfcore),
-// chosen by -engine=go|rust, else $ZAPFAST_ENGINE, in development and
-// release builds alike.
+// The backend every account runs on (docs/go-backend/PLAN.md): gocore, the
+// Go demo with -demo, else whatsmeow (gocore/wa).
 //
-// With neither, each account keeps the backend its folder already belongs
-// to, and a new account (or the demo) gets the Go backend:
+// An account the Rust core kept, which earlier releases ran (its session
+// store, session.db, and no whatsmeow.db), is taken over before it opens:
+// gocore/migrate reads the Rust core's files in Go and converts them, copy
+// first, crash safe, failing closed. A migration that began (its marker,
+// migration.json) is resumed the same way.
 //
-//   - a folder with whatsmeow's store (whatsmeow.db) or a migration's
-//     marker (migration.json) is the Go backend's;
-//   - a folder with the Rust core's session store (session.db) and neither
-//     stays on the Rust core, which remains the fallback;
-//   - anything else is new: the Go backend.
-//
-// -engine=go runs every account on the Go backend, and takes an account the
-// Rust core kept over first (gocore/migrate: copy first, crash safe,
-// failing closed). -engine=rust runs every account on the Rust core, the
-// demo's too.
-//
-// On the Go backend, calls are WP7's bridge (gocore/calls): whatsmeow carries
-// the 1:1 signaling and the Go call engine (gocore/voip/engine) the media and
-// the video frames (core.Frames). Group calls and call links are not
-// bridged.
+// Calls are WP7's bridge (gocore/calls): whatsmeow carries the 1:1
+// signaling and the Go call engine (gocore/voip/engine) the media and the
+// video frames (core.Frames). Group calls and call links are not bridged.
 
 import (
 	"context"
@@ -51,49 +40,7 @@ import (
 	"zapfast/sys"
 )
 
-// The backends, as -engine and $ZAPFAST_ENGINE name them.
-const (
-	engineGo   = "go"
-	engineRust = "rust"
-)
-
-// envEngine is the environment's choice, read when -engine is not given
-// (the Demo tests read the same variable: demo.EnvEngine).
-const envEngine = demo.EnvEngine
-
-// validEngine reports whether v is a choice -engine takes ("" is none).
-func validEngine(v string) bool { return v == "" || v == engineGo || v == engineRust }
-
-// chooseEngine is the run's choice: -engine's value, else $ZAPFAST_ENGINE's
-// (one it does not know is said and ignored), else "" (each account's own).
-func chooseEngine(flagValue string, getenv func(string) string) string {
-	if flagValue != "" {
-		return flagValue
-	}
-	v := getenv(envEngine)
-	if !validEngine(v) {
-		fmt.Fprintf(os.Stderr, "zapfast: $%s=%q is neither go nor rust: ignored\n", envEngine, v)
-		return ""
-	}
-	return v
-}
-
-// accountEngine is the backend of the account folder dir under choice (the
-// rules above). It reads only whether files exist.
-func accountEngine(choice, dir string) string {
-	if choice != "" {
-		return choice
-	}
-	switch {
-	case exists(filepath.Join(dir, store.DevicesFile)), exists(filepath.Join(dir, migrate.MarkerFile)):
-		return engineGo
-	case exists(filepath.Join(dir, migrate.SessionFile)):
-		return engineRust
-	}
-	return engineGo
-}
-
-// needsMigration reports whether the Go backend must take the folder over
+// needsMigration reports whether the account in dir must be taken over
 // from the Rust core before it opens: a migration began (its marker is
 // there, whatever its state: Account resumes it, or returns at once when it
 // is done), or the Rust core's session store is there and whatsmeow's is
@@ -110,13 +57,10 @@ func exists(path string) bool {
 	return err == nil || !errors.Is(err, fs.ErrNotExist)
 }
 
-// coreOpener opens the accounts' cores (State.OpenCore) on the backend each
-// one runs on.
+// coreOpener opens the accounts' cores (State.OpenCore).
 type coreOpener struct {
-	choice  string // engineGo, engineRust, or "" (each account's own)
-	library string // -core: the Rust library, for unbundled runs
-	demo    bool
-	wake    func()
+	demo bool
+	wake func()
 
 	// Zero values are the app's: core.Dirs, the Keychain under
 	// core.KeyringService, whatsmeow, and sys.HoldsInstance. Tests set them.
@@ -127,19 +71,16 @@ type coreOpener struct {
 
 	mu sync.Mutex
 	// relink are the accounts whose session could not be taken over: the
-	// next open (Try again) links them afresh on the Go backend.
+	// next open (Try again) links them afresh.
 	relink map[string]bool
 }
 
 // open is State.OpenCore: the core of account id, opening on a goroutine of
-// its own. Choosing the backend reads only whether a few files exist.
+// its own.
 func (o *coreOpener) open(id string) (*core.Pending, core.Conn) {
-	cfg := core.Config{Library: o.library, Demo: o.demo, Account: id, Wake: o.wake, StateDir: o.stateDir, CacheDir: o.cacheDir}
+	cfg := core.Config{Demo: o.demo, Account: id, Wake: o.wake, StateDir: o.stateDir, CacheDir: o.cacheDir}
 	if o.demo {
-		if o.choice == engineRust {
-			return core.OpenAsync(cfg), nil
-		}
-		return core.OpenAsyncWith(engineGo, o.wake, func(*core.Timing) (core.Conn, error) {
+		return core.OpenAsync(o.wake, func(*core.Timing) (core.Conn, error) {
 			c, err := demo.Open(cfg)
 			if err != nil {
 				return nil, err
@@ -147,14 +88,13 @@ func (o *coreOpener) open(id string) (*core.Pending, core.Conn) {
 			return c, nil
 		}), nil
 	}
-	dir, err := o.accountDir(&cfg)
-	if err != nil {
-		return core.OpenAsyncWith(engineGo, o.wake, func(*core.Timing) (core.Conn, error) { return nil, err }), nil
-	}
-	if accountEngine(o.choice, dir) == engineRust {
-		return core.OpenAsync(cfg), nil
-	}
-	return core.OpenAsyncWith(engineGo, o.wake, func(t *core.Timing) (core.Conn, error) { return o.openGo(cfg, dir, t) }), nil
+	return core.OpenAsync(o.wake, func(t *core.Timing) (core.Conn, error) {
+		dir, err := o.accountDir(&cfg)
+		if err != nil {
+			return nil, err
+		}
+		return o.openReal(cfg, dir, t)
+	}), nil
 }
 
 // accountDir is the account's state folder, cfg's roots resolved as
@@ -178,17 +118,17 @@ func (o *coreOpener) accountDir(cfg *core.Config) (string, error) {
 	return filepath.Join(cfg.StateDir, "accounts", cfg.Account), nil
 }
 
-// openGo opens a real account on the Go backend: the SQLCipher library,
-// then the account taken over from the Rust core if it must be, then the
-// WhatsApp engine (which opens the stores on its own goroutine).
-func (o *coreOpener) openGo(cfg core.Config, dir string, t *core.Timing) (core.Conn, error) {
+// openReal opens a real account: the SQLCipher library, then the account
+// taken over from the Rust core if it must be, then the WhatsApp engine
+// (which opens the stores on its own goroutine).
+func (o *coreOpener) openReal(cfg core.Config, dir string, t *core.Timing) (core.Conn, error) {
 	lib, err := sqlite.Load()
 	if err != nil {
-		return nil, fmt.Errorf("the Go backend's storage: %w", err)
+		return nil, fmt.Errorf("the app's storage library: %w", err)
 	}
 	t.Library = lib
 	if o.takeRelink(cfg.Account) {
-		slog.Warn("zapfast: linking the account afresh on the Go backend", "account", cfg.Account)
+		slog.Warn("zapfast: linking the account afresh", "account", cfg.Account)
 	} else if needsMigration(dir) {
 		if err := o.migrate(cfg.Account, dir); err != nil {
 			return nil, err
@@ -211,9 +151,8 @@ func (o *coreOpener) keychain() store.Keys {
 }
 
 // migrate takes the account in dir over from the Rust core (migrate.Account),
-// holding the single-instance lock, with no Rust core open on it (this
-// process opens each account on one backend). A folder with nothing to take
-// over is linked afresh; a failure is a *migrationError, which the account
+// holding the single-instance lock. A folder with nothing to take over is
+// linked afresh; a failure is a *migrationError, which the account
 // shows as a core that failed to open.
 func (o *coreOpener) migrate(id, dir string) error {
 	holds := sys.HoldsInstance
@@ -269,7 +208,7 @@ var errNoInstance = errors.New("another copy of Zap may be running")
 type migrationError struct {
 	Err error
 	// Relink: the session itself cannot be carried over; Try again links
-	// this computer afresh on the Go backend.
+	// this computer afresh.
 	Relink bool
 }
 
@@ -281,14 +220,14 @@ func (e *migrationError) Error() string {
 	case errors.Is(e.Err, migrate.ErrSourceChanged):
 		return lead + ": its files changed while they were read. Quit any other copy of Zap, then choose Try again."
 	case e.Relink:
-		return lead + " (" + e.Err.Error() + "). Nothing was changed. Choose Try again to link this computer again, or start Zap with -engine=rust to keep the account as it is."
+		return lead + " (" + e.Err.Error() + "). Nothing was changed. Choose Try again to link this computer again."
 	}
 	return lead + " (" + e.Err.Error() + "). Nothing was changed; choose Try again."
 }
 
 func (e *migrationError) Unwrap() error { return e.Err }
 
-// goConn is a real account's core on the Go backend: the Conn, with what
+// goConn is a real account's core: the Conn, with what
 // the UI asks of a core besides core.Conn. Voice notes decode with
 // gocore/av from the account's folders; a call's video frames are the
 // engine's call media's.
@@ -332,19 +271,4 @@ func (g *goConn) DecodeVoice(path string) (abi.BlobRef, core.VoiceFormat, error)
 	default:
 	}
 	return g.voice.DecodeVoice(path)
-}
-
-// coreLog is StartLog's loader of the Rust core's log: none when every
-// account runs on the Go backend, which logs through slog.
-func coreLog(choice, library string) func() (sys.CoreLog, error) {
-	if choice == engineGo {
-		return nil
-	}
-	return func() (sys.CoreLog, error) {
-		path, err := core.ResolveLibrary(library)
-		if err != nil {
-			return nil, err
-		}
-		return core.Load(path) // the library the cores open with: loaded once
-	}
 }

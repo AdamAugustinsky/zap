@@ -1,15 +1,16 @@
-package core
+package demo_test
 
 import (
 	"testing"
 	"time"
 
 	"zapfast/abi"
+	"zapfast/core"
 )
 
 // frameOn waits for a frame on stream and checks it is a whole I420
 // picture of w × h in the core's memory.
-func (s *session) frameOn(stream uint32, w, h int) Frame {
+func (s *session) frameOn(stream uint32, w, h int) core.Frame {
 	s.t.Helper()
 	deadline := time.Now().Add(10 * time.Second)
 	for {
@@ -18,7 +19,7 @@ func (s *session) frameOn(stream uint32, w, h int) Frame {
 		}
 		if f, ok := s.c.Frame(stream); ok {
 			cw, ch := (w+1)/2, (h+1)/2
-			if f.W != w || f.H != h || f.Format != FrameI420 || f.Stride != [3]int{w, cw, cw} || len(f.Px) != w*h+2*cw*ch {
+			if f.W != w || f.H != h || f.Format != core.FrameI420 || f.Stride != [3]int{w, cw, cw} || len(f.Px) != w*h+2*cw*ch {
 				s.t.Fatalf("stream %d: %d×%d format %d strides %v, %d bytes", stream, f.W, f.H, f.Format, f.Stride, len(f.Px))
 			}
 			if f.Px[0] == 0 || f.Px[len(f.Px)-1] == 0 {
@@ -39,7 +40,7 @@ func phase(p abi.CallPhase) func(*abi.Event) bool {
 
 func TestDemoVideoCallFrames(t *testing.T) {
 	s := openDemo(t)
-	if _, ok := s.c.Frame(StreamRemote); ok {
+	if _, ok := s.c.Frame(core.StreamRemote); ok {
 		t.Fatal("a frame before any call")
 	}
 	gen := s.c.CallGeneration()
@@ -53,31 +54,31 @@ func TestDemoVideoCallFrames(t *testing.T) {
 	s.until("ringing", phase(abi.CallPhaseRinging))
 	s.until("the call up", phase(abi.CallPhaseActive))
 
-	local := s.frameOn(StreamLocal, 320, 180)
-	if _, ok := s.c.Frame(StreamLocal); ok {
+	local := s.frameOn(core.StreamLocal, 320, 180)
+	if _, ok := s.c.Frame(core.StreamLocal); ok {
 		t.Fatal("a second frame of a held stream")
 	}
 	pts := local.PTS
-	s.c.ReleaseFrame(StreamLocal)
-	s.c.ReleaseFrame(StreamLocal) // nothing held: nothing happens
-	remote := s.frameOn(StreamRemote, 640, 360)
-	s.c.ReleaseFrame(StreamRemote)
-	if _, ok := s.c.Frame(StreamMember); ok {
+	s.c.ReleaseFrame(core.StreamLocal)
+	s.c.ReleaseFrame(core.StreamLocal) // nothing held: nothing happens
+	remote := s.frameOn(core.StreamRemote, 640, 360)
+	s.c.ReleaseFrame(core.StreamRemote)
+	if _, ok := s.c.Frame(core.StreamMember); ok {
 		t.Fatal("a member's frame on a one-to-one call")
 	}
 
 	// New frames keep coming, newer each time.
 	time.Sleep(150 * time.Millisecond)
-	if f := s.frameOn(StreamLocal, 320, 180); f.PTS <= pts {
+	if f := s.frameOn(core.StreamLocal, 320, 180); f.PTS <= pts {
 		t.Errorf("pts %d after %d", f.PTS, pts)
 	}
-	s.c.ReleaseFrame(StreamLocal)
+	s.c.ReleaseFrame(core.StreamLocal)
 	_ = remote
 
 	// Taking and giving back a frame allocates nothing.
 	if n := testing.AllocsPerRun(100, func() {
-		if _, ok := s.c.Frame(StreamRemote); ok {
-			s.c.ReleaseFrame(StreamRemote)
+		if _, ok := s.c.Frame(core.StreamRemote); ok {
+			s.c.ReleaseFrame(core.StreamRemote)
 		}
 	}); n != 0 {
 		t.Errorf("%v allocations per frame", n)
@@ -86,7 +87,7 @@ func TestDemoVideoCallFrames(t *testing.T) {
 	cmd = abi.Command{Tag: abi.CommandTagHangupCall}
 	s.send(&cmd)
 	s.until("the call over", phase(abi.CallPhaseEnded))
-	if _, ok := s.c.Frame(StreamRemote); ok {
+	if _, ok := s.c.Frame(core.StreamRemote); ok {
 		t.Error("a frame after the call ended")
 	}
 }
@@ -94,7 +95,7 @@ func TestDemoVideoCallFrames(t *testing.T) {
 func TestDemoGroupCallRingsAndStreamsMembers(t *testing.T) {
 	s := openDemo(t)
 	var cmd abi.Command
-	DemoCall(&cmd, "120363012345678901@g.us", "441632960123@s.whatsapp.net", true, 0)
+	core.DemoCall(&cmd, "120363012345678901@g.us", "441632960123@s.whatsapp.net", true, 0)
 	s.send(&cmd)
 	var gen uint64
 	var members int
@@ -114,11 +115,11 @@ func TestDemoGroupCallRingsAndStreamsMembers(t *testing.T) {
 	cmd = abi.Command{Tag: abi.CommandTagAnswerCall}
 	s.send(&cmd)
 	s.until("the call up", phase(abi.CallPhaseActive))
-	s.frameOn(StreamMember, 320, 180)
-	s.c.ReleaseFrame(StreamMember)
-	s.frameOn(StreamMember+1, 320, 180)
-	s.c.ReleaseFrame(StreamMember + 1)
-	if _, ok := s.c.Frame(StreamRemote); ok {
+	s.frameOn(core.StreamMember, 320, 180)
+	s.c.ReleaseFrame(core.StreamMember)
+	s.frameOn(core.StreamMember+1, 320, 180)
+	s.c.ReleaseFrame(core.StreamMember + 1)
+	if _, ok := s.c.Frame(core.StreamRemote); ok {
 		t.Error("a one-to-one picture on a group call")
 	}
 	cmd = abi.Command{Tag: abi.CommandTagHangupCall}

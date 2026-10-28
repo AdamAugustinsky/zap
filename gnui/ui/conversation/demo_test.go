@@ -52,19 +52,15 @@ func (l *shelves) has(p []byte) bool {
 	return false
 }
 
-// newDemo is a window of w×h (0: the shell's size) on the real demo core
-// (the library: $ZAPFAST_CORE or a cargo build; skipped without one, and
-// with -short), with its chats loaded, its Recent kept by l, and wait, which
+// newDemo is a window of w×h (0: the shell's size) on the demo core
+// (skipped with -short), with its chats loaded, its Recent kept by l, and wait, which
 // runs frames until a condition holds, for up to 10 s.
 func newDemo(t *testing.T, w, h int) (*widgettest.Rig, *state.State, *state.Account, *shelves, func(string, func() bool)) {
 	t.Helper()
 	if testing.Short() {
 		t.Skip("the demo core takes seconds")
 	}
-	if err := demo.Ready(""); err != nil {
-		t.Skipf("no core library: %v", err)
-	}
-	c, err := demo.OpenChosen(core.Config{Wake: func() {}})
+	c, err := demo.Open(core.Config{Wake: func() {}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -122,7 +118,7 @@ func openDemoChat(t *testing.T, a *state.Account, wait func(string, func() bool)
 	return chat
 }
 
-// PK-009, the conversation's half, against the real demo core.
+// PK-009, the conversation's half, against the demo core.
 // Clicking one of our stickers in its chat does what upstream's does: one
 // on disk opens the sticker view (Action::PreviewSticker) and sends nothing,
 // so one taken out of Recent stays out; one without its file asks the core
@@ -203,8 +199,7 @@ func TestOldStickerOfOursAsksForItAgain(t *testing.T) {
 	}
 }
 
-// The demo's newer content as the transcript draws it, against the real
-// demo core: a poll, a shared contact, a location, a round video message,
+// The demo's newer content as the transcript draws it, against the demo core: a poll, a shared contact, a location, a round video message,
 // edited and forwarded lines and reactions (Margaret Hamilton), a sticker
 // and a GIF (Katherine Johnson), a sticker pack (Rust Berlin), and Ada's
 // documents and link previews over the days before.
@@ -246,8 +241,7 @@ func TestDemoTranscriptShowsItsContent(t *testing.T) {
 	need(ui.RoleLink, "https://www.rust-lang.org/")
 }
 
-// A reply of ours carries its quote in the transcript, against the real demo
-// core: the bubble is card-wide and its quote names the quoted sender.
+// A reply of ours carries its quote in the transcript, against the demo core: the bubble is card-wide and its quote names the quoted sender.
 func TestDemoOurReplyShowsItsQuote(t *testing.T) {
 	r, _, a, _, wait := newDemo(t, 0, 0)
 	chat := openDemoChat(t, a, wait, "Margaret")
@@ -273,7 +267,7 @@ func TestDemoOurReplyShowsItsQuote(t *testing.T) {
 }
 
 // A jump lands on its message whether it opens the chat before the history
-// comes or comes just after it, against the real demo core (Ada's chat has
+// comes or comes just after it, against the demo core (Ada's chat has
 // unread messages, whose divider the transcript would otherwise scroll to,
 // and the transcript is still settling at its end).
 func TestDemoJumpAsTheChatOpens(t *testing.T) {

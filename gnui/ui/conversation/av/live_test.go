@@ -26,10 +26,7 @@ func TestLiveDemoVoiceNote(t *testing.T) {
 	if os.Getenv("AV_LIVE") == "" {
 		t.Skip("AV_LIVE=1 plays sound")
 	}
-	if err := demo.Ready(""); err != nil {
-		t.Skipf("no core library: %v", err)
-	}
-	c, err := demo.OpenChosen(core.Config{Wake: func() {}})
+	c, err := demo.Open(core.Config{Wake: func() {}})
 	if err != nil {
 		t.Fatal(err)
 	}

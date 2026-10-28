@@ -16,8 +16,7 @@ import (
 	"zapfast/ui/shell"
 )
 
-// The pane against the real demo core (the library: $ZAPFAST_CORE or a cargo
-// build; skipped without one, and with -short): the demo answers
+// The pane against the demo core (skipped with -short): the demo answers
 // WatchReceipts for Rust Berlin's own messages, with Rust-Berlin-1 partial
 // (Ada read it, Grace has it, Katherine was never expected) and Family-1
 // with none recorded.
@@ -32,10 +31,7 @@ func newDemoRig(t *testing.T) *rig {
 	if testing.Short() {
 		t.Skip("the demo core takes seconds")
 	}
-	if err := demo.Ready(""); err != nil {
-		t.Skipf("no core library: %v", err)
-	}
-	c, err := demo.OpenChosen(core.Config{Wake: func() {}})
+	c, err := demo.Open(core.Config{Wake: func() {}})
 	if err != nil {
 		t.Fatal(err)
 	}

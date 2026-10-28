@@ -6,15 +6,12 @@ import (
 	"fmt"
 	"math"
 	"slices"
-	"sync"
 	"time"
-	"unsafe"
 
-	"gonativeui/clib"
 	"zapfast/abi"
 )
 
-// Voice notes (zfcore.h, "Voice-note playback", and the schema's SendVoice):
+// Voice notes (the schema's SendVoice, and DecodeVoice):
 // both directions are the same PCM, mono at 48 kHz, each sample a
 // little-endian float32 in about -1 to 1. That is the framework's
 // media.Format{SampleRate: VoiceRate, Channels: 1, Sample: media.Float32},
@@ -32,9 +29,9 @@ const (
 	VoiceLongestDecode = 30 * time.Minute
 )
 
-// ErrUnsupported is returned by a call the loaded library is too old for
-// (DecodeVoice without zf_voice_decode). It wraps errors.ErrUnsupported.
-var ErrUnsupported = fmt.Errorf("zapfast core: the library is older than this call: %w", errors.ErrUnsupported)
+// ErrUnsupported is returned by a call this build cannot make (DecodeVoice
+// without an Opus decoder). It wraps errors.ErrUnsupported.
+var ErrUnsupported = fmt.Errorf("zapfast core: not supported here: %w", errors.ErrUnsupported)
 
 // VoiceFormat describes a decoded voice note's PCM.
 type VoiceFormat struct {
@@ -54,7 +51,8 @@ func (f VoiceFormat) Duration() time.Duration {
 	return time.Duration(f.Frames) * time.Second / time.Duration(f.Rate)
 }
 
-// VoiceDecoder decodes voice notes for playback: *Core, and fake.Core.
+// VoiceDecoder decodes voice notes for playback: a real account's core, the
+// demo's, and fake.Core.
 type VoiceDecoder interface {
 	// DecodeVoice decodes the Ogg/Opus file at path (absolute: a message's
 	// media path) into a new blob of PCM in VoiceFormat. The blob is the
@@ -62,71 +60,6 @@ type VoiceDecoder interface {
 	// decodes (some milliseconds a minute of audio): call it on a worker
 	// goroutine, never the UI thread. Concurrent calls decode in parallel.
 	DecodeVoice(path string) (abi.BlobRef, VoiceFormat, error)
-}
-
-var _ VoiceDecoder = (*Core)(nil)
-
-// zfVoice is zf_voice, filled by zf_voice_decode.
-type zfVoice struct {
-	blob, len, frames uint64
-	rate, channels    uint32
-	waveform          [VoiceBars]byte
-}
-
-// voiceCall is one zf_voice_decode in flight: its clib.Call and everything
-// it passes by pointer, in one heap struct. Decodes run in parallel, so each
-// takes its own from the pool.
-type voiceCall struct {
-	call *clib.Call
-	err  zfErr
-	out  zfVoice
-	path []byte
-}
-
-var voiceCalls = sync.Pool{New: func() any { return &voiceCall{call: clib.NewCall()} }}
-
-// DecodeVoice decodes a voice note of the account's (zf_voice_decode); see
-// VoiceDecoder. Only files under the account's own folders are read (its
-// state and cache, the download folder SetDownloadFolder last named; the
-// demo core's media folder): any other path is EArg. A missing file is
-// ENotFound, a damaged one EMalformed. Against a library built before
-// zf_voice_decode it returns ErrUnsupported. Close waits for decodes in
-// progress before it closes the core.
-func (c *Core) DecodeVoice(path string) (abi.BlobRef, VoiceFormat, error) {
-	if c.lib.fn.voiceDecode == (clib.Func{}) {
-		return abi.BlobRef{}, VoiceFormat{}, ErrUnsupported
-	}
-	s := &c.voiceS
-	s.mu.Lock()
-	h := c.h
-	if h != nil {
-		c.decoding.Add(1)
-	}
-	s.mu.Unlock()
-	if h == nil {
-		return abi.BlobRef{}, VoiceFormat{}, ErrClosed
-	}
-	defer c.decoding.Done()
-
-	v := voiceCalls.Get().(*voiceCall)
-	defer voiceCalls.Put(v)
-	v.path = append(v.path[:0], path...)
-	v.out = zfVoice{}
-	var p unsafe.Pointer
-	if len(v.path) > 0 {
-		p = unsafe.Pointer(&v.path[0])
-	}
-	st := v.call.Reset().Ptr(h).Ptr(p).Uint(uint64(len(v.path))).
-		Ptr(unsafe.Pointer(&v.out)).Ptr(unsafe.Pointer(&v.err)).Do(c.lib.fn.voiceDecode).Int32()
-	if st != StatusOK {
-		return abi.BlobRef{}, VoiceFormat{}, v.err.error("zf_voice_decode", st)
-	}
-	return abi.BlobRef{ID: v.out.blob, Len: v.out.len}, VoiceFormat{
-		Rate:     int(v.out.rate),
-		Channels: int(v.out.channels),
-		Frames:   int64(v.out.frames),
-		Waveform: v.out.waveform,
-	}, nil
 }
 
 // AppendVoicePCM16 appends to dst the samples SendVoice takes (mono, 48 kHz,
