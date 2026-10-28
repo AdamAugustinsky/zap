@@ -24,7 +24,10 @@
 #                      checkout gnui/go.mod resolves gonativeui to)
 #
 # The core is copied to target/core-release/, where gnui.json's `frameworks`
-# entry points.
+# entry points. The Go backend's libraries, libsqlcipher.dylib and
+# libzfwebp.dylib, are built by their pinned scripts (sqlcipher/build.sh,
+# libwebp/build.sh) into target/sqlcipher/ and target/libwebp/, the other
+# `frameworks` entries, unless a library there is newer than its script.
 set -euo pipefail
 
 dev=0
@@ -92,6 +95,41 @@ if [ "$(lipo -archs "$staged")" != arm64 ]; then
 fi
 python3 "$root/scripts/gnui/check_gpl_sounds.py" "$staged"
 
+# 1b. The Go backend's libraries, loaded with purego from Contents/Frameworks
+# (docs/go-backend/PLAN.md "Bundled libraries"). Each script verifies its
+# pinned source and that the library links only system libraries; a library
+# newer than its script (and the WebP shim) is kept.
+build_lib() { # build_lib <script> <library> [other inputs...]
+    local script="$1" lib="$2"
+    shift 2
+    local stale=0
+    if [ ! -f "$lib" ]; then
+        stale=1
+    else
+        for input in "$script" "$@"; do
+            if [ "$input" -nt "$lib" ]; then
+                stale=1
+            fi
+        done
+    fi
+    if [ "$stale" = 1 ]; then
+        echo "building $(basename "$lib") ($script)"
+        "$script" >/dev/null
+    fi
+    local name
+    name="$(basename "$lib")"
+    if [ "$(otool -D "$lib" | sed -n 2p)" != "@rpath/$name" ]; then
+        echo "$lib: install name $(otool -D "$lib" | sed -n 2p), want @rpath/$name" >&2
+        exit 1
+    fi
+    if [ "$(lipo -archs "$lib")" != arm64 ]; then
+        echo "$lib: architectures $(lipo -archs "$lib"), want arm64" >&2
+        exit 1
+    fi
+}
+build_lib "$here/sqlcipher/build.sh" "$root/target/sqlcipher/libsqlcipher.dylib"
+build_lib "$here/libwebp/build.sh" "$root/target/libwebp/libzfwebp.dylib" "$here/libwebp/zf_webp.c"
+
 # 2. The gnui CLI of the framework this module builds against.
 if [ -z "${GNUI:-}" ]; then
     framework="$(cd "$root/gnui" && go list -m -f '{{.Dir}}' gonativeui)"
@@ -102,8 +140,8 @@ if [ -z "${GNUI:-}" ]; then
 fi
 
 # 3. The bundle: gnui package builds darwin/arm64 with -trimpath,
-# -ldflags "-s -w" and -tags gnui_release (--dev: without that tag), signs inside out (the core, then
-# the app) with the hardened runtime and gnui.json's entitlements, and
+# -ldflags "-s -w" and -tags gnui_release (--dev: without that tag), signs inside out (the core and
+# the Go backend's libraries, then the app) with the hardened runtime and gnui.json's entitlements, and
 # verifies with codesign --verify --deep --strict.
 config="$root/gnui/gnui.json"
 if [ -n "${CODESIGN_IDENTITY:-}" ]; then
@@ -113,9 +151,10 @@ else
     # gnui-dev is self-signed, so neither binary has a Team ID, and the
     # hardened runtime's library validation refuses the core ("mapping process
     # and mapped file (non-platform) have different Team IDs"). This build
-    # keeps the hardened runtime and lets the app load its own core (the app
-    # loads only Contents/Frameworks' copy: core.ResolveLibrary). A Developer
-    # ID signs both with one Team ID and gets no such exception. The derived
+    # keeps the hardened runtime and lets the app load its own core and the
+    # Go backend's libraries (the app loads only Contents/Frameworks' copies:
+    # core.ResolveLibrary, sqlite.FindLibrary, av's WebP loader). A Developer
+    # ID signs them all with one Team ID and gets no such exception. The derived
     # manifest sits beside gnui.json, whose relative paths it keeps.
     derived="$root/gnui/.gnui-package.json"
     python3 - "$config" "$derived" <<'PY'

@@ -9,7 +9,11 @@
 	"build": "0.19.0",
 	"category": "public.app-category.social-networking",
 	"icon": "../packaging/macos/icon-1024.png",
-	"frameworks": ["../target/core-release/libzapfast_core.dylib"],
+	"frameworks": [
+		"../target/core-release/libzapfast_core.dylib",
+		"../target/sqlcipher/libsqlcipher.dylib",
+		"../target/libwebp/libzfwebp.dylib"
+	],
 	"resources": [{"from": "../LICENSE"}, {"from": "../THIRD-PARTY-NOTICES.md"}],
 	"urlSchemes": ["whatsapp", "wa"],
 	"loginAgents": [{"name": "autostart", "arguments": ["--start-hidden"]}],
