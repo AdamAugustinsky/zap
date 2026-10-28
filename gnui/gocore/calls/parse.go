@@ -24,8 +24,20 @@ type Signal struct {
 	CallID   string
 	Creator  types.JID
 	// Group is the group-jid of a group call's stanza.
-	Group  types.JID
-	Action *waBinary.Node
+	Group types.JID
+	// Participant is the device that sent a stanza the call service
+	// (call-id@call) routed: a group call's.
+	Participant types.JID
+	Action      *waBinary.Node
+}
+
+// Sender is the device a stanza is from: the participant the call service
+// names, else From (whatsapp-rust's routed_call_sender).
+func (s Signal) Sender() types.JID {
+	if !s.Participant.IsEmpty() {
+		return s.Participant
+	}
+	return s.From
 }
 
 // FromEvent reads a whatsmeow call event; ok is false for anything else.
@@ -51,8 +63,8 @@ func FromEvent(evt any) (s Signal, ok bool) {
 	case *events.CallOfferNotice:
 		meta, action, tag = v.BasicCallMeta, v.Data, "offer_notice"
 	case *events.UnknownCallEvent:
-		// <video>, <mute_v2>, <enc_rekey> and the rest whatsmeow has no
-		// type for, with the whole <call>.
+		// <video>, <mute_v2>, <group_update>, <enc_rekey> and the rest
+		// whatsmeow has no type for, with the whole <call>.
 		return fromNode(v.Node)
 	default:
 		return Signal{}, false
@@ -61,7 +73,7 @@ func FromEvent(evt any) (s Signal, ok bool) {
 		return Signal{}, false
 	}
 	return Signal{Tag: tag, From: meta.From, StanzaID: meta.StanzaID, Time: meta.Timestamp,
-		CallID: meta.CallID, Creator: meta.CallCreator, Group: meta.GroupJID, Action: action}, true
+		CallID: meta.CallID, Creator: meta.CallCreator, Group: meta.GroupJID, Participant: meta.Participant, Action: action}, true
 }
 
 func fromNode(n *waBinary.Node) (Signal, bool) {
@@ -69,10 +81,24 @@ func fromNode(n *waBinary.Node) (Signal, bool) {
 		return Signal{}, false
 	}
 	children := n.GetChildren()
-	if len(children) != 1 {
+	if len(children) == 0 {
 		return Signal{}, false
 	}
+	// The action is the one child, or the group control among several
+	// (a typed control's siblings are not actions).
 	child := &children[0]
+	if len(children) > 1 {
+		child = nil
+		for i := range children {
+			switch children[i].Tag {
+			case TagWaitingRoomUpdate, TagRaiseHand, TagScreenShare:
+				child = &children[i]
+			}
+		}
+		if child == nil {
+			return Signal{}, false
+		}
+	}
 	ag, cag := n.AttrGetter(), child.AttrGetter()
 	s := Signal{
 		Tag:      child.Tag,
@@ -84,6 +110,7 @@ func fromNode(n *waBinary.Node) (Signal, bool) {
 		Group:    cag.OptionalJIDOrEmpty("group-jid"),
 		Action:   child,
 	}
+	s.Participant = ag.OptionalJIDOrEmpty("participant")
 	return s, s.CallID != ""
 }
 
@@ -106,7 +133,7 @@ func (s Signal) child(tag string) (*waBinary.Node, bool) {
 }
 
 // IsGroup: a group call's offer (a group-jid, or a <group_info>), which
-// the 1:1 bridge refuses.
+// rings in its group (GroupRoster::of_offer).
 func (s Signal) IsGroup() bool {
 	if !s.Group.IsEmpty() {
 		return true

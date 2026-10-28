@@ -9,9 +9,9 @@ package main
 // first, crash safe, failing closed. A migration that began (its marker,
 // migration.json) is resumed the same way.
 //
-// Calls are WP7's bridge (gocore/calls): whatsmeow carries the 1:1
-// signaling and the Go call engine (gocore/voip/engine) the media and the
-// video frames (core.Frames). Group calls and call links are not bridged.
+// Calls are WP7's bridge (gocore/calls): whatsmeow carries the signaling,
+// one to one, group and call link, and the Go call engine
+// (gocore/voip/engine) the media and the video frames (core.Frames).
 
 import (
 	"context"

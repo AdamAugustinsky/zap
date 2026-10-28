@@ -342,10 +342,14 @@ func (r *avatarPaths) of(path []byte) string {
 	return s
 }
 
-// canCall reports whether the chat has call buttons: calls are one to one,
-// so not a group, a channel, a broadcast list or the chat with ourselves.
+// canCall reports whether the chat has call buttons: a person or a group,
+// not a channel, a broadcast list or the chat with ourselves.
 func canCall(a *state.Account, ch model.Chat) bool {
-	if ch.Kind() != abi.ChatKindDirect {
+	switch ch.Kind() {
+	case abi.ChatKindGroup:
+		return true
+	case abi.ChatKindDirect:
+	default:
 		return false
 	}
 	me := a.Model.Me.ID()

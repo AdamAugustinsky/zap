@@ -30,7 +30,8 @@ func (cli *Client) handleCallEvent(ctx context.Context, node *waBinary.Node) {
 		CallCreator: cag.JID("call-creator"),
 		CallID:      cag.String("call-id"),
 		GroupJID:    cag.OptionalJIDOrEmpty("group-jid"),
-		StanzaID:    ag.OptionalString("id"), // ZAP PATCH
+		StanzaID:    ag.OptionalString("id"),              // ZAP PATCH
+		Participant: ag.OptionalJIDOrEmpty("participant"), // ZAP PATCH
 	}
 	if basicMeta.CallCreator.Server == types.HiddenUserServer {
 		basicMeta.CallCreatorAlt = cag.OptionalJIDOrEmpty("caller_pn")
@@ -107,16 +108,32 @@ func (cli *Client) handleCallEvent(ctx context.Context, node *waBinary.Node) {
 // ZAP-PATCH.md): a <video> state change is acknowledged with
 // type="video", which replaces the generic ack (whatsapp-rust's
 // build_call_video_ack); the peer's video upgrade waits for that typed ack.
+// A group call's waiting_room_update, user_action or screen_share, among
+// any children, is acknowledged with its own tag as the type
+// (build_call_control_ack).
 func typedCallAck(node *waBinary.Node) *waBinary.Node {
 	children := node.GetChildren()
-	if len(children) != 1 || children[0].Tag != "video" {
+	typ := ""
+	for _, c := range children {
+		switch c.Tag {
+		case "waiting_room_update", "user_action", "screen_share":
+			typ = c.Tag
+		}
+		if typ != "" {
+			break
+		}
+	}
+	if typ == "" && len(children) == 1 && children[0].Tag == "video" {
+		typ = "video"
+	}
+	if typ == "" {
 		return node
 	}
 	attrs := make(waBinary.Attrs, len(node.Attrs)+1)
 	for k, v := range node.Attrs {
 		attrs[k] = v
 	}
-	attrs["type"] = "video"
+	attrs["type"] = typ
 	return &waBinary.Node{Tag: node.Tag, Attrs: attrs}
 }
 

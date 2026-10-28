@@ -16,6 +16,7 @@ import (
 
 	"zapfast/abi"
 	"zapfast/core"
+	"zapfast/gocore/voip/groupcall"
 )
 
 // The signaling against a fake whatsmeow and a fake media library: every
@@ -44,6 +45,15 @@ type fakeClient struct {
 	ack   func(offer waBinary.Node) (*waBinary.Node, error)
 	ring  []types.JID
 	plain map[string][]byte // ciphertext → callKey
+	// The group call's: members of the group, each user's devices, the
+	// devices an epoch cannot be encrypted for, and the epochs sent.
+	members []types.JID
+	devices map[types.JID][]types.JID
+	noKey   map[types.JID]bool
+	epochs  map[types.JID][]byte // device → the epoch encrypted for it
+	senders map[types.JID]bool   // the devices besides the peer's whose keys decrypt
+	// sendErr, when set, fails Send.
+	sendErr func(n waBinary.Node) error
 }
 
 func (f *fakeClient) Own() (types.JID, types.JID) { return ownPN, ownLID }
@@ -58,6 +68,11 @@ func (f *fakeClient) NewID() string {
 func (f *fakeClient) Send(_ context.Context, n waBinary.Node) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	if f.sendErr != nil {
+		if err := f.sendErr(n); err != nil {
+			return err
+		}
+	}
 	f.sent = append(f.sent, n)
 	return nil
 }
@@ -72,29 +87,54 @@ func (f *fakeClient) SendAwait(ctx context.Context, n waBinary.Node, _ time.Dura
 
 func (f *fakeClient) DecryptKey(_ context.Context, enc *waBinary.Node, from types.JID, _ time.Time) ([]byte, error) {
 	ct, _ := enc.Content.([]byte)
-	if key, ok := f.plain[string(ct)]; ok && from == peerDev3 {
+	if key, ok := f.plain[string(ct)]; ok && (from == peerDev3 || f.senders[from]) {
 		return key, nil
 	}
 	return nil, errors.New("no session")
 }
 
 func (f *fakeClient) EncryptKey(_ context.Context, devices []types.JID, key []byte, _ string) ([]DeviceKey, []byte, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	var keys []DeviceKey
 	for _, d := range devices {
+		if f.noKey[d] {
+			continue
+		}
+		if f.epochs == nil {
+			f.epochs = map[types.JID][]byte{}
+		}
+		f.epochs[d] = slices.Clone(key)
 		keys = append(keys, DeviceKey{Device: d, Ciphertext: append([]byte("ct-"+d.String()+"-"), key[:4]...), Type: "msg"})
 	}
 	return keys, nil, nil
 }
 
 func (f *fakeClient) PeerLID(_ context.Context, user types.JID) (types.JID, error) {
+	if user.Server == types.HiddenUserServer {
+		return user.ToNonAD(), nil
+	}
 	if user == peerPN || user == peerLID {
 		return peerLID, nil
 	}
 	return types.EmptyJID, errors.New("unknown contact")
 }
 
-func (f *fakeClient) Devices(context.Context, types.JID) ([]types.JID, error) { return f.ring, nil }
-func (f *fakeClient) PrivacyToken(context.Context, types.JID) []byte          { return []byte("tc") }
+func (f *fakeClient) Devices(_ context.Context, users ...types.JID) ([]types.JID, error) {
+	if f.devices == nil {
+		return f.ring, nil
+	}
+	var out []types.JID
+	for _, u := range users {
+		out = append(out, f.devices[u]...)
+	}
+	return out, nil
+}
+
+func (f *fakeClient) GroupMembers(context.Context, types.JID) ([]types.JID, error) {
+	return f.members, nil
+}
+func (f *fakeClient) PrivacyToken(context.Context, types.JID) []byte { return []byte("tc") }
 func (f *fakeClient) Offered(context.Context, types.JID) {
 	f.mu.Lock()
 	f.offered++
@@ -148,6 +188,7 @@ type fakeMedia struct {
 	commands []string
 	closed   []uint64
 	openErr  error
+	epochs   []Epoch
 }
 
 func (m *fakeMedia) Open(p OpenParams) error {
@@ -168,6 +209,13 @@ func (m *fakeMedia) Command(_ uint64, c MediaCommand) error {
 		if v, ok := c[k]; ok {
 			s += fmt.Sprintf(" %s=%v", k, v)
 		}
+	}
+	if u, ok := c["update"].(*groupcall.Update); ok {
+		s += fmt.Sprintf(" roster=%d", u.TransactionID)
+	}
+	if e, ok := c["epoch"].(*Epoch); ok {
+		s += fmt.Sprintf(" epoch=%d", e.Transaction)
+		m.epochs = append(m.epochs, *e)
 	}
 	m.commands = append(m.commands, s)
 	return nil
@@ -624,7 +672,7 @@ func TestDecliningAndMissing(t *testing.T) {
 	}
 }
 
-func TestASecondOfferIsRefusedAsBusyAndAGroupOfferRefused(t *testing.T) {
+func TestASecondOfferIsRefusedAsBusyAndAGroupOfferRingsInItsGroup(t *testing.T) {
 	h := newHarness(t, true)
 	h.signal(peerOffer(false, CapabilityOffer))
 	h.cli.take()
@@ -645,9 +693,19 @@ func TestASecondOfferIsRefusedAsBusyAndAGroupOfferRefused(t *testing.T) {
 	group := peerOffer(false, CapabilityOffer)
 	group.GroupJID = types.JID{User: "120363000000000001", Server: types.GroupServer}
 	g.signal(group)
-	g.expectSent("receipt:offer→"+peerDev3.String(), "call:reject→"+peerDev3.String())
-	if len(g.updates) != 0 {
-		t.Fatal("a group call rang")
+	g.expectSent("receipt:offer→" + peerDev3.String())
+	if u := g.last(); u.Phase != abi.CallPhaseIncoming || string(u.Chat) != group.GroupJID.String() || !u.HasGroup {
+		t.Fatalf("a group call: %+v", u)
+	}
+
+	// A "group" that is a broadcast list rings nowhere.
+	b := newHarness(t, true)
+	list := peerOffer(false, CapabilityOffer)
+	list.GroupJID = types.JID{User: "status", Server: types.BroadcastServer}
+	b.signal(list)
+	b.expectSent("receipt:offer→"+peerDev3.String(), "call:reject→"+peerDev3.String())
+	if len(b.updates) != 0 {
+		t.Fatal("a broadcast list's call rang")
 	}
 }
 
@@ -824,11 +882,11 @@ func TestTheOfferFailingOrTheMediaFailing(t *testing.T) {
 	}
 }
 
-func TestOneCallAtATimeAndOneToOneOnly(t *testing.T) {
+func TestOneCallAtATimeAndOnlyCallableChats(t *testing.T) {
 	h := newHarness(t, true)
-	h.command(abi.Command{Tag: abi.CommandTagStartCall, StartCall: abi.CommandStartCall{Chat: []byte("120363000000000001@g.us"), Generation: 1<<47 + 907, Cancel: 8}})
-	if u := h.last(); u.Phase != abi.CallPhaseFailed || len(h.errs) != 1 {
-		t.Fatalf("a group call: %+v %q", u, h.errs)
+	h.command(abi.Command{Tag: abi.CommandTagStartCall, StartCall: abi.CommandStartCall{Chat: []byte("status@broadcast"), Generation: 1<<47 + 907, Cancel: 8}})
+	if u := h.last(); u.Phase != abi.CallPhaseFailed || len(h.errs) != 1 || h.errs[0] != "This chat cannot be called" {
+		t.Fatalf("a broadcast list: %+v %q", u, h.errs)
 	}
 	startCall(h, false, 1<<47+908, 9)
 	startCall(h, false, 1<<47+909, 10)

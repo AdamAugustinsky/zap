@@ -40,12 +40,16 @@ type Host struct {
 // Entry is a finished call, for its chat and the call log.
 type Entry struct {
 	CallID  string
-	Chat    string
+	Chat    string // LinkChat for a call joined through a link
 	FromMe  bool
 	Time    int64 // Unix seconds: when it began
 	Video   bool
 	Status  abi.CallStatus
 	Seconds uint32
+	Group   bool
+	// Caller is who rang a group call we did not place (a chat id); empty
+	// reads as the chat.
+	Caller string
 }
 
 // Timing is the signaling's patience, shortened by the tests.
@@ -58,10 +62,13 @@ type Timing struct {
 	Upgrade time.Duration
 	// Poll is the media event wait.
 	Poll time.Duration
+	// Heartbeat is a call link's waiting-room heartbeat; 0 is 10 s.
+	Heartbeat time.Duration
 }
 
 // DefaultTiming is whatsapp-rust's: a 10 s offer ack, a 5 s video upgrade.
-var DefaultTiming = Timing{Ack: 10 * time.Second, Ring: 75 * time.Second, Upgrade: 5 * time.Second, Poll: 250 * time.Millisecond}
+var DefaultTiming = Timing{Ack: 10 * time.Second, Ring: 75 * time.Second, Upgrade: 5 * time.Second, Poll: 250 * time.Millisecond,
+	Heartbeat: heartbeatInterval}
 
 // NotAvailable is the refusal of a call command when the account has no
 // call media.
@@ -74,7 +81,8 @@ var generations atomic.Uint64
 // NextGeneration is a generation no call has had yet.
 func NextGeneration() uint64 { return 1<<47 + generations.Add(1) }
 
-// Calls is one account's 1:1 calls: the signaling over Client, the media
+// Calls is one account's calls, one to one and group: the signaling over
+// Client, the media
 // through Media. It is owned by the engine's goroutine (Host), but for
 // Frame and ReleaseFrame, which the UI calls from its own.
 type Calls struct {
@@ -176,18 +184,21 @@ type call struct {
 	requested bool
 	plane     bool
 
-	ringTimer, upgradeTimer *time.Timer
+	// g is a group call's own state; nil for a one-to-one call.
+	g *group
+
+	ringTimer, upgradeTimer, relayTimer, beatTimer *time.Timer
 }
 
 func live(p abi.CallPhase) bool { return p != abi.CallPhaseEnded && p != abi.CallPhaseFailed }
 
 func (k *call) stopTimers() {
-	for _, t := range []*time.Timer{k.ringTimer, k.upgradeTimer} {
+	for _, t := range []*time.Timer{k.ringTimer, k.upgradeTimer, k.relayTimer, k.beatTimer} {
 		if t != nil {
 			t.Stop()
 		}
 	}
-	k.ringTimer, k.upgradeTimer = nil, nil
+	k.ringTimer, k.upgradeTimer, k.relayTimer, k.beatTimer = nil, nil, nil, nil
 }
 
 // after runs f on the engine's goroutine after d, if the call is still
@@ -208,6 +219,9 @@ func (c *Calls) emit(k *call) {
 	u := k.u
 	if !k.started.IsZero() {
 		u.ActiveForMS, u.HasActiveForMS = uint64(time.Since(k.started).Milliseconds()), true
+	}
+	if k.g != nil {
+		u.Group, u.HasGroup = c.groupView(k), true
 	}
 	if w, ok := c.media.(updateWatcher); ok {
 		w.OnUpdate(&u)
@@ -232,8 +246,18 @@ func (c *Calls) emit(k *call) {
 		if !k.started.IsZero() {
 			secs = uint32(time.Since(k.started) / time.Second)
 		}
-		c.h.File(Entry{CallID: k.id, Chat: string(k.u.Chat), FromMe: k.outgoing, Time: k.began,
-			Video: k.carried || k.u.Video, Status: k.u.Outcome, Seconds: secs})
+		e := Entry{CallID: k.id, Chat: string(k.u.Chat), FromMe: k.outgoing, Time: k.began,
+			Video: k.carried || k.u.Video, Status: k.u.Outcome, Seconds: secs}
+		if g := k.g; g != nil {
+			e.Group = true
+			if g.link {
+				e.Chat = LinkChat
+			}
+			if !k.outgoing && !g.caller.IsEmpty() {
+				e.Caller = c.name(g, g.caller)
+			}
+		}
+		c.h.File(e)
 	}
 }
 
@@ -320,6 +344,10 @@ func (c *Calls) Accept(cmd *abi.Command) error {
 		if !c.flags.hold(cmd.StartCall.Cancel) {
 			return errTooManyCalls
 		}
+	case abi.CommandTagJoinCallLink:
+		if !c.flags.hold(cmd.JoinCallLink.Cancel) {
+			return errTooManyCalls
+		}
 	case abi.CommandTagCancelCall:
 		if !c.flags.cancel(cmd.CancelCall.Token) {
 			return errTooManyCalls
@@ -336,6 +364,9 @@ func (c *Calls) Command(cmd *abi.Command) {
 	case abi.CommandTagStartCall:
 		s := &cmd.StartCall
 		c.start(string(s.Chat), s.Video, s.Generation, c.flags.held(s.Cancel))
+	case abi.CommandTagJoinCallLink:
+		s := &cmd.JoinCallLink
+		c.joinLink(string(s.Token), s.Video, s.Generation, c.flags.held(s.Cancel))
 	case abi.CommandTagCancelCall:
 		// The flag is set (Accept); a call still placing reads it.
 	case abi.CommandTagAnswerCall:
@@ -434,9 +465,10 @@ func (c *Calls) start(chat string, video bool, generation uint64, cancel *cancel
 		refuse("")
 		return
 	}
-	peer, ok := callable(chat)
-	if !ok {
-		refuse("Calls are one to one only")
+	peer, direct := callable(chat)
+	gid, isGroup := isGroupChat(chat)
+	if !direct && !isGroup {
+		refuse("This chat cannot be called")
 		return
 	}
 	cli := c.cli
@@ -455,6 +487,11 @@ func (c *Calls) start(chat string, video bool, generation uint64, cancel *cancel
 	k := &call{u: placing, id: newCallID(), peer: peer, outgoing: true, cancel: cancel,
 		began: time.Now().Unix(), file: true, mlow: true, placing: true, carried: video}
 	_, k.creator = cli.Own()
+	if isGroup {
+		k.peer = gid
+		c.startGroup(k, cli, gid)
+		return
+	}
 	c.call = k
 	c.refreshDevices()
 	c.h.Go("calls-offer", func(ctx context.Context) {
@@ -568,15 +605,16 @@ func (c *Calls) placed(k *call, p placement, err error) {
 		return
 	}
 	k.u.Phase = abi.CallPhaseDialing
-	c.openMedia(k, p.key, p.ack, p.peer)
+	c.openMedia(k, p.key, p.ack, p.peer, nil)
 	k.ringTimer = c.after(c.timing.Ring, k.u.Generation, func(k *call) { c.hangup() })
 	if live(k.u.Phase) {
 		c.emit(k)
 	}
 }
 
-// openMedia opens k's media over the relay node holds.
-func (c *Calls) openMedia(k *call, key []byte, relay *waBinary.Node, peer types.JID) {
+// openMedia opens k's media over the relay node holds, or a group call's
+// over its roster's (group).
+func (c *Calls) openMedia(k *call, key []byte, relay *waBinary.Node, peer types.JID, group *GroupOpen) {
 	_, own := c.cli.Own()
 	str := func(b []byte, has bool) *string {
 		if !has {
@@ -594,6 +632,7 @@ func (c *Calls) openMedia(k *call, key []byte, relay *waBinary.Node, peer types.
 		SelfLID: own.String(), PeerLID: peer.String(), CallKey: key, Relay: relay,
 		MLow: k.mlow, Video: k.u.Video, CameraOn: k.u.Video && k.u.CameraOn,
 		Microphone: str(k.u.Microphone, k.u.HasMicrophone), Speaker: str(k.u.Speaker, k.u.HasSpeaker), Camera: cam,
+		Group: group,
 	})
 	if err != nil {
 		slog.Error("zapfast calls: the media did not open", "err", err)
@@ -616,6 +655,10 @@ func (c *Calls) openMedia(k *call, key []byte, relay *waBinary.Node, peer types.
 func (c *Calls) answer() {
 	k := c.call
 	if k == nil || k.outgoing || k.u.Phase != abi.CallPhaseIncoming {
+		return
+	}
+	if k.g != nil {
+		c.answerGroup(k)
 		return
 	}
 	k.stopTimers()
@@ -651,7 +694,7 @@ func (c *Calls) answer() {
 	k.answered = true
 	k.u.Phase = abi.CallPhaseAccepted
 	k.u.CameraOn = video
-	c.openMedia(k, key, o.Action, k.creator)
+	c.openMedia(k, key, o.Action, k.creator, nil)
 	if live(k.u.Phase) {
 		c.emit(k)
 	}
@@ -706,8 +749,11 @@ func (c *Calls) hangup() {
 		c.decline()
 		return
 	}
-	for _, to := range k.targets() {
-		c.terminate(k, to, "")
+	// A call link's waiting room is left locally.
+	if k.g == nil || !k.g.waiting {
+		for _, to := range k.targets() {
+			c.terminate(k, to, "")
+		}
 	}
 	outcome := abi.CallStatusNoAnswer
 	switch {
@@ -735,7 +781,8 @@ func (c *Calls) setMuted(muted bool) {
 	}
 	k.u.Muted = muted
 	c.command(k, muteCommand(muted))
-	if to := k.peerDevice(); !to.IsEmpty() && k.answered {
+	// A group call's mute goes to the call itself.
+	if to := k.peerDevice(); !to.IsEmpty() && (k.answered || k.g != nil) {
 		c.send(BuildMuteV2(k.id, to, k.creator, c.cli.NewID(), muted))
 	}
 	c.emit(k)
@@ -746,6 +793,10 @@ func (c *Calls) setMuted(muted bool) {
 func (c *Calls) setCamera(on bool) {
 	k := c.call
 	if k == nil || !live(k.u.Phase) || k.u.CameraOn == on {
+		return
+	}
+	if k.g != nil && k.open {
+		c.groupCamera(k, on)
 		return
 	}
 	if !k.open || !k.answered {
@@ -820,6 +871,9 @@ func (c *Calls) Signal(s Signal) {
 		}
 		return
 	}
+	if k != nil && live(k.u.Phase) && c.earlyControl(k, s) {
+		return
+	}
 	if s.Tag != "offer" {
 		return
 	}
@@ -841,8 +895,7 @@ func (c *Calls) offered(s Signal) {
 		c.send(rejectWith(s, c.cli.NewID(), RejectBusy))
 		return
 	case s.IsGroup():
-		slog.Info("zapfast calls: refusing a group call's offer: group calls are not bridged")
-		c.send(rejectWith(s, c.cli.NewID(), ""))
+		c.groupOffered(s)
 		return
 	}
 	chat := c.h.Chat(s.From.ToNonAD())
@@ -882,6 +935,10 @@ func rejectWith(s Signal, id, reason string) waBinary.Node {
 
 // signal applies a stanza of the call up.
 func (c *Calls) signal(k *call, s Signal) {
+	if k.g != nil {
+		c.groupSignal(k, s)
+		return
+	}
 	switch s.Tag {
 	case "preaccept":
 		if k.outgoing && k.u.Phase == abi.CallPhaseDialing {
@@ -1105,6 +1162,9 @@ func (c *Calls) mediaEvent(ev MediaEvent) {
 		}
 		c.videoState(k, VideoStopped, "", false)
 		k.u.CameraOn = false
+	case MediaMemberVideo:
+		c.memberVideo(k, ev.Member)
+		return
 	default:
 		return
 	}

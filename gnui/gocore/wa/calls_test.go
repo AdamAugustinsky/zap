@@ -79,10 +79,13 @@ func (c *fakeCallClient) DecryptKey(context.Context, *waBinary.Node, types.JID, 
 func (c *fakeCallClient) EncryptKey(context.Context, []types.JID, []byte, string) ([]calls.DeviceKey, []byte, error) {
 	return nil, nil, nil
 }
-func (c *fakeCallClient) PeerLID(_ context.Context, u types.JID) (types.JID, error) { return u, nil }
-func (c *fakeCallClient) Devices(context.Context, types.JID) ([]types.JID, error)   { return nil, nil }
-func (c *fakeCallClient) PrivacyToken(context.Context, types.JID) []byte            { return nil }
-func (c *fakeCallClient) Offered(context.Context, types.JID)                        {}
+func (c *fakeCallClient) PeerLID(_ context.Context, u types.JID) (types.JID, error)  { return u, nil }
+func (c *fakeCallClient) Devices(context.Context, ...types.JID) ([]types.JID, error) { return nil, nil }
+func (c *fakeCallClient) GroupMembers(context.Context, types.JID) ([]types.JID, error) {
+	return nil, nil
+}
+func (c *fakeCallClient) PrivacyToken(context.Context, types.JID) []byte { return nil }
+func (c *fakeCallClient) Offered(context.Context, types.JID)             {}
 
 func (c *fakeCallClient) tags() []string {
 	c.mu.Lock()
@@ -146,5 +149,43 @@ func TestACallRingsIsFiledAndListed(t *testing.T) {
 	log := only(h.take(), abi.EventTagCallLog)
 	if len(log) != 1 || len(log[0].CallLog.Messages) != 1 || string(log[0].CallLog.Messages[0].ID) != "zapfast-call-00CA11" {
 		t.Fatalf("the call log %+v", log)
+	}
+}
+
+// A group call is filed in its group under the member who rang it; one
+// joined through a link only reaches the Calls page (0.19.0's
+// file_call_entry).
+func TestGroupAndLinkCallsAreFiled(t *testing.T) {
+	h := newHarness(t, options{callMedia: &fakeCallMedia{}, callClient: &fakeCallClient{}})
+	h.start()
+	h.take()
+	group := "120363000000000001@g.us"
+	h.e.post(func() {
+		h.e.fileCall(calls.Entry{CallID: "00GROUP", Chat: group, Time: t0.Unix(), Status: abi.CallStatusMissed,
+			Group: true, Caller: peer.String()})
+	})
+	h.settle()
+	evs := h.take()
+	filed := only(evs, abi.EventTagMessages)
+	if len(filed) != 1 || len(filed[0].Messages.Messages) != 1 {
+		t.Fatalf("filed: %s", tags(evs))
+	}
+	m := filed[0].Messages.Messages[0]
+	if string(m.Chat) != group || string(m.Sender) != peer.String() || !m.Content.Call.Group {
+		t.Fatalf("the group entry: chat %s sender %s %+v", m.Chat, m.Sender, m.Content.Call)
+	}
+
+	h.e.post(func() {
+		h.e.fileCall(calls.Entry{CallID: "00LINK", Chat: calls.LinkChat, FromMe: true, Time: t0.Unix() + 60,
+			Status: abi.CallStatusAnswered, Seconds: 30, Group: true})
+	})
+	h.settle()
+	evs = h.take()
+	if len(only(evs, abi.EventTagMessages)) != 0 || len(only(evs, abi.EventTagChatUpdated)) != 0 {
+		t.Fatalf("a link's call reached a chat: %s", tags(evs))
+	}
+	log := only(evs, abi.EventTagCallLog)
+	if len(log) != 1 || len(log[0].CallLog.Messages) != 2 || string(log[0].CallLog.Messages[0].Chat) != calls.LinkChat {
+		t.Fatalf("the call log: %s", tags(evs))
 	}
 }

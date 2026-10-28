@@ -14,6 +14,7 @@ import (
 	"zapfast/gocore/voip/audio"
 	"zapfast/gocore/voip/camera"
 	"zapfast/gocore/voip/engine"
+	"zapfast/gocore/voip/groupcall"
 	"zapfast/gocore/voip/relay"
 	"zapfast/gocore/voip/video"
 )
@@ -166,12 +167,23 @@ var eventKinds = map[engine.CallEventKind]string{
 	engine.CallConnected: MediaConnected, engine.CallFailed: MediaFailed, engine.CallClosed: MediaClosed,
 	engine.CallSilent: MediaSilent, engine.CallStalled: MediaStalled, engine.CallAudible: MediaAudible,
 	engine.CallRemoteVideo: MediaRemoteVideo, engine.CallCameraStopped: MediaCameraStopped, engine.CallEnded: MediaEnded,
+	engine.CallMemberVideo: MediaMemberVideo,
 }
 
 func (m *engineMedia) Open(p OpenParams) error {
-	r := engine.FindRelay(p.Relay)
-	if r == nil {
-		return ErrNoRelay
+	var relay engine.Relay
+	var group *engine.GroupParams
+	if g := p.Group; g != nil {
+		if g.Initial == nil || g.Initial.Relay == nil {
+			return ErrNoRelay
+		}
+		group = &engine.GroupParams{Creator: g.Creator, Self: g.Self, Initial: g.Initial, MemberID: g.MemberID}
+	} else {
+		r := engine.FindRelay(p.Relay)
+		if r == nil {
+			return ErrNoRelay
+		}
+		relay = engine.ParseRelay(r)
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -193,10 +205,10 @@ func (m *engineMedia) Open(p OpenParams) error {
 	}
 	c, err := engine.Open(engine.Params{
 		CallID: p.CallID, Generation: p.Generation, Outgoing: p.Outgoing, SelfLID: p.SelfLID, PeerLID: p.PeerLID,
-		CallKey: p.CallKey, Relay: engine.ParseRelay(r), MLow: p.MLow, Video: p.Video, CameraOn: p.CameraOn,
-		Microphone: str(p.Microphone), Speaker: str(p.Speaker), Camera: str(p.Camera),
+		CallKey: p.CallKey, Relay: relay, MLow: p.MLow, Video: p.Video, CameraOn: p.CameraOn,
+		Microphone: str(p.Microphone), Speaker: str(p.Speaker), Camera: str(p.Camera), Group: group,
 	}, m.d, func(ev engine.CallEvent) {
-		m.push(MediaEvent{Generation: ev.Generation, Kind: eventKinds[ev.Kind], Reason: ev.Reason})
+		m.push(MediaEvent{Generation: ev.Generation, Kind: eventKinds[ev.Kind], Reason: ev.Reason, Member: ev.Member})
 	})
 	if err != nil {
 		return fmt.Errorf("zapfast calls: %w", err)
@@ -255,6 +267,15 @@ func engineCommand(cmd MediaCommand) (engine.Command, error) {
 		c = engine.Command{Op: engine.OpOrientation, Value: v}
 	case "keyframe":
 		c = engine.Command{Op: engine.OpKeyframe}
+	case "group":
+		c = engine.Command{Op: engine.OpGroup}
+		c.Group, _ = cmd["update"].(*groupcall.Update)
+		if e, ok := cmd["epoch"].(*Epoch); ok {
+			c.Epoch = &engine.GroupEpoch{Transaction: e.Transaction, Key: e.Key}
+		}
+		if c.Group == nil && c.Epoch == nil {
+			return c, errors.New("zapfast calls: a group command with neither roster nor epoch")
+		}
 	case "microphone":
 		c = engine.Command{Op: engine.OpMicrophone, Device: str("device")}
 	case "speaker":

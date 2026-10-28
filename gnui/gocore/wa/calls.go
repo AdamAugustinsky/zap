@@ -15,11 +15,10 @@ import (
 	"zapfast/gocore/store"
 )
 
-// Calls (WP7): the 1:1 call signaling of gocore/calls over the client,
-// with the media of the Go call engine. Without media every call command but
-// LoadCallLog is refused, and an offer is refused to its caller. Group
-// calls and call links are not bridged: StartCall to a group fails as the
-// worker fails it, a group's offer is refused, and JoinCallLink is refused.
+// Calls (WP7): the call signaling of gocore/calls over the client, one to
+// one, group and call link, with the media of the Go call engine. Without
+// media every call command but LoadCallLog is refused, and an offer is
+// refused to its caller.
 
 // callCommands are the schema's call commands, which gocore/calls answers.
 var callCommands = map[abi.CommandTag]bool{
@@ -30,15 +29,11 @@ var callCommands = map[abi.CommandTag]bool{
 	abi.CommandTagLoadCallLog: true,
 }
 
-const noCallLinks = "Call links are not available in Zap yet"
-
 // acceptCall decides a call command, on the caller's goroutine.
 func (e *Engine) acceptCall(cmd *abi.Command) error {
 	switch {
 	case cmd.Tag == abi.CommandTagLoadCallLog:
 		return nil
-	case cmd.Tag == abi.CommandTagJoinCallLink:
-		return gocore.Refuse(noCallLinks)
 	case e.calls == nil || !e.calls.Available():
 		return gocore.Refuse(calls.NotAvailable)
 	}
@@ -105,7 +100,9 @@ func callStatusName(s abi.CallStatus) string {
 // fileCall files a finished call among its chat's messages, unless the
 // chat already has an entry for it (the phone's own call-log message), as
 // the worker's file_call_entry does. The entry is local: never sent, never
-// unread.
+// unread. A group call is filed under the member who rang it; a call joined
+// through a link belongs to no chat (calls.LinkChat), so only the Calls page
+// shows it.
 func (e *Engine) fileCall(c calls.Entry) {
 	if c.Chat == "" || c.CallID == "" || c.Time <= 0 {
 		return
@@ -117,15 +114,25 @@ func (e *Engine) fileCall(c calls.Entry) {
 		}
 		return
 	}
-	e.ensureChat(c.Chat, "")
+	link := c.Chat == calls.LinkChat
+	if !link {
+		e.ensureChat(c.Chat, "")
+	}
 	sender := c.Chat
-	if c.FromMe {
+	switch {
+	case c.FromMe:
 		sender = e.me()
+	case c.Caller != "":
+		sender = c.Caller
 	}
 	m := store.Message{ID: id, ChatID: c.Chat, Sender: sender, FromMe: c.FromMe, Timestamp: c.Time, Kind: store.KindCall,
-		Call: &store.Call{Video: c.Video, Status: callStatusName(c.Status), Seconds: c.Seconds}}
+		Call: &store.Call{Video: c.Video, Status: callStatusName(c.Status), Seconds: c.Seconds, Group: c.Group}}
 	if err := e.arch.SaveMessages([]store.Message{m}); err != nil {
 		slog.Warn("zapfast wa: a call entry could not be filed", "err", err)
+		return
+	}
+	if link {
+		e.emitCallLog()
 		return
 	}
 	if err := e.arch.UpdateChat(c.Chat, func(ch *store.Chat) {

@@ -19,6 +19,9 @@ type BasicCallMeta struct {
 	// ZAP PATCH (see ../ZAP-PATCH.md): the id of the <call> stanza, which an
 	// offer's <receipt> must echo.
 	StanzaID string
+	// ZAP PATCH: the <call>'s participant: the device that sent a group
+	// call's stanza when the call service (call-id@call) routed it.
+	Participant JID
 }
 
 type CallRemoteMeta struct {

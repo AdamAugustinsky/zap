@@ -4,9 +4,11 @@ import (
 	"time"
 
 	waBinary "go.mau.fi/whatsmeow/binary"
+	"go.mau.fi/whatsmeow/types"
 
 	"zapfast/abi"
 	"zapfast/core"
+	"zapfast/gocore/voip/groupcall"
 )
 
 // Media is a call's media: the Go call engine (NewMedia), or a test's
@@ -56,6 +58,28 @@ type OpenParams struct {
 	Microphone *string
 	Speaker    *string
 	Camera     *string
+	// Group makes it a group call's media: its relay is the roster's, and
+	// its keys arrive as epochs (groupCommand); CallKey and Relay are
+	// unused.
+	Group *GroupOpen
+}
+
+// GroupOpen is a group call's media inputs.
+type GroupOpen struct {
+	Creator types.JID
+	// Self is our device's LID, as the roster names it.
+	Self types.JID
+	// Initial is the roster the media opens on, with its relay.
+	Initial *groupcall.Update
+	// MemberID is the tile a media sender's pictures go on; false for one
+	// the roster does not name. Called from the media's goroutines.
+	MemberID func(sender types.JID) (string, bool)
+}
+
+// Epoch is a group call's shared key for a roster transaction.
+type Epoch struct {
+	Transaction uint32
+	Key         []byte
 }
 
 // MediaCommand is one command to the live call: an "op" and its fields
@@ -99,13 +123,26 @@ func rekeyCommand(answering, codec string) MediaCommand {
 func videoStartCommand(cam any, awaitAccept bool) MediaCommand {
 	return op("video_start", "device", cam, "await_accept", awaitAccept)
 }
-func videoEnableCommand() MediaCommand         { return op("video_enable") }
-func cameraOnCommand(cam any) MediaCommand     { return op("camera_on", "device", cam) }
-func cameraOffCommand() MediaCommand           { return op("camera_off") }
-func videoStopCommand() MediaCommand           { return op("video_stop") }
-func peerVideoCommand(on bool) MediaCommand    { return op("peer_video", "on", on) }
-func orientationCommand(v uint8) MediaCommand  { return op("orientation", "value", v) }
-func keyframeCommand() MediaCommand            { return op("keyframe") }
+func videoEnableCommand() MediaCommand        { return op("video_enable") }
+func cameraOnCommand(cam any) MediaCommand    { return op("camera_on", "device", cam) }
+func cameraOffCommand() MediaCommand          { return op("camera_off") }
+func videoStopCommand() MediaCommand          { return op("video_stop") }
+func peerVideoCommand(on bool) MediaCommand   { return op("peer_video", "on", on) }
+func orientationCommand(v uint8) MediaCommand { return op("orientation", "value", v) }
+func keyframeCommand() MediaCommand           { return op("keyframe") }
+
+// groupCommand gives a group call's media a committed roster, an epoch,
+// or both (nil leaves one out).
+func groupCommand(u *groupcall.Update, e *Epoch) MediaCommand {
+	var uv, ev any
+	if u != nil {
+		uv = u
+	}
+	if e != nil {
+		ev = e
+	}
+	return op("group", "update", uv, "epoch", ev)
+}
 func microphoneCommand(dev any) MediaCommand   { return op("microphone", "device", dev) }
 func speakerCommand(dev any) MediaCommand      { return op("speaker", "device", dev) }
 func cameraDeviceCommand(dev any) MediaCommand { return op("camera_device", "device", dev) }
@@ -120,6 +157,8 @@ const (
 	MediaAudible       = "audible"
 	MediaRemoteVideo   = "remote_video"
 	MediaCameraStopped = "camera_stopped"
+	// MediaMemberVideo: a group member's first picture (Member).
+	MediaMemberVideo = "member_video"
 	// MediaEnded is a generation's last event: every device is released.
 	MediaEnded = "ended"
 )
@@ -129,6 +168,7 @@ type MediaEvent struct {
 	Generation uint64
 	Kind       string
 	Reason     string
+	Member     types.JID
 }
 
 // silenceReason is a MediaSilent event's reason as the schema names it.

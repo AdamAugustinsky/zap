@@ -26,18 +26,22 @@ type Client interface {
 	Send(ctx context.Context, n waBinary.Node) error
 	// SendAwait sends n and waits for the server's <ack> to its id.
 	SendAwait(ctx context.Context, n waBinary.Node, timeout time.Duration) (*waBinary.Node, error)
-	// DecryptKey decrypts an offer's <enc> from the caller's device into
-	// the callKey.
+	// DecryptKey decrypts an <enc> holding a Call message from the device
+	// that sent it into its callKey: an offer's, or a group call's epoch
+	// (<enc_rekey>).
 	DecryptKey(ctx context.Context, enc *waBinary.Node, from types.JID, at time.Time) ([]byte, error)
-	// EncryptKey encrypts the callKey for each device (in their order,
+	// EncryptKey encrypts a callKey (or a group epoch) for each device (in their order,
 	// skipping one that fails); identity is our <device-identity> when one
 	// key is a pkmsg.
 	EncryptKey(ctx context.Context, devices []types.JID, key []byte, id string) (keys []DeviceKey, identity []byte, err error)
 	// PeerLID is user's LID (no device).
 	PeerLID(ctx context.Context, user types.JID) (types.JID, error)
-	// Devices is the devices the server rings for user, hosted ones left
+	// Devices is the devices the server rings for users, hosted ones left
 	// out.
-	Devices(ctx context.Context, user types.JID) ([]types.JID, error)
+	Devices(ctx context.Context, users ...types.JID) ([]types.JID, error)
+	// GroupMembers is a group's members, each by their LID when the group
+	// names it.
+	GroupMembers(ctx context.Context, group types.JID) ([]types.JID, error)
 	// PrivacyToken is our stored token for peer, nil when there is none.
 	PrivacyToken(ctx context.Context, peer types.JID) []byte
 	// Offered is told an offer reached peer: a privacy token is issued to
@@ -47,7 +51,8 @@ type Client interface {
 
 // Whatsmeow is Client over a whatsmeow client, through its
 // DangerousInternals: whatsmeow places no calls itself, so the stanzas and
-// the callKey's Signal messages go through its socket and sessions here.
+// the callKey's (and a group call's epochs') Signal messages go through its
+// socket and sessions here.
 func Whatsmeow(c *whatsmeow.Client) Client { return &wm{c: c, in: c.DangerousInternals()} }
 
 type wm struct {
@@ -159,8 +164,8 @@ func (w *wm) PeerLID(ctx context.Context, user types.JID) (types.JID, error) {
 	return lid.ToNonAD(), nil
 }
 
-func (w *wm) Devices(ctx context.Context, user types.JID) ([]types.JID, error) {
-	all, err := w.c.GetUserDevices(ctx, []types.JID{user})
+func (w *wm) Devices(ctx context.Context, users ...types.JID) ([]types.JID, error) {
+	all, err := w.c.GetUserDevices(ctx, users)
 	if err != nil {
 		return nil, err
 	}
@@ -171,6 +176,23 @@ func (w *wm) Devices(ctx context.Context, user types.JID) ([]types.JID, error) {
 		}
 	}
 	return devices, nil
+}
+
+func (w *wm) GroupMembers(ctx context.Context, group types.JID) ([]types.JID, error) {
+	info, err := w.c.GetGroupInfo(ctx, group)
+	if err != nil {
+		return nil, err
+	}
+	members := make([]types.JID, 0, len(info.Participants))
+	for _, p := range info.Participants {
+		switch {
+		case !p.LID.IsEmpty():
+			members = append(members, p.LID)
+		case !p.JID.IsEmpty():
+			members = append(members, p.JID)
+		}
+	}
+	return members, nil
 }
 
 func (w *wm) PrivacyToken(ctx context.Context, peer types.JID) []byte {

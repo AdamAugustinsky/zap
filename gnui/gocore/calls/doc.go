@@ -1,5 +1,6 @@
-// Package calls is the Go backend's 1:1 WhatsApp calls (WP7's call
-// bridge): the signaling on whatsmeow, the media on the Go call engine.
+// Package calls is the Go backend's WhatsApp calls (WP7's call bridge),
+// one to one and group: the signaling on whatsmeow, the media on the Go
+// call engine.
 //
 // whatsmeow keeps the socket and the Signal sessions. This package builds
 // and reads the <call> stanzas as whatsapp-rust 5e72baf's
@@ -13,7 +14,13 @@
 // (media.go, engine_media.go): Go hands it the callKey and the <relay>, it
 // hands back events, and the decoded pictures are voip/video's Frames.
 //
-// Group calls and call links are not bridged: a group's offer is refused,
-// and gocore/wa refuses JoinCallLink. Without media every call is refused
-// (NotAvailable).
+// Group calls (group.go, the stanzas of group_stanza.go): an offer rings
+// in its group with its roster, is answered to the call's own address, and
+// opens the media on the roster's relay; group_update and enc_rekey keep
+// the roster and the epochs (decrypted, or made and sent to every
+// connected device when the service asks) flowing to the media; only the
+// creator or the service ends one. A call is placed from a group chat to
+// its members, and a call link is joined, through its waiting room when it
+// has one. A call link is never created. Without media every call is
+// refused (NotAvailable).
 package calls
