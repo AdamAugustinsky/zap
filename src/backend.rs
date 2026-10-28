@@ -1,0 +1,1674 @@
+//! Channel bridge between the UI and asynchronous runtime.
+//!
+//! A dedicated tokio runtime owns the WhatsApp connection, archive, and media
+//! work. Commands and events cross channels, and events wake the UI.
+
+use std::path::PathBuf;
+use std::sync::Arc;
+use std::time::Duration;
+
+use tokio::sync::mpsc;
+
+use crate::model::{
+    Chat, ChatId, Contact, Gif, GifError, Message, PollDraft, StickerPack, StorageStats,
+};
+use crate::paths::AccountDirs;
+
+pub(crate) mod picture_edit;
+
+// Re-exported so the picker can detect pasted Signal pack links.
+mod read_sync;
+pub(crate) mod sticker_import;
+mod sticker_maker;
+pub(crate) mod sticker_store;
+mod worker;
+pub use worker::{PINNED_CHATS, PLUS_PINNED_CHATS, host_owned_presence, set_device_app_name};
+
+/// Result of a deletion request, without protocol errors crossing the bridge.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MessageRemovalOutcome {
+    Accepted,
+    /// The library cannot establish whether the write was accepted.
+    Uncertain,
+}
+
+/// Phone-link state.
+#[derive(Clone, Debug, PartialEq)]
+pub enum LinkStatus {
+    Starting,
+    /// Waiting for QR scanning or pairing-code acceptance.
+    Unlinked {
+        qr: Option<String>,
+        pair_code: Option<String>,
+        pairing_phone: Option<String>,
+    },
+    Connecting,
+    Connected,
+    /// Connection dropped and automatic reconnection is active.
+    Disconnected {
+        reason: String,
+    },
+    /// Device unlinked by the phone.
+    LoggedOut,
+    Failed(String),
+}
+
+impl LinkStatus {
+    pub fn is_connected(&self) -> bool {
+        matches!(self, Self::Connected)
+    }
+
+    /// Stable, non-sensitive description suitable for the desktop log.
+    pub(crate) fn log_label(&self) -> &'static str {
+        match self {
+            Self::Starting => "starting",
+            Self::Unlinked { .. } => "unlinked",
+            Self::Connecting => "connecting",
+            Self::Connected => "connected",
+            Self::Disconnected { .. } => "disconnected",
+            Self::LoggedOut => "logged out",
+            Self::Failed(_) => "failed",
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::LinkStatus;
+
+    #[test]
+    fn backend_waits_for_window_acknowledgement_before_touching_storage() {
+        let directory = tempfile::tempdir().unwrap();
+        let dirs = crate::paths::AppDirs::under(directory.path());
+        let mut backend = super::Backend::spawn(dirs.as_account(), super::Waker::default());
+        assert!(!dirs.session_db().exists());
+        assert!(!dirs.archive_db().exists());
+        // Closing before a first frame must cancel startup without connecting
+        // or hanging while joining the waiting worker.
+        backend.shutdown();
+        assert!(!dirs.session_db().exists());
+        assert!(!dirs.archive_db().exists());
+    }
+
+    /// A dialog the interface never answers, asked on a blocking thread as the
+    /// worker asks it.
+    fn unanswered(
+        backend: &super::Backend,
+    ) -> (
+        std::thread::JoinHandle<Option<std::path::PathBuf>>,
+        std::sync::mpsc::Receiver<super::Event>,
+    ) {
+        let (events, inbox) = std::sync::mpsc::channel();
+        let picker = backend
+            .dialogs
+            .picker(events, super::Waker::default().into())
+            .shown_by_host();
+        let waiting = std::thread::spawn(move || picker.dialog().pick_file());
+        assert!(matches!(
+            inbox.recv_timeout(std::time::Duration::from_secs(5)),
+            Ok(super::Event::PickRequest(_))
+        ));
+        (waiting, inbox)
+    }
+
+    fn returns<T>(waiting: std::thread::JoinHandle<T>) -> T {
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        while !waiting.is_finished() {
+            assert!(
+                std::time::Instant::now() < deadline,
+                "the dialog is still waiting"
+            );
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        waiting.join().unwrap()
+    }
+
+    #[test]
+    fn shutting_down_answers_a_dialog_left_open() {
+        let directory = tempfile::tempdir().unwrap();
+        let dirs = crate::paths::AppDirs::under(directory.path());
+        let mut backend = super::Backend::spawn(dirs.as_account(), super::Waker::default());
+        let (waiting, _inbox) = unanswered(&backend);
+        backend.shutdown();
+        assert_eq!(returns(waiting), None);
+    }
+
+    #[test]
+    fn a_worker_that_panics_answers_its_dialog_before_the_runtime_goes() {
+        let runtime = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(1)
+            .build()
+            .unwrap();
+        let dialogs = crate::pick::Dialogs::default();
+        let (events, inbox) = std::sync::mpsc::channel();
+        let picker = dialogs
+            .picker(events, super::Waker::default().into())
+            .shown_by_host();
+        let (answered, answer) = std::sync::mpsc::channel();
+        let driving = std::thread::spawn(move || {
+            let worker = async move {
+                tokio::task::spawn_blocking(move || {
+                    let _ = answered.send(picker.dialog().pick_file());
+                });
+                // The dialog is open when the worker panics.
+                let _ = tokio::task::spawn_blocking(move || {
+                    inbox.recv_timeout(std::time::Duration::from_secs(5))
+                })
+                .await;
+                panic!("the worker panics with a dialog open");
+            };
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                super::drive(runtime, &dialogs, worker)
+            }))
+            .is_err()
+        });
+        assert!(returns(driving), "the worker's panic reached the thread");
+        assert_eq!(
+            answer.recv_timeout(std::time::Duration::from_secs(1)),
+            Ok(None)
+        );
+    }
+
+    #[test]
+    fn dropping_the_backend_answers_a_dialog_left_open() {
+        let (backend, _) = super::Backend::detached();
+        let (waiting, inbox) = unanswered(&backend);
+        drop(inbox);
+        drop(backend);
+        assert_eq!(returns(waiting), None);
+    }
+
+    #[test]
+    fn link_logs_redact_pairing_credentials() {
+        let qr = "qr-payload-that-links-an-account";
+        let code = "12345678";
+        let phone = "573001234567";
+        let status = LinkStatus::Unlinked {
+            qr: Some(qr.into()),
+            pair_code: Some(code.into()),
+            pairing_phone: Some(phone.into()),
+        };
+
+        // The previous Debug formatting leaked every field into zapfast.log.
+        let previous = format!("link: {status:?}");
+        assert!(previous.contains(qr));
+        assert!(previous.contains(code));
+        assert!(previous.contains(phone));
+
+        let current = format!("link: {}", status.log_label());
+        assert_eq!(current, "link: unlinked");
+        assert!(!current.contains(qr));
+        assert!(!current.contains(code));
+        assert!(!current.contains(phone));
+    }
+}
+
+/// Oldest loaded message timestamp and id used as a page boundary.
+pub type PageKey = (i64, String);
+
+/// Initial and incremental message-page size.
+pub const PAGE: usize = 60;
+
+#[derive(Clone, Debug)]
+pub struct CreatedPoll {
+    pub id: String,
+    pub secret: Vec<u8>,
+    pub creator: String,
+    pub recipients: Vec<String>,
+}
+
+#[derive(Debug)]
+pub enum Command {
+    RefreshPoll {
+        chat: ChatId,
+        message: String,
+    },
+    PollHistoryFailed {
+        chat: ChatId,
+        message: String,
+        requested: std::time::Instant,
+    },
+    CreatePoll {
+        chat: ChatId,
+        draft: PollDraft,
+    },
+    PollCreated {
+        chat: ChatId,
+        draft: PollDraft,
+        result: Result<CreatedPoll, String>,
+    },
+    VotePoll {
+        chat: ChatId,
+        message: String,
+        choices: Vec<usize>,
+    },
+    PollVoted {
+        chat: ChatId,
+        message: String,
+        choices: Vec<usize>,
+        at: i64,
+        result: Result<String, String>,
+    },
+    PollDecoded {
+        vote: crate::archive::PollVote,
+        choices: Option<Vec<usize>>,
+    },
+    SendText {
+        chat: ChatId,
+        text: String,
+        quoting: Option<crate::model::ReplyTarget>,
+        mentions: Vec<String>,
+    },
+    SendLocation {
+        chat: ChatId,
+        latitude: f64,
+        longitude: f64,
+        quoting: Option<crate::model::ReplyTarget>,
+    },
+    ReplyInteractive {
+        chat: ChatId,
+        message: String,
+        button: usize,
+        choice: Option<usize>,
+    },
+    /// Forwards archived messages to each chat in `to_chats`, oldest first.
+    /// The whole batch is refused when it names more chats than
+    /// [`forward_limit`](crate::model::forward_limit) allows for these messages.
+    Forward {
+        from_chat: ChatId,
+        messages: Vec<String>,
+        to_chats: Vec<ChatId>,
+    },
+    /// Asks how many chats these messages may be forwarded to at once,
+    /// answered with [`Event::ForwardLimit`].
+    ForwardLimit {
+        from_chat: ChatId,
+        messages: Vec<String>,
+    },
+    /// Updates our typing state in a chat.
+    Composing {
+        chat: ChatId,
+        composing: bool,
+    },
+    /// Stores the open chat's unsent text, so it survives a restart.
+    SaveDraft {
+        chat: ChatId,
+        text: String,
+    },
+    /// Marks a visible chat read and optionally sends receipts.
+    MarkRead {
+        chat: ChatId,
+        receipts: bool,
+    },
+    /// Marks a chat with nothing pending as unread, here and on the phone.
+    MarkUnread(ChatId),
+    /// Follows one of our group messages' receipts while "Message info" is
+    /// open, or stops following with `None`.
+    WatchReceipts(Option<(ChatId, String)>),
+    /// Result of a private read-state update to the other linked devices.
+    ReadSyncFinished {
+        chat: ChatId,
+        through: i64,
+        success: bool,
+    },
+    /// Result of an unread mark sent to the other linked devices, keyed by
+    /// when the mark was made.
+    UnreadSyncFinished {
+        chat: ChatId,
+        marked_at: i64,
+        success: bool,
+    },
+    /// Loads archived chat messages before an optional boundary.
+    LoadChat {
+        chat: ChatId,
+        before: Option<PageKey>,
+    },
+    /// Asks for one chat's active pins, for the line under its header.
+    LoadPins(ChatId),
+    /// Requests messages before the archive's earliest message. `explicit`
+    /// marks a request the reader made by scrolling to the top: only those
+    /// report a phone that did not answer, since automatic requests (short
+    /// or empty chats) are often legitimately left unanswered.
+    FetchOlder {
+        chat: ChatId,
+        explicit: bool,
+    },
+    /// Requests phone history immediately before an archived message to repair
+    /// gaps or ordering inside an already loaded conversation.
+    ReloadHistory {
+        chat: ChatId,
+        message: String,
+    },
+    /// Whether the background may fetch older history, and the chat the reader
+    /// has open, so it is asked for its older messages first.
+    SetHistoryPrefetch {
+        on: bool,
+        focused: Option<ChatId>,
+    },
+    /// A page of the chat's photos and playable videos, answered by
+    /// `Event::ChatMedia`. `None` asks for the newest page; `around` centres it
+    /// on one message, so a viewer opened on a photo older than the newest
+    /// page still has an album to step through. Any view that lists a chat's
+    /// photos and clips (the viewer's album, a chat's media panel) asks this
+    /// way and tells its answer apart by `chat` and `around`.
+    LoadChatMedia {
+        chat: ChatId,
+        around: Option<String>,
+    },
+    Download {
+        /// Asked for by the reader: no size limit, a deadline that grows
+        /// with the file.
+        manual: bool,
+        card: Option<usize>,
+        chat: ChatId,
+        message: String,
+    },
+    /// Downloads a motion photo's clip.
+    DownloadMotion {
+        chat: ChatId,
+        message: String,
+    },
+    /// Requests a profile picture; `full` selects the info-dialog size.
+    FetchAvatar {
+        id: String,
+        full: bool,
+    },
+    /// Loads archived messages from `id` through the current page.
+    LoadUntil {
+        chat: ChatId,
+        id: String,
+        before: PageKey,
+    },
+    /// Searches visible archived message text.
+    SearchMessages {
+        query: String,
+    },
+    /// Searches one chat, optionally inside a Unix-second day range.
+    SearchChatMessages {
+        chat: ChatId,
+        query: String,
+        from: Option<i64>,
+        until: Option<i64>,
+    },
+    /// Stars or unstars one archived message.
+    SetStar {
+        chat: ChatId,
+        message: String,
+        starred: bool,
+    },
+    /// Asks for the starred messages.
+    LoadStarred,
+    /// Result of a star or unstar request.
+    Starred {
+        chat: ChatId,
+        message: String,
+        starred: bool,
+        /// Which attempt this answer belongs to. A later click or a phone
+        /// update wins, and this answer is ignored.
+        generation: u64,
+        /// The account that asked. A request that outlives its account must
+        /// not write the next one, whose generations start over.
+        session: u64,
+        result: Result<(), String>,
+    },
+    /// Lists one chat's pictures, videos, documents and links for the info
+    /// panel. `request` comes back with the answer, so a late answer to an
+    /// earlier request is told apart from the one being waited for.
+    ListChatShared {
+        chat: ChatId,
+        request: u64,
+    },
+    /// Creates an archive chat before its first message is sent.
+    EnsureChat {
+        chat: ChatId,
+        name: String,
+    },
+    /// Internal: the id a phone-history request went out under, which the
+    /// phone's answer names. `serial` is the worker's number for the request.
+    OlderSent {
+        chat: ChatId,
+        serial: u64,
+        request: String,
+    },
+    /// Internal result for a failed phone-history request.
+    OlderFailed {
+        chat: ChatId,
+        serial: u64,
+        error: String,
+    },
+    /// Internal group-metadata failure.
+    GroupInfoFailed {
+        chat: ChatId,
+        request_generation: u64,
+        /// Whether the server refusal is permanent.
+        permanent: bool,
+    },
+    EditText {
+        chat: ChatId,
+        id: String,
+        text: String,
+        mentions: Vec<String>,
+    },
+    /// Internal: WhatsApp's answer to an edit sent from here. The archive
+    /// takes the new text only once WhatsApp accepts it.
+    EditSettled {
+        chat: ChatId,
+        id: String,
+        /// Orders edits sent from here, so a late answer to an older one
+        /// cannot replace a newer one.
+        generation: u64,
+        accepted: Result<(crate::model::Content, Vec<crate::model::MentionRef>), String>,
+    },
+    Revoke {
+        chat: ChatId,
+        id: String,
+    },
+    DeleteLocal {
+        chat: ChatId,
+        id: String,
+    },
+    /// Completion of the account's deletion sync, before removing our copy.
+    MessageDeletedForMe {
+        generation: u64,
+        chat: ChatId,
+        id: String,
+        outcome: MessageRemovalOutcome,
+    },
+    /// Selects files with the desktop picker for the composer. `documents`
+    /// stages them to go as documents, pictures included.
+    PickFiles {
+        chat: ChatId,
+        documents: bool,
+    },
+    /// Sends files with the caption on the first.
+    SendFiles {
+        chat: ChatId,
+        paths: Vec<PathBuf>,
+        /// Sends every file as a document with its original bytes, instead
+        /// of turning pictures, videos and audio into media messages.
+        documents: bool,
+        caption: Option<String>,
+        mentions: Vec<String>,
+        /// The message the first file replies to.
+        quoting: Option<crate::model::ReplyTarget>,
+    },
+    /// Sends a clipboard image as straight-alpha RGBA.
+    SendImage {
+        chat: ChatId,
+        width: u32,
+        height: u32,
+        rgba: Vec<u8>,
+        caption: Option<String>,
+        mentions: Vec<String>,
+        quoting: Option<crate::model::ReplyTarget>,
+    },
+    /// Syncs chat mute state. `Some(0)` is indefinite and `None` unmutes.
+    SetMuted(ChatId, Option<i64>),
+    /// Locks or unlocks a chat (the locked folder).
+    SetLocked(ChatId, bool),
+    /// Creates a label; the worker owns the clock for its id.
+    CreateLabel {
+        name: String,
+        color_hex: String,
+    },
+    /// Renames and recolours a label.
+    UpdateLabel {
+        id: String,
+        name: String,
+        color_hex: String,
+    },
+    /// Deletes a label and takes it off every chat.
+    DeleteLabel(String),
+    /// Replaces the labels of one chat.
+    SetChatLabels {
+        chat: ChatId,
+        labels: Vec<String>,
+    },
+    /// Normalizes, encodes, and sends mono 48 kHz push-to-talk audio.
+    SendVoice {
+        chat: ChatId,
+        samples: Vec<f32>,
+        quoting: Option<crate::model::ReplyTarget>,
+    },
+    /// Places a 1:1 call, offering video from the first frame when asked.
+    ///
+    /// `generation` is the one the window already drew the call under, and `cancel` is set when
+    /// the reader hangs up before the offer has gone out, so the peer is never rung for it.
+    StartCall {
+        chat: ChatId,
+        video: bool,
+        generation: u64,
+        cancel: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    },
+    /// Joins a call link by its token, with video for a video call's link. `generation` and
+    /// `cancel` are what [`Command::StartCall`] carries.
+    JoinCallLink {
+        token: String,
+        video: bool,
+        generation: u64,
+        cancel: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    },
+    /// Answers the ringing incoming call with the real `<accept>`.
+    AnswerCall,
+    /// Declines the ringing incoming call with the real `<reject>`.
+    DeclineCall,
+    /// Ends the current call.
+    HangupCall,
+    /// Mutes or unmutes the current call's microphone through the engine.
+    SetCallMuted(bool),
+    /// Turns the current call's camera on or off.
+    SetCallCamera(bool),
+    /// Rebinds the current call's microphone; `None` is the system default.
+    SetCallMicrophone(Option<String>),
+    /// Rebinds the current call's speaker; `None` is the system default.
+    SetCallSpeaker(Option<String>),
+    /// Switches the current call's camera node.
+    SetCallCameraDevice(Option<String>),
+    /// Lists the microphones, speakers and cameras the call screen offers.
+    RefreshCallDevices,
+    /// Reads the account's call entries for the Calls page.
+    LoadCallLog,
+    /// Sends a played receipt for a voice message.
+    MarkPlayed {
+        chat: ChatId,
+        message: String,
+        sender: String,
+        receipts: bool,
+    },
+    /// Sends a WebP sticker.
+    SendSticker {
+        chat: ChatId,
+        path: PathBuf,
+        quoting: Option<crate::model::ReplyTarget>,
+    },
+    /// Saves a sticker file.
+    SaveSticker {
+        path: PathBuf,
+    },
+    /// Internal: the phone received one favorite change, or refused it.
+    FavoritePushed {
+        hash: String,
+        updated_at: i64,
+        result: Result<Vec<u8>, String>,
+    },
+    /// Internal: every queued favorite change was sent.
+    FavoritesPushed,
+    /// Internal: the one-time replay of the phone's favorites finished.
+    FavoritesRecovered {
+        complete: bool,
+    },
+    /// Internal: the one-time replay of the phone's contacts, for the first
+    /// names saved before ZapFast kept them, finished.
+    FirstNamesRecovered {
+        complete: bool,
+    },
+    /// Internal: a favorite from the phone finished downloading.
+    FavoriteFetched {
+        hash: String,
+        result: Result<PathBuf, String>,
+    },
+    /// Takes a sticker out of Recent here and on the phone.
+    RemoveRecentSticker {
+        path: PathBuf,
+    },
+    /// Removes a saved sticker.
+    ForgetSticker {
+        path: PathBuf,
+    },
+    /// Imports a pack from a signal.art link.
+    ImportStickerUrl {
+        url: String,
+    },
+    /// Selects and imports a .wastickers or zip archive.
+    PickStickerArchive,
+    /// Asks for an audio file to use as a notification sound.
+    PickNotificationSound {
+        mention: bool,
+    },
+    /// Stores a chat's own notification sound.
+    SetChatSound {
+        chat: ChatId,
+        sound: Option<crate::settings::NotificationSound>,
+    },
+    /// Asks for an audio file for one chat's notifications.
+    PickChatSound(ChatId),
+    /// Asks for a folder for new downloads.
+    PickDownloadFolder,
+    /// Asks for a wallpaper image and copies it into the state directory.
+    PickWallpaperImage,
+    /// Deletes the copied wallpaper image.
+    RemoveWallpaperImage,
+    /// Changes our display name and About text; `None` keeps the current one.
+    SetProfile {
+        name: Option<String>,
+        about: Option<String>,
+    },
+    /// Asks for a picture and makes it our profile picture.
+    PickProfilePicture,
+    /// Internal: a picked picture, cropped and encoded as JPEG.
+    SetProfilePicture(Vec<u8>),
+    /// Renames a group on WhatsApp, for everyone in it.
+    SetGroupName {
+        chat: ChatId,
+        name: String,
+    },
+    /// Asks for a picture and makes it the group's photo.
+    PickGroupPicture(ChatId),
+    /// Sets the group's photo to a JPEG, or removes it with `None`.
+    SetGroupPicture {
+        chat: ChatId,
+        jpeg: Option<Vec<u8>>,
+    },
+    /// Internal: WhatsApp answered a change to a group's name or photo.
+    GroupEdited {
+        chat: ChatId,
+        edit: GroupEdit,
+        result: Result<(), String>,
+    },
+    /// Internal: the server accepted a profile change.
+    ProfileSaved {
+        name: Option<String>,
+        about: Option<String>,
+        picture: bool,
+    },
+    /// Where new downloads go; `None` is the cache.
+    SetDownloadFolder(Option<std::path::PathBuf>),
+    /// Whether archived chats stay archived when a new message arrives or is
+    /// sent; when not, a new message unarchives the chat here.
+    SetKeepChatsArchived(bool),
+    /// The machine woke up from sleep: a link open across it can still look
+    /// established while nothing arrives, so reconnect it now.
+    Resumed,
+    /// Asks where to save a copy of an attachment, then copies it there.
+    SaveAttachmentAs {
+        source: std::path::PathBuf,
+        name: String,
+    },
+    /// Opens the log, or shows it in its folder, off the interface thread;
+    /// only a failure reports back.
+    OpenLog(PathBuf),
+    /// Asks for one folder, then saves every named attachment into it.
+    SaveAttachments {
+        files: Vec<(std::path::PathBuf, String)>,
+    },
+    /// Reads and decodes an image file off the UI thread for clipboard writing.
+    PrepareClipboardImage(PathBuf),
+    /// Deletes an imported pack directory.
+    DeleteStickerPack {
+        dir: PathBuf,
+    },
+    /// Internal pack-import result. An empty error means the picker was canceled.
+    StickerPackImported {
+        result: Result<String, String>,
+    },
+    /// Downloads a sticker pack shared in a chat so it can be viewed.
+    ViewStickerPack {
+        chat: ChatId,
+        message: String,
+    },
+    /// Internal: a shared sticker pack finished downloading.
+    StickerPackViewed {
+        result: Result<(StickerPack, String), String>,
+    },
+    /// Copies a viewed pack into the packs here.
+    AddStickerPack {
+        dir: PathBuf,
+        name: String,
+    },
+    /// Sends a pack as a WhatsApp sticker pack message.
+    SendStickerPack {
+        chat: ChatId,
+        dir: PathBuf,
+    },
+    /// Chooses a picture to make a sticker from.
+    PickStickerPicture,
+    /// Internal: the chosen picture, its size, and whether it has see-through
+    /// pixels; or an empty error when the choice was cancelled.
+    StickerPicturePicked {
+        result: Result<(PathBuf, u32, u32, bool), String>,
+    },
+    /// Makes a sticker from a picture, then adds it to favorites or, with a
+    /// chat, sends it there.
+    MakeSticker {
+        source: PathBuf,
+        crop: crate::model::StickerCrop,
+        transparent: bool,
+        emojis: Vec<String>,
+        chat: Option<ChatId>,
+        quoting: Option<crate::model::ReplyTarget>,
+    },
+    /// Internal: a made sticker, and where it goes.
+    StickerMade {
+        result: Result<PathBuf, String>,
+        chat: Option<ChatId>,
+        quoting: Option<crate::model::ReplyTarget>,
+    },
+    /// Reads a staged picture's size, so the cropper can open on it.
+    InspectPicture {
+        target: crate::model::AttachmentId,
+        path: PathBuf,
+    },
+    /// Internal: the inspected picture's size, or why it could not be read.
+    PictureInspected {
+        target: crate::model::AttachmentId,
+        result: Result<(u32, u32), String>,
+    },
+    /// Turns and crops a staged picture, writing the result beside the media
+    /// cache so it can be sent in place of the original.
+    ApplyPictureEdit {
+        target: crate::model::AttachmentId,
+        source: crate::model::PictureSource,
+        width: u32,
+        height: u32,
+        crop: crate::model::PictureCrop,
+        turns: u8,
+    },
+    /// Internal: the edited picture, ready to replace the staged attachment.
+    PictureEdited {
+        target: crate::model::AttachmentId,
+        result: Result<PathBuf, String>,
+    },
+    /// Creates an empty local sticker pack under the given name.
+    CreateStickerPack {
+        name: String,
+    },
+    /// Files a sticker into a local pack by its content, or takes it out.
+    /// The sticker's own file stays where it is.
+    SetStickerPack {
+        pack: PathBuf,
+        sticker: PathBuf,
+        member: bool,
+    },
+    /// Saves a name through contact sync. `first_name` is the short display
+    /// name; `to_phone` also adds it to the phone's address book.
+    SaveContact {
+        id: String,
+        full_name: String,
+        first_name: Option<String>,
+        to_phone: bool,
+    },
+    /// Internal contact-save result.
+    ContactSaved {
+        generation: u64,
+        id: String,
+        name: String,
+        first_name: Option<String>,
+        error: Option<String>,
+    },
+    /// Checks a number, optionally saves it, and opens its chat.
+    NewContact {
+        request: u64,
+        phone: String,
+        full_name: Option<String>,
+        first_name: Option<String>,
+        to_phone: bool,
+    },
+    /// Internal number-lookup result.
+    ContactChecked {
+        generation: u64,
+        request: u64,
+        phone: String,
+        full_name: Option<String>,
+        first_name: Option<String>,
+        to_phone: bool,
+        registered: Result<bool, String>,
+    },
+    /// Downloads and sends a GIF as a short looping video.
+    SendGif {
+        chat: ChatId,
+        gif: Gif,
+        quoting: Option<crate::model::ReplyTarget>,
+    },
+    /// Searches GIPHY or lists trending results for an empty query.
+    SearchGifs {
+        query: String,
+        key: String,
+    },
+    /// Loads recent and saved stickers for the picker.
+    RecentStickers,
+    React {
+        chat: ChatId,
+        message: String,
+        emoji: String,
+    },
+    SetArchived(ChatId, bool),
+    /// Leaves a group or channel. `archive` also hides the chat in Archived.
+    LeaveGroup {
+        chat: ChatId,
+        archive: bool,
+    },
+    /// Deletes a chat on the phone, then here once the phone agreed.
+    DeleteChat(ChatId),
+    /// Whether the phone deleted a chat requested through `DeleteChat`.
+    ChatDeleted {
+        chat: ChatId,
+        deleted: bool,
+        through: i64,
+    },
+    /// Clears a chat's messages on the phone, then here once the phone
+    /// agreed. The chat itself stays.
+    ClearChat(ChatId),
+    /// Whether the phone cleared a chat requested through `ClearChat`.
+    ChatCleared {
+        chat: ChatId,
+        cleared: bool,
+        through: i64,
+    },
+    SetPinned(ChatId, bool),
+    /// Pins or unpins one message for everyone in the chat.
+    SetMessagePinned {
+        chat: ChatId,
+        message: String,
+        pinned: bool,
+    },
+    /// Result of a pin or unpin request.
+    MessagePinned {
+        chat: ChatId,
+        message: String,
+        pinned: bool,
+        /// When the click was made. An older answer cannot overwrite a newer one.
+        at: i64,
+        /// Which attempt this answer belongs to.
+        generation: u64,
+        /// The link the request was sent on: an answer that outlives a
+        /// logout must not write the next account's archive.
+        session: u64,
+        expires_at: i64,
+        result: Result<(), String>,
+    },
+    /// Marks a chat as a favorite, or removes the mark, here and on the phone.
+    SetFavorite(ChatId, bool),
+    /// The phone answered a favorites list sent at `at` holding the queued
+    /// changes up to `through`.
+    FavoritesSent {
+        through: i64,
+        at: i64,
+        success: bool,
+    },
+    PairWithPhone(String),
+    /// Unlinks the device remotely and locally.
+    Unlink,
+    /// Unlinks this account and deletes its local folders.
+    RemoveAccount,
+    Reconnect,
+    /// Use this proxy setting and reconnect. Empty follows the environment.
+    SetProxy(String),
+    /// Sets aside an unreadable archive and the linked session, then starts
+    /// over with a new archive and a new link.
+    StartOverArchive,
+    /// Whether the person is looking at ZapFast. While they are not, the
+    /// linked phone keeps receiving push notifications.
+    SetOnline(bool),
+    Shutdown,
+    /// Internal send result.
+    Sent {
+        chat: ChatId,
+        id: String,
+        error: Option<String>,
+    },
+    /// Internal attachment-download result.
+    Downloaded {
+        card: Option<usize>,
+        chat: ChatId,
+        id: String,
+        result: Result<PathBuf, String>,
+    },
+    /// Internal motion-clip download result.
+    MotionDownloaded {
+        chat: ChatId,
+        id: String,
+        result: Result<PathBuf, String>,
+    },
+    /// Internal recent-sticker download result.
+    StickerFetched {
+        hash: String,
+        result: Result<PathBuf, String>,
+    },
+    /// Internal profile-picture result.
+    AvatarFetched {
+        id: String,
+        full: bool,
+        path: Option<PathBuf>,
+    },
+    /// Internal retryable profile-picture failure.
+    AvatarFailed {
+        id: String,
+        full: bool,
+    },
+    /// Internal account about-text result.
+    MeInfo {
+        about: Option<String>,
+    },
+    /// Internal GIPHY result.
+    GifResults {
+        query: String,
+        results: Result<Vec<Gif>, GifError>,
+    },
+    /// Measures this account's media cache for Settings, answered by
+    /// `Event::StorageStats` with the same `token`.
+    LoadStorageStats {
+        token: u64,
+    },
+    /// Deletes the files in this account's media cache, never the archive,
+    /// so attachments download again when viewed. Answered like
+    /// `LoadStorageStats`, with `cleared` set.
+    ClearMediaCache {
+        token: u64,
+    },
+    /// Internal: a measurement made off the runtime, after a clear when
+    /// `cleared`.
+    StorageMeasured {
+        stats: Option<StorageStats>,
+        token: u64,
+        cleared: bool,
+    },
+    /// Internal file-picker result.
+    Picked {
+        chat: ChatId,
+        paths: Vec<PathBuf>,
+        documents: bool,
+    },
+    /// The interface's answer to [`Event::PickRequest`] `id`: the paths
+    /// chosen, none when cancelled.
+    PickAnswer {
+        id: u64,
+        paths: Vec<PathBuf>,
+    },
+    /// Internal uploaded attachment ready for archiving and sending.
+    Outbound {
+        chat: ChatId,
+        row: Box<Message>,
+        raw: Vec<u8>,
+    },
+    /// Internal send audience. The sender waits for it to be archived.
+    GroupRecipients {
+        chat: ChatId,
+        id: String,
+        recipients: Vec<String>,
+        lids: Vec<(String, String)>,
+        stored: tokio::sync::mpsc::UnboundedSender<bool>,
+    },
+    /// Internal group metadata result.
+    GroupInfo {
+        chat: ChatId,
+        /// Metadata request operation that produced this reply.
+        request_generation: u64,
+        name: Option<String>,
+        description: String,
+        /// Description notice generation when this metadata was requested.
+        description_generation: u64,
+        participants: Vec<String>,
+        read_only: bool,
+        ephemeral_expiration: Option<u32>,
+        ephemeral_setting_timestamp: Option<i64>,
+        /// The chat's leave generation when this metadata was asked for. A
+        /// snapshot older than a confirmed leave cannot undo it.
+        leave_generation: u64,
+        /// Whether only admins may edit the group's name and photo.
+        info_locked: bool,
+        /// Whether we are an admin of the group.
+        admin: bool,
+        /// The chat's rename generation when this metadata was asked for. A
+        /// snapshot older than a rename made here cannot restore the old name.
+        subject_generation: u64,
+    },
+    /// Internal pairing-code result.
+    PairCode {
+        result: Result<String, String>,
+    },
+    /// Internal account read-receipt setting.
+    ReceiptsPrivacy {
+        disabled: bool,
+    },
+    /// Full account privacy snapshot, or a failed fetch.
+    AccountPrivacy {
+        values: Vec<(crate::privacy::PrivacyKind, crate::privacy::PrivacyChoice)>,
+        failed: bool,
+    },
+    /// Asks the phone for the account privacy snapshot again.
+    FetchAccountPrivacy,
+    /// Writes one account privacy category on the phone.
+    SetAccountPrivacy {
+        kind: crate::privacy::PrivacyKind,
+        choice: crate::privacy::PrivacyChoice,
+    },
+    /// A confirmed SET for one category.
+    AccountPrivacySaved {
+        kind: crate::privacy::PrivacyKind,
+    },
+    /// A failed SET; the interface restores the last snapshot.
+    AccountPrivacyFailed {
+        kind: crate::privacy::PrivacyKind,
+    },
+    /// Internal: followed channels and whether each is muted on the server.
+    ChannelMutes(Vec<(String, bool)>),
+    /// Internal: the pictures of followed channels, or `None` when the list
+    /// could not be read.
+    ChannelPictures(Option<Vec<(ChatId, ChannelPicture)>>),
+    /// Looks up the group behind an invite code without joining.
+    PreviewInvite(String),
+    /// Joins the group behind an invite code.
+    JoinInvite(String),
+    /// Internal result of joining through an invite.
+    InviteJoined {
+        code: String,
+        result: Result<(ChatId, bool), String>,
+    },
+    /// Ask GitHub whether a newer release exists.
+    #[cfg(feature = "ui")]
+    CheckForUpdates,
+    #[cfg(feature = "ui")]
+    InspectUpdate,
+    #[cfg(feature = "ui")]
+    DownloadUpdate {
+        release: crate::updates::Release,
+        source: crate::updates::Source,
+    },
+    #[cfg(feature = "ui")]
+    InstallUpdate {
+        prepared: Box<crate::updates::Prepared>,
+        arguments: Vec<String>,
+    },
+}
+
+#[derive(Debug)]
+pub enum Event {
+    InteractiveReplyState {
+        chat: ChatId,
+        message: String,
+        pending: bool,
+    },
+    PollCreated {
+        chat: ChatId,
+        error: Option<String>,
+    },
+    /// How many chats these messages may be forwarded to at once: one when
+    /// any of them was forwarded many times, as on WhatsApp.
+    ForwardLimit {
+        from_chat: ChatId,
+        messages: Vec<String>,
+        limit: usize,
+    },
+    PollVoted {
+        chat: ChatId,
+        message: String,
+        error: Option<String>,
+    },
+    Link(LinkStatus),
+    /// Linked account identity.
+    Me {
+        id: String,
+        /// Our privacy id (`@lid`), when known.
+        lid: Option<String>,
+        name: Option<String>,
+        about: Option<String>,
+    },
+    /// Full chat list, newest first.
+    Chats(Vec<Chat>),
+    /// Every label in creation order. Chats carry the labels they wear.
+    Labels(Vec<crate::model::Label>),
+    /// Unsent text stored for each chat, sent once at startup.
+    Drafts(Vec<(ChatId, String)>),
+    /// The starred messages of one chat, for the mark in the conversation.
+    Stars {
+        chat: ChatId,
+        ids: Vec<String>,
+    },
+    /// A star that changed in the archive: one the server accepted for a
+    /// click here (`local`), or one made on the phone or another device.
+    StarChanged {
+        chat: ChatId,
+        message: String,
+        starred: bool,
+        local: bool,
+    },
+    /// The starred messages, newest star first.
+    StarredList(Vec<crate::archive::Starred>),
+    /// Messages in one chat matching a search, newest first, echoing the
+    /// query and range asked for so a stale answer can be told apart.
+    ChatHits {
+        chat: ChatId,
+        query: String,
+        from: Option<i64>,
+        until: Option<i64>,
+        messages: Vec<Message>,
+        /// Whether the archive held more matches than `messages` carries, so
+        /// the pane can say so instead of dropping them silently.
+        truncated: bool,
+    },
+    /// One chat's media, documents and links, newest first, for the info
+    /// panel, or why they could not be listed.
+    ChatShared {
+        request: u64,
+        result: Result<crate::model::ChatMedia, String>,
+    },
+    /// What the info panel lists for a chat changed in the archive: a
+    /// picture, a video, a document or a linked text was filed, imported,
+    /// edited, revoked or deleted, or the chat was cleared.
+    ChatSharedChanged(ChatId),
+    /// A page of a chat's photos and playable videos, oldest first, answering
+    /// `Command::LoadChatMedia` with the `around` it was asked with.
+    ChatMedia {
+        chat: ChatId,
+        around: Option<String>,
+        items: Vec<crate::model::MediaItem>,
+    },
+    ChatUpdated(Box<Chat>),
+    /// Active pins of one chat, for the line under its header.
+    Pins {
+        chat: ChatId,
+        items: Vec<crate::archive::Pinned>,
+    },
+    /// A pin the server accepted, or refused, for one message.
+    PinChanged {
+        chat: ChatId,
+        message: String,
+        pinned: bool,
+    },
+    /// Chat messages in ascending order. `older` prepends them; `complete`
+    /// means the archive has no earlier rows.
+    Messages {
+        chat: ChatId,
+        messages: Vec<Message>,
+        older: bool,
+        complete: bool,
+    },
+    MessageUpdated(Box<Message>),
+    /// The account's media cache as measured, `None` when it could not be
+    /// read. `cleared` says the cache was just emptied, so files the
+    /// interface still points into it are gone.
+    StorageStats {
+        stats: Option<StorageStats>,
+        token: u64,
+        cleared: bool,
+    },
+    /// Files selected for the composer, to go as documents when `documents`.
+    Picked {
+        chat: ChatId,
+        paths: Vec<PathBuf>,
+        documents: bool,
+    },
+    /// A file dialog for the interface to show, when it shows them itself
+    /// (see [`crate::pick`]). Answer it with [`Command::PickAnswer`].
+    PickRequest(crate::pick::Request),
+    /// Live incoming message for desktop notification.
+    Incoming {
+        chat: ChatId,
+        message: Box<Message>,
+    },
+    Contacts(Vec<Contact>),
+    /// Message search results with their query, newest first.
+    SearchHits {
+        query: String,
+        messages: Vec<Message>,
+    },
+    Typing {
+        chat: ChatId,
+        sender: String,
+        composing: bool,
+    },
+    Presence {
+        id: String,
+        online: bool,
+        last_seen: Option<i64>,
+    },
+    Avatar {
+        id: String,
+        full: bool,
+        path: Option<PathBuf>,
+    },
+    MessageDeleted {
+        chat: ChatId,
+        id: String,
+    },
+    /// A chat was deleted here or on a linked device.
+    ChatRemoved {
+        chat: ChatId,
+    },
+    /// A chat's messages were cleared while the chat itself stays.
+    ChatCleared {
+        chat: ChatId,
+        through: i64,
+    },
+    /// GIF search results or failure.
+    Gifs {
+        query: String,
+        results: Result<Vec<Gif>, GifError>,
+    },
+    /// A picture chosen for the sticker maker: its file, size, and whether it
+    /// has see-through pixels.
+    StickerPicture {
+        path: PathBuf,
+        width: u32,
+        height: u32,
+        transparent: bool,
+    },
+    /// A staged picture's size, so the cropper can open on it.
+    PictureInspected {
+        target: crate::model::AttachmentId,
+        result: Result<(u32, u32), String>,
+    },
+    /// An edited picture, ready to replace the staged attachment, or why it
+    /// could not be written.
+    PictureEdited {
+        target: crate::model::AttachmentId,
+        result: Result<PathBuf, String>,
+    },
+    /// A shared sticker pack, ready to view, with its publisher; or why it
+    /// could not be opened.
+    StickerPackPreview(Result<(StickerPack, String), String>),
+    /// Favorite stickers, packs, recent stickers, and stickers others sent,
+    /// for the picker, with the emojis each sticker is tagged with.
+    Stickers {
+        favorites: Vec<PathBuf>,
+        packs: Vec<StickerPack>,
+        recent: Vec<PathBuf>,
+        received: Vec<PathBuf>,
+        emojis: std::collections::HashMap<PathBuf, Vec<String>>,
+    },
+    Media {
+        card: Option<usize>,
+        chat: ChatId,
+        message: String,
+        result: Result<PathBuf, String>,
+    },
+    /// A motion photo's clip finished downloading, or failed.
+    Motion {
+        chat: ChatId,
+        message: String,
+        result: Result<PathBuf, String>,
+    },
+    /// Link-time history sync state.
+    Syncing(bool),
+    /// Reported history-sync percentage.
+    SyncProgress(u32),
+    /// Phone-history result. `more` indicates whether another request may help.
+    /// `silent` marks a background page the reader did not ask for, which must
+    /// not count against the phone's answers.
+    OlderFetched {
+        chat: ChatId,
+        more: bool,
+        silent: bool,
+    },
+    /// Whether account privacy disables direct-chat read receipts.
+    ReceiptsPrivacy {
+        disabled: bool,
+    },
+    /// Account privacy snapshot from the phone, or a failed fetch.
+    AccountPrivacy {
+        values: Vec<(crate::privacy::PrivacyKind, crate::privacy::PrivacyChoice)>,
+        failed: bool,
+    },
+    /// A confirmed SET for one category.
+    AccountPrivacySaved {
+        kind: crate::privacy::PrivacyKind,
+    },
+    /// A failed SET.
+    AccountPrivacyFailed {
+        kind: crate::privacy::PrivacyKind,
+    },
+    /// How many chats this account may pin: more with WhatsApp Plus.
+    PinLimit(usize),
+    /// The followed message's receipts, sent when following starts and
+    /// whenever one arrives.
+    Receipts(crate::model::MessageReceipts),
+    /// An audio file chosen for one chat's notifications.
+    ChatSoundPicked {
+        chat: ChatId,
+        path: std::path::PathBuf,
+    },
+    /// A folder chosen for new downloads.
+    DownloadFolderPicked(std::path::PathBuf),
+    /// The copy of a chosen wallpaper image, or why it could not be used.
+    WallpaperImagePicked(Result<std::path::PathBuf, String>),
+    /// An audio file chosen as a notification sound.
+    NotificationSoundPicked {
+        mention: bool,
+        path: std::path::PathBuf,
+    },
+    /// The group behind an invite link.
+    InvitePreview {
+        code: String,
+        result: Result<crate::model::InviteInfo, String>,
+    },
+    /// Joining through an invite finished; `pending` means admins must
+    /// approve first.
+    InviteJoined {
+        code: String,
+        result: Result<(ChatId, bool), String>,
+    },
+    /// Number lookup failed without opening a chat.
+    ContactFailed {
+        request: u64,
+        error: String,
+    },
+    /// Number lookup succeeded and its chat can open.
+    ContactReady {
+        request: u64,
+        id: String,
+        name: Option<String>,
+    },
+    /// The current call changed state. The UI renders this and nothing else.
+    Call(Box<crate::calls::CallUpdate>),
+    /// The devices the call screen can offer.
+    CallDevices(Box<crate::calls::DeviceList>),
+    /// The account's call entries, newest first, for the Calls page.
+    CallLog(Vec<Message>),
+    /// One video frame for the call screen: our own preview, the peer's picture, or both.
+    CallVideo {
+        local: Option<Arc<crate::video_frames::CallFrame>>,
+        remote: Option<Arc<crate::video_frames::CallFrame>>,
+        /// Whose picture `remote` is on a group call, by chat id; `None` for the peer of a
+        /// one-to-one call.
+        from: Option<String>,
+    },
+    /// A file for the interface to open in its default application (or,
+    /// failing that, show in its folder). Only a core without the egui
+    /// interface sends it; that one opens files itself.
+    OpenPath(PathBuf),
+    /// Informational toast message.
+    Info(String),
+    /// A decoded image ready to be written to the clipboard on the interface thread.
+    ClipboardImage(Result<crate::model::DecodedImage, String>),
+    /// A newer release than this build exists.
+    #[cfg(feature = "ui")]
+    UpdateAvailable {
+        version: String,
+        url: String,
+    },
+    #[cfg(feature = "ui")]
+    UpdateSupport(Result<crate::updates::Installation, String>),
+    #[cfg(feature = "ui")]
+    UpdateProgress {
+        received: u64,
+        total: u64,
+    },
+    #[cfg(feature = "ui")]
+    UpdateDownloaded(Result<Box<crate::updates::Prepared>, String>),
+    #[cfg(feature = "ui")]
+    UpdateInstalling(Result<(), String>),
+    /// A send was refused before anything left this computer. It returns
+    /// what was being sent so the user loses neither text nor a recording.
+    SendRefused {
+        chat: ChatId,
+        quoting: Option<crate::model::ReplyTarget>,
+        unsent: Unsent,
+        reason: Refusal,
+    },
+    /// The account folders were deleted after RemoveAccount.
+    AccountRemoved,
+    Error(String),
+    /// A change to a group's name or photo went to WhatsApp (`saving`), or
+    /// WhatsApp answered it.
+    GroupSaving {
+        chat: ChatId,
+        saving: bool,
+    },
+}
+
+/// A change to a group's info, as sent to WhatsApp.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum GroupEdit {
+    /// The new subject.
+    Name(String),
+    /// A new photo, or none.
+    Picture { removed: bool },
+}
+
+/// Where a channel's picture lives on WhatsApp's media servers, as the
+/// channel's metadata names it. Channels have no profile picture a contact
+/// lookup would find.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct ChannelPicture {
+    /// The full-size picture's direct path.
+    pub full: Option<String>,
+    /// The small preview's direct path.
+    pub preview: Option<String>,
+}
+
+/// Why the worker refused a send.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Refusal {
+    /// There is no WhatsApp connection.
+    Offline,
+    /// The message being replied to cannot be quoted, because its row or its
+    /// original protobuf is missing, unreadable, or deleted. Sending anyway
+    /// would deliver the reply without its quote.
+    QuoteUnavailable,
+}
+
+/// The content of a refused send.
+#[derive(Clone, Debug, PartialEq)]
+pub enum Unsent {
+    /// Composer text in wire form, with `@user` mention tokens.
+    Text(String),
+    /// The spot a location was to send, so the dialog can come back with it.
+    Location {
+        latitude: f64,
+        longitude: f64,
+    },
+    Voice(Vec<f32>),
+    Files {
+        paths: Vec<PathBuf>,
+        documents: bool,
+        caption: Option<String>,
+    },
+    Image {
+        width: u32,
+        height: u32,
+        rgba: Vec<u8>,
+        caption: Option<String>,
+    },
+    Sticker,
+    Gif,
+}
+
+#[cfg(not(feature = "ui"))]
+pub use crate::wake::Waker;
+/// Cross-thread window wake handle: repaints whichever window exists.
+#[cfg(feature = "ui")]
+pub use fastframe_shell::Waker;
+
+/// UI handle to the backend runtime.
+pub struct Backend {
+    startup: Option<tokio::sync::oneshot::Sender<()>>,
+    commands: mpsc::UnboundedSender<Command>,
+    events: std::sync::mpsc::Receiver<Event>,
+    thread: Option<std::thread::JoinHandle<()>>,
+    /// Its file dialogs waiting on the interface, answered with no paths
+    /// when it shuts down or is dropped.
+    dialogs: Arc<crate::pick::Dialogs>,
+    offline: bool,
+    #[cfg(any(test, feature = "demo"))]
+    demo_commands: Option<std::sync::Mutex<Vec<Command>>>,
+}
+
+impl Backend {
+    pub fn spawn(dirs: AccountDirs, waker: impl Into<crate::wake::Waker>) -> Self {
+        Self::start(dirs, waker.into(), false)
+    }
+
+    /// Like [`Backend::spawn`], but an archive that needs no migration opens
+    /// at once, and its chats (with the account, contacts, labels and drafts)
+    /// reach the interface before the startup permit. The permit still holds
+    /// everything else: migrations, backfills and the connection.
+    pub fn spawn_early(dirs: AccountDirs, waker: impl Into<crate::wake::Waker>) -> Self {
+        Self::start(dirs, waker.into(), true)
+    }
+
+    fn start(dirs: AccountDirs, waker: crate::wake::Waker, early: bool) -> Self {
+        let (command_tx, command_rx) = mpsc::unbounded_channel();
+        let (event_tx, event_rx) = std::sync::mpsc::channel();
+        let runtime = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(2)
+            .thread_name("zapfast-runtime")
+            .enable_all()
+            .build()
+            .expect("unable to start the async runtime");
+        let worker_commands = command_tx.clone();
+        let (startup, permit) = tokio::sync::oneshot::channel();
+        let dialogs = Arc::new(crate::pick::Dialogs::default());
+        let worker_dialogs = dialogs.clone();
+        let thread = std::thread::Builder::new()
+            .name("zapfast-backend".to_string())
+            .spawn(move || {
+                let worker = worker::run(
+                    dirs,
+                    event_tx,
+                    worker_commands,
+                    command_rx,
+                    waker,
+                    worker_dialogs.clone(),
+                    worker::Startup { permit, early },
+                );
+                drive(runtime, &worker_dialogs, worker);
+            })
+            .expect("unable to start the backend thread");
+
+        Self {
+            startup: Some(startup),
+            commands: command_tx,
+            events: event_rx,
+            thread: Some(thread),
+            dialogs,
+            offline: false,
+            #[cfg(any(test, feature = "demo"))]
+            demo_commands: None,
+        }
+    }
+
+    /// Creates a disconnected backend and event sender for demos and tests.
+    pub fn detached() -> (Self, std::sync::mpsc::Sender<Event>) {
+        let (command_tx, _command_rx) = mpsc::unbounded_channel();
+        let (event_tx, event_rx) = std::sync::mpsc::channel();
+        (
+            Self {
+                startup: None,
+                commands: command_tx,
+                events: event_rx,
+                thread: None,
+                dialogs: Default::default(),
+                offline: true,
+                #[cfg(any(test, feature = "demo"))]
+                demo_commands: None,
+            },
+            event_tx,
+        )
+    }
+
+    /// A detached backend whose startup permit the test can watch.
+    #[cfg(all(test, feature = "ui"))]
+    pub(crate) fn detached_with_startup() -> (Self, tokio::sync::oneshot::Receiver<()>) {
+        let (mut backend, _) = Self::detached();
+        let (startup, started) = tokio::sync::oneshot::channel();
+        backend.startup = Some(startup);
+        (backend, started)
+    }
+
+    /// Records commands without a runtime or network connection.
+    #[cfg(all(test, feature = "ui"))]
+    pub(crate) fn recording() -> (Self, mpsc::UnboundedReceiver<Command>) {
+        let (backend, inbox, _) = Self::recording_with_events();
+        (backend, inbox)
+    }
+
+    /// Records commands and lets a test deliver events.
+    #[cfg(all(test, feature = "ui"))]
+    pub(crate) fn recording_with_events() -> (
+        Self,
+        mpsc::UnboundedReceiver<Command>,
+        std::sync::mpsc::Sender<Event>,
+    ) {
+        let (mut backend, events) = Self::detached();
+        let (commands, inbox) = mpsc::unbounded_channel();
+        backend.commands = commands;
+        backend.offline = false;
+        (backend, inbox, events)
+    }
+
+    /// Disables commands except shutdown.
+    pub fn set_offline(&mut self, offline: bool) {
+        self.offline = offline;
+    }
+
+    pub fn is_offline(&self) -> bool {
+        self.offline
+    }
+
+    pub fn send(&self, command: Command) {
+        if self.offline && !matches!(command, Command::Shutdown) {
+            #[cfg(any(test, feature = "demo"))]
+            if let Some(commands) = &self.demo_commands {
+                commands
+                    .lock()
+                    .unwrap_or_else(|p| p.into_inner())
+                    .push(command);
+            }
+            return;
+        }
+        let _ = self.commands.send(command);
+    }
+
+    /// Captures real UI commands for an offline demo's local responder.
+    #[cfg(all(feature = "ui", any(test, feature = "demo")))]
+    pub(crate) fn record_demo_commands(&mut self) {
+        assert!(self.offline && self.thread.is_none());
+        self.demo_commands = Some(Default::default());
+    }
+
+    #[cfg(all(feature = "ui", any(test, feature = "demo")))]
+    pub(crate) fn take_demo_commands(&self) -> Vec<Command> {
+        self.demo_commands
+            .as_ref()
+            .map_or_else(Vec::new, |commands| {
+                std::mem::take(&mut *commands.lock().unwrap_or_else(|p| p.into_inner()))
+            })
+    }
+
+    pub fn poll(&self) -> Vec<Event> {
+        self.events.try_iter().collect()
+    }
+
+    /// Start database migrations only after the first window frame has been
+    /// acknowledged by the update helper. Dropping this permit cancels startup.
+    pub fn take_startup(&mut self) -> Option<tokio::sync::oneshot::Sender<()>> {
+        self.startup.take()
+    }
+
+    pub fn shutdown(&mut self) {
+        self.startup.take();
+        self.send(Command::Shutdown);
+        self.dialogs.close();
+        if let Some(thread) = self.thread.take() {
+            let _ = thread.join();
+        }
+    }
+}
+
+/// Runs the worker on its runtime, then shuts the runtime down. The worker's
+/// dialogs are closed before the runtime goes however the worker ends, a
+/// panic included: a dialog left waiting would hold a blocking thread, which
+/// dropping the runtime waits for without end.
+fn drive(
+    runtime: tokio::runtime::Runtime,
+    dialogs: &crate::pick::Dialogs,
+    worker: impl std::future::Future<Output = ()>,
+) {
+    struct Close<'a>(&'a crate::pick::Dialogs);
+    impl Drop for Close<'_> {
+        fn drop(&mut self) {
+            self.0.close();
+        }
+    }
+    // Declared after `runtime`, so on unwinding it is dropped first.
+    let close = Close(dialogs);
+    runtime.block_on(worker);
+    drop(close);
+    runtime.shutdown_timeout(Duration::from_secs(3));
+}
+
+impl Drop for Backend {
+    fn drop(&mut self) {
+        self.dialogs.close();
+    }
+}

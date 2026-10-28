@@ -1,0 +1,371 @@
+# empty query, no recent emoji
+""
+  😀 | 😀  :grinning: | grinning face
+  😃 | 😃  :smiley: | grinning face with big eyes
+  😄 | 😄  :smile: | grinning face with smiling eyes
+  😁 | 😁  :grin: | beaming face with smiling eyes
+  😆 | 😆  :laughing: | grinning squinting face
+  😅 | 😅  :sweat_smile: | grinning face with sweat
+# empty query, recent emoji (a skin-tone variant, a repeat, text, one without its selector)
+""
+  🦀 | 🦀  :crab: | crab
+  👍 | 👍  :+1: | thumbs up
+  🇧🇷 | 🇧🇷  :brazil: | flag: Brazil
+  ❤️ | ❤️  :heart: | red heart
+  😂 | 😂  :joy: | face with tears of joy
+  🎉 | 🎉  :tada: | party popper
+# queries
+"smile"
+  😄 | 😄  :smile: | grinning face with smiling eyes
+  😃 | 😃  :smiley: | grinning face with big eyes
+  😺 | 😺  :smiley_cat: | grinning cat
+  😸 | 😸  :smile_cat: | grinning cat with smiling eyes
+  😼 | 😼  :smirk_cat: | cat with wry smile
+  😅 | 😅  :sweat_smile: | grinning face with sweat
+"heart"
+  ❤️ | ❤️  :heart: | red heart
+  😍 | 😍  :heart_eyes: | smiling face with heart-eyes
+  😻 | 😻  :heart_eyes_cat: | smiling cat with heart-eyes
+  💗 | 💗  :heartpulse: | growing heart
+  💓 | 💓  :heartbeat: | beating heart
+  💟 | 💟  :heart_decoration: | heart decoration
+"zzzzqq"
+"+1"
+  👍 | 👍  :+1: | thumbs up
+"-1"
+  👎 | 👎  :-1: | thumbs down
+"100"
+  💯 | 💯  :100: | hundred points
+"thumbsup"
+  👍 | 👍  :+1: | thumbs up
+"thumbs"
+  👍 | 👍  :+1: | thumbs up
+  👎 | 👎  :-1: | thumbs down
+"joy"
+  😂 | 😂  :joy: | face with tears of joy
+  😹 | 😹  :joy_cat: | cat with tears of joy
+  🕹️ | 🕹️  :joystick: | joystick
+"laugh"
+  😆 | 😆  :laughing: | grinning squinting face
+  🤣 | 🤣  :rofl: | rolling on the floor laughing
+"cry"
+  😢 | 😢  :cry: | crying face
+  😿 | 😿  :crying_cat_face: | crying cat
+  🔮 | 🔮  :crystal_ball: | crystal ball
+  😭 | 😭  :sob: | loudly crying face
+"sob"
+  😭 | 😭  :sob: | loudly crying face
+"fire"
+  🔥 | 🔥  :fire: | fire
+  🧑‍🚒 | 🧑‍🚒  :firefighter: | firefighter
+  🚒 | 🚒  :fire_engine: | fire engine
+  🎆 | 🎆  :fireworks: | fireworks
+  🧨 | 🧨  :firecracker: | firecracker
+  🧯 | 🧯  :fire_extinguisher: | fire extinguisher
+"tada"
+  🎉 | 🎉  :tada: | party popper
+"crab"
+  🦀 | 🦀  :crab: | crab
+"brazil"
+  🇧🇷 | 🇧🇷  :brazil: | flag: Brazil
+"flag"
+  🎏 | 🎏  :flags: | carp streamer
+  ⛳ | ⛳  :golf: | flag in hole
+  📫 | 📫  :mailbox: | closed mailbox with raised flag
+  📪 | 📪  :mailbox_closed: | closed mailbox with lowered flag
+  📬 | 📬  :mailbox_with_mail: | open mailbox with raised flag
+  📭 | 📭  :mailbox_with_no_mail: | open mailbox with lowered flag
+"flag: brazil"
+"japan"
+  🗾 | 🗾  :japan: | map of Japan
+  👹 | 👹  :japanese_ogre: | ogre
+  👺 | 👺  :japanese_goblin: | goblin
+  🏯 | 🏯  :japanese_castle: | Japanese castle
+"aland"
+  🇦🇽 | 🇦🇽  :aland_islands: | flag: Åland Islands
+  🇳🇿 | 🇳🇿  :new_zealand: | flag: New Zealand
+"åland"
+"côte"
+"são"
+"cote d"
+"x"
+  ❌ | ❌  :x: | cross mark
+  🩻 | 🩻  :x_ray: | x-ray
+  ☺️ | ☺️  :relaxed: | smiling face
+  😑 | 😑  :expressionless: | expressionless face
+  😮‍💨 | 😮‍💨  :face_exhaling: | face exhaling
+  🤯 | 🤯  :exploding_head: | exploding head
+"e"
+  😑 | 😑  :expressionless: | expressionless face
+  🤯 | 🤯  :exploding_head: | exploding head
+  👁️‍🗨️ | 👁️‍🗨️  :eye_speech_bubble: | eye in speech bubble
+  👂 | 👂  :ear: | ear
+  🦻 | 🦻  :ear_with_hearing_aid: | ear with hearing aid
+  👀 | 👀  :eyes: | eyes
+"a"
+  🅰️ | 🅰️  :a: | A button (blood type)
+  😲 | 😲  :astonished: | astonished face
+  😧 | 😧  :anguished: | anguished face
+  😠 | 😠  :angry: | angry face
+  👽 | 👽  :alien: | alien
+  💢 | 💢  :anger: | anger symbol
+"  "
+"u+"
+":"
+  👱 | 👱  :blond_haired_person: | person: blond hair
+  🧔 | 🧔  :bearded_person: | person: beard
+  🧔‍♂️ | 🧔‍♂️  :man_beard: | man: beard
+  🧔‍♀️ | 🧔‍♀️  :woman_beard: | woman: beard
+  👨‍🦰 | 👨‍🦰  :red_haired_man: | man: red hair
+  👨‍🦱 | 👨‍🦱  :curly_haired_man: | man: curly hair
+"grinning face"
+  😀 | 😀  :grinning: | grinning face
+  😃 | 😃  :smiley: | grinning face with big eyes
+  😄 | 😄  :smile: | grinning face with smiling eyes
+  😅 | 😅  :sweat_smile: | grinning face with sweat
+"grinning-face"
+"face_with"
+  🫢 | 🫢  :face_with_open_eyes_and_hand_over_mouth: | face with open eyes and hand over mouth
+  🫣 | 🫣  :face_with_peeking_eye: | face with peeking eye
+  🤒 | 🤒  :face_with_thermometer: | face with thermometer
+  🤕 | 🤕  :face_with_head_bandage: | face with head-bandage
+  😵‍💫 | 😵‍💫  :face_with_spiral_eyes: | face with spiral eyes
+  🫤 | 🫤  :face_with_diagonal_mouth: | face with diagonal mouth
+"face with"
+  😃 | 😃  :smiley: | grinning face with big eyes
+  😄 | 😄  :smile: | grinning face with smiling eyes
+  😁 | 😁  :grin: | beaming face with smiling eyes
+  😅 | 😅  :sweat_smile: | grinning face with sweat
+  😂 | 😂  :joy: | face with tears of joy
+  😊 | 😊  :blush: | smiling face with smiling eyes
+"red heart"
+  ❤️ | ❤️  :heart: | red heart
+"heart_eyes"
+  😍 | 😍  :heart_eyes: | smiling face with heart-eyes
+  😻 | 😻  :heart_eyes_cat: | smiling cat with heart-eyes
+"kiss"
+  💋 | 💋  :kiss: | kiss mark
+  😘 | 😘  :kissing_heart: | face blowing a kiss
+  😗 | 😗  :kissing: | kissing face
+  😚 | 😚  :kissing_closed_eyes: | kissing face with closed eyes
+  😙 | 😙  :kissing_smiling_eyes: | kissing face with smiling eyes
+  😽 | 😽  :kissing_cat: | kissing cat
+"wave"
+  👋 | 👋  :wave: | waving hand
+  🌊 | 🌊  :ocean: | water wave
+"hand"
+  ✋ | ✋  :hand: | raised hand
+  🤭 | 🤭  :hand_over_mouth: | face with hand over mouth
+  🫰 | 🫰  :hand_with_index_finger_and_thumb_crossed: | hand with index finger and thumb crossed
+  🤝 | 🤝  :handshake: | handshake
+  🤾 | 🤾  :handball_person: | person playing handball
+  👜 | 👜  :handbag: | handbag
+"clap"
+  👏 | 👏  :clap: | clapping hands
+  🎬 | 🎬  :clapper: | clapper board
+"pray"
+  🙏 | 🙏  :pray: | folded hands
+  📿 | 📿  :prayer_beads: | prayer beads
+"muscle"
+  💪 | 💪  :muscle: | flexed biceps
+"ok_hand"
+  👌 | 👌  :ok_hand: | OK hand
+"ok"
+  🆗 | 🆗  :ok: | OK button
+  👌 | 👌  :ok_hand: | OK hand
+  🙆 | 🙆  :ok_person: | person gesturing OK
+  🙆‍♂️ | 🙆‍♂️  :ok_man: | man gesturing OK
+  🙆‍♀️ | 🙆‍♀️  :ok_woman: | woman gesturing OK
+  💔 | 💔  :broken_heart: | broken heart
+"v"
+  ✌️ | ✌️  :v: | victory hand
+  🤮 | 🤮  :vomiting_face: | face vomiting
+  🖖 | 🖖  :vulcan_salute: | vulcan salute
+  🧛 | 🧛  :vampire: | vampire
+  🧛‍♂️ | 🧛‍♂️  :vampire_man: | man vampire
+  🧛‍♀️ | 🧛‍♀️  :vampire_woman: | woman vampire
+"eyes"
+  👀 | 👀  :eyes: | eyes
+  😃 | 😃  :smiley: | grinning face with big eyes
+  😄 | 😄  :smile: | grinning face with smiling eyes
+  😁 | 😁  :grin: | beaming face with smiling eyes
+  😊 | 😊  :blush: | smiling face with smiling eyes
+  😍 | 😍  :heart_eyes: | smiling face with heart-eyes
+"pizza"
+  🍕 | 🍕  :pizza: | pizza
+"coffee"
+  ☕ | ☕  :coffee: | hot beverage
+"beer"
+  🍺 | 🍺  :beer: | beer mug
+  🍻 | 🍻  :beers: | clinking beer mugs
+"car"
+  🚗 | 🚗  :car: | automobile
+  🤸 | 🤸  :cartwheeling: | person cartwheeling
+  🥕 | 🥕  :carrot: | carrot
+  🎠 | 🎠  :carousel_horse: | carousel horse
+  🗂️ | 🗂️  :card_index_dividers: | card index dividers
+  📇 | 📇  :card_index: | card index
+"airplane"
+  ✈️ | ✈️  :airplane: | airplane
+  🛩️ | 🛩️  :small_airplane: | small airplane
+  🛫 | 🛫  :flight_departure: | airplane departure
+  🛬 | 🛬  :flight_arrival: | airplane arrival
+"rocket"
+  🚀 | 🚀  :rocket: | rocket
+"moon"
+  🌔 | 🌔  :moon: | waxing gibbous moon
+  🥮 | 🥮  :moon_cake: | moon cake
+  🌑 | 🌑  :new_moon: | new moon
+  🌒 | 🌒  :waxing_crescent_moon: | waxing crescent moon
+  🌓 | 🌓  :first_quarter_moon: | first quarter moon
+  🌕 | 🌕  :full_moon: | full moon
+"sun"
+  😎 | 😎  :sunglasses: | smiling face with sunglasses
+  🌻 | 🌻  :sunflower: | sunflower
+  🌄 | 🌄  :sunrise_over_mountains: | sunrise over mountains
+  🌅 | 🌅  :sunrise: | sunrise
+  ☀️ | ☀️  :sunny: | sun
+  🌞 | 🌞  :sun_with_face: | sun with face
+"star"
+  ⭐ | ⭐  :star: | star
+  🤩 | 🤩  :star_struck: | star-struck
+  🌟 | 🌟  :star2: | glowing star
+  🌠 | 🌠  :stars: | shooting star
+  ✡️ | ✡️  :star_of_david: | star of David
+  ☪️ | ☪️  :star_and_crescent: | star and crescent
+"sparkles"
+  ✨ | ✨  :sparkles: | sparkles
+"zap"
+  ⚡ | ⚡  :zap: | high voltage
+"rainbow"
+  🌈 | 🌈  :rainbow: | rainbow
+  🏳️‍🌈 | 🏳️‍🌈  :rainbow_flag: | rainbow flag
+"cat"
+  🐱 | 🐱  :cat: | cat face
+  🐈 | 🐈  :cat2: | cat
+  😺 | 😺  :smiley_cat: | grinning cat
+  😸 | 😸  :smile_cat: | grinning cat with smiling eyes
+  😹 | 😹  :joy_cat: | cat with tears of joy
+  😻 | 😻  :heart_eyes_cat: | smiling cat with heart-eyes
+"dog"
+  🐶 | 🐶  :dog: | dog face
+  🐕 | 🐕  :dog2: | dog
+  🦮 | 🦮  :guide_dog: | guide dog
+  🐕‍🦺 | 🐕‍🦺  :service_dog: | service dog
+  🌭 | 🌭  :hotdog: | hot dog
+"unicorn"
+  🦄 | 🦄  :unicorn: | unicorn
+"poop"
+  💩 | 💩  :hankey: | pile of poo
+"ghost"
+  👻 | 👻  :ghost: | ghost
+"skull"
+  💀 | 💀  :skull: | skull
+  ☠️ | ☠️  :skull_and_crossbones: | skull and crossbones
+  👲 | 👲  :man_with_gua_pi_mao: | person with skullcap
+"robot"
+  🤖 | 🤖  :robot: | robot
+"alien"
+  👽 | 👽  :alien: | alien
+  👾 | 👾  :space_invader: | alien monster
+"santa"
+  🎅 | 🎅  :santa: | Santa Claus
+"man"
+  👨 | 👨  :man: | man
+  🧔‍♂️ | 🧔‍♂️  :man_beard: | man: beard
+  🤦‍♂️ | 🤦‍♂️  :man_facepalming: | man facepalming
+  🤷‍♂️ | 🤷‍♂️  :man_shrugging: | man shrugging
+  👨‍⚕️ | 👨‍⚕️  :man_health_worker: | man health worker
+  👨‍🎓 | 👨‍🎓  :man_student: | man student
+"woman"
+  👩 | 👩  :woman: | woman
+  🧔‍♀️ | 🧔‍♀️  :woman_beard: | woman: beard
+  🤦‍♀️ | 🤦‍♀️  :woman_facepalming: | woman facepalming
+  🤷‍♀️ | 🤷‍♀️  :woman_shrugging: | woman shrugging
+  👩‍⚕️ | 👩‍⚕️  :woman_health_worker: | woman health worker
+  👩‍🎓 | 👩‍🎓  :woman_student: | woman student
+"family"
+  👪 | 👪  :family: | family
+  👨‍👩‍👦 | 👨‍👩‍👦  :family_man_woman_boy: | family: man, woman, boy
+  👨‍👩‍👧 | 👨‍👩‍👧  :family_man_woman_girl: | family: man, woman, girl
+  👨‍👩‍👧‍👦 | 👨‍👩‍👧‍👦  :family_man_woman_girl_boy: | family: man, woman, girl, boy
+  👨‍👩‍👦‍👦 | 👨‍👩‍👦‍👦  :family_man_woman_boy_boy: | family: man, woman, boy, boy
+  👨‍👩‍👧‍👧 | 👨‍👩‍👧‍👧  :family_man_woman_girl_girl: | family: man, woman, girl, girl
+"couple"
+  👫 | 👫  :couple: | woman and man holding hands
+  💏 | 💏  :couplekiss: | kiss
+  👩‍❤️‍💋‍👨 | 👩‍❤️‍💋‍👨  :couplekiss_man_woman: | kiss: woman, man
+  👨‍❤️‍💋‍👨 | 👨‍❤️‍💋‍👨  :couplekiss_man_man: | kiss: man, man
+  👩‍❤️‍💋‍👩 | 👩‍❤️‍💋‍👩  :couplekiss_woman_woman: | kiss: woman, woman
+  💑 | 💑  :couple_with_heart: | couple with heart
+"kiss_mn"
+"people holding hands"
+  🧑‍🤝‍🧑 | 🧑‍🤝‍🧑  :people_holding_hands: | people holding hands
+"light skin"
+"tone"
+  🥌 | 🥌  :curling_stone: | curling stone
+  🪦 | 🪦  :headstone: | headstone
+  💎 | 💎  :gem: | gem stone
+"skin tone"
+"keycap"
+  🔟 | 🔟  :keycap_ten: | keycap: 10
+  #️⃣ | #️⃣  :hash: | keycap: #
+  *️⃣ | *️⃣  :asterisk: | keycap: *
+  0️⃣ | 0️⃣  :zero: | keycap: 0
+  1️⃣ | 1️⃣  :one: | keycap: 1
+  2️⃣ | 2️⃣  :two: | keycap: 2
+"1"
+  💯 | 💯  :100: | hundred points
+  🥇 | 🥇  :1st_place_medal: | 1st place medal
+  🔢 | 🔢  :1234: | input numbers
+  1️⃣ | 1️⃣  :one: | keycap: 1
+  🔟 | 🔟  :keycap_ten: | keycap: 10
+  👍 | 👍  :+1: | thumbs up
+"10"
+  💯 | 💯  :100: | hundred points
+  🔟 | 🔟  :keycap_ten: | keycap: 10
+  🕙 | 🕙  :clock10: | ten o’clock
+  🕥 | 🕥  :clock1030: | ten-thirty
+"!"
+  🔛 | 🔛  :on: | ON! arrow
+  🆙 | 🆙  :up: | UP! button
+"?"
+"-"
+  👎 | 👎  :-1: | thumbs down
+  🇨🇩 | 🇨🇩  :congo_kinshasa: | flag: Congo - Kinshasa
+  🇨🇬 | 🇨🇬  :congo_brazzaville: | flag: Congo - Brazzaville
+  🦖 | 🦖  :t-rex: | T-Rex
+  📧 | 📧  :email: | e-mail
+  🚱 | 🚱  :non-potable_water: | non-potable water
+"_"
+  😅 | 😅  :sweat_smile: | grinning face with sweat
+  🙂 | 🙂  :slightly_smiling_face: | slightly smiling face
+  🙃 | 🙃  :upside_down_face: | upside-down face
+  🫠 | 🫠  :melting_face: | melting face
+  🥰 | 🥰  :smiling_face_with_three_hearts: | smiling face with hearts
+  😍 | 😍  :heart_eyes: | smiling face with heart-eyes
+"’"
+  🕛 | 🕛  :clock12: | twelve o’clock
+  🕐 | 🕐  :clock1: | one o’clock
+  🕑 | 🕑  :clock2: | two o’clock
+  🕒 | 🕒  :clock3: | three o’clock
+  🕓 | 🕓  :clock4: | four o’clock
+  🕔 | 🕔  :clock5: | five o’clock
+"“"
+  🈁 | 🈁  :koko: | Japanese “here” button
+  🈂️ | 🈂️  :sa: | Japanese “service charge” button
+  🈷️ | 🈷️  :u6708: | Japanese “monthly amount” button
+  🈶 | 🈶  :u6709: | Japanese “not free of charge” button
+  🈯 | 🈯  :u6307: | Japanese “reserved” button
+  🉐 | 🉐  :ideograph_advantage: | Japanese “bargain” button
+"ß"
+"İ"
+  😇 | 😇  :innocent: | smiling face with halo
+  👿 | 👿  :imp: | angry face with horns
+  🫵 | 🫵  :index_pointing_at_the_viewer: | index pointing at the viewer
+  💁 | 💁  :tipping_hand_person: | person tipping hand
+  🍦 | 🍦  :icecream: | soft ice cream
+  🍨 | 🍨  :ice_cream: | ice cream
+"ǅ"
+"Σ"
+# sweep: 9567 queries, sha256 ebf748cf99d21e465677ed2eadecfe97d2e2e340aa0e99ced90a4b658a5055a9

@@ -1,0 +1,14 @@
+# The GPL-sounds gate's own test: a library that embeds a Pidgin sound, which
+# scripts/gnui/check_gpl_sounds.py --self-test must reject. Never shipped.
+[package]
+name = "gpl_sound_fixture"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[lib]
+path = "lib.rs"
+crate-type = ["cdylib"]
+
+# Its own workspace, so it never joins the repository's.
+[workspace]

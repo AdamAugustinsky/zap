@@ -1,7 +1,19 @@
-.DS_Store
-.wrangler/
+/target/
+**/target/
+.idea/
+.vscode/
+.claude/
+.direnv/
 
-.dev.vars*
-!.dev.vars.example
-.env*
-!.env.example
+/.cache/
+
+/dist/
+
+/packaging/flatpak/built/
+/packaging/flatpak/cargo-sources.json
+/packaging/flatpak/flatpak-cargo-generator.py
+/.flatpak-builder/
+/build-dir/
+
+# The site
+.wrangler/

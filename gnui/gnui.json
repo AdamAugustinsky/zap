@@ -1,0 +1,27 @@
+{
+	"id": "ai.a3lab.zap",
+	"name": "ZapFast",
+	"displayName": "Zap",
+	"bundleName": "Zap",
+	"main": "./cmd/zapfast",
+	"executable": "zapfast",
+	"version": "0.19.0",
+	"build": "0.19.0",
+	"category": "public.app-category.social-networking",
+	"icon": "../packaging/macos/icon-1024.png",
+	"frameworks": ["../target/core-release/libzapfast_core.dylib"],
+	"resources": [{"from": "../LICENSE"}, {"from": "../THIRD-PARTY-NOTICES.md"}],
+	"urlSchemes": ["whatsapp", "wa"],
+	"loginAgents": [{"name": "autostart", "arguments": ["--start-hidden"]}],
+	"usage": {
+		"NSMicrophoneUsageDescription": "Zap uses the microphone for calls and for the voice messages you choose to send.",
+		"NSCameraUsageDescription": "Zap uses the camera for the video calls you make and answer."
+	},
+	"entitlements": {
+		"com.apple.security.device.audio-input": true,
+		"com.apple.security.device.camera": true
+	},
+	"extraPlist": {
+		"NSHumanReadableCopyright": "© 2026 A3 Direct Solutions LLP. Based on ZapFast, © 2026 Carmine Paolino (MIT). Not affiliated with WhatsApp or Meta."
+	}
+}

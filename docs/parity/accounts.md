@@ -1,0 +1,20 @@
+# Parity: account switcher (`gnui/ui/accounts`)
+
+`docs/PARITY.md` holds the status of record for every row; this file holds the evidence (tests, captures, hand steps and notes).
+
+Rows of `docs/PARITY.md` whose Go owner is `ui/accounts`, checked against `src/ui/accounts.rs` on 2026-10-21, then AC-009, whose owner is `ui/dialogs` but whose linking-screen half is in `ui/login`. Tests are in `gnui/ui/accounts/accounts_test.go` and `gnui/ui/login/login_test.go`.
+
+Real-Keychain follow-up (2026-10-22): [HANDTEST HT-42](../HANDTEST.md#16-system-behaviour-real)
+checks removal of a dedicated second TEST account and its exact archive-key item.
+It is human-only and unexecuted; the fake-keyring tests below remain the automated
+evidence, not a claim that real Keychain deletion has been observed.
+
+| id | status | evidence | note |
+|---|---|---|---|
+| AC-001 | done | TestTheSwitcherListsTheAccounts (clicking "Switch account" opens it); TestTheRowsShowProfilePictures (the rail's button shows the picture once it arrives, asked once); TestTheAccountButtonHasADotForUnreadChatsElsewhere (pixel: the accent dot at the button's top right when another account has unread chats, none when all are read; fails with the dot code disabled); shell TestUnreadElsewhere (the count); offscreen render of the rail viewed | The button is the rail's avatar, the shell's (`ui/shell/shell.go` `accountButton`): our picture from the window's image cache, initials until it arrives, and a dot ringed in the backdrop colour (`acct.UnreadElsewhere`, counted again when another account's chats change or the minute turns). The note that said picture and dot were missing was stale (commit 7ead943). |
+| AC-002 | done | TestTheSwitcherListsTheAccounts; TestTheRowsShowProfilePictures | Rows show the real picture (thumbnail asked once per linked number, drawn from the image cache), name, number, unread chat count (only chats that make noise), a check on the current one, "Not linked". |
+| AC-003 | done | TestChoosingARowSwitchesAccounts | Choosing the account on screen only closes the switcher. Parking drafts and so on is AC-007 (`state`). |
+| AC-004 | done | TestAddAccount; TestAddingANumberOffersCancelBackToThePreviousAccount | Uses `State.OpenCore`; with none it toasts "Could not add an account". Settings > Account has no Add account button (Settings' row, not done there). |
+| AC-005 | done | TestSeveralAccountsOfferAWayBackAndRemoval; TestRemoveSendsRemoveAccountOrUnlinksTheLast; TestARemovedAccountLeavesTheList; state TestRemovingAnAccountDeletesItsArchiveKey, TestAFailedRemovalKeepsTheArchiveKey, TestArchiveKeyIdentityIsTheCores | A removed account's archive key is deleted from the keyring once its archive is gone, kept when the deletion failed (zf:src/app.rs:1771-1783; `State.ArchiveKeys`, the framework's `secret` store on `core.KeyringService`, installed by cmd/zapfast for real runs only). Tests use a fake keyring; the real Keychain deletion is not exercised (z11-fix-identity; failed before). |
+| AC-006 | done | cmd/zapfast TestTheLinkingScreenHasTheSwitcherInItsCorner (with two accounts the linking screen has "Switch account" at the top left after the traffic lights, a press on it opens the switcher, and the screen's names lint clean); login TestSeveralAccountsOfferAWayBackAndRemoval; offscreen render of the linking screen viewed | The shell draws the button in the toolbar band (`Shell.full`, `cornerAvatarPt` 30) after the window's buttons, so the band does not cover it, with the dot of AC-001, and anchors the popover on it. Upstream puts it at `14 + inset, 12`, 34 pt; the Rex band is 46 pt high and the button 30 pt, level with the title. The earlier note ("not drawn") was stale (commit 7ead943). |
+| AC-009 | done | TestSeveralAccountsOfferAWayBackAndRemoval; state TestAFailedFileCleanupSaysSo | The linking-screen confirmation matches upstream and is not bound to Enter. Corrected the ownership note: local cleanup failures are reported by state.finishRemoved/drainRemoved, not a core Error event; the test forces permission denial and checks the error toast including its cause. |
