@@ -46,9 +46,9 @@ func TestTheBundleDescriptionServesWhatTheServicesNeed(t *testing.T) {
 	if len(c.LoginAgents) != 1 || c.LoginAgents[0].Name != agentName || !slices.Equal(c.LoginAgents[0].Arguments, []string{"--start-hidden"}) {
 		t.Errorf("login agents %+v", c.LoginAgents)
 	}
-	// The Rust core (the fallback, and calls), and the Go backend's
-	// SQLCipher and WebP libraries.
-	frameworks := []string{"../target/core-release/libzapfast_core.dylib", "../target/sqlcipher/libsqlcipher.dylib", "../target/libwebp/libzfwebp.dylib"}
+	// The Rust core (the fallback), the call media library, and the Go
+	// backend's SQLCipher and WebP libraries.
+	frameworks := []string{"../target/core-release/libzapfast_core.dylib", "../target/core-release/libzfcalls.dylib", "../target/sqlcipher/libsqlcipher.dylib", "../target/libwebp/libzfwebp.dylib"}
 	if !slices.Equal(c.Frameworks, frameworks) || c.Usage["NSMicrophoneUsageDescription"] == "" || c.Usage["NSCameraUsageDescription"] == "" {
 		t.Errorf("frameworks %v usage %v", c.Frameworks, c.Usage)
 	}
