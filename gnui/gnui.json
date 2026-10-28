@@ -11,6 +11,7 @@
 	"icon": "../packaging/macos/icon-1024.png",
 	"frameworks": [
 		"../target/core-release/libzapfast_core.dylib",
+		"../target/core-release/libzfcalls.dylib",
 		"../target/sqlcipher/libsqlcipher.dylib",
 		"../target/libwebp/libzfwebp.dylib"
 	],
