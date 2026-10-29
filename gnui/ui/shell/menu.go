@@ -61,6 +61,9 @@ const (
 	CmdCloseTab   = CmdShowAll + 1
 	CmdSpace1     = CmdCloseTab + 1 // … CmdSpace9: ⌃1 … ⌃9 (state/folders.go's spaces)
 	cmdSpaceLast  = CmdSpace1 + 8
+	CmdSplit      = cmdSpaceLast + 1 // ⌃⌥V: the open chat beside its neighbour tab (ui/chatview.Split)
+	CmdUnsplit    = CmdSplit + 1     // ⌃⌥U
+	CmdFloat      = CmdUnsplit + 1   // ⌃⌥P: the open chat floating over other apps (ui/chatview.Pip)
 )
 
 // helpURL is the user guide ZapFast Help opens (zf:src/macos.rs:234).
@@ -141,6 +144,9 @@ func buildModel(viewer bool) (*menu.Model, error) {
 		{ID: CmdNextAccount, Title: T("Switch to the next linked number"), Shortcut: prim('A', sh)},
 		{ID: CmdJumpToBottom, Title: T("Jump to the newest message"), Shortcut: prim(ui.KeyEnd, 0)},
 		{ID: CmdLock, Title: T("Lock Zap"), Shortcut: prim('L', sh)},
+		{ID: CmdSplit, Title: T("Split with the next tab"), Shortcut: menu.Shortcut{Key: 'V', Mods: ui.ModCtrl | ui.ModAlt}, Symbol: "rectangle.split.2x1"},
+		{ID: CmdUnsplit, Title: T("Close the split"), Shortcut: menu.Shortcut{Key: 'U', Mods: ui.ModCtrl | ui.ModAlt}},
+		{ID: CmdFloat, Title: T("Float the chat over other apps"), Shortcut: menu.Shortcut{Key: 'P', Mods: ui.ModCtrl | ui.ModAlt}, Symbol: "pip"},
 	}
 	for i := 0; i < 9; i++ {
 		cmds = append(cmds, menu.Command{ID: CmdChat1 + menu.ID(i), Title: T("Go to the tab at this place"), Shortcut: prim(ui.KeyCode('1'+i), 0)})
@@ -174,7 +180,7 @@ func buildModel(viewer bool) (*menu.Model, error) {
 		{Title: "Zap", Items: []menu.Item{item(CmdAbout), sep, item(CmdSettings), sep, item(CmdQuit)}},
 		{Title: P("menu bar", "File"), Items: []menu.Item{item(CmdNewChat), sep, item(CmdCloseTab), item(CmdCloseWindow)}},
 		{Title: P("menu bar", "Edit"), Items: []menu.Item{item(CmdUndo), item(CmdRedo), sep, item(CmdCut), item(CmdCopy), item(CmdPaste), item(CmdSelectAll), sep, item(CmdFind)}},
-		{Title: P("menu bar", "View"), Items: []menu.Item{item(CmdToggleSidebar), sep, item(zoomIn), item(zoomOut), item(actual), sep, item(CmdFullScreen)}},
+		{Title: P("menu bar", "View"), Items: []menu.Item{item(CmdToggleSidebar), sep, item(CmdSplit), item(CmdUnsplit), item(CmdFloat), sep, item(zoomIn), item(zoomOut), item(actual), sep, item(CmdFullScreen)}},
 		{Title: P("menu bar", "Window"), Role: menu.MenuWindow, Items: []menu.Item{item(CmdMinimize), item(CmdZoom), sep, item(CmdShowWindow)}},
 		{Title: P("menu bar", "Help"), Role: menu.MenuHelp, Items: []menu.Item{item(CmdShortcuts), item(CmdHelp)}},
 		{Title: P("menu bar", "Services"), Role: menu.MenuServices},
@@ -335,6 +341,17 @@ func (sh *Shell) Commands(e *screen.Env) {
 	if k.Command(CmdToggleSidebar) {
 		s.Panes.ListHidden = !s.Panes.ListHidden
 		s.Touch()
+	}
+	if k.Command(CmdSplit) && main {
+		sh.splitWithTab(a)
+	}
+	if k.Command(CmdUnsplit) {
+		a.CloseSplit()
+	}
+	if k.Command(CmdFloat) {
+		if ch, ok := a.OpenChatView(); ok {
+			s.FloatChat(a, ch.Ref())
+		}
 	}
 	if k.Command(CmdSpotlight) && main {
 		s.Spotlight = !s.Spotlight

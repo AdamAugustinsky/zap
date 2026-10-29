@@ -193,7 +193,7 @@ func motionFrame(c *ui.Context, a *state.Account, now time.Time, frame uint32) {
 		return
 	}
 	switch {
-	case mp.acct != a || a == nil || a.Open != mp.chat:
+	case mp.acct != a || a == nil || !shown(a, mp.chat):
 		stopMotion()
 	case mp.v == nil:
 	case c.Input().Hidden:

@@ -4995,3 +4995,87 @@ msgstr "Kurz in den neuesten ungelesenen Chat schauen"
 #: gnui
 msgid "Peek at the newest unread chat, from any app"
 msgstr "Kurz in den neuesten ungelesenen Chat schauen, aus jeder App"
+
+#: gnui
+msgid "Beside: {chat}"
+msgstr "Daneben: {chat}"
+
+#: gnui
+msgid "Bring back {chat}"
+msgstr "{chat} zurückholen"
+
+#: gnui
+msgid "Close the split (⌃⌥U)"
+msgstr "Teilung schließen (⌃⌥U)"
+
+#: gnui
+msgid "Close the split"
+msgstr "Teilung schließen"
+
+#: gnui
+msgid "Drop to split"
+msgstr "Zum Teilen ablegen"
+
+#: gnui
+msgid "Float over other apps"
+msgstr "Über anderen Apps schweben lassen"
+
+#: gnui
+msgid "Float the chat over other apps"
+msgstr "Chat über anderen Apps schweben lassen"
+
+#: gnui
+msgid "Floating: {chat}"
+msgstr "Schwebend: {chat}"
+
+#: gnui
+msgid "Make it the main chat"
+msgstr "Zum Hauptchat machen"
+
+#: gnui
+msgid "Open another chat to split with"
+msgstr "Öffne einen weiteren Chat zum Teilen"
+
+#: gnui
+msgid "Open beside the open chat"
+msgstr "Neben dem offenen Chat öffnen"
+
+#: gnui
+msgid "Open in Zap"
+msgstr "In Zap öffnen"
+
+#: gnui
+msgid "Resize the split"
+msgstr "Teilung anpassen"
+
+#: gnui
+msgid "Shrink to the floating icon"
+msgstr "Zum schwebenden Symbol verkleinern"
+
+#: gnui
+msgid "Split with the next tab"
+msgstr "Mit dem nächsten Tab teilen"
+
+#: gnui
+msgid "Unread messages"
+msgstr "Ungelesene Nachrichten"
+
+#: gnui
+msgid "Drop to move here"
+msgstr "Hier ablegen zum Verschieben"
+
+#: gnui
+msgid "Drop to show it here"
+msgstr "Ablegen, um ihn hier zu zeigen"
+
+#: gnui
+msgid "Drag to move the pane"
+msgstr "Ziehen, um den Bereich zu verschieben"
+
+#: gnui
+msgid "Fill the window with this chat"
+msgstr "Fenster mit diesem Chat füllen"
+
+#: gnui
+msgid "Split pane"
+msgstr "Geteilter Bereich"

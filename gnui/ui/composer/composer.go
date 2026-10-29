@@ -35,7 +35,8 @@ const (
 
 // Screen is the composer: the band at the foot of the open chat.
 type Screen struct {
-	ic struct{ plus, smile, mic, send, check, xmark, pencil, keyboard, clip, trash icon.ID }
+	name string // the split view's second pane's ("" the first): its keys
+	ic   struct{ plus, smile, mic, send, check, xmark, pencil, keyboard, clip, trash icon.ID }
 
 	env   *screen.Env // the main window's (Init's)
 	state *state.State
@@ -130,6 +131,10 @@ var _ screen.ComposerPane = (*Screen)(nil)
 // New returns the composer.
 func New() *Screen { return &Screen{} }
 
+// NewPane is the composer of the split view's second pane: its boxes keyed
+// apart from the first's.
+func NewPane(name string) *Screen { return &Screen{name: name} }
+
 // Init readies the icons, buffered text and listeners. The native editor
 // waits until a chat actually needs the composer.
 func (s *Screen) Init(e *screen.Env) error {
@@ -155,11 +160,12 @@ func (s *Screen) Init(e *screen.Env) error {
 	}
 	_ = s.makeEditor(nil, text)
 	s.ready, s.making = s.win == nil, false
-	s.bandKey = ui.HashString(0, "zapfast composer band")
-	s.toolsKey = ui.HashString(0, "zapfast composer tools")
+	s.bandKey = ui.HashString(0, "zapfast composer band"+s.name)
+	s.toolsKey = ui.HashString(0, "zapfast composer tools"+s.name)
 	s.asides.init()
 	s.paste.init()
 	s.crop.init()
+	s.crop.key = ui.HashString(0, "zapfast composer crop"+s.name)
 	s.scratch = make([]byte, 0, 1024)
 	s.spans = make([]platform.TextSpan, 0, 32)
 	wake := e.S.Wake
@@ -190,6 +196,7 @@ func (s *Screen) Init(e *screen.Env) error {
 	e.S.OnAppEvent(s, func(st *state.State, ev *app.Event) bool { return s.voice.appEvent(st, ev) })
 	e.S.OnInUse(s, func(*state.State) bool { return s.voice.recording() })
 	s.voice.init(e)
+	s.voice.waveK = ui.HashString(0, "zapfast composer waveform"+s.name)
 	return nil
 }
 
@@ -319,13 +326,17 @@ func (s *Screen) Build(e *screen.Env, r screen.Rect) {
 	}
 	s.syncEdit(e, a)
 	s.syncReply(e, a)
-	s.takePrefill(e, a, ch)
-	s.takeRestore(e, a)
-	s.takePaste(e)
-	if ins := e.S.TakeInsert(); len(ins) > 0 && canSend(&ch) {
-		s.insert(e, a, ins)
+	if !e.S.Side { // the one-shot asks are the pane in use's
+		s.takePrefill(e, a, ch)
+		s.takeRestore(e, a)
 	}
-	if e.S.Req.FocusComposer {
+	s.takePaste(e)
+	if !e.S.Side {
+		if ins := e.S.TakeInsert(); len(ins) > 0 && canSend(&ch) {
+			s.insert(e, a, ins)
+		}
+	}
+	if e.S.Req.FocusComposer && !e.S.Side {
 		e.S.Req.FocusComposer = false
 		if canSend(&ch) && !s.voice.recording() {
 			s.st.Focus(e.K.Kit)
@@ -615,6 +626,11 @@ func (s *Screen) composer(e *screen.Env, a *state.Account, ch model.Chat) {
 	s.accID = 0
 	sig := rexui.Composer(k.Kit, i18n.P("message field", "Message")+"###message", s.st, o)
 	s.focused, s.fieldID = sig.Focused, sig.ID
+	if s.focused && e.S.Side {
+		// typed into straight in its native view (no press reached the
+		// window): this pane is the one in use now
+		e.S.Req.UseSplit = true
+	}
 	// The Tab order: the text, then Send (or the microphone in its place),
 	// zf:src/ui/conversation.rs:1726-1823; Send is a stop only while
 	// enabled.

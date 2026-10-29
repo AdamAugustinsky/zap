@@ -563,3 +563,44 @@ func TestALockedChatNeverNotifies(t *testing.T) {
 		t.Errorf("an unlocked chat did not: %d notices", len(r.s.Notices))
 	}
 }
+
+// The split chat is read as the open chat is (a message while the window
+// is looked at); the floating chat only while its own window has the focus.
+func TestSplitAndFloatingChatsAreReadWhenLookedAt(t *testing.T) {
+	const grace, eve = "2@s.whatsapp.net", "6@s.whatsapp.net"
+	r := newRig(t, []abi.Chat{{ID: []byte(ada), Name: []byte("Ada")}, {ID: []byte(grace), Name: []byte("Grace")}, {ID: []byte(eve), Name: []byte("Eve")}})
+	s, a := r.s, r.a
+	if !a.OpenSplit(a.Model.Chats.Find([]byte(grace))) {
+		t.Fatal("no split")
+	}
+	s.Focused = true
+	r.l.Frame(s)
+	reads := len(r.sent(abi.CommandTagMarkRead))
+	r.emit(unread(grace, "Grace", 1))
+	if len(r.sent(abi.CommandTagMarkRead)) != reads+1 {
+		t.Fatal("a message in the split chat, looked at, was not read")
+	}
+
+	if !s.FloatChat(a, a.Model.Chats.Find([]byte(eve))) {
+		t.Fatal("no floating chat")
+	}
+	s.Focused = false // the person is in another app
+	r.l.Frame(s)
+	reads = len(r.sent(abi.CommandTagMarkRead))
+	r.emit(unread(eve, "Eve", 1))
+	if len(r.sent(abi.CommandTagMarkRead)) != reads {
+		t.Fatal("the floating chat was read while its window did not have the focus")
+	}
+	s.Pip.Focused = true
+	r.l.Frame(s)
+	if len(r.sent(abi.CommandTagMarkRead)) != reads+1 {
+		t.Fatal("the floating chat taking the focus did not read it")
+	}
+	s.SetPipMini(true) // shrunk to its icon: nothing is read
+	r.l.Frame(s)
+	reads = len(r.sent(abi.CommandTagMarkRead))
+	r.emit(unread(eve, "Eve", 2))
+	if len(r.sent(abi.CommandTagMarkRead)) != reads {
+		t.Error("the floating chat was read while shrunk to its icon")
+	}
+}

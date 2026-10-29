@@ -4803,3 +4803,87 @@ msgstr "速覽最新的未讀聊天"
 #: gnui
 msgid "Peek at the newest unread chat, from any app"
 msgstr "在任何 App 中速覽最新的未讀聊天"
+
+#: gnui
+msgid "Beside: {chat}"
+msgstr "並排：{chat}"
+
+#: gnui
+msgid "Bring back {chat}"
+msgstr "恢復 {chat}"
+
+#: gnui
+msgid "Close the split (⌃⌥U)"
+msgstr "關閉分割畫面 (⌃⌥U)"
+
+#: gnui
+msgid "Close the split"
+msgstr "關閉分割畫面"
+
+#: gnui
+msgid "Drop to split"
+msgstr "放開以分割畫面"
+
+#: gnui
+msgid "Float over other apps"
+msgstr "浮動在其他 App 上方"
+
+#: gnui
+msgid "Float the chat over other apps"
+msgstr "將聊天浮動在其他 App 上方"
+
+#: gnui
+msgid "Floating: {chat}"
+msgstr "浮動：{chat}"
+
+#: gnui
+msgid "Make it the main chat"
+msgstr "設為主要聊天"
+
+#: gnui
+msgid "Open another chat to split with"
+msgstr "開啟另一個聊天以分割畫面"
+
+#: gnui
+msgid "Open beside the open chat"
+msgstr "在已開啟的聊天旁開啟"
+
+#: gnui
+msgid "Open in Zap"
+msgstr "在 Zap 中開啟"
+
+#: gnui
+msgid "Resize the split"
+msgstr "調整分割畫面大小"
+
+#: gnui
+msgid "Shrink to the floating icon"
+msgstr "縮小為浮動圖像"
+
+#: gnui
+msgid "Split with the next tab"
+msgstr "與下一個分頁分割畫面"
+
+#: gnui
+msgid "Unread messages"
+msgstr "未讀訊息"
+
+#: gnui
+msgid "Drop to move here"
+msgstr "放開以移到這裡"
+
+#: gnui
+msgid "Drop to show it here"
+msgstr "放開以在這裡顯示"
+
+#: gnui
+msgid "Drag to move the pane"
+msgstr "拖移以移動窗格"
+
+#: gnui
+msgid "Fill the window with this chat"
+msgstr "讓此聊天填滿視窗"
+
+#: gnui
+msgid "Split pane"
+msgstr "分割窗格"

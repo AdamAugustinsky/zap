@@ -90,6 +90,7 @@ const (
 	WinCall                     // the call (zf:src/ui/call.rs)
 	WinPlayground               // the design playground (dev builds: cmd/zapfast -playground)
 	WinPeek                     // a peek floating over the desktop (State.FloatPeek)
+	WinPip                      // a chat kept floating over other apps (State.Pip)
 	NumWindows
 )
 
@@ -139,10 +140,15 @@ type Account struct {
 
 	// The window's state that belongs to the account (zf:src/account.rs):
 	// the open chat, the list's mode and chip, and the label the chip names.
-	Open   model.ChatRef
-	Mode   ListMode
-	Filter Filter
-	Label  model.IDList // one id: the label of FilterLabel
+	Open model.ChatRef
+	// Split is the chat beside the open one in the split view (split.go),
+	// 0 for none; never the open chat. The open chat is the pane in use;
+	// SplitFirst says the split chat is the first (left) pane.
+	Split      model.ChatRef
+	SplitFirst bool
+	Mode       ListMode
+	Filter     Filter
+	Label      model.IDList // one id: the label of FilterLabel
 	// tabs are the chats in the titlebar's tabs (ChatTabs).
 	tabs ChatTabs
 
@@ -157,6 +163,10 @@ type Account struct {
 	// openID is the open chat's JID, kept for the OnChatClose hooks (the
 	// chat may be gone from the model when it closes).
 	openID []byte
+	// side is the split chat's own state while the open chat's is the
+	// live one (split.go); prevOpen the chat open before the open one.
+	side     sideState
+	prevOpen model.ChatRef
 	// unreadAt is how many messages of chat unreadRef were unread when it
 	// opened (UnreadAtOpen).
 	unreadRef model.ChatRef
@@ -268,6 +278,16 @@ func (a *Account) openChat(ref model.ChatRef, read bool) {
 		p.Jump.Msg.Reset()
 		p.ReactTarget.Reset()
 	}
+	if a.Split != 0 && (ref == a.Split || ref == 0) {
+		// The split chat opened is the pane put in use; the open chat
+		// closed leaves the split chat alone in the window.
+		a.useSide()
+		if ref == 0 {
+			a.CloseSplit()
+		}
+		st.gen++
+		return
+	}
 	a.setOpen(ref)
 	st.gen++
 	c, ok := a.Model.Chats.Get(ref)
@@ -325,6 +345,9 @@ func (a *Account) setOpen(ref model.ChatRef) {
 		return
 	}
 	a.st.chatClosing(a)
+	if a.Open != 0 {
+		a.prevOpen = a.Open
+	}
 	a.Open = ref
 	a.openID = a.openID[:0]
 	if c, ok := a.Model.Chats.Get(ref); ok {
@@ -340,6 +363,11 @@ func (a *Account) pinConversations() {
 		viewer = a.st.Win.ViewerChat
 	}
 	a.Model.PinConversations(a.Open, viewer)
+	var pip model.ChatRef
+	if p := &a.st.Pip; p.Acct == a.ID {
+		pip = p.Ref
+	}
+	a.Model.PinMore(a.Split, pip)
 }
 
 // load makes the open chat's conversation ready and asks for its history
@@ -547,6 +575,9 @@ type Lock struct {
 // Requests are one-shot asks from the shell's commands to the screens that
 // own what they ask for: the owner acts and clears its flag.
 type Requests struct {
+	// UseSplit: the split view's other pane took the keyboard (its composer,
+	// typed into straight): the shell puts it in use (Account.UseSplit).
+	UseSplit      bool
 	FocusSearch   bool // ⌘K, ⌘⇧F: ui/chatlist focuses its search field
 	ClearSearch   bool // the locked folder closed: ui/chatlist empties its search
 	FocusComposer bool // ⌘L: ui/composer takes the keyboard
@@ -618,6 +649,15 @@ type State struct {
 	// FloatPeek is a peek in a panel of its own over the desktop (WinPeek):
 	// a clicked notification's, the Dock menu's or the global shortcut's.
 	FloatPeek Peek
+	// Pip is the chat kept floating over the desktop (WinPip, pip.go).
+	Pip Pip
+	// SplitShare is the first pane's share of the split view's width, 0
+	// for the default (half).
+	SplitShare float32
+	// Side: the split pane is building, its chat's state traded in
+	// (Account.SideBegin): the one-shot requests and the keys wait for the
+	// pane in use.
+	Side bool
 	// SpaceGen counts the moves between spaces: the list slides in from the
 	// side they came from (shell).
 	SpaceGen uint32

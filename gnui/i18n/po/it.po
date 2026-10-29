@@ -4978,3 +4978,87 @@ msgstr "Sbircia la chat non letta più recente"
 #: gnui
 msgid "Peek at the newest unread chat, from any app"
 msgstr "Sbircia la chat non letta più recente, da qualsiasi app"
+
+#: gnui
+msgid "Beside: {chat}"
+msgstr "Accanto: {chat}"
+
+#: gnui
+msgid "Bring back {chat}"
+msgstr "Riporta {chat}"
+
+#: gnui
+msgid "Close the split (⌃⌥U)"
+msgstr "Chiudi la divisione (⌃⌥U)"
+
+#: gnui
+msgid "Close the split"
+msgstr "Chiudi la divisione"
+
+#: gnui
+msgid "Drop to split"
+msgstr "Rilascia per dividere"
+
+#: gnui
+msgid "Float over other apps"
+msgstr "Fai fluttuare sopra le altre app"
+
+#: gnui
+msgid "Float the chat over other apps"
+msgstr "Fai fluttuare la chat sopra le altre app"
+
+#: gnui
+msgid "Floating: {chat}"
+msgstr "Fluttuante: {chat}"
+
+#: gnui
+msgid "Make it the main chat"
+msgstr "Rendila la chat principale"
+
+#: gnui
+msgid "Open another chat to split with"
+msgstr "Apri un’altra chat da affiancare"
+
+#: gnui
+msgid "Open beside the open chat"
+msgstr "Apri accanto alla chat aperta"
+
+#: gnui
+msgid "Open in Zap"
+msgstr "Apri in Zap"
+
+#: gnui
+msgid "Resize the split"
+msgstr "Ridimensiona la divisione"
+
+#: gnui
+msgid "Shrink to the floating icon"
+msgstr "Riduci all’icona fluttuante"
+
+#: gnui
+msgid "Split with the next tab"
+msgstr "Dividi con la scheda successiva"
+
+#: gnui
+msgid "Unread messages"
+msgstr "Messaggi non letti"
+
+#: gnui
+msgid "Drop to move here"
+msgstr "Rilascia per spostarlo qui"
+
+#: gnui
+msgid "Drop to show it here"
+msgstr "Rilascia per mostrarla qui"
+
+#: gnui
+msgid "Drag to move the pane"
+msgstr "Trascina per spostare il riquadro"
+
+#: gnui
+msgid "Fill the window with this chat"
+msgstr "Riempi la finestra con questa chat"
+
+#: gnui
+msgid "Split pane"
+msgstr "Riquadro diviso"

@@ -58,4 +58,7 @@ var Shortcuts = [...]Shortcut{
 	{"Typing", "Starts a message in the open chat, or a search", "shell (keyboard.go)"},
 	{"Space over a chat / ⌥-click", "Peek at a chat without reading it", "ui/chatlist, shell (ui/peek)"},
 	{"⌃⌥Z", "Peek at the newest unread chat, from any app", "sys/peek.go (ui/peek.Window)"},
+	{"⌃⌥V", "Split with the next tab", "shell (ui/shell/split.go)"},
+	{"⌃⌥U", "Close the split", "shell (ui/shell/split.go)"},
+	{"⌃⌥P", "Float the chat over other apps", "shell (ui/chatview.Pip)"},
 }

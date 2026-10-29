@@ -121,7 +121,7 @@ func (l *Logic) maybeNotify(a *state.Account, chatID []byte, m *abi.Message) {
 	if !Eligible(c, now.Unix(), m.Timestamp) {
 		return
 	}
-	if reading(s, a) && a.Open == ref {
+	if reading(s, a) && (a.Open == ref || a.Split == ref) || pipReading(s, a, ref) {
 		return
 	}
 	group := c.Group()

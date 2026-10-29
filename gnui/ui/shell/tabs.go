@@ -31,10 +31,12 @@ const (
 // chatTabs is the bar's state on the shell: the frame's tabs, built in place,
 // and each slot's picture.
 type chatTabs struct {
-	bar    rexui.TabBar
-	tabs   [state.MaxChatTabs]rexui.Tab
-	pics   [state.MaxChatTabs]tabPic
-	unread [state.MaxChatTabs]tabCount
+	bar rexui.TabBar
+	// pressedFrom is the chat open before the tab held now was pressed.
+	pressedFrom model.ChatRef
+	tabs        [state.MaxChatTabs]rexui.Tab
+	pics        [state.MaxChatTabs]tabPic
+	unread      [state.MaxChatTabs]tabCount
 }
 
 // tabCount is a tab's unread count as its detail shows it, kept so that the
@@ -138,6 +140,7 @@ func (sh *Shell) chatTabs(a *state.Account, x0, x1, tbH float32) {
 		}
 	}
 	tabs := t.tabs[:len(refs)]
+	sh.tabDrop(a, sh.chatPane, model.ChatRef(t.bar.Held()), t.pressedFrom)
 	ev := t.bar.Update(k.Kit, tabs, sel)
 	rc := &rexui.TabsRecipes[rexui.TabsRex]
 	capH := rc.Height*r.Scale + 2*rc.Inset[1]*r.Scale
@@ -172,6 +175,7 @@ func (sh *Shell) chatTabs(a *state.Account, x0, x1, tbH float32) {
 		s.PeekChat(a, refs[ev.Select], t.bar.TabRect(ev.Select))
 	case ev.Select >= 0:
 		ref := refs[ev.Select]
+		t.pressedFrom = a.Open // kept by a split if the tab is dragged onto the chat
 		if s.Page != state.PageChats {
 			s.Page = state.PageChats
 		}

@@ -2,6 +2,7 @@ package logic
 
 import (
 	"zapfast/abi"
+	"zapfast/model"
 	"zapfast/state"
 )
 
@@ -14,6 +15,13 @@ func reading(s *state.State, a *state.Account) bool {
 	return a.Active() && s.Focused && !s.Lock.Locked && (s.Page == state.PageChats || s.Page == state.PageCalls)
 }
 
+// pipReading reports whether chat ref of a is the floating chat and its
+// window has the focus: the person is in it (state.Pip).
+func pipReading(s *state.State, a *state.Account, ref model.ChatRef) bool {
+	p := &s.Pip
+	return p.Focused && !p.Mini && !s.Lock.Locked && p.Acct == a.ID && p.Ref == ref
+}
+
 // chatUpdated marks the open chat read when a message arrives while it is
 // being read, and takes a read chat's notifications away
 // (zf:src/app.rs:4191-4212).
@@ -24,10 +32,14 @@ func (l *Logic) chatUpdated(a *state.Account, c *abi.Chat) {
 		l.clearNotices(a, c.ID)
 		return
 	}
-	if !reading(s, a) || !openIs(a, c.ID) || (c.Locked && a.Mode != state.ListLocked) {
+	if c.Locked && a.Mode != state.ListLocked {
 		return
 	}
-	l.markRead(a, c.ID)
+	// the open chat and the split chat beside it, in a window being looked
+	// at; the floating chat while its own window has the focus
+	if reading(s, a) && (openIs(a, c.ID) || a.IsSplit(c.ID)) || pipReading(s, a, a.Model.Chats.Find(c.ID)) {
+		l.markRead(a, c.ID)
+	}
 }
 
 func (l *Logic) markRead(a *state.Account, chat []byte) {
@@ -48,9 +60,23 @@ func (l *Logic) focusFrame(s *state.State) {
 			if c, ok := a.OpenChatView(); ok && c.Unread() > 0 {
 				l.markRead(a, c.ID())
 			}
+			if c, ok := a.SplitChat(); ok && c.Unread() > 0 {
+				l.markRead(a, c.ID())
+			}
 		}
 	}
 	l.focused = looking
+	// The floating chat is read when its window takes the focus.
+	p := &s.Pip
+	pip := p.Focused && !p.Mini && !s.Lock.Locked
+	if pip && !l.pipSeen {
+		if a := s.AccountByID(p.Acct); a != nil {
+			if c, ok := a.Model.Chats.Get(p.Ref); ok && !c.Locked() && (c.Unread() > 0 || c.MarkedUnread()) {
+				l.markRead(a, c.ID())
+			}
+		}
+	}
+	l.pipSeen = pip
 	for i, a := range s.Accounts {
 		online := looking && i == s.Active
 		if a.Conn == nil || (a.OnlineSent && a.Online == online) {

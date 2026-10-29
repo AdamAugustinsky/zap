@@ -68,7 +68,7 @@ func (h *hub) Event(a *state.Account, e *abi.Event) {
 	switch e.Tag {
 	case abi.EventTagMessages:
 		m := &e.Messages
-		if h.hist.acct == a.Serial && openChat(a, m.Chat) && m.Last && !m.Older {
+		if h.hist.acct == a.Serial && h.hist.chat != 0 && a.Model.Chats.Find(m.Chat) == h.hist.chat && m.Last && !m.Older {
 			h.hist.first = false
 		}
 	case abi.EventTagPinChanged:

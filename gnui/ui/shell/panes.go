@@ -36,6 +36,10 @@ const (
 	paneList workspace.PaneID = 1 + iota // the chat list, or the Calls page's
 	paneChat                             // the conversation, or what the page shows
 	paneSide                             // the side pane (info, search, starred…)
+	// the chat beside the open one (split.go): not in the layout, it shares
+	// the chat pane's room
+	paneSplit
+	numPanes
 )
 
 var paneFocusKey = ui.HashString(0, "zapfast/pane focus")
@@ -138,6 +142,39 @@ func (sh *Shell) body(r [4]float32) screen.Rect {
 	return screen.Rect{X: r[0], Y: r[1] + hh, W: r[2] - r[0], H: max(r[3]-r[1]-hh, 0)}
 }
 
+// paneRects are where the panes are drawn this frame, by PaneID; a pane
+// with no room has none (shown).
+type paneRects [numPanes][4]float32
+
+func shown(r [4]float32) bool { return r[2] > r[0] && r[3] > r[1] }
+
+// splitFocus follows the split view (split): the open chat's pane is the
+// one in use in the chat pane's place, the second where it is the second,
+// and a press in the pane of the chat not in use puts it in use, before
+// anything builds, so that the press acts on its own chat.
+func (sh *Shell) splitFocus(a *state.Account, panes *paneRects, split bool) {
+	sh.liveSplit = 0
+	if !split {
+		return
+	}
+	live := paneChat
+	if first, _ := a.Panes(); first != a.Open {
+		live = paneSplit
+	}
+	if in := sh.env.C().Input(); in.Pressed[ui.ButtonLeft] {
+		other := paneSplit
+		if live == paneSplit {
+			other = paneChat
+		}
+		if r := panes[other]; shown(r) && in.MouseX >= r[0] && in.MouseX < r[2] && in.MouseY >= r[1] && in.MouseY < r[3] {
+			a.UseSplit()
+			live = other
+		}
+	}
+	if live == paneSplit {
+		sh.liveSplit = paneSplit
+	}
+}
 // surface builds pane p's glass at r, its focus animating toward whether it
 // is the pane in use. The pane's content builds after it, over it, in window
 // coordinates (the slots' Rects).
@@ -145,11 +182,19 @@ func (sh *Shell) surface(p workspace.PaneID, r [4]float32) {
 	k := sh.env.K
 	c, th := k.Context(), k.Theme()
 	target := float32(0)
-	if p == sh.panes.Focus() && !k.Inactive() {
+	use := sh.panes.Focus()
+	if use == paneChat && sh.liveSplit != 0 {
+		use = sh.liveSplit // the split's pane in use stands for the chat pane
+	}
+	if p == use && !k.Inactive() {
 		target = 1
 	}
+	slot := sh.panes.Slot(p)
+	if slot < 0 {
+		slot = workspace.MaxPanes + int(p) // the split's, after the layout's
+	}
 	s := theme.Surface{
-		Key: sh.panes.PaneKey(p), Slot: sh.panes.Slot(p), Rect: r,
+		Key: sh.panes.PaneKey(p), Slot: slot, Rect: r,
 		Focus: c.AnimateValue(ui.KeyN(paneFocusKey, uint64(p)), target, th.Motion.Dim), Opacity: 1, Top: true, // DurShort, at once under Reduce Motion
 	}
 	th.Chrome.SurfaceShadow(c, th, s)

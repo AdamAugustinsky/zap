@@ -4946,3 +4946,87 @@ msgstr "Okunmamış en yeni sohbete göz at"
 #: gnui
 msgid "Peek at the newest unread chat, from any app"
 msgstr "Herhangi bir uygulamadan okunmamış en yeni sohbete göz at"
+
+#: gnui
+msgid "Beside: {chat}"
+msgstr "Yanda: {chat}"
+
+#: gnui
+msgid "Bring back {chat}"
+msgstr "{chat} sohbetini geri getir"
+
+#: gnui
+msgid "Close the split (⌃⌥U)"
+msgstr "Bölmeyi kapat (⌃⌥U)"
+
+#: gnui
+msgid "Close the split"
+msgstr "Bölmeyi kapat"
+
+#: gnui
+msgid "Drop to split"
+msgstr "Bölmek için bırak"
+
+#: gnui
+msgid "Float over other apps"
+msgstr "Diğer uygulamaların üzerinde yüzdür"
+
+#: gnui
+msgid "Float the chat over other apps"
+msgstr "Sohbeti diğer uygulamaların üzerinde yüzdür"
+
+#: gnui
+msgid "Floating: {chat}"
+msgstr "Yüzen: {chat}"
+
+#: gnui
+msgid "Make it the main chat"
+msgstr "Ana sohbet yap"
+
+#: gnui
+msgid "Open another chat to split with"
+msgstr "Bölmek için başka bir sohbet aç"
+
+#: gnui
+msgid "Open beside the open chat"
+msgstr "Açık sohbetin yanında aç"
+
+#: gnui
+msgid "Open in Zap"
+msgstr "Zap’te aç"
+
+#: gnui
+msgid "Resize the split"
+msgstr "Bölmeyi yeniden boyutlandır"
+
+#: gnui
+msgid "Shrink to the floating icon"
+msgstr "Yüzen simgeye küçült"
+
+#: gnui
+msgid "Split with the next tab"
+msgstr "Sonraki sekmeyle böl"
+
+#: gnui
+msgid "Unread messages"
+msgstr "Okunmamış mesajlar"
+
+#: gnui
+msgid "Drop to move here"
+msgstr "Buraya taşımak için bırak"
+
+#: gnui
+msgid "Drop to show it here"
+msgstr "Burada göstermek için bırak"
+
+#: gnui
+msgid "Drag to move the pane"
+msgstr "Bölmeyi taşımak için sürükle"
+
+#: gnui
+msgid "Fill the window with this chat"
+msgstr "Pencereyi bu sohbetle doldur"
+
+#: gnui
+msgid "Split pane"
+msgstr "Bölme paneli"
