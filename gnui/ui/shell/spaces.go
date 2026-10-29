@@ -117,6 +117,9 @@ func abs32(f float32) float32 {
 // spaceShift is how far, and how faded in, the list is as it comes in from
 // the space it left: (pixels across, opacity).
 func (sh *Shell) spaceShift() (float32, float32) {
+	if !sh.Slides || sh.sp.dir == 0 {
+		return 0, 1 // nothing moved yet: the window opens on its space still
+	}
 	e := &sh.env
 	c, r := e.C(), e.K.Theme()
 	key := ui.HashString(ui.KeyN(0, uint64(sh.S.SpaceGen)), "space slide")

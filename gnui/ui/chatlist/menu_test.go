@@ -252,7 +252,7 @@ func TestNativeMenuHasUpstreamsItemsInOrder(t *testing.T) {
 	r.chats(un)
 	req := r.nativeMenu("Ada")
 	want := []string{"Mark as read", "Pin to top", "Add to favorites", "Archive", "Mute for 8 hours", "Mute for a week", "Mute indefinitely",
-		"Notification sound", "Labels", "Lock chat", "-", "Copy number", "Info", "Delete chat"}
+		"Notification sound", "Folder", "Labels", "Lock chat", "-", "Copy number", "Info", "Delete chat"}
 	if got := titles(req.Items); !slices.Equal(got, want) {
 		t.Fatalf("items\n got %v\nwant %v", got, want)
 	}
@@ -280,7 +280,7 @@ func TestChannelMenuItemsAndEnabledStates(t *testing.T) {
 			}
 			req := r.nativeMenu("News")
 			want := []string{"Mark as unread", "Pin to top", "Archive", "Leave channel", "Mute for 8 hours", "Mute for a week", "Mute indefinitely",
-				"Notification sound", "Labels", "Lock chat", "-", "Info", "Delete chat"}
+				"Notification sound", "Folder", "Labels", "Lock chat", "-", "Info", "Delete chat"}
 			if got := titles(req.Items); !slices.Equal(got, want) {
 				t.Fatalf("connected=%v favorite=%v: items %v, want %v", connected, favorite, got, want)
 			}
