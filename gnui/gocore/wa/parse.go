@@ -42,6 +42,7 @@ const (
 	kindPin          = "pin"
 	kindViewOnce     = "view-once"
 	kindUnsupported  = "unsupported"
+	kindPhoneOnly    = "phone-only"
 	// kindWaiting is a message this device could not decrypt yet.
 	kindWaiting = "waiting"
 )
@@ -65,6 +66,8 @@ func unwrap(p *waE2E.Message) *waE2E.Message {
 			next = p.GetDocumentWithCaptionMessage().GetMessage()
 		case p.GetEditedMessage() != nil:
 			next = p.GetEditedMessage().GetMessage()
+		case p.GetBotInvokeMessage() != nil:
+			next = p.GetBotInvokeMessage().GetMessage()
 		}
 		if next == nil {
 			return p
@@ -72,6 +75,45 @@ func unwrap(p *waE2E.Message) *waE2E.Message {
 		p = next
 	}
 	return p
+}
+
+// signalling reports whether p, recognised as no content, only carries
+// protocol state: group sender keys travel in a message of their own
+// beside the one they unlock, and nothing in such a message is shown
+// (zf:src/backend/worker.rs:11119).
+func signalling(p *waE2E.Message) bool {
+	if p.GetSenderKeyDistributionMessage() != nil || p.GetFastRatchetKeySenderKeyDistributionMessage() != nil ||
+		p.GetEncReactionMessage() != nil || p.GetEncCommentMessage() != nil || p.GetEncEventResponseMessage() != nil ||
+		p.GetKeepInChatMessage() != nil || p.GetStickerSyncRmrMessage() != nil || p.GetSecretEncryptedMessage() != nil ||
+		p.GetMessageHistoryBundle() != nil || p.GetMessageHistoryNotice() != nil || p.GetBotInvokeMessage() != nil ||
+		p.GetGroupRootKeyShare() != nil || p.GetRootSecretDistributeMessage() != nil || p.GetPollAddOptionMessage() != nil ||
+		p.GetBotTaskMessage() != nil || p.GetStatusNotificationMessage() != nil || p.GetAlbumMessage() != nil {
+		return true
+	}
+	// Most messages carry context info (secrets, bot metadata): alone it
+	// marks nothing.
+	bare := proto.Clone(p).(*waE2E.Message)
+	bare.MessageContextInfo = nil
+	return proto.Size(bare) == 0
+}
+
+// unsupportedWhat names what an unshown message is, for its row.
+func unsupportedWhat(p *waE2E.Message) string {
+	switch {
+	case p.GetGroupInviteMessage() != nil:
+		return "group invite"
+	case p.GetEventMessage() != nil:
+		return "event"
+	case p.GetProductMessage() != nil, p.GetOrderMessage() != nil:
+		return "product"
+	case p.GetSendPaymentMessage() != nil, p.GetRequestPaymentMessage() != nil, p.GetPaymentInviteMessage() != nil, p.GetInvoiceMessage() != nil:
+		return "payment"
+	case p.GetScheduledCallCreationMessage() != nil, p.GetCallLogMesssage() != nil:
+		return "call"
+	case p.GetLottieStickerMessage() != nil:
+		return "animated sticker"
+	}
+	return "message"
 }
 
 // parseMessage turns a whatsmeow message into the archive's row for chat
@@ -301,10 +343,19 @@ func parseDepth(e *events.Message, chat, sender string, depth int) store.Message
 			m.Edited = true
 		}
 	default:
-		m.Text = "message"
-		if e.Info.MediaType == "livelocation" {
+		switch {
+		case e.Info.MediaType == "livelocation":
+			m.Text = "message"
 			m.Kind = kindLiveLocation
 			m.LiveLocation = &store.LiveLocation{UpdatedAt: m.Timestamp}
+		case p.GetPlaceholderMessage() != nil:
+			// The phone masks some messages from linked devices and sends
+			// this stand-in so the chat still shows them.
+			m.Kind = kindPhoneOnly
+		case signalling(p):
+			m.Kind = kindProtocol
+		default:
+			m.Text = unsupportedWhat(p)
 		}
 	}
 	if m.LiveLocation != nil && e.SourceWebMsg != nil && e.SourceWebMsg.GetFinalLiveLocation() != nil {

@@ -440,6 +440,8 @@ func (cv conv) content(r *out.Record, m store.Message) abi.Content {
 		}
 	case kindWaiting:
 		c.Tag = abi.ContentTagWaiting
+	case kindPhoneOnly:
+		c.Tag = abi.ContentTagPhoneOnly
 	case store.KindCall:
 		c.Tag = abi.ContentTagCall
 		if call := m.Call; call != nil {
@@ -724,6 +726,8 @@ func summary(m store.Message) string {
 		return "Voice call"
 	case kindWaiting:
 		return "Waiting for this message"
+	case kindPhoneOnly:
+		return "This message can only be seen on your phone"
 	}
 	return "Unsupported message (" + m.Text + ")"
 }

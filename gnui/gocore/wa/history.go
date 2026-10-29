@@ -418,3 +418,19 @@ func historyRequest(key *waCommon.MessageKey, timestamp int64, count int) *waE2E
 		},
 	}
 }
+
+// resendRequest is whatsmeow's BuildUnavailableMessageRequest for key: the
+// phone sends its copy of the message back.
+func resendRequest(key *waCommon.MessageKey) *waE2E.Message {
+	return &waE2E.Message{
+		ProtocolMessage: &waE2E.ProtocolMessage{
+			Type: waE2E.ProtocolMessage_PEER_DATA_OPERATION_REQUEST_MESSAGE.Enum(),
+			PeerDataOperationRequestMessage: &waE2E.PeerDataOperationRequestMessage{
+				PeerDataOperationRequestType: waE2E.PeerDataOperationRequestType_PLACEHOLDER_MESSAGE_RESEND.Enum(),
+				PlaceholderMessageResendRequest: []*waE2E.PeerDataOperationRequestMessage_PlaceholderMessageResendRequest{{
+					MessageKey: key,
+				}},
+			},
+		},
+	}
+}

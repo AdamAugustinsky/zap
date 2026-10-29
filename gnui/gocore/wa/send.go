@@ -582,7 +582,7 @@ func (e *Engine) forwarded(chat, id string) (*waE2E.Message, bool) {
 		return nil, false
 	}
 	switch {
-	case m.Deleted, m.Kind == kindUnsupported, m.Kind == kindWaiting, m.Kind == kindViewOnce, m.Kind == kindPoll, m.Kind == kindInteractive,
+	case m.Deleted, m.Kind == kindUnsupported, m.Kind == kindWaiting, m.Kind == kindPhoneOnly, m.Kind == kindViewOnce, m.Kind == kindPoll, m.Kind == kindInteractive,
 		m.Kind == kindLiveLocation && (m.LiveLocation == nil || !m.LiveLocation.Available):
 		e.emitError("This message cannot be forwarded")
 		return nil, false

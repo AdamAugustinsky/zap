@@ -126,6 +126,9 @@ func newClient(device *wastore.Device, name string, log waLog.Logger) Client {
 	configureDevice(name)
 	c := whatsmeow.NewClient(device, log)
 	c.EmitAppStateEventsOnFullSync = true
+	// A message that stays undecryptable is asked of the phone, as
+	// WhatsApp Web does.
+	c.AutomaticMessageRerequestFromPhone = true
 	return &waClient{c: c, http: &http.Client{Timeout: 30 * time.Second}}
 }
 

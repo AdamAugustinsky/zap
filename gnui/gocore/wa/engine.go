@@ -132,6 +132,8 @@ type Engine struct {
 	prefetched   map[string]bool        // chats the prefetch filled this session
 	typing       []chatState            // chat states to send, in order
 	settings     []appstate.PatchInfo   // chat settings to send to the phone, in order
+	mended       bool                   // rows filed as unsupported signalling were mended (mend.go)
+	asked        map[[2]string]bool     // messages asked of the phone by the mending: no notification
 
 	// calls is WP7's call bridge (calls.go): set by Open, before any
 	// command, and never replaced.
@@ -159,6 +161,7 @@ func New(opts Options) *Engine {
 		groupsAsked:   map[string]bool{},
 		polls:         map[[2]string]bool{},
 		replies:       map[[2]string]bool{},
+		asked:         map[[2]string]bool{},
 		recentHashes:  map[string]string{},
 		privacy:       map[abi.PrivacyKind]abi.PrivacyChoice{},
 		giphy:         giphyAPI,

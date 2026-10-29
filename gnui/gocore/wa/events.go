@@ -254,7 +254,7 @@ func (e *Engine) incoming(evt *events.Message) error {
 		e.emitChat(chat)
 		return nil
 	}
-	return e.keep(m, evt.Info, existed, existed && old.Kind == kindWaiting)
+	return e.keep(m, evt.Info, existed, existed && old.Kind == kindWaiting && !e.asked[[2]string{chat, m.ID}])
 }
 
 // undecryptable stores a placeholder for a message this device could not

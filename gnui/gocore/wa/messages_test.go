@@ -543,3 +543,95 @@ func TestAMessageWaitedForNotifiesWhenItArrives(t *testing.T) {
 		t.Fatalf("view once: %+v", m.Content)
 	}
 }
+
+func TestSignallingIsNoMessage(t *testing.T) {
+	h := newHarness(t, options{})
+	h.start()
+	key := &waE2E.Message{SenderKeyDistributionMessage: &waE2E.SenderKeyDistributionMessage{GroupID: proto.String(group.String())}, MessageContextInfo: &waE2E.MessageContextInfo{}}
+	// A group's sender key comes under the id of the message it unlocks,
+	// before or after it: the message stays.
+	h.inject(message(group, peer, "S1", t0, text("hello all")))
+	expectTags(t, h.take(), "Messages ChatUpdated Incoming")
+	h.inject(message(group, peer, "S1", t0, key))
+	expectTags(t, h.take(), "")
+	if m, err := h.e.arch.Message(group.String(), "S1"); err != nil || m.Kind != kindText || m.Text != "hello all" {
+		t.Fatalf("after the key: %+v %v", m, err)
+	}
+	// Alone, a key, a reaction sealed for the group or bare context info
+	// is no row at all.
+	h.inject(message(group, peer, "S2", t0, key))
+	h.inject(message(group, peer, "S3", t0, &waE2E.Message{EncReactionMessage: &waE2E.EncReactionMessage{}}))
+	h.inject(message(group, peer, "S4", t0, &waE2E.Message{MessageContextInfo: &waE2E.MessageContextInfo{}}))
+	expectTags(t, h.take(), "")
+	// What is shown only on the phone says so; content not shown here
+	// says what it is.
+	h.inject(message(group, peer, "S5", t0, &waE2E.Message{PlaceholderMessage: &waE2E.PlaceholderMessage{}}))
+	if m := one(t, h.take(), abi.EventTagIncoming).Incoming.Message; m.Content.Tag != abi.ContentTagPhoneOnly || m.Content.PhoneOnly.ViewOnce || m.Content.PhoneOnly.LiveLocation {
+		t.Fatalf("placeholder: %+v", m.Content)
+	}
+	h.inject(message(group, peer, "S6", t0, &waE2E.Message{GroupInviteMessage: &waE2E.GroupInviteMessage{}}))
+	if m := one(t, h.take(), abi.EventTagIncoming).Incoming.Message; m.Content.Tag != abi.ContentTagUnsupported || string(m.Content.Unsupported.What) != "group invite" {
+		t.Fatalf("invite: %+v", m.Content)
+	}
+}
+
+func TestSignallingFiledAsUnsupportedIsMended(t *testing.T) {
+	h := newHarness(t, options{})
+	raw := func(p *waE2E.Message) []byte {
+		b, err := proto.Marshal(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return b
+	}
+	row := func(id string, at int64, p *waE2E.Message) store.Message {
+		return store.Message{ID: id, ChatID: group.String(), Sender: peer.String(), Timestamp: at, Kind: kindUnsupported, Text: "message", Status: "delivered", Raw: raw(p)}
+	}
+	// What an earlier build filed for a group.
+	if err := h.e.arch.UpsertChat(store.Chat{ID: group.String(), Kind: "group", LastActivity: 104}); err != nil {
+		t.Fatal(err)
+	}
+	if err := h.e.arch.SaveMessages([]store.Message{
+		row("U1", 100, &waE2E.Message{SenderKeyDistributionMessage: &waE2E.SenderKeyDistributionMessage{}, MessageContextInfo: &waE2E.MessageContextInfo{}}),
+		row("U2", 101, &waE2E.Message{KeepInChatMessage: &waE2E.KeepInChatMessage{}}),
+		row("U3", 102, &waE2E.Message{EventMessage: &waE2E.EventMessage{}}),
+		row("U4", 103, &waE2E.Message{RequestPhoneNumberMessage: &waE2E.RequestPhoneNumberMessage{}}),
+		row("U5", 104, &waE2E.Message{EncCommentMessage: &waE2E.EncCommentMessage{}}),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	h.start()
+	kinds := map[string]string{}
+	page, _, err := h.e.arch.Messages(group.String(), "", 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, m := range page {
+		kinds[m.ID] = m.Kind + ":" + m.Text
+	}
+	if fmt.Sprint(kinds) != "map[U1:waiting: U3:unsupported:event U4:unsupported:message]" {
+		t.Fatalf("mended: %v", kinds)
+	}
+	if c, err := h.e.arch.Chat(group.String()); err != nil || c.Preview != "Unsupported message (message)" {
+		t.Fatalf("preview: %q %v", c.Preview, err)
+	}
+	// The phone is asked for the message the key came with, once.
+	h.settle()
+	if len(h.f.peer) != 1 {
+		t.Fatalf("asked the phone %d times", len(h.f.peer))
+	}
+	if r := h.f.peer[0].GetProtocolMessage().GetPeerDataOperationRequestMessage().GetPlaceholderMessageResendRequest(); len(r) != 1 || r[0].GetMessageKey().GetID() != "U1" || r[0].GetMessageKey().GetParticipant() != peer.String() {
+		t.Fatalf("request: %+v", r)
+	}
+	// Its answer fills the row, quietly: the message is old news.
+	resent := message(group, peer, "U1", time.Unix(100, 0), text("found it"))
+	resent.UnavailableRequestID = "R1"
+	h.inject(resent)
+	expectTags(t, h.take(), "MessageUpdated ChatUpdated")
+	// A second connection mends nothing again.
+	h.inject(&events.Connected{})
+	h.settle()
+	if len(h.f.peer) != 1 {
+		t.Fatalf("asked the phone again: %d", len(h.f.peer))
+	}
+}

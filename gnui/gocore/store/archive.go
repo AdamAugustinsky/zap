@@ -386,6 +386,29 @@ func (s *Archive) Message(chat, id string) (Message, error) {
 	defer s.mu.Unlock()
 	return scanMessage(s.db.QueryRow("SELECT payload,raw FROM messages WHERE chat=? AND id=?", chat, id))
 }
+
+// Unsupported returns the messages filed as unsupported that kept their
+// protobuf, for a newer parser to look at again.
+func (s *Archive) Unsupported() ([]Message, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	rows, err := s.db.Query(`SELECT payload,raw FROM messages WHERE raw IS NOT NULL AND payload LIKE '%"kind":"unsupported"%'`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var result []Message
+	for rows.Next() {
+		m, err := scanMessage(rows)
+		if err != nil {
+			return nil, err
+		}
+		if m.Kind == "unsupported" {
+			result = append(result, m)
+		}
+	}
+	return result, rows.Err()
+}
 func clamp(limit int) int {
 	if limit <= 0 {
 		return 50
