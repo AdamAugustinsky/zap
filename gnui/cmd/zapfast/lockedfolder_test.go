@@ -78,8 +78,8 @@ func TestLeavingTheLockedFolderClosesItsChat(t *testing.T) {
 		{"⌘⇧1 (Chats)", func(t *testing.T, r *rig) {
 			r.Play(widgettest.Key('1', prim|ui.ModShift), widgettest.Idle(2))
 		}},
-		{"⌘K (Search chats)", func(t *testing.T, r *rig) {
-			r.Play(widgettest.Key('K', prim), widgettest.Idle(2))
+		{"⌘⇧F (Search chats)", func(t *testing.T, r *rig) {
+			r.Play(widgettest.Key('F', prim|ui.ModShift), widgettest.Idle(2))
 		}},
 		{"the app lock and the unlock", func(t *testing.T, r *rig) {
 			r.s.Settings.AppLockHash = []byte("pbkdf2-sha256$600000$c2FsdA$aGFzaA")

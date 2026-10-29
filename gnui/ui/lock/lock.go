@@ -173,7 +173,7 @@ func (s *Screen) password(e *screen.Env) {
 	if submit && ready {
 		s.submit(st)
 	}
-	k.Space(6)
+	k.Space(8)
 	if rexui.Link(k.Kit, tr("Forgot password? Unlink this computer"), rexui.LinkOpts{}).Clicked {
 		s.forgot(st, true)
 	}

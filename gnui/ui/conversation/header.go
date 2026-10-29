@@ -16,6 +16,7 @@ import (
 	"zapfast/i18n"
 	"zapfast/model"
 	"zapfast/state"
+	ztheme "zapfast/theme"
 	"zapfast/ui/calls"
 	"zapfast/ui/screen"
 )
@@ -65,7 +66,7 @@ func (s *Screen) Toolbar(e *screen.Env, tb *rexui.Toolbar) {
 	c.NextAxis(ui.AxisX)
 	c.NextCross(ui.CrossCenter)
 	c.NextGap(e.Pt(8))
-	c.NextPadding(e.Pt(8), 0, e.Pt(8), 0)
+	c.NextPadding(e.Pt(ztheme.T.HeaderPadX), 0, e.Pt(ztheme.T.HeaderPadX), 0)
 	c.NextRole(ui.RoleButton)
 	c.NextSemNameBytes(name)
 	c.NextCursor(ui.CursorPointer)
@@ -75,15 +76,25 @@ func (s *Screen) Toolbar(e *screen.Env, tb *rexui.Toolbar) {
 	c.NextAxis(ui.AxisY)
 	c.NextSize(ui.Children(0), ui.Children(1))
 	c.Push(c.Box(0, "titles"))
-	k.NextWidth(shrinkingLabel)
-	rexui.LabelBytes(k, name, rexui.LabelOpts{Style: rexui.TextHeadline})
-	if sub, accent := s.subtitle(e, a, ch); len(sub) > 0 {
-		col := rexui.Of(theme.Label2)
-		if accent {
-			col = rexui.Of(theme.Accent)
-		}
+	// With the titlebar's tabs up the chosen tab names the chat, and the
+	// header says only what the tab cannot: who is online, typing, in the
+	// group, on one line; with nothing to say it keeps the name.
+	sub, accent := s.subtitle(e, a, ch)
+	col := rexui.Of(theme.Label2)
+	if accent {
+		col = rexui.Of(theme.Accent)
+	}
+	switch {
+	case e.Tabbed() && len(sub) > 0:
 		k.NextWidth(shrinkingLabel)
-		rexui.LabelBytes(k, sub, rexui.LabelOpts{Style: rexui.TextCaption, Color: col})
+		rexui.LabelBytes(k, sub, rexui.LabelOpts{Style: rexui.TextCallout, Color: col})
+	default:
+		k.NextWidth(shrinkingLabel)
+		rexui.LabelBytes(k, name, rexui.LabelOpts{Style: rexui.TextHeadline})
+		if len(sub) > 0 {
+			k.NextWidth(shrinkingLabel)
+			rexui.LabelBytes(k, sub, rexui.LabelOpts{Style: rexui.TextCaption, Color: col})
+		}
 	}
 	c.Pop()
 	c.Pop()

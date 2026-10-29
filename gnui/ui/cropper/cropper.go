@@ -22,6 +22,7 @@ import (
 	"zapfast/core"
 	"zapfast/i18n"
 	"zapfast/state"
+	ztheme "zapfast/theme"
 	"zapfast/ui/screen"
 )
 
@@ -124,7 +125,7 @@ func New() *Screen { return &Screen{} }
 // Init readies it for a window.
 func (s *Screen) Init(e *screen.Env) error {
 	s.st = e.S
-	s.closeIc = e.K.AddIcon(icon.Spec{Symbol: "xmark", Fallback: '✕', Pt: 15})
+	s.closeIc = e.K.AddIcon(ztheme.ToolIcon("xmark", '✕'))
 	s.keepIc = e.K.AddIcon(icon.Spec{Symbol: "checkmark", Fallback: '✓', Pt: 15})
 	s.leftIc = e.K.AddIcon(icon.Spec{Symbol: "rotate.left", Fallback: '↺', Pt: 15})
 	s.rightIc = e.K.AddIcon(icon.Spec{Symbol: "rotate.right", Fallback: '↻', Pt: 15})

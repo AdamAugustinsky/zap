@@ -260,7 +260,7 @@ func (s *Screen) speedRow(e *screen.Env) (chosen bool) {
 	c.NextAxis(ui.AxisX)
 	c.NextCross(ui.CrossCenter)
 	c.NextGap(e.Pt(4))
-	c.NextPadding(e.Pt(6), 0, e.Pt(6), 0)
+	c.NextPadding(e.Pt(8), 0, e.Pt(8), 0)
 	c.Push(c.Box(0, "speeds"))
 	for i, v := range av.Speeds {
 		on := v == cur

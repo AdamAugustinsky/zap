@@ -3145,9 +3145,13 @@ msgstr "Grupo"
 msgid "Group invite"
 msgstr "Convite de grupo"
 
-#: gnui/ui/chatlist/chatlist.go:658
+#: gnui/ui/shell/panes.go
 msgid "Hide the chat list (⌘B)"
 msgstr "Ocultar a lista de conversas (⌘B)"
+
+#: gnui/ui/shell/panes.go
+msgid "Show the chat list (⌘B)"
+msgstr "Mostrar a lista de conversas (⌘B)"
 
 #. Translators: the verb-less menu item that opens a chat's info panel.
 #: gnui/ui/chatlist/menu.go:375 gnui/ui/conversation/menu.go:377
@@ -4746,3 +4750,163 @@ msgstr "Transparência"
 #: gnui/ui/settings/rows.go
 msgid "The desktop shows softly through the window's background. The system's Reduce transparency setting turns it off too."
 msgstr "A área de trabalho aparece suavemente pelo fundo da janela. O ajuste do sistema Reduzir transparência também a desativa."
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unarchived"
+msgstr "Desarquivada"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Muted for 8 hours"
+msgstr "Silenciada por 8 horas"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unmuted"
+msgstr "Som reativado"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Pinned"
+msgstr "Fixada"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unpinned"
+msgstr "Desafixada"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Marked as unread"
+msgstr "Marcada como não lida"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Marked as read"
+msgstr "Marcada como lida"
+
+#: gnui/ui/shell/keyboard.go
+msgid "{what}: {chat}. Z to undo"
+msgstr "{what}: {chat}. Z para desfazer"
+
+#: gnui
+msgid "Search everything"
+msgstr "Buscar em tudo"
+
+#: gnui
+msgid "Chats, people, messages, files"
+msgstr "Conversas, pessoas, mensagens, arquivos"
+
+#: gnui
+msgid "Files and links"
+msgstr "Arquivos e links"
+
+#: gnui
+msgid "Nothing found"
+msgstr "Nada encontrado"
+
+#: gnui
+msgid "People"
+msgstr "Pessoas"
+
+#: gnui
+msgid "Search everything: chats, people, messages, files"
+msgstr "Buscar em tudo: conversas, pessoas, mensagens, arquivos"
+
+#: gnui
+msgid "Search everything (when not typing)"
+msgstr "Buscar em tudo (quando não estiver digitando)"
+
+#: gnui
+msgid "Next / previous chat (when not typing)"
+msgstr "Próxima / anterior conversa (quando não estiver digitando)"
+
+#: gnui
+msgid "Archive or unarchive the open chat (when not typing)"
+msgstr "Arquivar ou desarquivar a conversa aberta (quando não estiver digitando)"
+
+#: gnui
+msgid "Mute the open chat for 8 hours, or unmute it (when not typing)"
+msgstr "Silenciar a conversa aberta por 8 horas ou reativar o som (quando não estiver digitando)"
+
+#: gnui
+msgid "Pin or unpin the open chat (when not typing)"
+msgstr "Fixar ou desafixar a conversa aberta (quando não estiver digitando)"
+
+#: gnui
+msgid "Mark the open chat as unread or read (when not typing)"
+msgstr "Marcar a conversa aberta como não lida ou lida (quando não estiver digitando)"
+
+#: gnui
+msgid "Reply to the last message (when not typing)"
+msgstr "Responder à última mensagem (quando não estiver digitando)"
+
+#: gnui
+msgid "Undo the last change a single key made"
+msgstr "Desfazer a última alteração feita com uma tecla"
+
+#: gnui
+msgid "Go to the chats, Archived, Starred or Calls"
+msgstr "Ir para as conversas, Arquivadas, Com estrela ou Chamadas"
+
+#: gnui
+msgid "Starts a message in the open chat, or a search"
+msgstr "Começa uma mensagem na conversa aberta, ou uma busca"
+
+#: gnui
+msgid "Dismiss the current action, return from search, Calls or Starred, leave the message input, or close the chat"
+msgstr "Cancelar a ação atual, voltar da busca, Chamadas ou Com estrela, sair do campo de mensagem ou fechar a conversa"
+
+#: gnui
+msgid "Folder"
+msgstr "Pasta"
+
+#: gnui
+msgid "New folder"
+msgstr "Nova pasta"
+
+#: gnui
+msgid "New folder…"
+msgstr "Nova pasta…"
+
+#: gnui
+msgid "Take out of the folder"
+msgstr "Tirar da pasta"
+
+#: gnui
+msgid "Folder name"
+msgstr "Nome da pasta"
+
+#: gnui
+msgid "Rename…"
+msgstr "Renomear…"
+
+#: gnui
+msgid "Icon"
+msgstr "Ícone"
+
+#: gnui
+msgid "Stop showing it as a space"
+msgstr "Deixar de mostrar como espaço"
+
+#: gnui
+msgid "Show it as a space (⌃1–9)"
+msgstr "Mostrar como espaço (⌃1–9)"
+
+#: gnui
+msgid "Delete folder (its chats stay)"
+msgstr "Apagar pasta (as conversas ficam)"
+
+#: gnui
+msgid "Unread chats"
+msgstr "Conversas não lidas"
+
+#: gnui
+msgid "Spaces"
+msgstr "Espaços"
+
+#: gnui
+msgid "Go to the tab at this place"
+msgstr "Ir para a aba nesta posição"
+
+#: gnui
+msgid "Go to the space at this place"
+msgstr "Ir para o espaço nesta posição"
+
+#: gnui
+msgid "Next / previous space"
+msgstr "Próximo / anterior espaço"

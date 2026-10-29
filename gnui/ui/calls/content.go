@@ -42,16 +42,16 @@ func (p *Content) Build(e *screen.Env, r screen.Rect) {
 	pad := float32(24)
 	k.NextPadding(pad, 0, pad, 0)
 	k.BeginContainer(ui.AxisY, ui.CrossCenter, "start call", ui.Px(r.W), ui.Px(r.H), 0)
-	k.Space(max(r.H/k.Scale()/2-110, 24))
+	k.Space(max(r.H/k.Scale()/2-110, 24)) // grid:ok 110 is the block's half-height offset for centring, not a gap
 	label := i18n.T("Start call")
 	if circleButton(e, p.ic, label, 72, stopStartCall) {
 		p.h.acct(a).newCall = true
 		p.h.gen++
 		e.S.Touch()
 	}
-	k.Space(10)
+	k.Space(8)
 	rexui.Label(k.Kit, label, rexui.LabelOpts{Style: rexui.TextTitle3})
-	k.Space(18)
+	k.Space(16)
 	k.NextWidth(ui.Px(min(e.Pt(360), r.W-e.Pt(2*pad))))
 	k.NextAlign(ui.AlignCenter)
 	rexui.Label(k.Kit, i18n.T("Call one person by voice or video, or choose a call in the list to see it."),

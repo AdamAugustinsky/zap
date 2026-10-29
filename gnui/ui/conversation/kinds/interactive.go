@@ -12,6 +12,7 @@ import (
 	"zapfast/i18n"
 	"zapfast/model"
 	"zapfast/state"
+	ztheme "zapfast/theme"
 	"zapfast/ui/conversation/mkey"
 	"zapfast/ui/screen"
 )
@@ -24,12 +25,12 @@ const (
 	buttonMinH   = 44.0
 	buttonPadY   = 22.0
 	buttonInset  = 48.0 // the label's share of the row's width not available to it
-	phoneNoteGap = 6.0
-	cardPadX     = 10.0
-	cardPadTop   = 6.0
-	cardPadBot   = 5.0
-	cardRadius   = 10.0
-	cardGapY     = 4.0
+	phoneNoteGap = 4.0
+	cardPadX     = ztheme.BubblePadY // the card's corners nest its picture as a bubble's do
+	cardPadTop   = ztheme.BubblePadY
+	cardPadBot   = ztheme.BubblePadY
+	cardRadius   = ztheme.BubbleRadius
+	cardGapY     = ztheme.Space2
 	arrowSize    = 40.0
 	bodyMaxLines = 8
 )
@@ -420,7 +421,7 @@ func (b *blk) carouselCard(card *abi.InteractiveCard, i int, g *carGeom, h float
 	px := b.pt(cardPadX)
 	if cd.HasImage {
 		p := b.carouselPic(card, cd, i)
-		b.picture(&p, px, y, g.cw, g.pic, b.pt(6), 1)
+		b.picture(&p, px, y, g.cw, g.pic, b.pt(ztheme.Nested()), 1)
 		y += g.pic + b.pt(cardGapY)
 	}
 	if len(cd.Body) > 0 {

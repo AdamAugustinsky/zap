@@ -3135,9 +3135,13 @@ msgstr "Grup"
 msgid "Group invite"
 msgstr "Grup daveti"
 
-#: gnui/ui/chatlist/chatlist.go:658
+#: gnui/ui/shell/panes.go
 msgid "Hide the chat list (⌘B)"
 msgstr "Sohbet listesini gizle (⌘B)"
+
+#: gnui/ui/shell/panes.go
+msgid "Show the chat list (⌘B)"
+msgstr "Sohbet listesini göster (⌘B)"
 
 #. Translators: the verb-less menu item that opens a chat's info panel.
 #: gnui/ui/chatlist/menu.go:375 gnui/ui/conversation/menu.go:377
@@ -4726,3 +4730,163 @@ msgstr "Saydamlık"
 #: gnui/ui/settings/rows.go
 msgid "The desktop shows softly through the window's background. The system's Reduce transparency setting turns it off too."
 msgstr "Masaüstü pencerenin arka planından hafifçe görünür. Sistemin Saydamlığı azalt ayarı da bunu kapatır."
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unarchived"
+msgstr "Arşivden çıkarıldı"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Muted for 8 hours"
+msgstr "8 saat sessize alındı"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unmuted"
+msgstr "Sessizden çıkarıldı"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Pinned"
+msgstr "Sabitlendi"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unpinned"
+msgstr "Sabitlemeden çıkarıldı"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Marked as unread"
+msgstr "Okunmadı olarak işaretlendi"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Marked as read"
+msgstr "Okundu olarak işaretlendi"
+
+#: gnui/ui/shell/keyboard.go
+msgid "{what}: {chat}. Z to undo"
+msgstr "{what}: {chat}. Geri almak için Z"
+
+#: gnui
+msgid "Search everything"
+msgstr "Her şeyde ara"
+
+#: gnui
+msgid "Chats, people, messages, files"
+msgstr "Sohbetler, kişiler, mesajlar, dosyalar"
+
+#: gnui
+msgid "Files and links"
+msgstr "Dosyalar ve bağlantılar"
+
+#: gnui
+msgid "Nothing found"
+msgstr "Hiçbir şey bulunamadı"
+
+#: gnui
+msgid "People"
+msgstr "Kişiler"
+
+#: gnui
+msgid "Search everything: chats, people, messages, files"
+msgstr "Her şeyde ara: sohbetler, kişiler, mesajlar, dosyalar"
+
+#: gnui
+msgid "Search everything (when not typing)"
+msgstr "Her şeyde ara (yazmıyorken)"
+
+#: gnui
+msgid "Next / previous chat (when not typing)"
+msgstr "Sonraki / önceki sohbet (yazmıyorken)"
+
+#: gnui
+msgid "Archive or unarchive the open chat (when not typing)"
+msgstr "Açık sohbeti arşivle veya arşivden çıkar (yazmıyorken)"
+
+#: gnui
+msgid "Mute the open chat for 8 hours, or unmute it (when not typing)"
+msgstr "Açık sohbeti 8 saat sessize al veya sesi aç (yazmıyorken)"
+
+#: gnui
+msgid "Pin or unpin the open chat (when not typing)"
+msgstr "Açık sohbeti sabitle veya sabitlemeyi kaldır (yazmıyorken)"
+
+#: gnui
+msgid "Mark the open chat as unread or read (when not typing)"
+msgstr "Açık sohbeti okunmadı veya okundu olarak işaretle (yazmıyorken)"
+
+#: gnui
+msgid "Reply to the last message (when not typing)"
+msgstr "Son mesajı yanıtla (yazmıyorken)"
+
+#: gnui
+msgid "Undo the last change a single key made"
+msgstr "Tek tuşla yapılan son değişikliği geri al"
+
+#: gnui
+msgid "Go to the chats, Archived, Starred or Calls"
+msgstr "Sohbetlere, Arşive, Yıldızlılara veya Aramalara git"
+
+#: gnui
+msgid "Starts a message in the open chat, or a search"
+msgstr "Açık sohbette bir mesaj ya da bir arama başlatır"
+
+#: gnui
+msgid "Dismiss the current action, return from search, Calls or Starred, leave the message input, or close the chat"
+msgstr "Geçerli işlemi kapat, aramadan, Aramalardan veya Yıldızlılardan dön, mesaj alanından çık veya sohbeti kapat"
+
+#: gnui
+msgid "Folder"
+msgstr "Klasör"
+
+#: gnui
+msgid "New folder"
+msgstr "Yeni klasör"
+
+#: gnui
+msgid "New folder…"
+msgstr "Yeni klasör…"
+
+#: gnui
+msgid "Take out of the folder"
+msgstr "Klasörden çıkar"
+
+#: gnui
+msgid "Folder name"
+msgstr "Klasör adı"
+
+#: gnui
+msgid "Rename…"
+msgstr "Yeniden adlandır…"
+
+#: gnui
+msgid "Icon"
+msgstr "Simge"
+
+#: gnui
+msgid "Stop showing it as a space"
+msgstr "Alan olarak göstermeyi bırak"
+
+#: gnui
+msgid "Show it as a space (⌃1–9)"
+msgstr "Alan olarak göster (⌃1–9)"
+
+#: gnui
+msgid "Delete folder (its chats stay)"
+msgstr "Klasörü sil (sohbetler kalır)"
+
+#: gnui
+msgid "Unread chats"
+msgstr "Okunmamış sohbetler"
+
+#: gnui
+msgid "Spaces"
+msgstr "Alanlar"
+
+#: gnui
+msgid "Go to the tab at this place"
+msgstr "Bu sıradaki sekmeye git"
+
+#: gnui
+msgid "Go to the space at this place"
+msgstr "Bu sıradaki alana git"
+
+#: gnui
+msgid "Next / previous space"
+msgstr "Sonraki / önceki alan"

@@ -36,6 +36,8 @@ type Env struct {
 
 	tabs   tabStops // the main window's Tab order (TabStop)
 	narrow bool
+	tabbed bool
+	inset  float32
 }
 
 // Narrow reports whether the main window is narrow: the list and what it
@@ -45,6 +47,22 @@ func (e *Env) Narrow() bool { return e.narrow }
 
 // SetNarrow is the shell's: it says whether the window is narrow this frame.
 func (e *Env) SetNarrow(on bool) { e.narrow = on }
+
+// Tabbed reports whether the titlebar's tabs are up this frame: the open
+// chat's name is its tab's then, and its header need not say it again.
+func (e *Env) Tabbed() bool { return e.tabbed }
+
+// SetTabbed is the shell's: it says whether the tabs are up this frame.
+func (e *Env) SetTabbed(on bool) { e.tabbed = on }
+
+// ContentInset is how far below the top of the Rect it is given a pane's
+// content starts at rest, in pixels: what floats over that strip (the pane's
+// title row, a banner) has the content scroll up under it.
+func (e *Env) ContentInset() float32 { return e.inset }
+
+// SetContentInset is the shell's: it says how far the slot it builds next
+// runs under its pane's title row.
+func (e *Env) SetContentInset(px float32) { e.inset = max(px, 0) }
 
 // C is the window's ui context.
 func (e *Env) C() *ui.Context { return e.K.Context() }
@@ -290,12 +308,16 @@ type Set struct {
 
 	Picker       Overlay // ui/picker: emoji, GIFs, stickers
 	Dialogs      Overlay // ui/dialogs
+	Spotlight    Overlay // ui/spotlight: ⌘K, the search over everything
 	Cropper      Overlay // ui/cropper
 	StickerMaker Overlay // ui/stickermaker
 
 	Settings WindowScreen // ui/settings
 	Viewer   WindowScreen // ui/viewer
 	Call     WindowScreen // ui/calls: the call window
+	// Playground is the design playground's window (ui/playground), a dev
+	// build's only: nil otherwise.
+	Playground WindowScreen
 
 	Theme  Theme   // theme
 	System System  // sys

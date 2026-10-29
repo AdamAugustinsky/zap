@@ -86,7 +86,9 @@ func TestKeyboardChatNavigationWrapsWithinTheVisibleList(t *testing.T) {
 	}
 }
 
-func TestNumberedChatShortcutDoesNotEscapeAnEmptyFilter(t *testing.T) {
+// ⌘1–9 go to the titlebar's tabs, not to places in the list: with the Unread
+// list empty, ⌘1 still goes to the first tab.
+func TestNumberedShortcutGoesToTheTabsNotTheList(t *testing.T) {
 	r := unreadRig(t)
 	a := r.s.Acct()
 	for _, id := range []string{adaJID, graceJID, "3@s.whatsapp.net"} {
@@ -99,7 +101,7 @@ func TestNumberedChatShortcutDoesNotEscapeAnEmptyFilter(t *testing.T) {
 		t.Fatal("Unread filter is not empty")
 	}
 	r.Play(widgettest.Key('1', ui.PrimaryMod()), widgettest.Idle(3))
-	if a.Open != 0 {
-		t.Fatal("numbered shortcut escaped the empty visible list")
+	if a.Open != a.Model.Chats.Find([]byte(adaJID)) {
+		t.Fatal("⌘1 did not go to the first tab")
 	}
 }

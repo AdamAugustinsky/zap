@@ -10,6 +10,7 @@ import (
 	"zapfast/i18n"
 	"zapfast/model"
 	"zapfast/state"
+	ztheme "zapfast/theme"
 	"zapfast/ui/screen"
 )
 
@@ -100,7 +101,7 @@ func (sh *Shell) surface(p paneID, r [4]float32) {
 	}
 	s := theme.Surface{
 		Key: ui.KeyN(paneKey, uint64(p)), Slot: int(p), Rect: r,
-		Focus: c.AnimateValue(ui.KeyN(paneFocusKey, uint64(p)), target, 14), Opacity: 1, Top: true,
+		Focus: c.AnimateValue(ui.KeyN(paneFocusKey, uint64(p)), target, th.Motion.Dim), Opacity: 1, Top: true, // DurShort, at once under Reduce Motion
 	}
 	th.Chrome.SurfaceShadow(c, th, s)
 	kg := th.Chrome.BeginSurface(c, th, s)
@@ -124,12 +125,41 @@ func (sh *Shell) titlebar(a *state.Account) {
 	tb.BeginCustom(i18n.T("Accounts")+"###account", ui.Px(e.Pt(accountChipPt)))
 	key := sh.accountChip(a, tb.Height())
 	tb.EndCustom()
+	// The list's toggle (⌘B) keeps one place, beside the account, whether
+	// the list is shown or hidden, so it is where the list went: a narrow
+	// window has no list to hide (its rail and Back lead to the list).
+	if sh.sidebarW() > 0 {
+		tip := i18n.T("Hide the chat list (⌘B)")
+		if s.Panes.ListHidden {
+			tip = i18n.T("Show the chat list (⌘B)")
+		}
+		it := tb.Item(sh.ic.sidebar, tip)
+		e.TabStop(screen.StopSidebar, it.ID)
+		if it.Clicked {
+			s.Panes.ListHidden = !s.Panes.ListHidden
+			s.Touch()
+		}
+	}
 	tb.Flexible()
 	tb.End()
 	if s.AccountMenu {
 		sh.accounts(sh.anchorOf(key, screen.Rect{X: e.Pt(trafficPt), Y: e.Pt(9), W: e.Pt(accountChipPt), H: e.Pt(28)}))
 	}
 }
+
+// sidebarW is the room the list's toggle takes in the titlebar after the
+// account block, pixels: none in a narrow window or on a page without the
+// chat list (Calls).
+func (sh *Shell) sidebarW() float32 {
+	s, e := sh.S, &sh.env
+	if e.Narrow() || s.Page == state.PageCalls {
+		return 0
+	}
+	return e.Pt(sidebarItemPt)
+}
+
+// sidebarItemPt is the toggle's toolbar item and the space after it.
+const sidebarItemPt = 28 + 8
 
 // accountChip is the titlebar's account block, h high: one button, our
 // picture with the dot of unread chats elsewhere, our name over our number.
@@ -147,7 +177,7 @@ func (sh *Shell) accountChip(a *state.Account, h float32) ui.Key {
 	size := e.Pt(26)
 	c.NextAxis(ui.AxisX)
 	c.NextCross(ui.CrossCenter)
-	c.NextGap(e.Pt(9))
+	c.NextGap(e.Pt(8))
 	c.NextSize(ui.Pct(1), ui.Pct(1))
 	c.Push(c.Box(0, "chip"))
 	c.NextSize(ui.Px(size), ui.Px(size))
@@ -163,8 +193,8 @@ func (sh *Shell) accountChip(a *state.Account, h float32) ui.Key {
 	if len(phone) > 0 && len(a.Model.Me.Name()) > 0 {
 		k.NextWidth(ui.Pct(1))
 		sh.phone = format.AppendPhone(sh.phone[:0], model.S(phone))
-		// Rex's host block sets the machine in its metadata's face
-		rexui.LabelBytes(k.Kit, sh.phone, rexui.LabelOpts{Style: rexui.TextCaption, Color: rexui.Of(theme.Label2), MonoPt: 10.5})
+		// Rex's host block sets the number in its metadata's face
+		rexui.LabelBytes(k.Kit, sh.phone, rexui.LabelOpts{Style: rexui.TextCaption, Color: rexui.Of(theme.Label2), MetaPt: ztheme.T.MetaPt})
 	}
 	c.Pop()
 	c.Pop()

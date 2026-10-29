@@ -3031,9 +3031,13 @@ msgstr "群組"
 msgid "Group invite"
 msgstr "群組邀請"
 
-#: gnui/ui/chatlist/chatlist.go:658
+#: gnui/ui/shell/panes.go
 msgid "Hide the chat list (⌘B)"
 msgstr "隱藏對話列表 (⌘B)"
+
+#: gnui/ui/shell/panes.go
+msgid "Show the chat list (⌘B)"
+msgstr "顯示對話列表 (⌘B)"
 
 #. Translators: the verb-less menu item that opens a chat's info panel.
 #: gnui/ui/chatlist/menu.go:375 gnui/ui/conversation/menu.go:377
@@ -4583,3 +4587,163 @@ msgstr "透明度"
 #: gnui/ui/settings/rows.go
 msgid "The desktop shows softly through the window's background. The system's Reduce transparency setting turns it off too."
 msgstr "桌面會柔和地透過視窗背景顯示。系統的「減少透明度」設定也會將其關閉。"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unarchived"
+msgstr "已取消封存"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Muted for 8 hours"
+msgstr "已靜音 8 小時"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unmuted"
+msgstr "已取消靜音"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Pinned"
+msgstr "已置頂"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unpinned"
+msgstr "已取消置頂"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Marked as unread"
+msgstr "已標為未讀"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Marked as read"
+msgstr "已標為已讀"
+
+#: gnui/ui/shell/keyboard.go
+msgid "{what}: {chat}. Z to undo"
+msgstr "{what}：{chat}。按 Z 復原"
+
+#: gnui
+msgid "Search everything"
+msgstr "搜尋全部"
+
+#: gnui
+msgid "Chats, people, messages, files"
+msgstr "對話、聯絡人、訊息、檔案"
+
+#: gnui
+msgid "Files and links"
+msgstr "檔案與連結"
+
+#: gnui
+msgid "Nothing found"
+msgstr "找不到結果"
+
+#: gnui
+msgid "People"
+msgstr "聯絡人"
+
+#: gnui
+msgid "Search everything: chats, people, messages, files"
+msgstr "搜尋全部：對話、聯絡人、訊息、檔案"
+
+#: gnui
+msgid "Search everything (when not typing)"
+msgstr "搜尋全部（未輸入時）"
+
+#: gnui
+msgid "Next / previous chat (when not typing)"
+msgstr "下一個 / 上一個對話（未輸入時）"
+
+#: gnui
+msgid "Archive or unarchive the open chat (when not typing)"
+msgstr "封存或取消封存目前對話（未輸入時）"
+
+#: gnui
+msgid "Mute the open chat for 8 hours, or unmute it (when not typing)"
+msgstr "將目前對話靜音 8 小時或取消靜音（未輸入時）"
+
+#: gnui
+msgid "Pin or unpin the open chat (when not typing)"
+msgstr "置頂或取消置頂目前對話（未輸入時）"
+
+#: gnui
+msgid "Mark the open chat as unread or read (when not typing)"
+msgstr "將目前對話標為未讀或已讀（未輸入時）"
+
+#: gnui
+msgid "Reply to the last message (when not typing)"
+msgstr "回覆最後一則訊息（未輸入時）"
+
+#: gnui
+msgid "Undo the last change a single key made"
+msgstr "復原單鍵所做的最後一次變更"
+
+#: gnui
+msgid "Go to the chats, Archived, Starred or Calls"
+msgstr "前往對話、已封存、星號或通話"
+
+#: gnui
+msgid "Starts a message in the open chat, or a search"
+msgstr "在目前對話中開始輸入訊息，或開始搜尋"
+
+#: gnui
+msgid "Dismiss the current action, return from search, Calls or Starred, leave the message input, or close the chat"
+msgstr "取消目前動作，退出搜尋、通話或星號，離開輸入框，或關閉對話"
+
+#: gnui
+msgid "Folder"
+msgstr "資料夾"
+
+#: gnui
+msgid "New folder"
+msgstr "新增資料夾"
+
+#: gnui
+msgid "New folder…"
+msgstr "新增資料夾…"
+
+#: gnui
+msgid "Take out of the folder"
+msgstr "移出資料夾"
+
+#: gnui
+msgid "Folder name"
+msgstr "資料夾名稱"
+
+#: gnui
+msgid "Rename…"
+msgstr "重新命名…"
+
+#: gnui
+msgid "Icon"
+msgstr "圖示"
+
+#: gnui
+msgid "Stop showing it as a space"
+msgstr "不再作為空間顯示"
+
+#: gnui
+msgid "Show it as a space (⌃1–9)"
+msgstr "作為空間顯示 (⌃1–9)"
+
+#: gnui
+msgid "Delete folder (its chats stay)"
+msgstr "刪除資料夾（對話保留）"
+
+#: gnui
+msgid "Unread chats"
+msgstr "未讀對話"
+
+#: gnui
+msgid "Spaces"
+msgstr "空間"
+
+#: gnui
+msgid "Go to the tab at this place"
+msgstr "前往此位置的分頁"
+
+#: gnui
+msgid "Go to the space at this place"
+msgstr "前往此位置的空間"
+
+#: gnui
+msgid "Next / previous space"
+msgstr "下一個 / 上一個空間"

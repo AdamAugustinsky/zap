@@ -118,11 +118,14 @@ func (p *Page) Init(e *screen.Env) error {
 	add := func(sym string, fb rune, pt float32) icon.ID {
 		return e.K.AddIcon(icon.Spec{Symbol: sym, Fallback: fb, Pt: pt})
 	}
-	tbPt := theme.MacWindow.Capsule.Glyph + 2
+	// a row's call buttons and the title row's items as toolbar items, a
+	// call's direction as the row's indicators (theme/icons.go)
+	tool := func(sym string, fb rune) icon.ID { return e.K.AddIcon(ztheme.ToolIcon(sym, fb)) }
+	small := func(sym string, fb rune) icon.ID { return e.K.AddIcon(ztheme.SmallIcon(sym, fb)) }
 	p.ic = pageIcons{
-		voice: add("phone", '☎', 16), video: add("video", '▶', 16), newCall: add("phone.badge.plus", '+', tbPt),
-		back: add("chevron.left", '‹', tbPt), out: add("phone.arrow.up.right", '↗', 13), in: add("phone.arrow.down.left", '↙', 13),
-		missed: add("phone.fill.arrow.down.left", '↙', 13), link: add("link", '∞', 18), big: add("phone", '☎', 40),
+		voice: tool("phone", '☎'), video: tool("video", '▶'), newCall: tool("phone.badge.plus", '+'),
+		back: tool("chevron.left", '‹'), out: small("phone.arrow.up.right", '↗'), in: small("phone.arrow.down.left", '↙'),
+		missed: small("phone.fill.arrow.down.left", '↙'), link: add("link", '∞', 18), big: add("phone", '☎', 40),
 	}
 	return nil
 }
@@ -160,7 +163,7 @@ func (p *Page) Build(e *screen.Env, r screen.Rect) {
 
 	k.NextPadding(0, 0, 0, 0)
 	k.BeginContainer(ui.AxisY, ui.CrossStart, "calls page", ui.Px(r.W), ui.Px(r.H), 0)
-	k.NextPadding(12, 8, 12, 6)
+	k.NextPadding(12, 8, 12, 8)
 	k.BeginContainer(ui.AxisY, ui.CrossStart, "search", ui.Pct(1), ui.Children(1), 0)
 	k.NextWidth(ui.Pct(1))
 	hint := i18n.T("Search name or number")
@@ -254,7 +257,7 @@ func (p *Page) Toolbar(e *screen.Env, tb *rexui.Toolbar) {
 // on Missed returns to every call, as the chat list's chips do.
 func (p *Page) chips(e *screen.Env, a *state.Account, ac *acct) {
 	k := e.K
-	k.Space(6)
+	k.Space(8)
 	k.NextGap(4)
 	k.BeginContainer(ui.AxisX, ui.CrossCenter, "chips", ui.Pct(1), ui.Children(1), 0)
 	missed := ac.missed
@@ -417,8 +420,8 @@ func (p *Page) historyRow(e *screen.Env, a *state.Account, ac *acct, lst *base.L
 		c.NextRadius(e.Pt(8))
 	}
 	c.NextCross(ui.CrossCenter)
-	c.NextGap(e.Pt(10))
-	c.NextPadding(e.Pt(10), 0, e.Pt(6), 0)
+	c.NextGap(e.Pt(12))
+	c.NextPadding(e.Pt(12), 0, e.Pt(8), 0)
 	flags := ui.Flags(0)
 	if fill != 0 {
 		flags = ui.DrawBackground
@@ -433,7 +436,7 @@ func (p *Page) historyRow(e *screen.Env, a *state.Account, ac *acct, lst *base.L
 	// the text column
 	c.NextAxis(ui.AxisY)
 	c.NextSize(ui.Pct(1), ui.Children(1))
-	c.NextGap(e.Pt(3))
+	c.NextGap(e.Pt(4))
 	c.Push(c.Box(0, "text"))
 	nameC := fg
 	if en.missed() && !(rs.Selected && rs.Emphasised) {
@@ -451,13 +454,13 @@ func (p *Page) historyRow(e *screen.Env, a *state.Account, ac *acct, lst *base.L
 	c.BoxKeyed(ui.DrawText|ui.EllipsisOverflowX, ui.KeyN(rs.Key, 1), name)
 	cs := &th.Styles[theme.StyleCaption1]
 	c.NextSize(ui.TextSize(base.LabelSlack), ui.Px(cs.Line))
-	c.NextFont(ztheme.Mono(k, 10.5)) // Rex's metadata, as the chat list's times
+	c.NextFont(ztheme.Meta(k, ztheme.T.MetaPt)) // Rex's metadata, as the chat list's times
 	c.NextTextColor(fg2)
 	c.BoxKeyed(ui.DrawText, ui.KeyN(rs.Key, 2), rw.stamp.of(p.rb))
 	c.Pop()
 	c.NextAxis(ui.AxisX)
 	c.NextCross(ui.CrossCenter)
-	c.NextGap(e.Pt(5))
+	c.NextGap(e.Pt(4))
 	c.NextSize(ui.Pct(1), ui.Children(1))
 	c.Push(c.Box(0, "line2"))
 	glyph, gc := p.ic.in, th.Colors[theme.Accent]
@@ -692,7 +695,7 @@ func (p *Page) personRow(e *screen.Env, a *state.Account, ac *acct, lst *base.Li
 			title = i18n.T("Frequently contacted")
 		}
 		c.NextCross(ui.CrossEnd)
-		c.NextPadding(e.Pt(10), 0, e.Pt(10), e.Pt(8))
+		c.NextPadding(e.Pt(12), 0, e.Pt(12), e.Pt(8))
 		lst.BeginRow(&rs, nil, 0)
 		rexui.Label(k.Kit, title, rexui.LabelOpts{Style: rexui.TextSubheadline, Color: rexui.Of(theme.Accent)})
 		return false
@@ -704,13 +707,13 @@ func (p *Page) personRow(e *screen.Env, a *state.Account, ac *acct, lst *base.Li
 	ps := &p.persons[i]
 	name := ps.name.of(p.pbuf)
 	c.NextCross(ui.CrossCenter)
-	c.NextGap(e.Pt(10))
-	c.NextPadding(e.Pt(10), 0, e.Pt(6), 0)
+	c.NextGap(e.Pt(12))
+	c.NextPadding(e.Pt(12), 0, e.Pt(8), 0)
 	lst.BeginRow(&rs, name, 0)
 	rexui.Avatar(k.Kit, model.S(name), rexui.AvatarOpts{Size: rowAvatarPt, Image: p.pics.of(e, a, ps.jid.of(p.pbuf), rowAvatarPt)})
 	c.NextAxis(ui.AxisY)
 	c.NextSize(ui.Pct(1), ui.Children(1))
-	c.NextGap(e.Pt(3))
+	c.NextGap(e.Pt(4))
 	c.Push(c.Box(0, "text"))
 	hs := &th.Styles[theme.StyleBodySemibold]
 	c.NextSize(ui.Pct(1), ui.Px(hs.Line))

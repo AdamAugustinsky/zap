@@ -14,6 +14,7 @@ import (
 // the text keeps its own colours. The recipes are rexui's, set once for every window before the
 // first frame.
 func init() {
+	tuneRecipes()
 	rexui.BubbleLook.Outgoing = rexui.OfAlpha(gtheme.Accent, ownTint, ownTintDark)
 	rexui.BubbleLook.TextOut = rexui.Of(gtheme.Label)
 	rexui.ChatRowLook.Selected = rexui.OfAlpha(gtheme.Accent, rowTint, rowTintDark)
@@ -36,6 +37,23 @@ func init() {
 
 }
 
+// tuneRecipes puts T's values into Rex's recipes: the bubbles and the chat
+// rows on Zap's grid, their corners the radius their contents nest in
+// (space.go, tune.go).
+func tuneRecipes() {
+	b := &rexui.BubbleLook
+	b.PadX, b.PadY, b.RowGap = T.BubblePadX, T.BubblePadY, T.RowGap
+	b.Radius, b.CodeRadius = T.BubbleRadius, Nested()
+	rexui.ChatRowLook.Pad, rexui.ChatRowLook.Gap = T.ListRowPad, T.ListRowGap
+}
+
+// tuneMetrics puts T's into th: the panes on Zap's grid, concentric with
+// the window.
+func tuneMetrics(th *gtheme.Theme) {
+	th.Metrics.Inset, th.Metrics.Gutter, th.Metrics.RadiusLarge = T.PaneInset, T.PaneGutter, Pane()
+	tuneMotion(th)
+}
+
 // How much of the accent tints your bubbles and the open chat's row, in light
 // and in dark (where the same share reads fainter over the darker panes);
 // rexui's chosen toggles and segments take the row's.
@@ -56,6 +74,7 @@ const (
 // keeps macOS's own.
 func Rex() *gtheme.Theme {
 	th := rex.ThemeWithField(field)
+	tuneMetrics(th)
 	d := &th.Roles[1]
 	for i, v := range d {
 		r, g, b, a := v>>24, v>>16&0xFF, v>>8&0xFF, v&0xFF
@@ -127,9 +146,14 @@ const inkR, inkG, inkB = 0.95, 1.04, 1.0
 
 func scale(v uint32, k float32) uint32 { return uint32(min(float32(v)*k+0.5, 255)) }
 
-// Mono is the monospaced face Rex sets its metadata in (times, numbers,
-// sizes, hints), at sizePt points in k's scale. Asking for it each frame is a
-// lookup.
-func Mono(k *widget.Kit, sizePt float32) text.FontKey {
-	return k.TextSystem().Font(text.FontDesc{SizePt: sizePt, Mono: true, Scale: k.Scale()})
+// Meta is the face Rex sets its metadata in (times, numbers, sizes, hints):
+// the UI face with tabular figures at sizePt points in k's scale, a step
+// under the text it sits beside (rexui.MetaFont). Asking for it each frame
+// is a lookup.
+func Meta(k *widget.Kit, sizePt float32) text.FontKey {
+	return k.TextSystem().Font(text.FontDesc{SizePt: sizePt, Tabular: true, Scale: k.Scale()})
 }
+
+// MetaPt is the metadata's size beside body text: times in the chat list,
+// the call log and the bubbles, the composer's hints.
+const MetaPt = 11

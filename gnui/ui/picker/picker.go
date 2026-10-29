@@ -22,9 +22,9 @@ import (
 const (
 	widthPt   = 420
 	heightPt  = 400
-	marginPt  = 10
+	marginPt  = 12
 	maxFreq   = 36
-	tabsGapPt = 6
+	tabsGapPt = 8
 )
 
 // Screen is the picker.

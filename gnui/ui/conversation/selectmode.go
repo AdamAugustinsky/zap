@@ -53,8 +53,8 @@ func (s *Screen) selectionBar(e *screen.Env, a *state.Account, ch model.Chat, v 
 	theme.At(c, inX, inY, max(w-2*inX, 0), bh)
 	c.NextAxis(ui.AxisX)
 	c.NextCross(ui.CrossCenter)
-	c.NextGap(e.Pt(10))
-	c.NextPadding(e.Pt(6), 0, e.Pt(6), 0)
+	c.NextGap(e.Pt(8))
+	c.NextPadding(e.Pt(8), 0, e.Pt(8), 0)
 	c.NextBG(look.Fill.RGBA(r))
 	c.NextBorder(look.Border.RGBA(r), e.Pt(look.BorderW))
 	c.NextRadius(min(e.Pt(look.Radius), bh/2))
@@ -188,7 +188,7 @@ func (s *Screen) livePins(a *state.Account, chat []byte) int {
 // pinBar is the pinned messages' bar over the transcript
 // (zf:src/ui/conversation.rs pin_banner): the shown pin's text; a click
 // jumps to it and shows the next. livePins has run this frame.
-func (s *Screen) pinBar(e *screen.Env, a *state.Account, ch model.Chat, w float32) {
+func (s *Screen) pinBar(e *screen.Env, a *state.Account, ch model.Chat, w, y float32) {
 	c, k := e.C(), e.K.Kit
 	r := k.Theme()
 	n := s.pinN
@@ -202,11 +202,11 @@ func (s *Screen) pinBar(e *screen.Env, a *state.Account, ch model.Chat, w float3
 	h := e.Pt(pinBarPt)
 	f := c.Fmt()
 	fillPin(f, i18n.T("Pinned message {index} of {count}: {text}"), s.pinShown+1, n, it.Text)
-	theme.At(c, 0, 0, w, h)
+	theme.At(c, 0, y, w, h)
 	c.NextSize(ui.Px(w), ui.Px(h))
 	c.NextAxis(ui.AxisX)
 	c.NextCross(ui.CrossCenter)
-	c.NextGap(e.Pt(10))
+	c.NextGap(e.Pt(8))
 	c.NextPadding(e.Pt(12), 0, e.Pt(12), 0)
 	c.NextBG(r.Colors[theme.Pane])
 	c.NextBorder(r.Colors[theme.Separator], r.Lines.Hairline)

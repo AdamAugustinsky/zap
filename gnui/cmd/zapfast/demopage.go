@@ -50,7 +50,7 @@ type demoPage struct {
 // demoParts are the parts this port knows, for -demo-page help and tests.
 var demoParts = []string{
 	"chat", "empty", "light", "dark", "short-chat", "wide", "nosidebar", "rail",
-	"search", "info", "info-media", "info-docs", "info-links", "group-info", "select", "select-delete", "delete-selection",
+	"search", "spotlight", "folders", "space", "info", "info-media", "info-docs", "info-links", "group-info", "select", "select-delete", "delete-selection",
 	"settings", "themes", "app-lock-settings", "shortcuts", "about", "new-chat", "new-contact",
 	"poll", "poll-create", "location", "unlink", "clear-media", "delete-chat", "clear-chat", "leave-group",
 	"delete-message", "forward", "reply", "private-reply", "edit", "message-info", "unread-divider",
@@ -191,6 +191,16 @@ func (p *demoPage) apply(s *state.State, a *state.Account) {
 			s.Panes.ListHidden = true
 		case "search":
 			s.Req.FocusSearch = true
+		case "folders":
+			seedDemoFolders(a)
+		case "space":
+			seedDemoFolders(a)
+			if i := a.FolderByID("f1"); i >= 0 {
+				s.GoToSpace(state.Space{Acct: a.Index, Folder: "f1"})
+			}
+		case "spotlight":
+			s.Spotlight = true
+			s.Req.SpotlightText = append(s.Req.SpotlightText, "an"...)
 		case "info", "group-info", "info-media", "info-docs", "info-links":
 			if c, ok := a.OpenChatView(); ok {
 				s.Panes.SetInfo(c.ID())
@@ -483,4 +493,18 @@ func demoRing(a *state.Account, chat, caller string, video bool) {
 	cmd := a.Cmd(abi.CommandTagDemoIncoming)
 	core.DemoCall(cmd, chat, caller, video, 300*time.Millisecond)
 	a.Send(cmd)
+}
+
+// seedDemoFolders gives the demo account two folders (state/folders.go), the
+// first a space of its own, once: what the playground opens on.
+func seedDemoFolders(a *state.Account) {
+	if a == nil || len(a.Settings.Folders) > 0 {
+		return
+	}
+	work := a.FolderByID(a.NewFolder("Work", "briefcase"))
+	a.MoveToFolder([]byte(demoGroup), work)
+	a.MoveToFolder([]byte(demoGrace), work)
+	a.EditFolder(work, func(f *state.Folder) { f.Space = true })
+	family := a.FolderByID(a.NewFolder("Family", "house"))
+	a.MoveToFolder([]byte(demoFamily), family)
 }

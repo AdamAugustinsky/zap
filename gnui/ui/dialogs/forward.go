@@ -90,7 +90,7 @@ func (s *Screen) forward(e *screenEnv, a *state.Account, dl *rexui.Dialog) {
 		ref := f.cands[i]
 		chat := a.Model.Chats.At(ref)
 		sel := fw.Recipients.Has(chat.ID())
-		k.NextGap(10)
+		k.NextGap(12)
 		k.BeginContainer(ui.AxisX, ui.CrossCenter, c.Fmt().Str("recipient").Int(int(ref)).String(), ui.Pct(1), ui.Px(k.Pt(rowPt)), 0)
 		rexui.Avatar(k.Kit, string(chatTitle(a, chat)), rexui.AvatarOpts{Size: 38, Image: s.avatar(a, chat.ID())})
 		k.BeginDisabled(full && !sel)

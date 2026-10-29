@@ -577,7 +577,7 @@ func (s *Screen) addPage(e *screen.Env) {
 	// the link and where it comes from
 	c.NextSize(ui.Pct(1), ui.Children(1))
 	c.NextAxis(ui.AxisX)
-	c.NextGap(e.Pt(6))
+	c.NextGap(e.Pt(8))
 	c.NextCross(ui.CrossCenter)
 	c.Push(c.Box(0, "import row"))
 	st.linkCmd = fieldCmd{}
@@ -603,7 +603,7 @@ func (s *Screen) addPage(e *screen.Env) {
 	c.Pop()
 	if st.importing {
 		c.NextAxis(ui.AxisX)
-		c.NextGap(e.Pt(6))
+		c.NextGap(e.Pt(8))
 		c.NextCross(ui.CrossCenter)
 		c.NextSize(ui.Pct(1), ui.Children(1))
 		c.Push(c.Box(0, "importing"))
@@ -619,7 +619,7 @@ func (s *Screen) addPage(e *screen.Env) {
 		rexui.LabelOpts{Style: rexui.TextCallout, Wrap: true, Color: rexui.Of(theme.Label2)})
 	c.NextSize(ui.Pct(1), ui.Children(1))
 	c.NextAxis(ui.AxisX)
-	c.NextGap(e.Pt(6))
+	c.NextGap(e.Pt(8))
 	c.NextCross(ui.CrossCenter)
 	c.Push(c.Box(0, "pack row"))
 	st.nameCmd = fieldCmd{}

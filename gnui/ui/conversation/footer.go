@@ -89,6 +89,9 @@ func (s *Screen) footWidth(e *screen.Env, f *footerMarks, over bool) float32 {
 
 const footMarkPt = 10 // FOOTER_MARK: the pin's size
 
+// A bubble's time (ztheme.T.BubbleTimePt) is smaller than the list's
+// (MetaPt), as the text it ends is the message's, not a row's.
+
 // footer builds m's footer in the bubble's flow (footInline), as wide as it
 // is so a short text's bubble makes room for it.
 func (s *Screen) footer(e *screen.Env, a *state.Account, ch model.Chat, m model.Message, out bool, key ui.Key) {
@@ -147,6 +150,9 @@ func (s *Screen) footRow(e *screen.Env, m model.Message, f *footerMarks, out boo
 		c.NextJustify(ui.JustifyCenter)
 	}
 	c.NextCross(ui.CrossCenter)
+	if where == footInline {
+		c.NextCross(ui.CrossEnd) // its parts on one baseline, the time's
+	}
 	c.NextGap(gap)
 	flags := ui.Flags(0)
 	switch where {

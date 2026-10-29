@@ -14,6 +14,7 @@ import (
 	"zapfast/i18n"
 	"zapfast/model"
 	"zapfast/state"
+	ztheme "zapfast/theme"
 	"zapfast/ui/screen"
 )
 
@@ -66,7 +67,7 @@ func (b *blk) documentBuild(r screen.Rect) {
 	d := b.decoded()
 	doc := &d.Content.Document
 	k := b.k
-	radius := b.pt(8)
+	radius := b.pt(ztheme.Nested())
 	pr := b.beginHit(i18n.T("Document"), 1, 0, 0, r.W, r.H)
 	b.fillBox(1, 0, 0, r.W, r.H, radius, b.card())
 	b.pressedTint(&pr, r.W, r.H, radius, 2)
@@ -192,8 +193,8 @@ func (b *blk) previewSize(maxW float32) (w, h float32) {
 func (b *blk) previewBuild(r screen.Rect) {
 	p, _ := b.previewOf()
 	ref, hasThumb := b.m.Thumbnail()
-	radius := b.pt(6)
-	pad := b.pt(8)
+	radius := b.pt(ztheme.Nested())
+	pad := b.pt(ztheme.Space2)
 	name := i18n.T("Link preview")
 	if len(p.Title) > 0 {
 		name = string(p.Title)
@@ -205,7 +206,7 @@ func (b *blk) previewBuild(r screen.Rect) {
 	if hasThumb {
 		s := b.pt(previewThumb)
 		if hd, ok := b.thumbImage(ref, int32(s), int32(s), img.Cover); ok {
-			b.imageBox(3, hd, pad, pad, s, s, b.pt(4), ui.FitFill)
+			b.imageBox(3, hd, pad, pad, s, s, b.pt(ztheme.InnerRadius), ui.FitFill)
 		}
 		x += s + pad
 	}

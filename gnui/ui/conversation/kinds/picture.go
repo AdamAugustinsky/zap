@@ -12,6 +12,7 @@ import (
 	"zapfast/abi"
 	"zapfast/i18n"
 	"zapfast/model"
+	ztheme "zapfast/theme"
 	"zapfast/ui/conversation/av"
 	"zapfast/ui/screen"
 )
@@ -80,7 +81,10 @@ func (b *blk) stickerSize() (w, h float32) {
 
 func (b *blk) pictureBuild(r screen.Rect) {
 	p := b.picOf()
-	radius := b.pt(6)
+	radius := b.pt(ztheme.Nested())
+	if b.flush {
+		radius = b.pt(ztheme.T.BubbleRadius)
+	}
 	b.picture(&p, 0, 0, r.W, r.H, radius, 1)
 	d := b.decoded()
 	if d.Content.Image.HasMotion {

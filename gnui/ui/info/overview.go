@@ -16,6 +16,7 @@ import (
 	"zapfast/i18n"
 	"zapfast/model"
 	"zapfast/state"
+	ztheme "zapfast/theme"
 	"zapfast/ui/screen"
 )
 
@@ -50,9 +51,11 @@ func (s *Screen) header(e *screen.Env, ic icon.ID, label, title string, back boo
 		return false
 	}
 	k := e.K
-	k.NextPadding(margin, 10, margin, 10)
-	k.NextGap(6)
+	k.NextPadding(ztheme.T.InfoMargin, 8, ztheme.T.InfoMargin, 8)
+	k.NextGap(8)
 	k.BeginContainer(ui.AxisX, ui.CrossCenter, "header", ui.Pct(1), k.Fixed(headerPt), 0)
+	hit := ui.Px(k.Pt(ztheme.T.HitTool)) // a title row's item, as the toolbars'
+	k.NextSize(hit, hit)
 	btn := rexui.IconButton(k.Kit, ic, label, rexui.IconButtonOpts{Variant: rexui.IconBorderless})
 	e.TabStop(screen.StopInfoClose, btn.ID)
 	clicked := btn.Clicked
@@ -127,10 +130,10 @@ func (s *Screen) overview(e *screen.Env, a *state.Account, r screen.Rect) {
 		return
 	}
 	scale := k.Scale()
-	contentPt := r.W/scale - 2*margin - 17
+	contentPt := r.W/scale - 2*ztheme.T.InfoMargin - 17
 	k.NextSize(ui.Pct(1), widget.Fill)
 	v := k.BeginScroll(i18n.T("Chat info"), &s.scroll, base.ScrollVertical)
-	k.NextPadding(margin, 12, margin, 12)
+	k.NextPadding(ztheme.T.InfoMargin, 12, ztheme.T.InfoMargin, 12)
 	k.NextGap(8)
 	k.BeginContainer(ui.AxisY, ui.CrossCenter, "content", ui.Pct(1), ui.Children(1), 0)
 

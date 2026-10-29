@@ -310,7 +310,7 @@ func (s *Screen) hintsBar(e *screen.Env, rowW float32) {
 		e.S.Touch()
 	}
 	if len(h.shown) > 0 { // in Rex's metadata face, as its own hint line
-		rexui.Label(k.Kit, h.shown, rexui.LabelOpts{Style: rexui.TextSubheadline, Color: rexui.Of(theme.Label2), MonoPt: hintPt})
+		rexui.Label(k.Kit, h.shown, rexui.LabelOpts{Style: rexui.TextSubheadline, Color: rexui.Of(theme.Label2), MetaPt: ztheme.T.MetaPt})
 	}
 	k.Spacer()
 	if rexui.IconButton(k.Kit, s.ic.keyboard, h.all, rexui.IconButtonOpts{Variant: rexui.IconBorderless, Size: theme.SizeSmall}).Clicked {
@@ -321,9 +321,6 @@ func (s *Screen) hintsBar(e *screen.Env, rowW float32) {
 
 // hintsGap is the space between the hints row's parts.
 const hintsGap = 4
-
-// hintPt is the hints' size, monospaced.
-const hintPt = 10.5
 
 // hintsSep divides the hints in the line.
 const hintsSep = " · "
@@ -342,7 +339,7 @@ func (s *Screen) fitHints(e *screen.Env, rowW float32) string {
 	kw, _ := k.IconSize(s.ic.keyboard)
 	icon := theme.Snap(r.Sizes[theme.SizeSmall].Icon)
 	room := rowW - max(icon, xw) - max(icon, kw) - 3*hintsGap - base.LabelSlack
-	font := ztheme.Mono(k, hintPt)
+	font := ztheme.Meta(k, ztheme.T.MetaPt) // the hints' size, the metadata's
 	h := s.hints.hint
 	for len(h) > 0 && k.TextWidth(font, h) > room {
 		i := strings.LastIndex(h, hintsSep)

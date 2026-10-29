@@ -3164,9 +3164,13 @@ msgstr "Groupe"
 msgid "Group invite"
 msgstr "Invitation de groupe"
 
-#: gnui/ui/chatlist/chatlist.go:658
+#: gnui/ui/shell/panes.go
 msgid "Hide the chat list (⌘B)"
 msgstr "Masquer la liste des discussions (⌘B)"
+
+#: gnui/ui/shell/panes.go
+msgid "Show the chat list (⌘B)"
+msgstr "Afficher la liste des discussions (⌘B)"
 
 #. Translators: the verb-less menu item that opens a chat's info panel.
 #: gnui/ui/chatlist/menu.go:375 gnui/ui/conversation/menu.go:377
@@ -4783,3 +4787,163 @@ msgstr "Transparence"
 #: gnui/ui/settings/rows.go
 msgid "The desktop shows softly through the window's background. The system's Reduce transparency setting turns it off too."
 msgstr "Le bureau transparaît doucement à travers le fond de la fenêtre. Le réglage système Réduire la transparence la désactive aussi."
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unarchived"
+msgstr "Désarchivé"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Muted for 8 hours"
+msgstr "Mis en sourdine pour 8 heures"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unmuted"
+msgstr "Son réactivé"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Pinned"
+msgstr "Épinglé"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unpinned"
+msgstr "Désépinglé"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Marked as unread"
+msgstr "Marqué comme non lu"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Marked as read"
+msgstr "Marqué comme lu"
+
+#: gnui/ui/shell/keyboard.go
+msgid "{what}: {chat}. Z to undo"
+msgstr "{what} : {chat}. Z pour annuler"
+
+#: gnui
+msgid "Search everything"
+msgstr "Tout rechercher"
+
+#: gnui
+msgid "Chats, people, messages, files"
+msgstr "Discussions, personnes, messages, fichiers"
+
+#: gnui
+msgid "Files and links"
+msgstr "Fichiers et liens"
+
+#: gnui
+msgid "Nothing found"
+msgstr "Aucun résultat"
+
+#: gnui
+msgid "People"
+msgstr "Personnes"
+
+#: gnui
+msgid "Search everything: chats, people, messages, files"
+msgstr "Tout rechercher : discussions, personnes, messages, fichiers"
+
+#: gnui
+msgid "Search everything (when not typing)"
+msgstr "Tout rechercher (hors saisie)"
+
+#: gnui
+msgid "Next / previous chat (when not typing)"
+msgstr "Discussion suivante / précédente (hors saisie)"
+
+#: gnui
+msgid "Archive or unarchive the open chat (when not typing)"
+msgstr "Archiver ou désarchiver la discussion ouverte (hors saisie)"
+
+#: gnui
+msgid "Mute the open chat for 8 hours, or unmute it (when not typing)"
+msgstr "Mettre la discussion ouverte en sourdine 8 heures, ou réactiver le son (hors saisie)"
+
+#: gnui
+msgid "Pin or unpin the open chat (when not typing)"
+msgstr "Épingler ou désépingler la discussion ouverte (hors saisie)"
+
+#: gnui
+msgid "Mark the open chat as unread or read (when not typing)"
+msgstr "Marquer la discussion ouverte comme non lue ou lue (hors saisie)"
+
+#: gnui
+msgid "Reply to the last message (when not typing)"
+msgstr "Répondre au dernier message (hors saisie)"
+
+#: gnui
+msgid "Undo the last change a single key made"
+msgstr "Annuler le dernier changement fait d’une touche"
+
+#: gnui
+msgid "Go to the chats, Archived, Starred or Calls"
+msgstr "Aller aux discussions, Archives, Favoris ou Appels"
+
+#: gnui
+msgid "Starts a message in the open chat, or a search"
+msgstr "Commence un message dans la discussion ouverte, ou une recherche"
+
+#: gnui
+msgid "Dismiss the current action, return from search, Calls or Starred, leave the message input, or close the chat"
+msgstr "Annuler l’action en cours, quitter la recherche, Appels ou Favoris, quitter le champ de saisie ou fermer la discussion"
+
+#: gnui
+msgid "Folder"
+msgstr "Dossier"
+
+#: gnui
+msgid "New folder"
+msgstr "Nouveau dossier"
+
+#: gnui
+msgid "New folder…"
+msgstr "Nouveau dossier…"
+
+#: gnui
+msgid "Take out of the folder"
+msgstr "Retirer du dossier"
+
+#: gnui
+msgid "Folder name"
+msgstr "Nom du dossier"
+
+#: gnui
+msgid "Rename…"
+msgstr "Renommer…"
+
+#: gnui
+msgid "Icon"
+msgstr "Icône"
+
+#: gnui
+msgid "Stop showing it as a space"
+msgstr "Ne plus l’afficher comme espace"
+
+#: gnui
+msgid "Show it as a space (⌃1–9)"
+msgstr "L’afficher comme espace (⌃1–9)"
+
+#: gnui
+msgid "Delete folder (its chats stay)"
+msgstr "Supprimer le dossier (les discussions restent)"
+
+#: gnui
+msgid "Unread chats"
+msgstr "Discussions non lues"
+
+#: gnui
+msgid "Spaces"
+msgstr "Espaces"
+
+#: gnui
+msgid "Go to the tab at this place"
+msgstr "Aller à l’onglet à cette place"
+
+#: gnui
+msgid "Go to the space at this place"
+msgstr "Aller à l’espace à cette place"
+
+#: gnui
+msgid "Next / previous space"
+msgstr "Espace suivant / précédent"

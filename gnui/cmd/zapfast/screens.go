@@ -19,6 +19,7 @@ import (
 	"zapfast/ui/picker"
 	"zapfast/ui/screen"
 	"zapfast/ui/settings"
+	"zapfast/ui/spotlight"
 	"zapfast/ui/stickermaker"
 	"zapfast/ui/viewer"
 )
@@ -55,6 +56,7 @@ func screens(demo bool) *screen.Set {
 
 		Picker:       picker.New(),
 		Dialogs:      dialogs.New(),
+		Spotlight:    spotlight.New(),
 		Cropper:      cropper.New(),
 		StickerMaker: stickermaker.New(),
 

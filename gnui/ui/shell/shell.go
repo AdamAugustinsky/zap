@@ -29,6 +29,7 @@ import (
 	"zapfast/i18n"
 	"zapfast/model"
 	"zapfast/state"
+	ztheme "zapfast/theme"
 	"zapfast/ui/accounts/acct"
 	"zapfast/ui/screen"
 )
@@ -57,15 +58,17 @@ type Shell struct {
 	// Traffic draws the traffic lights (offscreen renders; in a window the
 	// system draws them).
 	Traffic bool
-	// Slides: a narrow window slides between the list and what it opens
-	// (SH-007). The app sets it; a screen's test rig leaves it off, so that
-	// its steps meet each view in its place at once.
+	// Slides: the shell's panes move rather than jump: a narrow window
+	// slides between the list and what it opens (SH-007), the list slides
+	// away and back (⌘B), the side pane slides in and folds away. The app
+	// sets it; a screen's test rig leaves it off, so that its steps meet
+	// each view in its place at once.
 	Slides bool
 
 	a     *app.App
 	env   screen.Env
 	model *menu.Model
-	ic    struct{ chats, calls, starred, archived, locked, settings, logo, copy icon.ID }
+	ic    struct{ chats, calls, starred, archived, locked, settings, logo, copy, sidebar icon.ID }
 	hint  struct { // the empty pane's shortcut hint
 		text string
 		loc  i18n.Locale
@@ -107,6 +110,11 @@ type Shell struct {
 	tabs       chatTabs      // the titlebar's tabs of open chats
 	railScroll base.ScrollState
 	slide      narrowSlide
+	sideFullW  float32       // the side pane's width while open, which it folds from
+	kb         keyboard      // the single keys' layer (keyboard.go)
+	spaces     []state.Space // the spaces, as last listed (spaces.go)
+	sp         spaceUI
+	bannerH    float32                // the open chat's banner, last frame, which the transcript runs under
 	front      [state.NumWindows]bool // opened alone: to bring forward once open
 	listDrag   float32                // the list's width as a drag of its edge goes
 	placed     bool                   // the main window was put back where it was
@@ -241,15 +249,17 @@ func (sh *Shell) Init(a *app.App) error {
 	sh.imgs = screen.NewImages(a, sh.env.K, nil)
 	a.UI.Reserve(4096)
 	a.Text.ReserveRuns(text.MaxCachedRuns, text.MaxCachedGlyphs, text.MaxCachedTextBytes)
-	pt := theme.MacWindow.Capsule.Glyph + 2
 	k := sh.env.K
-	add := func(sym string, fb rune) icon.ID { return k.AddIcon(icon.Spec{Symbol: sym, Fallback: fb, Pt: pt}) }
+	// the rail's destinations and the titlebar's toggle as toolbar items
+	// (theme/icons.go)
+	add := func(sym string, fb rune) icon.ID { return k.AddIcon(ztheme.ToolIcon(sym, fb)) }
 	sh.ic.chats = add("message", '✉')
 	sh.ic.calls = add("phone", '☎')
 	sh.ic.starred = add("star", '☆')
 	sh.ic.archived = add("archivebox", '▤')
 	sh.ic.locked = add("lock", '⚿')
 	sh.ic.settings = add("gearshape", '⚙')
+	sh.ic.sidebar = add("sidebar.left", '▤')
 	sh.ic.copy = k.AddIcon(icon.Spec{Symbol: "doc.on.doc", Fallback: '⧉', Pt: 14})
 	// The empty pane's logo: upstream's bubble at 0.674 of its 72 pt disc.
 	sh.ic.logo = k.AddIcon(icon.Spec{Symbol: "message", Fallback: '✉', Pt: 44})
@@ -262,7 +272,7 @@ func (sh *Shell) Init(a *app.App) error {
 	e := &sh.env
 	for _, p := range [...]screen.Initer{sh.Set.Login, sh.Set.Lock, sh.Set.Accounts, sh.Set.ChatList, sh.Set.Conversation,
 		sh.Set.Search, sh.Set.Composer, sh.Set.Info, sh.Set.MessageInfo, sh.Set.CallsPage,
-		sh.Set.Picker, sh.Set.Dialogs, sh.Set.Cropper, sh.Set.StickerMaker, sh.Set.CallsContent, sh.Set.CallBar} {
+		sh.Set.Picker, sh.Set.Dialogs, sh.Set.Cropper, sh.Set.StickerMaker, sh.Set.CallsContent, sh.Set.CallBar, sh.Set.Spotlight} {
 		if !nilSlot(p) {
 			if err := p.Init(e); err != nil {
 				return err
@@ -450,11 +460,22 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 			b.BuildBand(e, screen.Rect{X: 0, Y: H, W: W, H: bh})
 		}
 	}
-	railW, listW := e.Pt(railPt), e.Pt(min(max(s.Settings.SidebarWidth, minListPt), maxListPt))
-	if s.Panes.ListHidden {
-		listW = 0
+	railW, fullW := e.Pt(railPt), e.Pt(min(max(s.Settings.SidebarWidth, minListPt), maxListPt))
+	// Hiding the list (⌘B) slides it away under the rail and the chat
+	// widens into its place, over Motion.Standard (at once under Reduce
+	// Motion); its share shownList eases, so dragging its edge follows the
+	// pointer. A narrow window has no hidden list: with no chat open the list
+	// is the page, and its rail stays to leave it by.
+	hide := float32(1)
+	if s.Panes.ListHidden && !narrow {
+		hide = 0
 	}
-	if narrow && (open || s.Panes.ListHidden) {
+	shownList := hide
+	if sh.Slides {
+		shownList = c.AnimateValue(ui.HashString(0, "shell list shown"), hide, ztheme.Toward(r, ztheme.T.DurStandard, hide > 0))
+	}
+	listW := theme.Snap(fullW * shownList)
+	if narrow && open {
 		railW, listW = 0, 0
 	}
 	if narrow && !open {
@@ -482,6 +503,21 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 			sideW = 0
 		}
 	}
+	// Beside the chat, the side pane slides in from the window's edge and
+	// folds away when it closes, the chat giving and taking back its room,
+	// over Motion.Standard (at once under Reduce Motion). Covering a narrow
+	// window, it comes and goes at once.
+	shownSide := float32(1)
+	if !covering && sh.Slides {
+		on := float32(0)
+		if sideW > 0 {
+			on, sh.sideFullW = 1, sideW
+		}
+		shownSide = c.AnimateValue(ui.HashString(0, "shell side shown"), on, ztheme.Toward(r, ztheme.T.DurStandard, on > 0))
+		if shownSide > 0 && shownSide < 1 {
+			sideW = theme.Snap(sh.sideFullW * shownSide)
+		}
+	}
 	// The panes float on the field (panes.go): Inset from the window's
 	// edges, Gutter between them, under the titlebar band.
 	in, gut := r.Px.Inset, r.Px.Gutter
@@ -494,7 +530,7 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 			x1 = W - in
 		}
 		panes[paneList] = [4]float32{left, tbH, x1, bottom}
-		left = x1 + gut
+		left = x1 + theme.Snap(gut*shownList)
 	}
 	right := W - in
 	if sideW > 0 {
@@ -509,6 +545,13 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 		panes[paneChat] = [4]float32{left, tbH, right, bottom}
 	}
 	sh.noteFocus(a, &panes)
+	// whether the tabs are up, for the chat's header, which builds before
+	// them (it leaves the name to the tab)
+	tabX0 := e.Pt(trafficPt+accountChipPt+16) + sh.sidebarW()
+	if cp := panes[paneChat]; shown(cp) {
+		tabX0 = max(tabX0, cp[0])
+	}
+	e.SetTabbed(sh.tabsUp(a, tabX0, W-in))
 
 	// A narrow window slides between the list and what it opens (SH-007):
 	// an opened chat comes in from the right over the list, dimmed beneath
@@ -522,7 +565,7 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 		}
 	}
 	dx := float32(0) // the sliding view's distance from its place
-	p, sliding := sh.slide.step(view, c.Input().Time)
+	p, sliding := sh.slide.step(view, c.Input().Time, ztheme.Dur(r, ztheme.T.DurStandard))
 	if sliding {
 		c.RequestFrame()
 		if view == narrowDetail {
@@ -559,9 +602,14 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 	}
 	// The slots build in the window's root, over their panes, so that their
 	// Rects are window coordinates; each pane's title row after its content.
+	// The list and the side pane take presses while they move (a sidebar on
+	// macOS does): what is under the pointer is still where it is drawn.
+	if shownList > 0 && shownList < 1 || shownSide > 0 && shownSide < 1 {
+		c.RequestFrame()
+	}
 	if lp := panes[paneList]; shown(lp) {
 		n := e.TabStops()
-		sh.list(lp)
+		sh.listIn(lp, fullW, shownList, W, H, !narrow && shownList < 1)
 		if e.TabStops() == n {
 			e.TabInBuildOrder()
 		}
@@ -569,7 +617,14 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 	if cp := panes[paneChat]; shown(cp) {
 		sh.chat(a, cp, open)
 	}
-	if sp := panes[paneSide]; shown(sp) {
+	if sp := panes[paneSide]; shown(sp) && shownSide < 1 && (side == nil || s.Panes.Pane == state.PaneNone) {
+		// folding away, the slot closed: the glass alone
+	} else if sp := panes[paneSide]; shown(sp) {
+		// sliding in, its content rides in at its full width from the
+		// pane's moving edge, past the window's, as it lands
+		if shownSide < 1 {
+			sp[2] = sp[0] + sh.sideFullW
+		}
 		sr := sh.body(sp)
 		if side != nil {
 			n := e.TabStops()
@@ -592,12 +647,8 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 	}
 	sh.titlebar(a)
 	// the tabs start over the conversation, after the account block
-	tx0 := e.Pt(trafficPt + accountChipPt + 16)
-	if cp := panes[paneChat]; shown(cp) {
-		tx0 = max(tx0, cp[0])
-	}
-	sh.chatTabs(a, tx0, W-in, tbH)
-	if lp, cp := panes[paneList], panes[paneChat]; shown(lp) && shown(cp) {
+	sh.chatTabs(a, tabX0, W-in, tbH)
+	if lp, cp := panes[paneList], panes[paneChat]; shown(lp) && shown(cp) && shownList == 1 {
 		sh.listHandle(lp[2]+gut/2, tbH, bottom-tbH)
 	}
 	if sliding {
@@ -607,11 +658,39 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 		c.Box(base.Floating|ui.Clickable, "slide shield")
 	}
 
-	for _, o := range [...]screen.Overlay{sh.Set.Picker, sh.Set.Cropper, sh.Set.StickerMaker, sh.Set.Dialogs} {
+	for _, o := range [...]screen.Overlay{sh.Set.Picker, sh.Set.Cropper, sh.Set.StickerMaker, sh.Set.Dialogs, sh.Set.Spotlight} {
 		if o != nil {
 			o.Build(e)
 		}
 	}
+}
+
+// listIn builds the list in its pane r inside the one box it always has,
+// at the window's corner so that its Rects stay window coordinates and its
+// boxes keep their identities from frame to frame. While the list slides
+// in or out (⌘B) the box clips it at the pane's moving edge: the list keeps
+// its full width fullW where it is, the edge sweeps over it, and it fades
+// with the share shown. At rest the box clips nothing, so what the list
+// opens past its edge (a menu, a popover) is whole.
+func (sh *Shell) listIn(r [4]float32, fullW, shown, W, H float32, sliding bool) {
+	c := sh.env.C()
+	w, fl := W, ui.Flags(0)
+	if sliding {
+		w, fl = r[2], ui.Clip
+		r[2] = r[0] + fullW
+	}
+	// a space's list comes in from the side of the one it left (spaces.go)
+	dx, fade := sh.spaceShift()
+	if dx != 0 {
+		w, fl = r[2], ui.Clip
+		r[0], r[2] = r[0]+dx, r[2]+dx
+	}
+	sh.swipeSpaces(r)
+	theme.At(c, 0, 0, w, H)
+	c.NextOpacity(shown * fade)
+	c.Push(c.Box(base.Floating|fl, "list pane"))
+	sh.list(r)
+	c.Pop()
 }
 
 // list builds the chat list (or the Calls page's) in its pane r, and the
@@ -620,8 +699,14 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 func (sh *Shell) list(r [4]float32) {
 	s, e := sh.S, &sh.env
 	lr := sh.body(r)
-	// The list's foot keeps clear of the pane's rounded corners.
+	// The list's foot keeps clear of the pane's rounded corners, and the
+	// spaces' strip sits there when there are several (spaces.go).
 	lr.H = max(lr.H-e.K.Theme().Px.RadiusLarge/2, 0)
+	if sh.spaces = s.Spaces(sh.spaces[:0]); s.Page == state.PageChats && len(sh.spaces) > 1 {
+		strip := e.Pt(spaceStripPt)
+		lr.H = max(lr.H-strip, 0)
+		defer sh.spaceStrip(screen.Rect{X: lr.X, Y: lr.Y + lr.H, W: lr.W, H: strip})
+	}
 	switch {
 	case s.Page == state.PageCalls && sh.Set.CallsPage != nil:
 		sh.Set.CallsPage.Build(e, lr)
@@ -652,7 +737,12 @@ func (sh *Shell) chat(a *state.Account, r [4]float32, open bool) {
 	s, e := sh.S, &sh.env
 	b := sh.body(r)
 	top := b.Y
-	if open || s.Page != state.PageCalls || sh.Set.CallsContent == nil {
+	switch {
+	case open:
+		// the transcript runs under the title row and the banner, which
+		// build after it, over it: the banner's height is the last frame's
+		top += sh.bannerH
+	case s.Page != state.PageCalls || sh.Set.CallsContent == nil:
 		top += sh.banner(a, screen.Rect{X: b.X, Y: b.Y, W: b.W})
 	}
 	switch {
@@ -669,12 +759,17 @@ func (sh *Shell) chat(a *state.Account, r [4]float32, open bool) {
 		}
 		sh.composerH = ch
 		foot := r[3] - ch
-		tr := screen.Rect{X: b.X, Y: top, W: b.W, H: max(foot-top, 0)}
+		// from the pane's top: its content starts below the title row and
+		// the banner at rest and scrolls up under them (ContentInset)
+		tr := screen.Rect{X: b.X, Y: r[1], W: b.W, H: max(foot-r[1], 0)}
 		if sh.Set.Conversation != nil {
+			e.SetContentInset(top - r[1])
 			sh.Set.Conversation.Build(e, tr)
+			e.SetContentInset(0)
 		} else {
-			e.Placeholder(tr, "Conversation")
+			e.Placeholder(screen.Rect{X: b.X, Y: top, W: b.W, H: max(foot-top, 0)}, "Conversation")
 		}
+		sh.bannerH = sh.banner(a, screen.Rect{X: b.X, Y: b.Y, W: b.W})
 		cr := screen.Rect{X: b.X, Y: foot, W: b.W, H: ch}
 		switch {
 		case selecting:
@@ -729,10 +824,6 @@ const (
 	narrowDetail
 )
 
-// slideNs is how long a narrow window takes to slide one view in over the
-// other (zf:src/ui/mod.rs SLIDE_SECONDS).
-const slideNs = 220_000_000
-
 // narrowSlide follows a narrow window's view from frame to frame
 // (zf:src/ui/mod.rs narrow_slide).
 type narrowSlide struct {
@@ -742,9 +833,10 @@ type narrowSlide struct {
 }
 
 // step takes the frame's view at time now (ns) and reports how far the
-// slide to it has come (0 to 1, eased out) while one is under way. A view
+// slide to it, dur seconds long (ztheme.T.DurStandard; 0 under Reduce
+// Motion: none), has come (0 to 1, eased out) while one is under way. A view
 // shown on widening or narrowing the window appears without one.
-func (sl *narrowSlide) step(view int, now int64) (float32, bool) {
+func (sl *narrowSlide) step(view int, now int64, dur float32) (float32, bool) {
 	before := sl.view
 	sl.view = view
 	if view == narrowNone {
@@ -754,16 +846,16 @@ func (sl *narrowSlide) step(view int, now int64) (float32, bool) {
 	if before != narrowNone && before != view {
 		sl.on, sl.start = true, now
 	}
-	if !sl.on {
+	if !sl.on || dur <= 0 {
+		sl.on = false
 		return 1, false
 	}
-	t := float32(now-sl.start) / slideNs
+	t := float32(now-sl.start) / (dur * 1e9)
 	if t >= 1 {
 		sl.on = false
 		return 1, false
 	}
-	t = 1 - max(t, 0)
-	return 1 - t*t*t, true
+	return ztheme.EaseOut(t), true
 }
 
 // announce has the screen reader say what waits (State.Announce, AX-001):
@@ -1270,6 +1362,7 @@ func (sh *Shell) dest(d destination, ic icon.ID, name, tip string, lit bool) (fo
 		st = ui.SemSelected
 	}
 	c.NextSemState(st)
+	k.NextSize(ui.Px(plate), ui.Px(plate)) // the whole plate answers, not its glyph
 	sig := rexui.IconButton(k.Kit, ic, name, rexui.IconButtonOpts{Variant: rexui.IconBorderless, Size: theme.SizeLarge})
 	if tip == "" {
 		tip = name
@@ -1295,6 +1388,7 @@ func (sh *Shell) dest(d destination, ic icon.ID, name, tip string, lit bool) (fo
 	case destChats:
 		s.Page = state.PageChats
 		a.SetMode(state.ListChats)
+		s.Panes.ListHidden = false // Chats shows the chats, wherever the list went
 	case destCalls:
 		s.Page = state.PageCalls
 	case destStarred:
@@ -1583,7 +1677,7 @@ func (sh *Shell) banner(a *state.Account, r screen.Rect) float32 {
 	// for the next kit container (the composer's row)
 	c.NextPos(r.X, r.Y)
 	c.NextSize(ui.Px(r.W), ui.Children(1))
-	c.NextPadding(e.Pt(8), e.Pt(6), e.Pt(8), e.Pt(6))
+	c.NextPadding(e.Pt(8), e.Pt(8), e.Pt(8), e.Pt(8))
 	id := c.Box(base.Floating, "banner")
 	sh.bannerKey = c.KeyOf(id)
 	c.Push(id)
@@ -1669,6 +1763,8 @@ func (sh *Shell) manage(op opener, alone bool) (pending bool) {
 			scr = sh.Set.Viewer
 		case state.WinCall:
 			scr = sh.Set.Call
+		case state.WinPlayground:
+			scr = sh.Set.Playground
 		}
 		if scr == nil {
 			continue

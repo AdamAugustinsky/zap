@@ -22,7 +22,7 @@ import (
 const (
 	columnPt = 640 // widest the settings column grows
 	sidePt   = 32  // least space beside the column
-	padPt    = 10  // a row's side padding (rexui.CardLook.RowPadX)
+	padPt    = 10  // a row's side padding (rexui.CardLook.RowPadX) // grid:ok mirrors rexui's RowPadX, which this must match
 )
 
 // Screen is the settings window.

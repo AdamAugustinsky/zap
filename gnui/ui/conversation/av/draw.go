@@ -183,7 +183,7 @@ func iconSpecs() []icon.Spec {
 		s("play.fill", '▶', 22),
 		s("pause.fill", '⏸', 22),
 		s("exclamationmark.circle", '!', 22),
-		s("arrow.up.right.square", '↗', 20),
+		s("arrow.up.right.square", '↗', 14), // as a document's (kinds)
 		s("arrow.up.left.and.arrow.down.right", '⤢', 16),
 		s("speaker.wave.2.fill", '♪', 16),
 		s("speaker.slash.fill", '×', 16),

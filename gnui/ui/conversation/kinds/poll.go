@@ -11,6 +11,7 @@ import (
 	"zapfast/i18n"
 	"zapfast/model"
 	"zapfast/state"
+	ztheme "zapfast/theme"
 	"zapfast/ui/conversation/mkey"
 	"zapfast/ui/screen"
 )
@@ -129,9 +130,9 @@ type pollGeom struct {
 }
 
 const (
-	pollRowPad   = 34.0
+	pollRowPad   = 34.0 // grid:ok the marker column, an offset
 	pollLabelX   = 25.0
-	pollLabelPad = 58.0
+	pollLabelPad = 58.0 // grid:ok the marker and count columns, an offset
 	pollResultsH = 39.0
 )
 
@@ -272,7 +273,7 @@ func (b *blk) pollOption(p *abi.ContentPoll, ps *abi.PollState, i int, selected,
 	k, c := b.k, b.c
 	n := uint64(100 + i*8)
 	opt := p.Options[i]
-	radius := b.pt(5)
+	radius := b.pt(ztheme.Nested())
 	name := b.c.Fmt().Str(model.S(opt)).Str("###opt").Int(i).String()
 	c.NextPos(0, y)
 	c.NextFlags(base.Floating)

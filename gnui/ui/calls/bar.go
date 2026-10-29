@@ -74,7 +74,7 @@ func (b *Bar) BuildBand(e *screen.Env, r screen.Rect) {
 	c.NextBG(theme.WithAlpha(th.Colors[theme.Accent], theme.Lerp(0.14, 0.24, th.T)))
 	c.NextRole(ui.RoleGroup)
 	c.NextSemNameBytes(b.buf)
-	k.NextPadding(14, 0, 10, 0)
+	k.NextPadding(16, 0, 12, 0)
 	k.NextGap(8)
 	k.BeginContainer(ui.AxisX, ui.CrossCenter, "call bar", ui.Px(r.W), ui.Px(r.H), ui.DrawBackground)
 	ic := b.ic.voice

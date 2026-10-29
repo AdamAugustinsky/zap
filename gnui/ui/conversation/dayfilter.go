@@ -134,7 +134,7 @@ func (p *Search) dayChip(e *screen.Env, st *searchState) {
 	fmtBuf = format.AppendLongDate(fmtBuf[:0], loc, st.day.at())
 	pr.Name = c.Fmt().Str(i18n.T("Filter by date")).Str(": ").Str(model.S(fmtBuf)).String()
 	h := e.Pt(28)
-	c.NextPadding(e.Pt(9), 0, e.Pt(9), 0)
+	c.NextPadding(e.Pt(8), 0, e.Pt(8), 0)
 	c.NextAxis(ui.AxisX)
 	c.NextCross(ui.CrossCenter)
 	c.NextBG(theme.WithAlpha(r.Colors[theme.Accent], 0.18))
@@ -196,7 +196,7 @@ func (p *Search) calendar(e *screen.Env, st *searchState) {
 	}
 	c.NextSize(ui.Px(7*cell), ui.Children(1))
 	c.NextAxis(ui.AxisX)
-	c.NextPadding(0, e.Pt(6), 0, e.Pt(4))
+	c.NextPadding(0, e.Pt(8), 0, e.Pt(4))
 	c.Push(c.Box(0, "weekdays"))
 	for _, h := range p.heads {
 		k.NextWidth(ui.Px(cell))

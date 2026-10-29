@@ -74,19 +74,58 @@ type settingsFile struct {
 
 // accountFile is accounts/<id>/settings.json (zf:src/settings.rs:828).
 type accountFile struct {
-	present             bool    // distinguishes a read {} from a missing file
-	SendReadReceipts    bool    `json:"send_read_receipts"`
-	SendTyping          bool    `json:"send_typing"`
-	AutoDownload        bool    `json:"auto_download"`
-	AutoDownloadImages  *bool   `json:"auto_download_images,omitempty"` // read only
-	LastChat            *string `json:"last_chat"`
-	Notifications       bool    `json:"notifications"`
-	LimitNotifications  string  `json:"limit_notifications"`
-	SaveContactsToPhone bool    `json:"save_contacts_to_phone"`
-	WallpaperImage      *string `json:"wallpaper_image"`
-	HistoryPrefetch     bool    `json:"history_prefetch"`
-	ListFilter          *string `json:"list_filter"`
-	CallFilter          *string `json:"call_filter"`
+	present             bool         // distinguishes a read {} from a missing file
+	SendReadReceipts    bool         `json:"send_read_receipts"`
+	SendTyping          bool         `json:"send_typing"`
+	AutoDownload        bool         `json:"auto_download"`
+	AutoDownloadImages  *bool        `json:"auto_download_images,omitempty"` // read only
+	LastChat            *string      `json:"last_chat"`
+	Notifications       bool         `json:"notifications"`
+	LimitNotifications  string       `json:"limit_notifications"`
+	SaveContactsToPhone bool         `json:"save_contacts_to_phone"`
+	WallpaperImage      *string      `json:"wallpaper_image"`
+	HistoryPrefetch     bool         `json:"history_prefetch"`
+	ListFilter          *string      `json:"list_filter"`
+	CallFilter          *string      `json:"call_filter"`
+	Folders             []folderFile `json:"folders,omitempty"`
+}
+
+// folderFile is a Folder in the account's settings file.
+type folderFile struct {
+	ID        string   `json:"id"`
+	Name      string   `json:"name"`
+	Icon      string   `json:"icon,omitempty"`
+	Chats     []string `json:"chats,omitempty"`
+	Collapsed bool     `json:"collapsed,omitempty"`
+	Space     bool     `json:"space,omitempty"`
+}
+
+func foldersToFile(fs []Folder) []folderFile {
+	if len(fs) == 0 {
+		return nil
+	}
+	out := make([]folderFile, len(fs))
+	for i, f := range fs {
+		out[i] = folderFile{ID: f.ID, Name: f.Name, Icon: f.Icon, Collapsed: f.Collapsed, Space: f.Space}
+		for _, c := range f.Chats {
+			out[i].Chats = append(out[i].Chats, string(c))
+		}
+	}
+	return out
+}
+
+func foldersFromFile(fs []folderFile) []Folder {
+	if len(fs) == 0 {
+		return nil
+	}
+	out := make([]Folder, len(fs))
+	for i, f := range fs {
+		out[i] = Folder{ID: f.ID, Name: f.Name, Icon: f.Icon, Collapsed: f.Collapsed, Space: f.Space}
+		for _, c := range f.Chats {
+			out[i].Chats = append(out[i].Chats, []byte(c))
+		}
+	}
+	return out
 }
 
 func (f *settingsFile) UnmarshalJSON(data []byte) error {
@@ -505,6 +544,7 @@ func (a *AccountSettings) toFile() accountFile {
 		LimitNotifications: nameOf(limitNames[:], a.LimitNotifications), SaveContactsToPhone: a.SaveContactsToPhone,
 		WallpaperImage: optString(nonEmpty(a.WallpaperImage)), HistoryPrefetch: a.HistoryPrefetch,
 		ListFilter: optString(nonEmpty(a.ListFilter)), CallFilter: optString(nonEmpty(a.CallFilter)),
+		Folders: foldersToFile(a.Folders),
 	}
 }
 
@@ -515,6 +555,7 @@ func (f *accountFile) settings() AccountSettings {
 		LimitNotifications: parseName(limitNames[:], f.LimitNotifications, LimitOff), SaveContactsToPhone: f.SaveContactsToPhone,
 		WallpaperImage: fromOpt(f.WallpaperImage), HistoryPrefetch: f.HistoryPrefetch,
 		ListFilter: fromOpt(f.ListFilter), CallFilter: fromOpt(f.CallFilter),
+		Folders: foldersFromFile(f.Folders),
 	}
 	if f.AutoDownloadImages != nil {
 		a.AutoDownload = *f.AutoDownloadImages

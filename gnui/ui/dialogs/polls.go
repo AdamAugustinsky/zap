@@ -53,7 +53,7 @@ func (p *pollDraft) reset(a *state.Account, d *state.Dialog) {
 }
 
 // answerGapPt is the space between two answers' fields, in points.
-const answerGapPt = 5
+const answerGapPt = 8
 
 // validate is upstream's PollDraft::validated: why the poll cannot be sent
 // yet, or "".
@@ -109,7 +109,7 @@ func (s *Screen) createPoll(e *screenEnv, a *state.Account, dl *rexui.Dialog) {
 	k.BeginContainer(ui.AxisY, ui.CrossStart, "answers", ui.Pct(1), ui.Children(1), 0)
 	remove := -1
 	for i := 0; i < p.n; i++ {
-		k.NextGap(6)
+		k.NextGap(8)
 		k.BeginContainer(ui.AxisX, ui.CrossCenter, c.Fmt().Str("answer").Int(i).String(), ui.Pct(1), ui.Children(1), 0)
 		k.NextWidth(widget.Fill)
 		if p.hints[i] == "" {

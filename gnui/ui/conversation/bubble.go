@@ -114,7 +114,7 @@ func (s *Screen) message(e *screen.Env, a *state.Account, ch model.Chat, v *mode
 	if mi == n-1 {
 		bottom = e.Pt(endPt)
 	}
-	c.NextPadding(e.Pt(sidePt), 0, e.Pt(sidePt), bottom)
+	c.NextPadding(e.Pt(ztheme.T.TranscriptSide), 0, e.Pt(ztheme.T.TranscriptSide), bottom)
 	c.Push(c.Box(0, "m"))
 	if mi == 0 {
 		s.topOfHistory(e, v)
@@ -161,6 +161,12 @@ func (s *Screen) message(e *screen.Env, a *state.Account, ch model.Chat, v *mode
 	last := ni < 0
 	if !last {
 		last = !sameRun(m, v.At(ni)) || (s.unreadAt != 0 && ni < len(s.t.ids) && s.t.ids[ni] == s.unreadAt)
+	}
+	if first && pi >= 0 && !newDay && !divider {
+		// a new sender's run stands apart from the last one by the grid's
+		// least gap; a run's own bubbles keep their RowGap
+		c.NextSize(ui.Pct(1), ui.Px(e.Pt(max(ztheme.T.RunGap-ztheme.T.RowGap, 0))))
+		c.Box(0, "run")
 	}
 	s.albV, s.albI, s.albN = v, mi, s.albumLen(v, mi)
 	s.bubble(e, a, ch, m, id, first, last)
@@ -214,7 +220,10 @@ func (s *Screen) topOfHistory(e *screen.Env, v *model.Conversation) {
 	c.NextJustify(ui.JustifyCenter)
 	c.NextCross(ui.CrossCenter)
 	c.NextGap(e.Pt(8))
-	c.NextPadding(0, e.Pt(6), 0, e.Pt(6))
+	// the history's top starts below what floats over the transcript's
+	// (topInset): a content inset, which this block carries as it moves to
+	// the oldest message loaded
+	c.NextPadding(0, s.topInset+e.Pt(8), 0, e.Pt(8))
 	c.Push(c.Box(0, "top"))
 	switch {
 	case v.LoadingOlder():
@@ -267,6 +276,17 @@ func (s *Screen) bubble(e *screen.Env, a *state.Account, ch model.Chat, m model.
 		s.senderColumn(e, a, ch, m, first)
 	}
 	o := rexui.BubbleOpts{Tail: last, ColumnW: s.colPt}
+	qid, qs, qsum, quoted := m.Quote()
+	// A picture with nothing round it (no caption, quote, sender's name or
+	// Forwarded) is the whole bubble: it runs to the edges, the bubble's
+	// corners all round, its time over it.
+	named := first && ch.Group() && !out
+	s.flush = s.albN <= 1 && m.Kind() == abi.ContentTagImage && len(m.Text()) == 0 && !quoted && !m.Forwarded() && !named
+	if s.flush {
+		s.flushLook = rexui.BubbleLook
+		s.flushLook.PadX, s.flushLook.PadY = 0, 0
+		o.Tail, o.Look = false, &s.flushLook
+	}
 	if out {
 		o.Variant = rexui.BubbleOutgoing
 		switch m.Status() {
@@ -321,6 +341,10 @@ func (s *Screen) bubble(e *screen.Env, a *state.Account, ch model.Chat, m model.
 		c.NextRole(ui.RoleLabel)
 		c.NextSemNameBytes(name)
 		c.BoxKeyed(ui.DrawText|ui.FadeOverflowX, ui.KeyN(key, 15), name)
+		// the name and its message are one element: the grid's inner step
+		// between them, so the name reads as a label, not the first line
+		c.NextSize(ui.Px(1), ui.Px(e.Pt(ztheme.T.NameGap)))
+		c.Box(0, "name gap")
 	}
 	if s.revoking(e, m) {
 		// deleted for everyone: drawn as the core will have it
@@ -333,7 +357,6 @@ func (s *Screen) bubble(e *screen.Env, a *state.Account, ch model.Chat, m model.
 	if m.Forwarded() {
 		rexui.Label(k, i18n.T("Forwarded"), rexui.LabelOpts{Style: rexui.TextCaption, Color: rexui.Of(theme.Label2)})
 	}
-	qid, qs, qsum, quoted := m.Quote()
 	s.span = s.settle(e, a, ch, m, out, quoted)
 	if quoted {
 		s.quote(e, a, ch, m, qid, qs, qsum)
@@ -358,11 +381,15 @@ func (s *Screen) bubble(e *screen.Env, a *state.Account, ch model.Chat, m model.
 	text := place != kinds.Nowhere && len(m.Text()) > 0 && (isKinds || isAV || hasText(m))
 	if text && place == kinds.Above {
 		s.text(e, a, m, id, key, false)
+		blockGap(e)
 	}
 	over := false
 	switch {
 	case isKinds || isAV:
 		over = s.block(e, a, ch, m, isKinds, out, key)
+		if text && place == kinds.Below && !over {
+			blockGap(e)
+		}
 	case !plain(m):
 		b := s.kindLine(c.Fmt(), m).Bytes()
 		rexui.LabelBytes(k, b, rexui.LabelOpts{Style: rexui.TextCallout, Color: rexui.Of(theme.Label2)})
@@ -387,6 +414,15 @@ func (s *Screen) bubble(e *screen.Env, a *state.Account, ch model.Chat, m model.
 	if !selecting {
 		s.affordances(e, a, ch, m, c.ParentKey(), brect)
 	}
+}
+
+// blockGap is the space between a nested block and the text with it: two
+// elements, so the grid's least gap (ztheme.T.BlockGap), not the text's
+// line touching the block's edge.
+func blockGap(e *screen.Env) {
+	c := e.C()
+	c.NextSize(ui.Px(1), ui.Px(e.Pt(ztheme.T.BlockGap)))
+	c.Box(0, "block gap")
 }
 
 // endBubble closes the bubble bubble() opened, own for one of ours
@@ -499,9 +535,12 @@ func (s *Screen) block(e *screen.Env, a *state.Account, ch model.Chat, m model.M
 	c.NextSize(ui.Px(w), ui.Px(h))
 	c.Push(c.Box(0, "block"))
 	rr := screen.Rect{W: w, H: h}
-	if isKinds {
+	switch {
+	case isKinds && s.flush:
+		kinds.BuildFlush(e, m, rr)
+	case isKinds:
 		kinds.Build(e, m, rr)
-	} else {
+	default:
 		av.Build(e, m, rr)
 	}
 	over = isKinds && m.Kind() == abi.ContentTagImage && len(m.Text()) == 0
@@ -516,7 +555,7 @@ func (s *Screen) block(e *screen.Env, a *state.Account, ch model.Chat, m model.M
 }
 
 const (
-	overInsetX, overInsetY = 10, 6              // OVER_PICTURE_INSET, points
+	overInsetX, overInsetY = 8, 8               // the time's pill's room from the picture's corner, points
 	scrim                  = uint32(0x0000006E) // black at 110/255
 )
 
@@ -537,7 +576,7 @@ func (s *Screen) beginBare(e *screen.Env, key ui.Key, o rexui.BubbleOpts, pad bo
 	c.NextAxis(ui.AxisX)
 	c.NextCross(ui.CrossEnd)
 	c.NextJustify(just)
-	c.NextGap(e.Pt(6))
+	c.NextGap(e.Pt(8))
 	c.NextPadding(0, e.Pt(rc.RowGap/2), 0, e.Pt(rc.RowGap/2))
 	c.Push(c.BoxKeyed(0, ui.KeyN(key, 0), nil))
 	if o.Variant == rexui.BubbleOutgoing && o.Status == rexui.BubbleFailed {
@@ -671,16 +710,17 @@ func (s *Screen) quote(e *screen.Env, a *state.Account, ch model.Chat, m model.M
 	bg := theme.WithAlpha(r.Colors[theme.Label], 0.06)
 	// It spans the bubble's settled width, its padding upstream's.
 	c.NextSize(ui.Children(1), ui.Children(1))
-	inner := s.maxW - e.Pt(quoteBarPt+17)
+	inner := s.maxW - e.Pt(quoteBarPt+2*ztheme.T.QuotePad)
 	if s.span > 0 {
 		c.NextSize(ui.Px(s.span), ui.Children(1))
-		inner = s.span - e.Pt(quoteBarPt+17)
+		inner = s.span - e.Pt(quoteBarPt+2*ztheme.T.QuotePad)
 	}
 	c.NextAxis(ui.AxisY)
-	c.NextGap(e.Pt(1))
-	c.NextPadding(e.Pt(quoteBarPt+7), e.Pt(5), e.Pt(10), e.Pt(6))
+	c.NextGap(e.Pt(ztheme.Micro))
+	pad := ztheme.T.QuotePad
+	c.NextPadding(e.Pt(quoteBarPt+pad), e.Pt(pad), e.Pt(pad), e.Pt(pad))
 	c.NextBG(bg)
-	c.NextRadius(e.Pt(6))
+	c.NextRadius(e.Pt(ztheme.Nested()))
 	c.NextBorder(bar, e.Pt(quoteBarPt))
 	c.NextBorderSides(ui.SideLeft)
 	c.NextRole(ui.RoleButton)
@@ -755,6 +795,12 @@ func (s *Screen) textAndFooter(e *screen.Env, a *state.Account, ch model.Chat, m
 	c.NextPos(0, 0)
 	s.text(e, a, m, id, key, alone)
 	c.NextSize(ui.Children(1), ui.Children(1))
+	// the footer's bottom is the text's: lifted by what the text's line
+	// keeps under its baseline beyond what the time's does, the time sits on
+	// the last line's baseline
+	ts := e.K.Kit.TextSystem()
+	body, tm := ts.Metrics(e.K.Kit.Theme().Styles[theme.StyleBody].Font), ts.Metrics(s.look.time)
+	c.NextPadding(0, 0, 0, theme.Snap(max(body.Descent+body.LineGap-tm.Descent-tm.LineGap, 0)))
 	s.footRow(e, m, &f, out, key, footInline)
 	c.Pop()
 }
@@ -770,7 +816,8 @@ func quoteLine(c *ui.Context, k *base.Kit, key ui.Key, st *theme.StyleFont, col 
 	c.BoxKeyed(ui.DrawText|ui.FadeOverflowX, key, b)
 }
 
-// quoteBarPt is a quote's bar (QUOTE_BAR).
+// quoteBarPt is a quote's bar (QUOTE_BAR); the space round its two lines is
+// ztheme.T.QuotePad.
 const quoteBarPt = 4
 
 // settle is the width a bubble with a card or a quote settles at
@@ -878,8 +925,8 @@ func (s *Screen) reactions(e *screen.Env, a *state.Account, ch model.Chat, m mod
 		align = ui.FlowEnd
 	}
 	c.NextWidth(ui.Pct(1))
-	c.NextPadding(e.Pt(6), 0, e.Pt(6), e.Pt(2))
-	c.BeginFlow("reactions", ui.FlowOpts{GapX: e.Pt(3), GapY: e.Pt(3), Align: align, Cross: ui.CrossCenter})
+	c.NextPadding(e.Pt(8), 0, e.Pt(8), e.Pt(2))
+	c.BeginFlow("reactions", ui.FlowOpts{GapX: e.Pt(4), GapY: e.Pt(4), Align: align, Cross: ui.CrossCenter})
 	font := r.Styles[theme.StyleBody].Font
 	for j := 0; j < m.Reactions(); j++ {
 		emoji, count, mine := m.Reaction(j)
@@ -893,10 +940,10 @@ func (s *Screen) reactions(e *screen.Env, a *state.Account, ch model.Chat, m mod
 			edge = r.Colors[theme.Accent]
 		}
 		c.NextSize(ui.TextSize(0), ui.TextSize(0))
-		c.NextPadding(e.Pt(6), e.Pt(3), e.Pt(6), e.Pt(3))
+		c.NextPadding(e.Pt(8), e.Pt(4), e.Pt(8), e.Pt(4))
 		c.NextBG(theme.Over(r.Colors[theme.Fill1], r.Colors[theme.Raised]|0xFF))
 		c.NextBorder(edge, e.Pt(1))
-		c.NextRadius(e.Pt(11))
+		c.NextRadius(e.Pt(12)) // a capsule: its line (16) and padding (2 × 4), halved
 		c.NextFont(font)
 		c.NextTextColor(r.Colors[theme.Label])
 		c.NextRole(ui.RoleButton)
@@ -931,7 +978,7 @@ func (s *Screen) pickRow(e *screen.Env, a *state.Account, ch model.Chat, m model
 	c.NextSize(ui.Pct(1), ui.Children(1))
 	c.NextAxis(ui.AxisX)
 	c.NextCross(ui.CrossCenter)
-	c.NextGap(e.Pt(10))
+	c.NextGap(e.Pt(8))
 	row := c.Box(ui.Clickable, "pick")
 	if sig := c.Signal(row); sig.Pressed {
 		s.pickShift = c.Input().Mods&ui.ModShift != 0

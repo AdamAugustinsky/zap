@@ -19,6 +19,7 @@ import (
 	"zapfast/markup"
 	"zapfast/model"
 	"zapfast/state"
+	ztheme "zapfast/theme"
 	"zapfast/ui/conversation/mkey"
 	"zapfast/ui/screen"
 )
@@ -107,6 +108,13 @@ type Screen struct {
 	typerNames [3]string // typingPics's, kept to build without allocating
 	typerPics  [3]img.Handle
 	span       float32 // the bubble being built's settled width (settle)
+	// topInset is how far below the transcript's top its content starts at
+	// rest: the pane's title row, the pinned message, the notice over it
+	topInset float32
+	// flush: the bubble being built is a picture alone, which fills it to
+	// its edges at its radius (flushLook: the bubble's look without padding)
+	flush     bool
+	flushLook rexui.BubbleRecipe
 	// its text's widest line and last line, laid out (inlineFoot)
 	textW, lineW float32
 	// frame is the window's frame the transcript was last built in; gap
@@ -156,6 +164,7 @@ var _ screen.ContentPane = (*Screen)(nil)
 // look is what the bubbles are drawn with, rebuilt when the theme or the
 // scale changes.
 type look struct {
+	tune     uint32 // the tunables' Gen the fonts were made at (ztheme.T.BubbleTimePt)
 	scale    float32
 	colors   [3]uint32     // secondary, link and mention
 	rich     ui.RichStyles // the text's styles, alike on both sides' bubbles
@@ -216,12 +225,12 @@ func (s *Screen) addIcons(e *screen.Env) {
 		fb  rune
 	}{
 		{&ic.call, "phone", '☎'}, {&ic.video, "video", '▶'}, {&ic.hangup, "phone.down.fill", '✆'},
-		{&ic.search, "magnifyingglass", '⌕'}, {&ic.more, "ellipsis.circle", '…'},
+		{&ic.search, "magnifyingglass", '⌕'}, {&ic.more, "ellipsis", '…'},
 	} {
 		*it.dst = k.AddIcon(rexui.ToolbarSymbol(it.sym, it.fb))
 	}
-	ic.reply = k.AddIcon(icon.Spec{Symbol: "arrowshape.turn.up.left", Fallback: '↩', Pt: 15})
-	ic.close = k.AddIcon(icon.Spec{Symbol: "xmark", Fallback: '×', Pt: 15})
+	ic.reply = k.AddIcon(ztheme.ToolIcon("arrowshape.turn.up.left", '↩'))
+	ic.close = k.AddIcon(ztheme.ToolIcon("xmark", '×'))
 	// The Newest message button, 0.46 of its 40 pt.
 	ic.down = k.AddIcon(icon.Spec{Symbol: "arrow.down", Fallback: '↓', Pt: newestPt * 0.46})
 	for _, it := range [...]struct {
@@ -236,7 +245,7 @@ func (s *Screen) addIcons(e *screen.Env) {
 		{&ic.edit, "pencil", '✎'}, {&ic.eraser, "eraser", '⌧'}, {&ic.plus, "plus", '+'},
 		{&ic.back, "chevron.left", '‹'},
 	} {
-		*it.dst = k.AddIcon(icon.Spec{Symbol: it.sym, Fallback: it.fb, Pt: 15})
+		*it.dst = k.AddIcon(ztheme.ToolIcon(it.sym, it.fb)) // the bars' items, as the header's
 	}
 	ic.pinSmall = k.AddIcon(icon.Spec{Symbol: "pin.fill", Fallback: '⚲', Pt: footMarkPt})
 	ic.smile = k.AddIcon(icon.Spec{Symbol: "face.smiling", Fallback: '☺', Pt: 16})
@@ -250,12 +259,17 @@ func (s *Screen) styles(e *screen.Env) {
 	lk := &s.look
 	sc := k.Scale()
 	colors := [3]uint32{r.Colors[theme.Label2], r.Colors[theme.Link], r.Colors[theme.Accent]}
-	if lk.ok && lk.scale == sc && lk.colors == colors {
+	if lk.ok && lk.scale == sc && lk.colors == colors && lk.tune == ztheme.Gen {
 		return
 	}
 	ts := k.TextSystem()
 	font := func(w int, italic, mono bool, size float32) text.FontKey {
 		return ts.Font(text.FontDesc{SizePt: size, Weight: w, Italic: italic, Mono: mono, Scale: sc})
+	}
+	// Rex's metadata: the UI face with tabular figures (ztheme.Meta); a
+	// bubble's time a step under the list's, on its last line's baseline
+	meta := func(size float32) text.FontKey {
+		return ts.Font(text.FontDesc{SizePt: size, Tabular: true, Scale: sc})
 	}
 	f := markup.Fonts{
 		Regular: r.Styles[theme.StyleBody].Font, Bold: font(700, false, false, 13), Italic: font(400, true, false, 13),
@@ -263,11 +277,11 @@ func (s *Screen) styles(e *screen.Env) {
 	}
 	lk.rich = markup.RichStyles(f, markup.Colors{Secondary: colors[0], Link: colors[1], Mention: colors[2]})
 	lk.small = font(400, false, false, 11)
-	lk.time = font(400, false, true, 10.5)
+	lk.time = meta(ztheme.T.BubbleTimePt)
 	lk.smallMed = font(500, false, false, 11)
 	lk.badge = font(600, false, false, 11)
 	lk.jumbo = font(400, false, false, 13*text.JumboScale)
-	lk.scale, lk.colors, lk.ok = sc, colors, true
+	lk.scale, lk.colors, lk.tune, lk.ok = sc, colors, ztheme.Gen, true
 }
 
 // Build builds the transcript at r.
@@ -308,37 +322,55 @@ func (s *Screen) Build(e *screen.Env, r screen.Rect) {
 
 	// beside no list or rail: a narrow window (the header's Back)
 	s.narrow = r.X <= 0 || e.Narrow()
-	s.colPt = max(r.W/e.K.Scale()-2*sidePt, 120)
+	s.colPt = max(r.W/e.K.Scale()-2*ztheme.T.TranscriptSide, 120)
 	s.maxW = max(theme.Snap(e.Pt(s.colPt)*rexui.BubbleLook.MaxShare)-2*e.Pt(rexui.BubbleLook.PadX), e.Pt(24))
 
 	// The transcript draws no background: the pane behind it shows through.
+	// It runs from the pane's top, under its title row (ContentInset) and the
+	// pinned message and the notice under that, which build after it, over
+	// it: at rest its content starts below them (topInset, the history's top
+	// block's), and what scrolls up under them is blurred, easing off below
+	// them (the soft scroll edge).
 	e.Begin(r, "conversation")
-	top := float32(0)
-	if s.livePins(a, ch.ID()) > 0 {
-		s.pinBar(e, a, ch, r.W)
-		top = e.Pt(pinBarPt)
-	}
+	inset := e.ContentInset()
+	pins := s.livePins(a, ch.ID()) > 0
 	// EventDropped names no chat: a message record dropped since the chat
 	// opened, its pages' or a live one's, shows a notice over the
 	// transcript, never a message attributed to the chat.
-	if droppedMessages(a) > s.dropped {
-		theme.At(c, 0, top, r.W, e.Pt(28))
+	dropped := droppedMessages(a) > s.dropped
+	top := inset
+	if pins {
+		top += e.Pt(pinBarPt)
+	}
+	if dropped {
+		top += e.Pt(28)
+	}
+	s.topInset = top
+	theme.At(c, 0, 0, r.W, r.H)
+	c.NextSize(ui.Px(r.W), ui.Px(r.H))
+	c.Push(c.Box(base.Floating, "transcript"))
+	under := false
+	if v == nil || v.Len() == 0 {
+		s.empty(e, ch.Ref(), v, r.W, r.H)
+	} else {
+		s.loadRef = 0
+		s.list(e, a, ch, v, r.W, r.H)
+		_, sy := c.Scroll(s.vl.Body)
+		under = sy > 0.5
+	}
+	c.Pop()
+	rexui.SoftScrollEdge(e.K.Kit, ui.HashString(c.ParentKey(), "soft edge"), r.W, top, e.Pt(ztheme.T.SoftFade), e.K.Kit.Theme().Colors[theme.Pane], under && ztheme.T.SoftBlur > 0)
+	y := inset
+	if pins {
+		s.pinBar(e, a, ch, r.W, y)
+		y += e.Pt(pinBarPt)
+	}
+	if dropped {
+		theme.At(c, 0, y, r.W, e.Pt(28))
 		c.Push(c.Box(base.Floating, "dropped records"))
 		rexui.DateDivider(e.K.Kit, i18n.T("Some records could not be shown"), rexui.DateDividerOpts{Pill: true})
 		c.Pop()
-		top += e.Pt(28)
 	}
-	listH := max(r.H-top, 0)
-	theme.At(c, 0, top, r.W, listH)
-	c.NextSize(ui.Px(r.W), ui.Px(listH))
-	c.Push(c.Box(base.Floating, "transcript"))
-	if v == nil || v.Len() == 0 {
-		s.empty(e, ch.Ref(), v, r.W, listH)
-	} else {
-		s.loadRef = 0
-		s.list(e, a, ch, v, r.W, listH)
-	}
-	c.Pop()
 	if s.menu.open {
 		s.contextMenu(e, a, ch, v)
 	}
@@ -554,7 +586,7 @@ func (s *Screen) empty(e *screen.Env, ref model.ChatRef, v *model.Conversation, 
 	c.NextSize(ui.Px(w), ui.Px(h))
 	c.NextAxis(ui.AxisY)
 	c.NextCross(ui.CrossCenter)
-	c.NextPadding(0, e.Pt(24), 0, 0)
+	c.NextPadding(0, s.topInset+e.Pt(24), 0, 0)
 	c.NextGap(e.Pt(8))
 	c.Push(c.Box(0, "empty"))
 	switch {
@@ -729,7 +761,7 @@ func (s *Screen) newest(e *screen.Env, ch model.Chat, w, h float32) {
 	c.NextFont(s.look.badge)
 	c.NextTextColor(r.Colors[theme.OnAccent])
 	c.NextAlign(ui.AlignCenter)
-	c.NextPadding(0, theme.Snap((bh-e.Pt(13))/2), 0, 0)
+	c.NextPadding(0, theme.Snap((bh-e.Pt(13))/2), 0, 0) // grid:ok centres a 13-pt line, not a space
 	// it lies on the button's corner on purpose
 	c.NextAuditExempt(ui.AuditCovered.Mask())
 	c.BoxKeyed(base.Floating|ui.DrawBackground|ui.DrawText, ui.KeyN(c.ParentKey(), 7600), f.Bytes())

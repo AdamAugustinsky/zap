@@ -186,7 +186,7 @@ func send(a *state.Account, tag abi.CommandTag) {
 // step is one numbered line of the instructions.
 func step(e *screen.Env, n int, text string) {
 	k := e.K
-	k.NextGap(6)
+	k.NextGap(4)
 	k.BeginContainer(ui.AxisX, ui.CrossCenter, text, ui.Pct(1), ui.Children(1), 0)
 	rexui.Label(k.Kit, e.C().Fmt().Int(n).Str(".").String(), rexui.LabelOpts{Style: rexui.TextSemibold, Color: rexui.Of(theme.Accent)})
 	rexui.Label(k.Kit, text, rexui.LabelOpts{Color: rexui.Of(theme.Label2), Wrap: true})
@@ -216,7 +216,7 @@ func (s *Screen) qrView(e *screen.Env, a *state.Account, payload []byte) {
 	step(e, 1, tr("Open WhatsApp on your phone"))
 	step(e, 2, tr("Tap Menu or Settings, then Linked devices"))
 	step(e, 3, tr("Tap Link a device and point the phone at this code"))
-	k.Space(6)
+	k.Space(8)
 	if rexui.Link(k.Kit, tr("Link with phone number instead"), rexui.LinkOpts{}).Clicked {
 		s.phoning, s.focusPhone = true, true
 		s.phone.Reset()
@@ -242,7 +242,7 @@ func (s *Screen) pairCode(e *screen.Env, code, phone []byte, hasPhone bool) {
 	r := k.Theme()
 	c.NextBG(r.Colors[theme.Fill3])
 	c.NextRadius(e.Pt(10))
-	k.NextPadding(22, 10, 22, 10)
+	k.NextPadding(24, 12, 24, 12)
 	k.BeginContainer(ui.AxisY, ui.CrossCenter, "code", ui.Children(1), ui.Children(1), ui.DrawBackground)
 	rexui.Label(k.Kit, shown, rexui.LabelOpts{Style: rexui.TextTitle1, MonoPt: 22})
 	k.EndContainer()
@@ -250,7 +250,7 @@ func (s *Screen) pairCode(e *screen.Env, code, phone []byte, hasPhone bool) {
 	step(e, 1, tr("Open WhatsApp on your phone"))
 	step(e, 2, tr("Tap Menu or Settings, then Linked devices"))
 	step(e, 3, tr("Tap Link a device, then Link with phone number instead"))
-	k.Space(6)
+	k.Space(8)
 	if rexui.ButtonIcon(k.Kit, s.copy, tr("Copy code"), rexui.ButtonOpts{Size: theme.SizeLarge}).Clicked {
 		if c.ClipboardSet != nil {
 			c.ClipboardSet(code)
@@ -285,7 +285,7 @@ func (s *Screen) phoneEntry(e *screen.Env, a *state.Account) {
 	// Stay the main action, but read as unavailable until the number is long
 	// enough.
 	ready := digits >= minDigits
-	k.Space(6)
+	k.Space(8)
 	k.NextGap(8)
 	k.BeginContainer(ui.AxisX, ui.CrossCenter, "actions", ui.Pct(1), ui.Children(1), 0)
 	k.Spacer()
@@ -329,7 +329,7 @@ func (s *Screen) choices(e *screen.Env) {
 	if !acct.Several(st) {
 		return
 	}
-	k.Space(6)
+	k.Space(8)
 	k.NextGap(24)
 	k.BeginContainer(ui.AxisX, ui.CrossCenter, "choices", ui.Children(1), ui.Children(1), 0)
 	back := tr("Use another account")

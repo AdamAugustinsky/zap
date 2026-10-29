@@ -85,9 +85,10 @@ const (
 type Window uint8
 
 const (
-	WinSettings Window = iota // ⌘, (zf:src/ui/settings.rs)
-	WinViewer                 // the media viewer (zf:src/ui/image_preview.rs)
-	WinCall                   // the call (zf:src/ui/call.rs)
+	WinSettings   Window = iota // ⌘, (zf:src/ui/settings.rs)
+	WinViewer                   // the media viewer (zf:src/ui/image_preview.rs)
+	WinCall                     // the call (zf:src/ui/call.rs)
+	WinPlayground               // the design playground (dev builds: cmd/zapfast -playground)
 	NumWindows
 )
 
@@ -128,6 +129,9 @@ type Account struct {
 
 	Model    *model.Store
 	Settings AccountSettings
+	// SpaceFolder is the folder the account's space shows alone (folders.go),
+	// "": the whole account.
+	SpaceFolder string
 
 	// The window's state that belongs to the account (zf:src/account.rs):
 	// the open chat, the list's mode and chip, and the label the chip names.
@@ -546,6 +550,9 @@ type Requests struct {
 	// Insert is text for the composer to insert at its cursor
 	// (State.InsertEmoji; TakeInsert).
 	Insert []byte
+	// SpotlightText is the text Spotlight opens with (typing with no chat
+	// open, shell/keyboard.go), which it takes.
+	SpotlightText []byte
 	// Prefill is a link's text for a chat's composer (PrefillComposer).
 	Prefill Prefill
 	// Restore is a refused send's text for the open chat's composer
@@ -596,6 +603,11 @@ type State struct {
 	// AddingAccount shows the login screen for a new account over the
 	// linked one; AccountMenu is the switcher's popover.
 	AddingAccount, AccountMenu bool
+	// Spotlight is ⌘K's search over everything, open (ui/spotlight).
+	Spotlight bool
+	// SpaceGen counts the moves between spaces: the list slides in from the
+	// side they came from (shell).
+	SpaceGen uint32
 	// Focused is whether the main window has the focus (read state).
 	Focused bool
 
