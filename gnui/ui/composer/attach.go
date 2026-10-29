@@ -336,7 +336,7 @@ func (d *dropState) build(s *Screen, e *screen.Env, r screen.Rect, ch model.Chat
 	k := e.K
 	c := e.C()
 	if d.key == 0 {
-		d.key = ui.HashString(0, "zapfast composer drop")
+		d.key = ui.HashString(0, "zapfast composer drop"+s.name)
 	}
 	top := theme.Snap(k.Theme().Window.Toolbars[theme.ToolbarRex].Height)
 	theme.At(c, r.X, top, r.W, r.Y+r.H-top)

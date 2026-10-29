@@ -8,6 +8,7 @@ import (
 	"zapfast/ui/accounts"
 	"zapfast/ui/calls"
 	"zapfast/ui/chatlist"
+	"zapfast/ui/chatview"
 	"zapfast/ui/composer"
 	"zapfast/ui/conversation"
 	"zapfast/ui/cropper"
@@ -55,13 +56,17 @@ func screens(demo bool) *screen.Set {
 		CallsContent: calls.NewContent(),
 		CallBar:      calls.NewBar(),
 
-		Picker:       picker.New(),
-		Dialogs:      dialogs.New(),
-		Spotlight:    spotlight.New(),
-		Peek:         peek.New(),
-		PeekWindow:   peek.NewWindow(),
-		Cropper:      cropper.New(),
-		StickerMaker: stickermaker.New(),
+		Picker:     picker.New(),
+		Dialogs:    dialogs.New(),
+		Spotlight:  spotlight.New(),
+		Peek:       peek.New(),
+		PeekWindow: peek.NewWindow(),
+		// the split view's second pane: the same screens, their own
+		Conversation2: conversation.NewPane(),
+		Composer2:     composer.NewPane(" 2"),
+		PipWindow:     chatview.NewPip(),
+		Cropper:       cropper.New(),
+		StickerMaker:  stickermaker.New(),
 
 		Settings: st,
 		Viewer:   viewer.New(),

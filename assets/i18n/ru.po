@@ -4964,3 +4964,87 @@ msgstr "Быстро просмотреть последний непрочит�
 #: gnui
 msgid "Peek at the newest unread chat, from any app"
 msgstr "Быстро просмотреть последний непрочитанный чат из любого приложения"
+
+#: gnui
+msgid "Beside: {chat}"
+msgstr "Рядом: {chat}"
+
+#: gnui
+msgid "Bring back {chat}"
+msgstr "Вернуть {chat}"
+
+#: gnui
+msgid "Close the split (⌃⌥U)"
+msgstr "Закрыть разделение (⌃⌥U)"
+
+#: gnui
+msgid "Close the split"
+msgstr "Закрыть разделение"
+
+#: gnui
+msgid "Drop to split"
+msgstr "Отпустите, чтобы разделить"
+
+#: gnui
+msgid "Float over other apps"
+msgstr "Поверх других приложений"
+
+#: gnui
+msgid "Float the chat over other apps"
+msgstr "Чат поверх других приложений"
+
+#: gnui
+msgid "Floating: {chat}"
+msgstr "Плавающий: {chat}"
+
+#: gnui
+msgid "Make it the main chat"
+msgstr "Сделать основным чатом"
+
+#: gnui
+msgid "Open another chat to split with"
+msgstr "Откройте ещё один чат для разделения"
+
+#: gnui
+msgid "Open beside the open chat"
+msgstr "Открыть рядом с открытым чатом"
+
+#: gnui
+msgid "Open in Zap"
+msgstr "Открыть в Zap"
+
+#: gnui
+msgid "Resize the split"
+msgstr "Изменить размер разделения"
+
+#: gnui
+msgid "Shrink to the floating icon"
+msgstr "Свернуть в плавающий значок"
+
+#: gnui
+msgid "Split with the next tab"
+msgstr "Разделить со следующей вкладкой"
+
+#: gnui
+msgid "Unread messages"
+msgstr "Непрочитанные сообщения"
+
+#: gnui
+msgid "Drop to move here"
+msgstr "Отпустите, чтобы переместить сюда"
+
+#: gnui
+msgid "Drop to show it here"
+msgstr "Отпустите, чтобы показать здесь"
+
+#: gnui
+msgid "Drag to move the pane"
+msgstr "Перетащите, чтобы переместить панель"
+
+#: gnui
+msgid "Fill the window with this chat"
+msgstr "Развернуть этот чат на всё окно"
+
+#: gnui
+msgid "Split pane"
+msgstr "Панель разделения"

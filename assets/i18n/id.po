@@ -4935,3 +4935,87 @@ msgstr "Intip obrolan belum dibaca terbaru"
 #: gnui
 msgid "Peek at the newest unread chat, from any app"
 msgstr "Intip obrolan belum dibaca terbaru, dari aplikasi apa pun"
+
+#: gnui
+msgid "Beside: {chat}"
+msgstr "Di samping: {chat}"
+
+#: gnui
+msgid "Bring back {chat}"
+msgstr "Kembalikan {chat}"
+
+#: gnui
+msgid "Close the split (⌃⌥U)"
+msgstr "Tutup tampilan terbagi (⌃⌥U)"
+
+#: gnui
+msgid "Close the split"
+msgstr "Tutup tampilan terbagi"
+
+#: gnui
+msgid "Drop to split"
+msgstr "Lepas untuk membagi"
+
+#: gnui
+msgid "Float over other apps"
+msgstr "Mengambang di atas aplikasi lain"
+
+#: gnui
+msgid "Float the chat over other apps"
+msgstr "Mengambangkan obrolan di atas aplikasi lain"
+
+#: gnui
+msgid "Floating: {chat}"
+msgstr "Mengambang: {chat}"
+
+#: gnui
+msgid "Make it the main chat"
+msgstr "Jadikan obrolan utama"
+
+#: gnui
+msgid "Open another chat to split with"
+msgstr "Buka obrolan lain untuk dibagi"
+
+#: gnui
+msgid "Open beside the open chat"
+msgstr "Buka di samping obrolan yang terbuka"
+
+#: gnui
+msgid "Open in Zap"
+msgstr "Buka di Zap"
+
+#: gnui
+msgid "Resize the split"
+msgstr "Ubah ukuran tampilan terbagi"
+
+#: gnui
+msgid "Shrink to the floating icon"
+msgstr "Kecilkan ke ikon mengambang"
+
+#: gnui
+msgid "Split with the next tab"
+msgstr "Bagi dengan tab berikutnya"
+
+#: gnui
+msgid "Unread messages"
+msgstr "Pesan belum dibaca"
+
+#: gnui
+msgid "Drop to move here"
+msgstr "Lepas untuk memindahkan ke sini"
+
+#: gnui
+msgid "Drop to show it here"
+msgstr "Lepas untuk menampilkannya di sini"
+
+#: gnui
+msgid "Drag to move the pane"
+msgstr "Seret untuk memindahkan panel"
+
+#: gnui
+msgid "Fill the window with this chat"
+msgstr "Penuhi jendela dengan obrolan ini"
+
+#: gnui
+msgid "Split pane"
+msgstr "Panel terbagi"

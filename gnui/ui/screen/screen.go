@@ -321,6 +321,13 @@ type Set struct {
 	Playground WindowScreen
 	// PeekWindow is the floating peek's window (ui/peek.Window, WinPeek).
 	PeekWindow WindowScreen
+	// Conversation2 and Composer2 are the split view's second pane: the
+	// same screens as Conversation and Composer, of their own (the panes'
+	// chats trade the state that is the open chat's, Account.SideBegin).
+	Conversation2 ContentPane
+	Composer2     ComposerPane
+	// PipWindow is the floating chat's window (ui/chatview.Pip, WinPip).
+	PipWindow WindowScreen
 
 	Theme  Theme   // theme
 	System System  // sys

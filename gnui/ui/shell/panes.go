@@ -35,9 +35,10 @@ const trafficPt = 80
 type paneID int8
 
 const (
-	paneList paneID = iota // the chat list, or the Calls page's
-	paneChat               // the conversation, or what the page shows
-	paneSide               // the side pane (info, search, starred…)
+	paneList  paneID = iota // the chat list, or the Calls page's
+	paneChat                // the conversation, or what the page shows
+	paneSide                // the side pane (info, search, starred…)
+	paneSplit               // the chat beside the open one (split.go)
 	numPanes
 )
 
@@ -62,15 +63,22 @@ func (sh *Shell) body(r [4]float32) screen.Rect {
 }
 
 // noteFocus follows which pane is in use: the one pressed in, and the
-// conversation when a chat opens (Rex focuses a pane on a click).
-func (sh *Shell) noteFocus(a *state.Account, panes *paneRects) {
+// conversation when a chat opens (Rex focuses a pane on a click). In the
+// split view (split) a press in the pane of the chat not in use puts it in
+// use, before anything builds, so that the press acts on its own chat.
+func (sh *Shell) noteFocus(a *state.Account, panes *paneRects, split bool) {
 	c := sh.env.C()
 	ref, open := model.ChatRef(0), false
 	if ch, ok := a.OpenChatView(); ok {
 		ref, open = ch.Ref(), true
 	}
+	// the open chat's pane: the second, in a split where it is the second
+	live := paneChat
+	if first, _ := a.Panes(); split && first != a.Open {
+		live = paneSplit
+	}
 	if open && ref != sh.focusChat {
-		sh.focus = paneChat
+		sh.focus = live
 	}
 	sh.focusChat = ref
 	if in := c.Input(); in.Pressed[ui.ButtonLeft] {
@@ -79,6 +87,10 @@ func (sh *Shell) noteFocus(a *state.Account, panes *paneRects) {
 			if shown(r) && in.MouseX >= r[0] && in.MouseX < r[2] && in.MouseY >= r[1] && in.MouseY < r[3] {
 				sh.focus = paneID(p)
 			}
+		}
+		if split && (sh.focus == paneChat || sh.focus == paneSplit) && sh.focus != live {
+			a.UseSplit()
+			sh.focusChat = a.Open
 		}
 	}
 	if !shown(panes[sh.focus]) {

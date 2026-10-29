@@ -100,9 +100,9 @@ type Shell struct {
 	// shown (at most 4 info and 3 errors), for its height.
 	toastBuf   []state.Toast
 	toastKeys  [8]toastKey
-	tb         rexui.Toolbar // the titlebar band
-	listTB     rexui.Toolbar // the panes' title rows
-	chatTB     rexui.Toolbar
+	tb         rexui.Toolbar    // the titlebar band
+	listTB     rexui.Toolbar    // the panes' title rows
+	chatTB     [2]rexui.Toolbar // each chat pane's title row (the split view's second)
 	sideTB     rexui.Toolbar
 	focus      paneID        // the pane in use, opaque (noteFocus)
 	focusChat  model.ChatRef // the open chat noteFocus last saw
@@ -117,6 +117,8 @@ type Shell struct {
 	bannerH    float32                // the open chat's banner, last frame, which the transcript runs under
 	front      [state.NumWindows]bool // opened alone: to bring forward once open
 	listDrag   float32                // the list's width as a drag of its edge goes
+	split      splitUI                // the split view's (split.go)
+	chatPane   [4]float32             // the chat pane this frame, for a tab dragged onto it
 	placed     bool                   // the main window was put back where it was
 	seenW      float32                // the window's size last frame (points)
 	seenH      float32
@@ -131,6 +133,7 @@ type Shell struct {
 
 	guard   screen.Guard        // the Lock slot's timer, when it has one
 	selBar  screen.SelectionBar // the Conversation slot's selection bar
+	selBar2 screen.SelectionBar // and the split view's second pane's (Conversation2)
 	callsTB screen.ToolbarPart  // the CallsPage slot's toolbar items
 	compact compactList         // the ChatList slot's avatars in the rail
 	updates screen.UpdateNotice // the Updates slot's newer version
@@ -183,6 +186,7 @@ func New(s *state.State, set *screen.Set) (*Shell, error) {
 	sh := &Shell{S: s, Set: set, model: m, viewerM: vm, menuLoc: i18n.Current()}
 	sh.guard, _ = set.Lock.(screen.Guard)
 	sh.selBar, _ = set.Conversation.(screen.SelectionBar)
+	sh.selBar2, _ = set.Conversation2.(screen.SelectionBar)
 	sh.callsTB, _ = set.CallsPage.(screen.ToolbarPart)
 	sh.compact, _ = set.ChatList.(compactList)
 	sh.updates, _ = set.Updates.(screen.UpdateNotice)
@@ -270,9 +274,11 @@ func (sh *Shell) Init(a *app.App) error {
 		}
 	}
 	e := &sh.env
+	sh.split.init(e)
 	for _, p := range [...]screen.Initer{sh.Set.Login, sh.Set.Lock, sh.Set.Accounts, sh.Set.ChatList, sh.Set.Conversation,
 		sh.Set.Search, sh.Set.Composer, sh.Set.Info, sh.Set.MessageInfo, sh.Set.CallsPage,
-		sh.Set.Picker, sh.Set.Dialogs, sh.Set.Cropper, sh.Set.StickerMaker, sh.Set.CallsContent, sh.Set.CallBar, sh.Set.Spotlight, sh.Set.Peek} {
+		sh.Set.Picker, sh.Set.Dialogs, sh.Set.Cropper, sh.Set.StickerMaker, sh.Set.CallsContent, sh.Set.CallBar, sh.Set.Spotlight, sh.Set.Peek,
+		sh.Set.Conversation2, sh.Set.Composer2} {
 		if !nilSlot(p) {
 			if err := p.Init(e); err != nil {
 				return err
@@ -544,7 +550,16 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 	if !covering && right-left > e.Pt(120) {
 		panes[paneChat] = [4]float32{left, tbH, right, bottom}
 	}
-	sh.noteFocus(a, &panes)
+	sh.chatPane = panes[paneChat]
+	if s.Req.UseSplit {
+		s.Req.UseSplit = false
+		a.UseSplit()
+	}
+	split := false
+	if open && !narrow && !covering {
+		split = sh.splitLayout(a, &panes, gut)
+	}
+	sh.noteFocus(a, &panes, split)
 	// whether the tabs are up, for the chat's header, which builds before
 	// them (it leaves the name to the tab)
 	tabX0 := e.Pt(trafficPt+accountChipPt+16) + sh.sidebarW()
@@ -614,8 +629,14 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 			e.TabInBuildOrder()
 		}
 	}
-	if cp := panes[paneChat]; shown(cp) {
-		sh.chat(a, cp, open)
+	switch {
+	case split:
+		sh.splitPanes(a, &panes, gut, tbH, bottom)
+	case shown(panes[paneChat]):
+		sh.chat(a, panes[paneChat], open)
+		if sp := panes[paneSplit]; shown(sp) {
+			sh.waiting(a, sp) // a tab held over the conversation: where it would go
+		}
 	}
 	if sp := panes[paneSide]; shown(sp) && shownSide < 1 && (side == nil || s.Panes.Pane == state.PaneNone) {
 		// folding away, the slot closed: the glass alone
@@ -734,14 +755,26 @@ func (sh *Shell) list(r [4]float32) {
 // banner, the transcript, the composer or the selection bar), the Calls page,
 // or the empty pane; and the pane's title row.
 func (sh *Shell) chat(a *state.Account, r [4]float32, open bool) {
+	sh.chatIn(a, r, open, 0)
+}
+
+// chatIn is chat in slot i: 0 the first pane's screens (and the one pane
+// with no split), 1 the split view's second pane's (Conversation2,
+// Composer2). The account's banners show in the first.
+func (sh *Shell) chatIn(a *state.Account, r [4]float32, open bool, i int) {
 	s, e := sh.S, &sh.env
+	conv, comp, bar := sh.Set.Conversation, sh.Set.Composer, sh.selBar
+	if i == 1 {
+		conv, comp, bar = sh.Set.Conversation2, sh.Set.Composer2, sh.selBar2
+	}
 	b := sh.body(r)
 	top := b.Y
 	switch {
-	case open:
+	case open && i == 0:
 		// the transcript runs under the title row and the banner, which
 		// build after it, over it: the banner's height is the last frame's
 		top += sh.bannerH
+	case open:
 	case s.Page != state.PageCalls || sh.Set.CallsContent == nil:
 		top += sh.banner(a, screen.Rect{X: b.X, Y: b.Y, W: b.W})
 	}
@@ -749,33 +782,37 @@ func (sh *Shell) chat(a *state.Account, r [4]float32, open bool) {
 	case open:
 		// In selection mode the conversation's selection bar takes the
 		// composer's place.
-		selecting := s.Panes.Selecting && sh.selBar != nil
+		selecting := s.Panes.Selecting && bar != nil
 		ch := e.Pt(52)
 		switch {
 		case selecting:
-			ch = sh.selBar.SelectionBarHeight(e, b.W)
-		case sh.Set.Composer != nil:
-			ch = sh.Set.Composer.Height(e, b.W)
+			ch = bar.SelectionBarHeight(e, b.W)
+		case comp != nil:
+			ch = comp.Height(e, b.W)
 		}
-		sh.composerH = ch
+		if !s.Side {
+			sh.composerH = ch
+		}
 		foot := r[3] - ch
 		// from the pane's top: its content starts below the title row and
 		// the banner at rest and scrolls up under them (ContentInset)
 		tr := screen.Rect{X: b.X, Y: r[1], W: b.W, H: max(foot-r[1], 0)}
-		if sh.Set.Conversation != nil {
+		if conv != nil {
 			e.SetContentInset(top - r[1])
-			sh.Set.Conversation.Build(e, tr)
+			conv.Build(e, tr)
 			e.SetContentInset(0)
 		} else {
 			e.Placeholder(screen.Rect{X: b.X, Y: top, W: b.W, H: max(foot-top, 0)}, "Conversation")
 		}
-		sh.bannerH = sh.banner(a, screen.Rect{X: b.X, Y: b.Y, W: b.W})
+		if i == 0 {
+			sh.bannerH = sh.banner(a, screen.Rect{X: b.X, Y: b.Y, W: b.W})
+		}
 		cr := screen.Rect{X: b.X, Y: foot, W: b.W, H: ch}
 		switch {
 		case selecting:
-			sh.selBar.BuildSelectionBar(e, cr)
-		case sh.Set.Composer != nil:
-			sh.Set.Composer.Build(e, cr)
+			bar.BuildSelectionBar(e, cr)
+		case comp != nil:
+			comp.Build(e, cr)
 		default:
 			e.Placeholder(cr, "Composer")
 		}
@@ -788,14 +825,18 @@ func (sh *Shell) chat(a *state.Account, r [4]float32, open bool) {
 	default:
 		sh.empty(screen.Rect{X: b.X, Y: top, W: b.W, H: r[3] - top})
 	}
-	sh.header(&sh.chatTB, "Chat header", "Zap", r)
-	if open && sh.Set.Conversation != nil {
-		sh.Set.Conversation.Toolbar(e, &sh.chatTB)
+	tb := &sh.chatTB[i]
+	sh.header(tb, chatHeaderLabel[i], "Zap", r)
+	if open && conv != nil {
+		conv.Toolbar(e, tb)
 	} else {
-		sh.chatTB.Title()
+		tb.Title()
 	}
-	sh.chatTB.End()
+	tb.End()
 }
+
+// chatHeaderLabel names each pane's title row.
+var chatHeaderLabel = [2]string{"Chat header", "Chat header 2"}
 
 // beneath builds a narrow window's list view under the chat sliding in
 // over it, dimming as the chat comes (zf:src/ui/mod.rs slide_in).
@@ -1767,6 +1808,8 @@ func (sh *Shell) manage(op opener, alone bool) (pending bool) {
 			scr = sh.Set.Playground
 		case state.WinPeek:
 			scr = sh.Set.PeekWindow
+		case state.WinPip:
+			scr = sh.Set.PipWindow
 		}
 		if scr == nil {
 			continue

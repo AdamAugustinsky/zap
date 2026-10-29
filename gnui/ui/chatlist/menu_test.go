@@ -251,7 +251,8 @@ func TestNativeMenuHasUpstreamsItemsInOrder(t *testing.T) {
 	un.Unread = 1
 	r.chats(un)
 	req := r.nativeMenu("Ada")
-	want := []string{"Mark as read", "Pin to top", "Add to favorites", "Archive", "Mute for 8 hours", "Mute for a week", "Mute indefinitely",
+	// Zap's Float first (no chat is open to split beside), then upstream's
+	want := []string{"Float over other apps", "-", "Mark as read", "Pin to top", "Add to favorites", "Archive", "Mute for 8 hours", "Mute for a week", "Mute indefinitely",
 		"Notification sound", "Folder", "Labels", "Lock chat", "-", "Copy number", "Info", "Delete chat"}
 	if got := titles(req.Items); !slices.Equal(got, want) {
 		t.Fatalf("items\n got %v\nwant %v", got, want)
@@ -279,7 +280,7 @@ func TestChannelMenuItemsAndEnabledStates(t *testing.T) {
 				r.Frames(2)
 			}
 			req := r.nativeMenu("News")
-			want := []string{"Mark as unread", "Pin to top", "Archive", "Leave channel", "Mute for 8 hours", "Mute for a week", "Mute indefinitely",
+			want := []string{"Float over other apps", "-", "Mark as unread", "Pin to top", "Archive", "Leave channel", "Mute for 8 hours", "Mute for a week", "Mute indefinitely",
 				"Notification sound", "Folder", "Labels", "Lock chat", "-", "Info", "Delete chat"}
 			if got := titles(req.Items); !slices.Equal(got, want) {
 				t.Fatalf("connected=%v favorite=%v: items %v, want %v", connected, favorite, got, want)

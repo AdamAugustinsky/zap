@@ -484,9 +484,18 @@ func Frame(e *screen.Env) {
 		}
 	}
 	if v := &s.Voice; v.Next.Len() >= 2 && a != nil && a.Open != 0 {
+		// the run's chat may be the split view's other pane: it plays on
+		// there, as its own
+		side := v.Chat != 0 && v.Chat == a.Split
+		if side {
+			a.SideBegin()
+		}
 		load(s, a, v.Next.At(0), v.Next.At(1), true, 0)
 		v.Next.Reset()
 		logic.PlayVoice(s, a, pb.msg)
+		if side {
+			a.SideEnd()
+		}
 	}
 	if pb.ph == playing && pb.p != nil {
 		// a frame at the end, to notice it; Build asks for more while the

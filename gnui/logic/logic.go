@@ -14,6 +14,7 @@ import (
 type Logic struct {
 	s        *state.State
 	focused  bool
+	pipSeen  bool // the floating chat's window had the focus last frame
 	throttle map[throttleKey]time.Time
 	posted   map[throttleKey]bool // chats with a notice on the desktop
 	chat     abi.Chat

@@ -7,8 +7,6 @@
 package peek
 
 import (
-	"time"
-
 	"gonativeui/icon"
 	"gonativeui/rexui"
 	"gonativeui/theme"
@@ -16,11 +14,11 @@ import (
 	"gonativeui/widget/base"
 
 	"zapfast/abi"
-	"zapfast/format"
 	"zapfast/i18n"
 	"zapfast/model"
 	"zapfast/state"
 	ztheme "zapfast/theme"
+	"zapfast/ui/chatview"
 	"zapfast/ui/screen"
 )
 
@@ -43,6 +41,8 @@ type view struct {
 	count  int // the messages the chat had at the last frame: a new one scrolls to it
 	key    state.Peek
 	close  icon.ID
+	split  icon.ID
+	float  icon.ID
 }
 
 // act is what the user did in a view this frame.
@@ -52,6 +52,8 @@ const (
 	actNone  act = iota
 	actClose     // close it: the close button, Escape in the field
 	actOpen      // open the chat (the view has closed nothing yet)
+	actSplit     // open it beside the open chat, as Zen's glance splits
+	actFloat     // keep it floating over other apps
 )
 
 // New is the overlay, closed.
@@ -59,8 +61,14 @@ func New() *Screen { return &Screen{} }
 
 // Init readies its icon.
 func (s *Screen) Init(e *screen.Env) error {
-	s.v.close = e.K.AddIcon(ztheme.ToolIcon("xmark", '×'))
+	s.v.icons(e)
 	return nil
+}
+
+func (v *view) icons(e *screen.Env) {
+	v.close = e.K.AddIcon(ztheme.ToolIcon("xmark", '×'))
+	v.split = e.K.AddIcon(ztheme.ToolIcon("rectangle.split.2x1", '◫'))
+	v.float = e.K.AddIcon(ztheme.ToolIcon("pip", '▣'))
 }
 
 // Build builds the panel while a peek is open.
@@ -116,7 +124,7 @@ func (s *Screen) Build(e *screen.Env) {
 	c.NextBorder(r.Colors[theme.Separator], r.Lines.Hairline)
 	c.NextShadow(ui.Shadow{OffY: e.Pt(12), Sigma: e.Pt(24), Color: 0x00000040})
 	c.NextRole(ui.RoleDialog)
-	c.NextSemName(i18n.Format(i18n.T("Peek: {chat}"), "{chat}", model.S(title(a, ch))))
+	c.NextSemName(i18n.Format(i18n.T("Peek: {chat}"), "{chat}", model.S(chatview.Title(a, ch))))
 	c.Push(c.Box(base.Floating|ui.DrawBackground|ui.DrawBorder|ui.Clickable, "peek"))
 
 	did := s.v.build(e, a, ch, pw, false)
@@ -130,7 +138,24 @@ func (s *Screen) Build(e *screen.Env) {
 	case actOpen:
 		st.ClosePeek()
 		openChat(st, a, ch)
+	case actSplit:
+		st.ClosePeek()
+		splitChat(st, a, ch)
+	case actFloat:
+		st.ClosePeek()
+		st.FloatChat(a, ch.Ref())
 	}
+}
+
+// splitChat opens ch beside the open chat in the main window (or opens it,
+// with none open).
+func splitChat(st *state.State, a *state.Account, ch model.Chat) {
+	if a.Index != st.Active {
+		openChat(st, a, ch) // a split is of one account's chats
+		return
+	}
+	st.Page = state.PageChats
+	a.OpenSplit(ch.Ref())
 }
 
 // start readies the view for peek p: the chat it looks at, and whether it
@@ -193,7 +218,7 @@ func (v *view) header(e *screen.Env, a *state.Account, ch model.Chat, drag bool)
 		fl = ui.WindowDrag
 	}
 	c.Push(c.Box(fl, "head"))
-	name := model.S(title(a, ch))
+	name := model.S(chatview.Title(a, ch))
 	side := e.Pt(28)
 	rexui.Avatar(k.Kit, name, rexui.AvatarOpts{Size: 28, Image: screen.Avatar(k.Images(), a, ch.ID(), false, int32(side))})
 	c.NextAxis(ui.AxisY)
@@ -205,10 +230,18 @@ func (v *view) header(e *screen.Env, a *state.Account, ch model.Chat, drag bool)
 	rexui.Label(k.Kit, i18n.T("Peeking: it stays unread"), rexui.LabelOpts{Style: rexui.TextCaption, Color: rexui.Of(theme.Label2)})
 	c.Pop()
 	did := actNone
+	hit := ui.Px(e.Pt(ztheme.T.HitTool))
+	k.NextSize(hit, hit)
+	if rexui.IconButton(k.Kit, v.split, i18n.T("Open beside the open chat"), rexui.IconButtonOpts{Variant: rexui.IconBorderless}).Clicked {
+		did = actSplit
+	}
+	k.NextSize(hit, hit)
+	if rexui.IconButton(k.Kit, v.float, i18n.T("Float over other apps"), rexui.IconButtonOpts{Variant: rexui.IconBorderless}).Clicked {
+		did = actFloat
+	}
 	if rexui.Button(k.Kit, i18n.T("Open"), rexui.ButtonOpts{Size: theme.SizeSmall}).Clicked {
 		did = actOpen
 	}
-	hit := ui.Px(e.Pt(ztheme.T.HitTool))
 	k.NextSize(hit, hit)
 	if rexui.IconButton(k.Kit, v.close, i18n.T("Close"), rexui.IconButtonOpts{Variant: rexui.IconBorderless}).Clicked {
 		did = actClose
@@ -251,7 +284,7 @@ func (v *view) messages(e *screen.Env, a *state.Account, ch model.Chat, pw float
 				c.NextSize(ui.Px(1), ui.Px(e.Pt(max(ztheme.T.RunGap-ztheme.T.RowGap, 0))))
 				c.Box(0, c.Fmt().Str("gap ").Int(i).String())
 			}
-			v.bubble(e, a, ch, m, i, !run, maxW, r)
+			chatview.Bubble(e, a, ch, m, i, !run, maxW, r)
 			prev = m
 		}
 	}
@@ -271,56 +304,6 @@ func (v *view) messages(e *screen.Env, a *state.Account, ch model.Chat, pw float
 	k.CloseScroll(&sv)
 }
 
-// bubble is one message: its sender (in a group, first of a run), its text
-// or what it is, and its time.
-func (v *view) bubble(e *screen.Env, a *state.Account, ch model.Chat, m model.Message, i int, first bool, maxW float32, r *theme.Resolved) {
-	k := e.K
-	c := k.Context()
-	mine := m.FromMe()
-	c.NextSize(ui.Pct(1), ui.Children(1))
-	c.NextAxis(ui.AxisX)
-	if mine {
-		c.NextJustify(ui.JustifyEnd)
-	}
-	c.Push(c.Box(0, c.Fmt().Str("row ").Int(i).String()))
-	fill := rexui.BubbleLook.Incoming.RGBA(r)
-	if mine {
-		fill = rexui.BubbleLook.Outgoing.RGBA(r)
-	}
-	c.NextBG(fill)
-	c.NextRadius(e.Pt(ztheme.T.BubbleRadius))
-	c.NextPadding(e.Pt(ztheme.T.BubblePadX), e.Pt(ztheme.T.BubblePadY), e.Pt(ztheme.T.BubblePadX), e.Pt(ztheme.T.BubblePadY))
-	c.NextAxis(ui.AxisY)
-	c.NextGap(e.Pt(ztheme.T.NameGap))
-	c.NextSize(ui.Children(1), ui.Children(1))
-	c.Push(c.Box(ui.DrawBackground, "bubble"))
-	if first && ch.Group() && !mine {
-		who := m.SenderName()
-		if len(who) == 0 {
-			who = a.Model.DisplayName(m.Sender())
-		}
-		rexui.Label(k.Kit, model.S(who), rexui.LabelOpts{Style: rexui.TextSemibold, Color: rexui.Of(theme.Label2)})
-	}
-	text := model.S(m.Text())
-	if what := kindLabel(m.Kind()); what != "" {
-		if text != "" {
-			text = what + " · " + text
-		} else {
-			text = what
-		}
-	}
-	k.NextWidth(ui.Px(min(maxW, k.TextWidth(r.Styles[theme.StyleBody].Font, text)+e.Pt(2))))
-	rexui.Label(k.Kit, text, rexui.LabelOpts{Wrap: true})
-	c.NextSize(ui.Pct(1), ui.Children(1))
-	c.NextAxis(ui.AxisX)
-	c.NextJustify(ui.JustifyEnd)
-	c.Push(c.Box(0, "foot"))
-	rexui.Label(k.Kit, stamp(m.Time(), e.S.Now()), rexui.LabelOpts{Color: rexui.Of(theme.Label2), MetaPt: ztheme.T.BubbleTimePt})
-	c.Pop()
-	c.Pop()
-	c.Pop()
-}
-
 // footer is the line to answer in: Enter sends, and the chat stays unread.
 func (v *view) footer(e *screen.Env, a *state.Account, ch model.Chat) act {
 	k := e.K
@@ -332,7 +315,7 @@ func (v *view) footer(e *screen.Env, a *state.Account, ch model.Chat) act {
 	c.NextSize(ui.Pct(1), ui.Children(1))
 	c.Push(c.Box(0, "reply"))
 	k.NextWidth(ui.Pct(1))
-	hint := i18n.Format(i18n.T("Reply to {chat}"), "{chat}", model.S(title(a, ch)))
+	hint := i18n.Format(i18n.T("Reply to {chat}"), "{chat}", model.S(chatview.Title(a, ch)))
 	f := rexui.TextField(k.Kit, i18n.T("Quick reply")+"###peek reply", &v.reply, hint, rexui.FieldOpts{})
 	if v.age <= 2 && canSend(ch) {
 		c.SetFocus(f.Key)
@@ -361,48 +344,4 @@ func (v *view) reset() {
 	v.scroll = base.ScrollState{}
 	v.age, v.count = 0, 0
 	v.key = state.Peek{}
-}
-
-// kindLabel is what a message is when it is not only text.
-func kindLabel(k abi.ContentTag) string {
-	switch k {
-	case abi.ContentTagImage:
-		return i18n.T("Photo")
-	case abi.ContentTagVideo:
-		return i18n.T("Video")
-	case abi.ContentTagAudio:
-		return i18n.T("Voice message")
-	case abi.ContentTagDocument:
-		return i18n.T("Document")
-	case abi.ContentTagSticker:
-		return i18n.T("Sticker")
-	case abi.ContentTagLocation, abi.ContentTagLiveLocation:
-		return i18n.T("Location")
-	case abi.ContentTagContact:
-		return i18n.T("Contact")
-	case abi.ContentTagPoll:
-		return i18n.T("Poll")
-	case abi.ContentTagRevoked:
-		return i18n.T("This message was deleted")
-	}
-	return ""
-}
-
-// stamp is a message's time: the hour today, Yesterday, then the date.
-func stamp(ts int64, now time.Time) string {
-	t := time.Unix(ts, 0)
-	switch format.DaysSince(t, now) {
-	case 0:
-		return string(format.AppendTimeOfDay(nil, t.Hour(), t.Minute(), format.Hour12()))
-	case 1:
-		return i18n.T("Yesterday")
-	}
-	return t.Format("02/01/06")
-}
-
-func title(a *state.Account, ch model.Chat) []byte {
-	if n := ch.Name(); len(n) > 0 {
-		return n
-	}
-	return a.Model.DisplayName(ch.ID())
 }

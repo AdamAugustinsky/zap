@@ -4740,3 +4740,87 @@ msgstr ""
 #: gnui
 msgid "Peek at the newest unread chat, from any app"
 msgstr ""
+
+#: gnui
+msgid "Beside: {chat}"
+msgstr ""
+
+#: gnui
+msgid "Bring back {chat}"
+msgstr ""
+
+#: gnui
+msgid "Close the split (⌃⌥U)"
+msgstr ""
+
+#: gnui
+msgid "Close the split"
+msgstr ""
+
+#: gnui
+msgid "Drop to split"
+msgstr ""
+
+#: gnui
+msgid "Float over other apps"
+msgstr ""
+
+#: gnui
+msgid "Float the chat over other apps"
+msgstr ""
+
+#: gnui
+msgid "Floating: {chat}"
+msgstr ""
+
+#: gnui
+msgid "Make it the main chat"
+msgstr ""
+
+#: gnui
+msgid "Open another chat to split with"
+msgstr ""
+
+#: gnui
+msgid "Open beside the open chat"
+msgstr ""
+
+#: gnui
+msgid "Open in Zap"
+msgstr ""
+
+#: gnui
+msgid "Resize the split"
+msgstr ""
+
+#: gnui
+msgid "Shrink to the floating icon"
+msgstr ""
+
+#: gnui
+msgid "Split with the next tab"
+msgstr ""
+
+#: gnui
+msgid "Unread messages"
+msgstr ""
+
+#: gnui
+msgid "Drop to move here"
+msgstr ""
+
+#: gnui
+msgid "Drop to show it here"
+msgstr ""
+
+#: gnui
+msgid "Drag to move the pane"
+msgstr ""
+
+#: gnui
+msgid "Fill the window with this chat"
+msgstr ""
+
+#: gnui
+msgid "Split pane"
+msgstr ""

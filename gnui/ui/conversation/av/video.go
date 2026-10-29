@@ -409,6 +409,12 @@ var viewerWas bool
 // account, chat or file is gone stops, one that did not show last frame
 // pauses and after a while stops, one the system cannot play goes to its
 // player, and a clip clicked before its file was here plays once it is.
+// shown reports whether chat is in one of the window's panes: the open chat
+// or the split view's other (a clip plays on in either).
+func shown(a *state.Account, chat model.ChatRef) bool {
+	return chat != 0 && (a.Open == chat || a.Split == chat)
+}
+
 func videoFrame(e *screen.Env, a *state.Account, now time.Time) {
 	s, c := e.S, e.C()
 	frame := ticked.frame
@@ -420,7 +426,7 @@ func videoFrame(e *screen.Env, a *state.Account, now time.Time) {
 	viewerWas = viewer
 	if vc.v != nil {
 		switch {
-		case vc.acct != a || a == nil || a.Open != vc.chat:
+		case vc.acct != a || a == nil || !shown(a, vc.chat):
 			stopVideo()
 		case vc.v.State() == media.VideoFailed:
 			path := string(vc.path)
@@ -481,7 +487,7 @@ func videoFrame(e *screen.Env, a *state.Account, now time.Time) {
 	}
 	motionFrame(c, a, now, frame)
 	if waiting.acct != nil {
-		if waiting.acct != a || a == nil || a.Open != waiting.chat {
+		if waiting.acct != a || a == nil || !shown(a, waiting.chat) {
 			waiting.reset()
 		} else if v := a.Conversation(); v != nil {
 			if i := v.Find(waiting.msg); i >= 0 {

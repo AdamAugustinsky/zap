@@ -34,7 +34,7 @@ func (s *Screen) BuildSelectionBar(e *screen.Env, r screen.Rect) {
 	if s.h == nil {
 		s.Init(e)
 	}
-	e.Begin(r, "selection")
+	e.Begin(r, s.selRoot)
 	s.selectionBar(e, a, ch, a.Model.Conversation(ch.ID()), r.W, r.H)
 	e.End()
 }

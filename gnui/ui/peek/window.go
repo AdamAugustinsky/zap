@@ -10,6 +10,7 @@ import (
 	"zapfast/model"
 	"zapfast/state"
 	ztheme "zapfast/theme"
+	"zapfast/ui/chatview"
 	"zapfast/ui/screen"
 )
 
@@ -35,7 +36,7 @@ func NewWindow() *Window { return &Window{} }
 
 // Init readies its icon.
 func (w *Window) Init(e *screen.Env) error {
-	w.v.close = e.K.AddIcon(ztheme.ToolIcon("xmark", '×'))
+	w.v.icons(e)
 	return nil
 }
 
@@ -74,7 +75,7 @@ func (w *Window) Build(e *screen.Env) {
 	W, H := float32(cw), float32(chh)
 	c.NextAxis(ui.AxisY)
 	c.NextRole(ui.RoleDialog)
-	c.NextSemName(i18n.Format(i18n.T("Peek: {chat}"), "{chat}", model.S(title(a, ch))))
+	c.NextSemName(i18n.Format(i18n.T("Peek: {chat}"), "{chat}", model.S(chatview.Title(a, ch))))
 	var fl ui.Flags
 	if !r.Backdrop {
 		// No glass (Reduce transparency): the panel paints its own shape.
@@ -96,6 +97,13 @@ func (w *Window) Build(e *screen.Env) {
 		st.CloseFloatPeek()
 		openChat(st, a, ch)
 		st.RaiseMain()
+	case actSplit:
+		st.CloseFloatPeek()
+		splitChat(st, a, ch)
+		st.RaiseMain()
+	case actFloat:
+		st.CloseFloatPeek()
+		st.FloatChat(a, ch.Ref())
 	}
 }
 

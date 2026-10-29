@@ -59,6 +59,8 @@ const (
 	miFolderRename
 	miFolderSpace
 	miFolderDelete
+	miSplit             // open it beside the open chat (the split view)
+	miFloat             // keep it floating over other apps
 	miSound      = 100  // + the choice
 	miFilter     = 500  // + the filter
 	miLabel      = 1000 // + the label's index
@@ -359,6 +361,15 @@ func (s *Screen) chatMenu(items *[]ui.MenuItem, e *screen.Env, a *state.Account,
 	id := ch.ID()
 	now := e.S.Now().Unix()
 	add := func(it ui.MenuItem) { *items = append(*items, it) }
+	// Zap's ways to look at it beside what is open, first, as a browser's
+	// "Open in a new tab"
+	if a.Open != 0 && a.Open != ref && a.Split != ref && !ch.Locked() {
+		add(ui.MenuItem{ID: miSplit, Title: i18n.T("Open beside the open chat"), Symbol: "rectangle.split.2x1"})
+	}
+	if !ch.Locked() {
+		add(ui.MenuItem{ID: miFloat, Title: i18n.T("Float over other apps"), Symbol: "pip"})
+		add(ui.MenuSeparator)
+	}
 	if ch.Unread() > 0 || ch.MarkedUnread() {
 		add(ui.MenuItem{ID: miRead, Title: i18n.T("Mark as read"), Symbol: "checkmark.circle"})
 	} else {
@@ -429,6 +440,10 @@ func (s *Screen) chatAct(e *screen.Env, a *state.Account, ref model.ChatRef, ite
 		return
 	}
 	switch {
+	case item == miSplit:
+		a.OpenSplit(ref)
+	case item == miFloat:
+		e.S.FloatChat(a, ref)
 	case item == miRead:
 		a.MarkRead(ref)
 	case item == miUnread:

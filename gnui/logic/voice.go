@@ -92,10 +92,14 @@ func TellPlayed(a *state.Account, msg []byte) {
 // chat the reader is still in carries on (zf:src/app.rs:8978).
 func VoiceEnded(s *state.State, a *state.Account, finished []byte) {
 	v := &s.Voice
-	if a.Open == 0 || v.Chat != a.Open {
+	if v.Chat == 0 || (v.Chat != a.Open && v.Chat != a.Split) {
+		return // the run's chat is in neither pane
+	}
+	c, ok := a.Model.Chats.Get(v.Chat)
+	if !ok {
 		return
 	}
-	conv := a.Conversation()
+	conv := a.Model.Conversation(c.ID())
 	if conv == nil {
 		return
 	}
@@ -111,7 +115,6 @@ func VoiceEnded(s *state.State, a *state.Account, finished []byte) {
 		s.Touch()
 		return
 	}
-	c, _ := a.OpenChatView()
 	v.Want.Reset()
 	v.Want.Add(next)
 	v.WantAt = s.Now()
@@ -140,7 +143,7 @@ func mediaArrived(s *state.State, a *state.Account, e *abi.EventMedia) {
 		return
 	}
 	v.Want.Reset()
-	if e.Result.Tag != abi.PathResultTagOk || !openIs(a, e.Chat) {
+	if e.Result.Tag != abi.PathResultTagOk || !openIs(a, e.Chat) && !a.IsSplit(e.Chat) {
 		return
 	}
 	v.Next.Reset()
@@ -152,7 +155,7 @@ func mediaArrived(s *state.State, a *state.Account, e *abi.EventMedia) {
 // voiceFrame ends a run whose chat was left (zf:src/app.rs:5230).
 func voiceFrame(s *state.State) {
 	a := s.Acct()
-	if s.Voice.Chat != 0 && (a == nil || a.Open != s.Voice.Chat) {
+	if s.Voice.Chat != 0 && (a == nil || a.Open != s.Voice.Chat && a.Split != s.Voice.Chat) {
 		StopVoiceRun(s)
 	}
 }

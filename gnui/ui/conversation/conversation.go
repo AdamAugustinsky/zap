@@ -38,10 +38,13 @@ const (
 
 // Screen is the conversation: the header and the transcript.
 type Screen struct {
-	h  *hub
-	t  transcript
-	sc ui.SelectionScope
-	vl base.VList // the last frame's list (First, Last, Len)
+	root    string // its root box's name: two panes' differ
+	selRoot string // and its selection bar's
+	own     bool   // a hub of its own (the split view's second pane)
+	h       *hub
+	t       transcript
+	sc      ui.SelectionScope
+	vl      base.VList // the last frame's list (First, Last, Len)
 
 	// the open chat, as the last frame had it
 	acct uint64
@@ -187,8 +190,14 @@ type icons struct {
 }
 
 // New returns the conversation.
-func New() *Screen {
-	s := &Screen{}
+func New() *Screen { return newScreen("conversation", false) }
+
+// NewPane is the conversation of the split view's second pane: its own root
+// box and its own first-page watch (the search pane's is the first pane's).
+func NewPane() *Screen { return newScreen("conversation 2", true) }
+
+func newScreen(root string, own bool) *Screen {
+	s := &Screen{root: root, selRoot: root + " selection", own: own}
 	s.t.reserve(256)
 	s.spans = make([]markup.Span, 0, 256)
 	s.body = make([]byte, 0, 4096)
@@ -203,7 +212,12 @@ func New() *Screen {
 // Init readies the conversation for a window: its icons and the events it
 // keeps.
 func (s *Screen) Init(e *screen.Env) error {
-	s.h = hubOf(e.S)
+	if s.h == nil || s.h.s != e.S {
+		s.h = hubOf(e.S)
+		if s.own {
+			s.h = &hub{s: e.S} // the second pane's first page is its own
+		}
+	}
 	s.h.listen()
 	s.addIcons(e)
 	if m := e.K.Kit.Menu(); m != nil {
@@ -308,7 +322,9 @@ func (s *Screen) Build(e *screen.Env, r screen.Rect) {
 	s.enter(e, a, ch)
 	v := a.Model.Conversation(ch.ID())
 	s.t.sync(v)
-	s.requests(e, a)
+	if !e.S.Side { // the one-shot asks are the pane in use's
+		s.requests(e, a)
+	}
 	s.older(e, a, v)
 	// the unread divider's scroll first: a jump that comes with the history
 	// is the one to keep
@@ -318,7 +334,9 @@ func (s *Screen) Build(e *screen.Env, r screen.Rect) {
 	s.flashing(e)
 	s.takeReaction(e, ch)
 	s.announce(e, a, ch, v)
-	s.keys(e, a, ch, v)
+	if !e.S.Side { // the keys are the pane in use's
+		s.keys(e, a, ch, v)
+	}
 
 	// beside no list or rail: a narrow window (the header's Back)
 	s.narrow = r.X <= 0 || e.Narrow()
@@ -331,7 +349,7 @@ func (s *Screen) Build(e *screen.Env, r screen.Rect) {
 	// it: at rest its content starts below them (topInset, the history's top
 	// block's), and what scrolls up under them is blurred, easing off below
 	// them (the soft scroll edge).
-	e.Begin(r, "conversation")
+	e.Begin(r, s.root)
 	inset := e.ContentInset()
 	pins := s.livePins(a, ch.ID()) > 0
 	// EventDropped names no chat: a message record dropped since the chat
