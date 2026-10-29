@@ -96,7 +96,7 @@ func (s *Screen) option(e *screenEnv, label string, o *abi.InteractiveOption) bo
 	k, c := e.K, e.C()
 	p := k.PressState(label, base.HoverOn)
 	c.NextAxis(ui.AxisY)
-	k.NextPadding(10, 8, 10, 8)
+	k.NextPadding(12, 8, 12, 8)
 	k.NextGap(2)
 	c.NextRadius(k.Pt(8))
 	if p.Hot > 0 {

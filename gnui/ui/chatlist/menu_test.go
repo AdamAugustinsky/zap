@@ -175,8 +175,9 @@ func TestToolbarNewChatAndHide(t *testing.T) {
 }
 
 // CL-001: Hide the chat list is left out of a narrow window (the list is the
-// whole window then), and over the starred messages the header has neither
-// button (zf:src/ui/chats.rs:381-400).
+// whole window then), and over the starred messages the header has no New
+// chat (zf:src/ui/chats.rs:381-400). The list's toggle is the titlebar's,
+// beside the account, on every page of the chat list, starred included.
 func TestToolbarButtonsFollowTheWindowAndThePage(t *testing.T) {
 	r := newRigSized(t, 1, 600, 700)
 	r.chats(chat("1", "Ada", 10))
@@ -191,8 +192,11 @@ func TestToolbarButtonsFollowTheWindowAndThePage(t *testing.T) {
 	r.acct().Mode = state.ListStarred
 	r.s.Touch()
 	r.Frames(3)
-	if r.has(ui.RoleButton, "New chat (⌘N)") || r.has(ui.RoleButton, "Hide the chat list (⌘B)") {
-		t.Error("header buttons over the starred messages")
+	if r.has(ui.RoleButton, "New chat (⌘N)") {
+		t.Error("New chat over the starred messages")
+	}
+	if !r.has(ui.RoleButton, "Hide the chat list (⌘B)") {
+		t.Error("no list toggle over the starred messages")
 	}
 	if !r.has(ui.RoleLabel, "Starred") || !r.has(ui.RoleButton, "Back to chats") {
 		t.Errorf("no title or Back over the starred messages:\n%s", widgettest.Dump(r.Tree()))

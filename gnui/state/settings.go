@@ -189,7 +189,7 @@ type Settings struct {
 	DarkWallpaper     Wallpaper
 	WallpaperImage    []byte // a path, "" for none; kept for the file, like the colours
 	ShowShortcutHints bool
-	Transparency      bool // the system material behind the main window (shell.Config), as Rex's
+	Transparency      bool     // the system material behind the main window (shell.Config), as Rex's
 	RecentEmoji       [][]byte // newest first
 	GiphyKey          []byte   // the user's; empty: the built-in one, if any
 	KeepRunning       bool     // keep running in the background (the status item)
@@ -274,10 +274,11 @@ type AccountSettings struct {
 	Notifications       bool
 	LimitNotifications  NotificationLimit
 	SaveContactsToPhone bool
-	WallpaperImage      []byte // this account's wallpaper image, kept for the file
-	HistoryPrefetch     bool   // ask the phone for older history in the background
-	ListFilter          []byte // the chat list's chip or "label:<id>" (ListFilterKey), nil: All
-	CallFilter          []byte // the Calls page's chip: "missed", nil: All
+	WallpaperImage      []byte   // this account's wallpaper image, kept for the file
+	HistoryPrefetch     bool     // ask the phone for older history in the background
+	ListFilter          []byte   // the chat list's chip or "label:<id>" (ListFilterKey), nil: All
+	CallFilter          []byte   // the Calls page's chip: "missed", nil: All
+	Folders             []Folder // the chat list's folders (folders.go)
 }
 
 // DefaultAccountSettings are upstream's defaults (zf:src/settings.rs:852).

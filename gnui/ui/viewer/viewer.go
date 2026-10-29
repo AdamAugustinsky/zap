@@ -530,7 +530,7 @@ func (s *Screen) step(d int) {
 const (
 	stripPt = 78
 	tilePt  = 56
-	gapPt   = 6
+	gapPt   = 8
 )
 
 func (s *Screen) strip(e *screen.Env, r screen.Rect) {

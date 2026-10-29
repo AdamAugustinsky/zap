@@ -294,12 +294,13 @@ func TestTheRowsShowProfilePictures(t *testing.T) {
 	r.f[0].Emit(ev(abi.EventTagAvatar, func(e *abi.Event) {
 		e.Avatar = abi.EventAvatar{ID: []byte("5511912345678@s.whatsapp.net"), Path: []byte("../../gocore/demo/assets/avatars/ada.jpg"), HasPath: true}
 	}))
-	for i := 0; i < 200 && r.pictures() < before+2; i++ {
+	for i := 0; i < 200 && r.pictures() < before+3; i++ {
 		r.Frames(1)
 		time.Sleep(10 * time.Millisecond)
 	}
-	// the row's and the rail's account button (the shell's, AC-001)
-	if r.pictures() != before+2 {
+	// the row's, the rail's account button (the shell's, AC-001) and the
+	// account's space in the strip at the list's foot (shell/spaces.go)
+	if r.pictures() != before+3 {
 		t.Errorf("%d pictures after one arrived, %d before:\n%s", r.pictures(), before, widgettest.Dump(r.Tree()))
 	}
 }

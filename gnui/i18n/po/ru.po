@@ -4776,3 +4776,167 @@ msgstr "Это может занять некоторое время. Откро
 msgctxt "menu bar"
 msgid "Close Tab"
 msgstr "Закрыть вкладку"
+
+#: gnui/ui/shell/panes.go
+msgid "Show the chat list (⌘B)"
+msgstr "Показать список чатов (⌘B)"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unarchived"
+msgstr "Извлечён из архива"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Muted for 8 hours"
+msgstr "Без звука на 8 часов"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unmuted"
+msgstr "Звук включён"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Pinned"
+msgstr "Закреплён"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unpinned"
+msgstr "Откреплён"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Marked as unread"
+msgstr "Отмечен как непрочитанный"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Marked as read"
+msgstr "Отмечен как прочитанный"
+
+#: gnui/ui/shell/keyboard.go
+msgid "{what}: {chat}. Z to undo"
+msgstr "{what}: {chat}. Z — отменить"
+
+#: gnui
+msgid "Search everything"
+msgstr "Искать везде"
+
+#: gnui
+msgid "Chats, people, messages, files"
+msgstr "Чаты, люди, сообщения, файлы"
+
+#: gnui
+msgid "Files and links"
+msgstr "Файлы и ссылки"
+
+#: gnui
+msgid "Nothing found"
+msgstr "Ничего не найдено"
+
+#: gnui
+msgid "People"
+msgstr "Люди"
+
+#: gnui
+msgid "Search everything: chats, people, messages, files"
+msgstr "Искать везде: чаты, люди, сообщения, файлы"
+
+#: gnui
+msgid "Search everything (when not typing)"
+msgstr "Искать везде (когда не печатаете)"
+
+#: gnui
+msgid "Next / previous chat (when not typing)"
+msgstr "Следующий / предыдущий чат (когда не печатаете)"
+
+#: gnui
+msgid "Archive or unarchive the open chat (when not typing)"
+msgstr "Архивировать или вернуть открытый чат (когда не печатаете)"
+
+#: gnui
+msgid "Mute the open chat for 8 hours, or unmute it (when not typing)"
+msgstr "Отключить звук открытого чата на 8 часов или включить (когда не печатаете)"
+
+#: gnui
+msgid "Pin or unpin the open chat (when not typing)"
+msgstr "Закрепить или открепить открытый чат (когда не печатаете)"
+
+#: gnui
+msgid "Mark the open chat as unread or read (when not typing)"
+msgstr "Отметить открытый чат как непрочитанный или прочитанный (когда не печатаете)"
+
+#: gnui
+msgid "Reply to the last message (when not typing)"
+msgstr "Ответить на последнее сообщение (когда не печатаете)"
+
+#: gnui
+msgid "Undo the last change a single key made"
+msgstr "Отменить последнее изменение одной клавишей"
+
+#: gnui
+msgid "Go to the chats, Archived, Starred or Calls"
+msgstr "Перейти к чатам, архиву, избранному или звонкам"
+
+#: gnui
+msgid "Starts a message in the open chat, or a search"
+msgstr "Начинает сообщение в открытом чате или поиск"
+
+#: gnui
+msgid "Dismiss the current action, return from search, Calls or Starred, leave the message input, or close the chat"
+msgstr "Отменить действие, выйти из поиска, звонков или избранного, покинуть поле ввода или закрыть чат"
+
+#: gnui
+msgid "Folder"
+msgstr "Папка"
+
+#: gnui
+msgid "New folder"
+msgstr "Новая папка"
+
+#: gnui
+msgid "New folder…"
+msgstr "Новая папка…"
+
+#: gnui
+msgid "Take out of the folder"
+msgstr "Убрать из папки"
+
+#: gnui
+msgid "Folder name"
+msgstr "Название папки"
+
+#: gnui
+msgid "Rename…"
+msgstr "Переименовать…"
+
+#: gnui
+msgid "Icon"
+msgstr "Значок"
+
+#: gnui
+msgid "Stop showing it as a space"
+msgstr "Не показывать как пространство"
+
+#: gnui
+msgid "Show it as a space (⌃1–9)"
+msgstr "Показывать как пространство (⌃1–9)"
+
+#: gnui
+msgid "Delete folder (its chats stay)"
+msgstr "Удалить папку (чаты останутся)"
+
+#: gnui
+msgid "Unread chats"
+msgstr "Непрочитанные чаты"
+
+#: gnui
+msgid "Spaces"
+msgstr "Пространства"
+
+#: gnui
+msgid "Go to the tab at this place"
+msgstr "Перейти к вкладке на этом месте"
+
+#: gnui
+msgid "Go to the space at this place"
+msgstr "Перейти к пространству на этом месте"
+
+#: gnui
+msgid "Next / previous space"
+msgstr "Следующее / предыдущее пространство"

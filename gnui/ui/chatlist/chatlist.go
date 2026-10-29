@@ -32,6 +32,8 @@ const (
 	kSelf
 	kStar
 	kDropped // the foot of the chats: some could not be shown (n: how many)
+	kFolder  // a folder's row (n: its index in the account's Folders)
+	kRule    // the line under the folders, over the chats in none
 )
 
 func itemID(k kind, n uint32) uint64 { return uint64(k)<<56 | uint64(n) }
@@ -40,7 +42,10 @@ func itemN(id uint64) uint32         { return uint32(id) }
 
 // Screen is the chat list.
 type Screen struct {
-	ic icons
+	fdr folderUI // the folders' rows (folders.go)
+	// folderOf is each of scratch's chats' folder (folders), -1 for none.
+	folderOf []int8
+	ic       icons
 
 	// the row the pointer rests on, since when (dwell)
 	hoverRef  model.ChatRef
@@ -121,6 +126,7 @@ func New() *Screen { return &Screen{} }
 // listeners for the events the model does not keep.
 func (s *Screen) Init(e *screen.Env) error {
 	s.ic.add(e.K.Kit, theme.MacWindow.Capsule.Glyph+2)
+	s.fdr.add(e.K.Kit)
 	s.hour12 = format.Hour12()
 	s.search.Reserve(256)
 	s.cmdr.s = s
@@ -405,6 +411,9 @@ func (s *Screen) collect(e *screen.Env, a *state.Account, mir *mirror) {
 		if s.query != "" && !s.matchChat(e, a, ch) {
 			continue
 		}
+		if !searching && !a.InSpace(ch.ID()) {
+			continue // a folder's space shows its chats alone
+		}
 		s.scratch = append(s.scratch, ref)
 	}
 	if favOrder {
@@ -427,10 +436,14 @@ func (s *Screen) collect(e *screen.Env, a *state.Account, mir *mirror) {
 			s.next = append(s.next, itemID(kHeader, 0))
 		}
 	}
-	for _, ref := range s.scratch {
-		s.next = append(s.next, itemID(kChat, uint32(ref)))
+	if s.grouped(a, searching, filtering) {
+		s.folders(a)
+	} else {
+		for _, ref := range s.scratch {
+			s.next = append(s.next, itemID(kChat, uint32(ref)))
+		}
+		s.refs = append(s.refs, s.scratch...)
 	}
-	s.refs = append(s.refs, s.scratch...)
 	if !searching {
 		// Chats the core could not send are not in any list: say so, once,
 		// under the chats (SH-020).
@@ -461,6 +474,52 @@ func (s *Screen) collect(e *screen.Env, a *state.Account, mir *mirror) {
 		}
 		for i := range s.contacts {
 			s.next = append(s.next, itemID(kContact, uint32(i)))
+		}
+	}
+}
+
+// grouped reports whether the list shows its folders: the chats of the
+// whole account under the All chip, not searched.
+func (s *Screen) grouped(a *state.Account, searching, filtering bool) bool {
+	return len(a.Settings.Folders) > 0 && a.SpaceFolder == "" && a.Mode == state.ListChats && !searching && (!filtering || a.Filter == state.FilterAll)
+}
+
+// folders lays the chats out as Arc's sidebar does: the pinned chats in no
+// folder first, then each folder's row and, open, its chats, then the rest;
+// refs, which the rail and the keys walk, are the rows' chats in order.
+func (s *Screen) folders(a *state.Account) {
+	fs := a.Settings.Folders
+	in := s.folderOf[:0]
+	for _, ref := range s.scratch {
+		in = append(in, int8(a.FolderOf(a.Model.Chats.At(ref).ID())))
+	}
+	s.folderOf = in
+	for i, ref := range s.scratch {
+		if in[i] < 0 && a.Model.Chats.At(ref).Pinned() {
+			s.next = append(s.next, itemID(kChat, uint32(ref)))
+			s.refs = append(s.refs, ref)
+		}
+	}
+	for fi := range fs {
+		s.next = append(s.next, itemID(kFolder, uint32(fi)))
+		if fs[fi].Collapsed {
+			continue
+		}
+		for i, ref := range s.scratch {
+			if int(in[i]) == fi {
+				s.next = append(s.next, itemID(kChat, uint32(ref)))
+				s.refs = append(s.refs, ref)
+			}
+		}
+	}
+	rule := false
+	for i, ref := range s.scratch {
+		if in[i] < 0 && !a.Model.Chats.At(ref).Pinned() {
+			if !rule {
+				s.next, rule = append(s.next, itemID(kRule, 0)), true
+			}
+			s.next = append(s.next, itemID(kChat, uint32(ref)))
+			s.refs = append(s.refs, ref)
 		}
 	}
 }
@@ -661,16 +720,17 @@ func (sc *searchCmd) FieldCommand(cmd ui.FieldCommand, _ rune) bool {
 }
 
 // Toolbar builds the list's toolbar items: Back and the title of the folder
-// it shows, New chat, and Hide the chat list.
+// it shows and New chat (the list's toggle is the titlebar's).
 func (s *Screen) Toolbar(e *screen.Env, tb *rexui.Toolbar) {
 	a := e.Acct()
 	k := e.K
 	c := k.Context()
-	narrow := false
-	if w, _ := c.Size(); float32(w) < 720*k.Scale() {
-		narrow = true
-	}
 	title := i18n.T("Chats")
+	if a != nil && a.SpaceFolder != "" {
+		if i := a.FolderByID(a.SpaceFolder); i >= 0 {
+			title = a.Settings.Folders[i].Name // a folder's space is named for it
+		}
+	}
 	back := false
 	calls := e.S.Page == state.PageCalls
 	switch {
@@ -716,14 +776,7 @@ func (s *Screen) Toolbar(e *screen.Env, tb *rexui.Toolbar) {
 	if nc.Clicked {
 		e.S.OpenDialog(state.Dialog{Kind: state.DialogNewChat})
 	}
-	if !narrow {
-		hide := tb.Item(s.ic.sidebar, i18n.T("Hide the chat list (⌘B)"))
-		e.TabStop(screen.StopSidebar, hide.ID)
-		if hide.Clicked {
-			e.S.Panes.ListHidden = true
-			e.S.Touch()
-		}
-	}
+	// the list's toggle is the titlebar's (shell), beside the account
 }
 
 // leave goes back to the chats from Starred, Archived or Locked.

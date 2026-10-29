@@ -30,6 +30,7 @@ const (
 	menuChannels
 	menuStar
 	menuFilters // the filters folded into the More chip
+	menuFolder  // a folder's row (star: the folder's index)
 )
 
 // The menu items' ids. Sound and label items count up from their base.
@@ -53,9 +54,16 @@ const (
 	miMuteAll
 	miUnstar
 	miManageLabels
-	miSound  = 100  // + the choice
-	miFilter = 500  // + the filter
-	miLabel  = 1000 // + the label's index
+	miNoFolder
+	miNewFolder
+	miFolderRename
+	miFolderSpace
+	miFolderDelete
+	miSound      = 100  // + the choice
+	miFilter     = 500  // + the filter
+	miLabel      = 1000 // + the label's index
+	miFolder     = 2000 // + the folder's index
+	miFolderIcon = 3000 // + the symbol's index in state.FolderIcons
 )
 
 // ctxMenu is the drawn fallback: the open menu, at the pointer, with the
@@ -79,6 +87,10 @@ func (m *ctxMenu) show(ref model.ChatRef, x, y float32) {
 
 func (m *ctxMenu) showStar(i int, x, y float32) {
 	*m = ctxMenu{kind: menuStar, star: i, at: [2]float32{x, y}, items: m.items[:0]}
+}
+
+func (m *ctxMenu) showFolder(i int, x, y float32) {
+	*m = ctxMenu{kind: menuFolder, star: i, at: [2]float32{x, y}, items: m.items[:0]}
 }
 
 func (m *ctxMenu) showChannels(x, y float32) {
@@ -106,6 +118,8 @@ func (s *Screen) menuItems(items *[]ui.MenuItem, e *screen.Env, a *state.Account
 		*items = append(*items, ui.MenuItem{ID: miMuteAll, Title: label, Symbol: "bell.slash"})
 	case menuStar:
 		*items = append(*items, ui.MenuItem{ID: miUnstar, Title: i18n.T("Unstar"), Symbol: "star.slash"})
+	case menuFolder:
+		s.folderMenu(items, a, star)
 	case menuFilters:
 		names := filterNames()
 		for f := s.fold; f <= state.FilterChannels; f++ {
@@ -123,6 +137,8 @@ func (s *Screen) menuAct(e *screen.Env, a *state.Account, kind menuKind, ref mod
 	switch kind {
 	case menuChat:
 		s.chatAct(e, a, ref, id)
+	case menuFolder:
+		s.folderAct(e, a, star, id)
 	case menuChannels:
 		if id == miMuteAll {
 			s.muteAllChannels(e, a, !s.allChannelsMuted(e, a))
@@ -380,6 +396,7 @@ func (s *Screen) chatMenu(items *[]ui.MenuItem, e *screen.Env, a *state.Account,
 		add(ui.MenuItem{ID: miMuteForever, Title: i18n.T("Mute indefinitely"), Symbol: "bell.slash"})
 	}
 	add(ui.MenuItem{Title: i18n.T("Notification sound"), Symbol: "speaker.wave.2", Sub: s.soundItems(ch)})
+	add(ui.MenuItem{Title: i18n.T("Folder"), Symbol: "folder", Sub: s.folderItems(a, ch)})
 	add(ui.MenuItem{Title: i18n.T("Labels"), Symbol: "tag", Sub: s.labelItems(a, ch)})
 	if ch.Locked() {
 		add(ui.MenuItem{ID: miLock, Title: i18n.T("Unlock chat"), Symbol: "lock.open"})
@@ -407,6 +424,9 @@ func (s *Screen) chatAct(e *screen.Env, a *state.Account, ref model.ChatRef, ite
 		cmd := a.Cmd(abi.CommandTagSetMuted)
 		cmd.SetMuted.Chat, cmd.SetMuted.Until, cmd.SetMuted.HasUntil = id, until, has
 		a.Send(cmd)
+	}
+	if s.chatFolderAct(a, ch, item) {
+		return
 	}
 	switch {
 	case item == miRead:

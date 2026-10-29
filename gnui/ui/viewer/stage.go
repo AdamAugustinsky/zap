@@ -221,7 +221,7 @@ func (s *Screen) failure(e *screen.Env, r screen.Rect) {
 	c, k := e.C(), e.K
 	w, h := min(r.W, e.Pt(420)), e.Pt(88)
 	place(e, (r.W-w)/2, (r.H-h)/2, w, h, "failure")
-	c.NextGap(e.Pt(10))
+	c.NextGap(e.Pt(8))
 	rexui.Label(k.Kit, i18n.T("This image could not be displayed in Zap."), rexui.LabelOpts{Wrap: true})
 	if rexui.Button(k.Kit, i18n.T("Open externally"), rexui.ButtonOpts{}).Clicked {
 		s.openExternal(e)

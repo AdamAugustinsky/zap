@@ -409,10 +409,11 @@ func TestShortcutsListAndHintSwitch(t *testing.T) {
 	r := newRig(t, baseEvents()...)
 	r.s.Settings.ShowShortcutHints = false
 	r.open(state.Dialog{Kind: state.DialogShortcuts})
-	if len(screen.Shortcuts) != 29 {
+	// upstream's 29, ⌘K's split from ⌘Shift+F, the spaces, and the single keys
+	if len(screen.Shortcuts) != 42 {
 		t.Fatalf("%d shortcuts", len(screen.Shortcuts))
 	}
-	for _, name := range []string{"⌘K / ⌘Shift+F", "⌥↑ / ⌥↓"} {
+	for _, name := range []string{"⌘K", "⌘Shift+F", "⌥↑ / ⌥↓", "J / K", "G then I / A / S / C"} {
 		if !r.has(ui.RoleLabel, name) {
 			t.Errorf("no %q", name)
 		}

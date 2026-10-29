@@ -18,6 +18,7 @@ import (
 	"zapfast/i18n"
 	"zapfast/model"
 	"zapfast/state"
+	ztheme "zapfast/theme"
 	"zapfast/ui/screen"
 )
 
@@ -143,8 +144,8 @@ func New() *Screen { return &Screen{} }
 // Init readies the pane for a window: its symbols, and the receipts it keeps.
 func (s *Screen) Init(e *screen.Env) error {
 	s.env = e
-	s.ic.closeX = e.K.AddIcon(icon.Spec{Symbol: "xmark", Fallback: '✕', Pt: 13})
-	s.ic.back = e.K.AddIcon(icon.Spec{Symbol: "chevron.left", Fallback: '‹', Pt: 13})
+	s.ic.closeX = e.K.AddIcon(ztheme.ToolIcon("xmark", '✕'))
+	s.ic.back = e.K.AddIcon(ztheme.ToolIcon("chevron.left", '‹'))
 	e.S.Listen(s, abi.EventTagReceipts)
 	return nil
 }
@@ -523,9 +524,11 @@ func (s *Screen) Build(e *screen.Env, r screen.Rect) {
 	}
 	s.hdr = header{have: true, ic: ic, label: label}
 	if !s.bandNow {
-		k.NextPadding(margin, 10, margin, 10)
-		k.NextGap(6)
+		k.NextPadding(margin, 8, margin, 8)
+		k.NextGap(8)
 		k.BeginContainer(ui.AxisX, ui.CrossCenter, "header", ui.Pct(1), k.Fixed(headerPt), 0)
+		hit := ui.Px(k.Pt(ztheme.T.HitTool)) // a title row's item, as the toolbars'
+		k.NextSize(hit, hit)
 		closed := rexui.IconButton(k.Kit, ic, label, rexui.IconButtonOpts{Variant: rexui.IconBorderless}).Clicked
 		rexui.Label(k.Kit, i18n.T("Message info"), rexui.LabelOpts{Style: rexui.TextTitle3})
 		k.EndContainer()
@@ -718,9 +721,9 @@ func (s *Screen) section(e *screen.Env, a *state.Account, sec int, title string,
 	k := e.K
 	list := s.r.sections[sec]
 	k.NextPadding(0, 12, 0, 0)
-	k.NextGap(6)
+	k.NextGap(8)
 	k.BeginContainer(ui.AxisY, ui.CrossStart, "section "+itoa(sec), ui.Pct(1), ui.Children(1), 0)
-	k.NextGap(6)
+	k.NextGap(8)
 	k.BeginContainer(ui.AxisX, ui.CrossCenter, "title", ui.Pct(1), ui.Children(1), 0)
 	rexui.Label(k.Kit, "✓✓", rexui.LabelOpts{Style: rexui.TextCallout, Color: rexui.Of(col)})
 	rexui.Label(k.Kit, title, rexui.LabelOpts{Style: rexui.TextSemibold})
@@ -737,7 +740,7 @@ func (s *Screen) section(e *screen.Env, a *state.Account, sec int, title string,
 func (s *Screen) row(e *screen.Env, a *state.Account, sec, i int, rc *recipient) {
 	k := e.K
 	id := s.r.buf[rc.id.off : rc.id.off+rc.id.n]
-	k.NextGap(10)
+	k.NextGap(12)
 	k.BeginContainer(ui.AxisX, ui.CrossCenter, "recipient "+itoa(i), ui.Pct(1), ui.Children(1), 0)
 	opts := rexui.AvatarOpts{Size: avatarPt, Image: screen.Avatar(k.Images(), a, id, false, int32(k.Pt(avatarPt)))}
 	name := s.r.str(rc.name)

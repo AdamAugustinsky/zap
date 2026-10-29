@@ -7,7 +7,9 @@ import "testing"
 func TestANarrowWindowSlidesBetweenTheListAndWhatItOpens(t *testing.T) {
 	var sl narrowSlide
 	const s = int64(1e9)
-	at := func(now int64, view int) (float32, bool) { return sl.step(view, now) }
+	const dur = 0.25 // ztheme.T.DurStandard's default
+	const slideNs = int64(dur * 1e9)
+	at := func(now int64, view int) (float32, bool) { return sl.step(view, now, dur) }
 	// Narrowing the window shows its view at once.
 	if _, on := at(0, narrowNone); on {
 		t.Error("slid while wide")
@@ -35,5 +37,11 @@ func TestANarrowWindowSlidesBetweenTheListAndWhatItOpens(t *testing.T) {
 	}
 	if _, on := at(2*s+s/10, narrowDetail); on {
 		t.Error("narrowing again slid")
+	}
+	// Under Reduce Motion (a duration of 0) a view comes at once.
+	var still narrowSlide
+	still.step(narrowList, 0, 0)
+	if _, on := still.step(narrowDetail, s, 0); on {
+		t.Error("slid under Reduce Motion")
 	}
 }

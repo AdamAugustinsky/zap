@@ -4552,3 +4552,167 @@ msgstr ""
 msgctxt "menu bar"
 msgid "Close Tab"
 msgstr ""
+
+#: gnui/ui/shell/panes.go
+msgid "Show the chat list (⌘B)"
+msgstr ""
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unarchived"
+msgstr ""
+
+#: gnui/ui/shell/keyboard.go
+msgid "Muted for 8 hours"
+msgstr ""
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unmuted"
+msgstr ""
+
+#: gnui/ui/shell/keyboard.go
+msgid "Pinned"
+msgstr ""
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unpinned"
+msgstr ""
+
+#: gnui/ui/shell/keyboard.go
+msgid "Marked as unread"
+msgstr ""
+
+#: gnui/ui/shell/keyboard.go
+msgid "Marked as read"
+msgstr ""
+
+#: gnui/ui/shell/keyboard.go
+msgid "{what}: {chat}. Z to undo"
+msgstr ""
+
+#: gnui
+msgid "Search everything"
+msgstr ""
+
+#: gnui
+msgid "Chats, people, messages, files"
+msgstr ""
+
+#: gnui
+msgid "Files and links"
+msgstr ""
+
+#: gnui
+msgid "Nothing found"
+msgstr ""
+
+#: gnui
+msgid "People"
+msgstr ""
+
+#: gnui
+msgid "Search everything: chats, people, messages, files"
+msgstr ""
+
+#: gnui
+msgid "Search everything (when not typing)"
+msgstr ""
+
+#: gnui
+msgid "Next / previous chat (when not typing)"
+msgstr ""
+
+#: gnui
+msgid "Archive or unarchive the open chat (when not typing)"
+msgstr ""
+
+#: gnui
+msgid "Mute the open chat for 8 hours, or unmute it (when not typing)"
+msgstr ""
+
+#: gnui
+msgid "Pin or unpin the open chat (when not typing)"
+msgstr ""
+
+#: gnui
+msgid "Mark the open chat as unread or read (when not typing)"
+msgstr ""
+
+#: gnui
+msgid "Reply to the last message (when not typing)"
+msgstr ""
+
+#: gnui
+msgid "Undo the last change a single key made"
+msgstr ""
+
+#: gnui
+msgid "Go to the chats, Archived, Starred or Calls"
+msgstr ""
+
+#: gnui
+msgid "Starts a message in the open chat, or a search"
+msgstr ""
+
+#: gnui
+msgid "Dismiss the current action, return from search, Calls or Starred, leave the message input, or close the chat"
+msgstr ""
+
+#: gnui
+msgid "Folder"
+msgstr ""
+
+#: gnui
+msgid "New folder"
+msgstr ""
+
+#: gnui
+msgid "New folder…"
+msgstr ""
+
+#: gnui
+msgid "Take out of the folder"
+msgstr ""
+
+#: gnui
+msgid "Folder name"
+msgstr ""
+
+#: gnui
+msgid "Rename…"
+msgstr ""
+
+#: gnui
+msgid "Icon"
+msgstr ""
+
+#: gnui
+msgid "Stop showing it as a space"
+msgstr ""
+
+#: gnui
+msgid "Show it as a space (⌃1–9)"
+msgstr ""
+
+#: gnui
+msgid "Delete folder (its chats stay)"
+msgstr ""
+
+#: gnui
+msgid "Unread chats"
+msgstr ""
+
+#: gnui
+msgid "Spaces"
+msgstr ""
+
+#: gnui
+msgid "Go to the tab at this place"
+msgstr ""
+
+#: gnui
+msgid "Go to the space at this place"
+msgstr ""
+
+#: gnui
+msgid "Next / previous space"
+msgstr ""

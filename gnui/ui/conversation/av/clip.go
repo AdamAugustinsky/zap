@@ -17,6 +17,7 @@ import (
 	"zapfast/i18n"
 	"zapfast/model"
 	"zapfast/state"
+	ztheme "zapfast/theme"
 	"zapfast/ui/screen"
 )
 
@@ -32,7 +33,6 @@ const (
 	pictureHeight = 440.0 // PICTURE_HEIGHT
 	noteSide      = 220.0 // NOTE_SIDE
 	discSide      = 48.0
-	videoRadius   = 6.0
 	cardHeight    = 52.0 + 16.0 // the attachment row and its margins
 )
 
@@ -107,7 +107,7 @@ func (b *blk) frameBuild(r screen.Rect) {
 	if gif {
 		name = i18n.T("GIF")
 	}
-	radius := b.pt(videoRadius)
+	radius := b.pt(ztheme.Nested())
 	c.NextPos(0, 0)
 	c.NextFlags(base.Floating)
 	c.NextCursor(ui.CursorPointer)
@@ -401,7 +401,7 @@ const (
 func (b *blk) controls(w, h float32, st clipStatus) {
 	c := b.c
 	barH := b.pt(32)
-	radius := b.pt(videoRadius)
+	radius := b.pt(ztheme.Nested())
 	theme.At(c, 0, h-barH, w, barH)
 	c.NextBG(scrimBar)
 	c.NextRadii(0, 0, radius, radius)
@@ -615,7 +615,7 @@ func (b *blk) cardBuild(r screen.Rect) {
 	c.NextPos(0, 0)
 	c.NextFlags(base.Floating)
 	c.NextBG(theme.WithAlpha(b.col(theme.Window), 0.35))
-	c.NextRadius(b.pt(8))
+	c.NextRadius(b.pt(ztheme.Nested()))
 	c.NextCursor(ui.CursorPointer)
 	pr := k.PressState(b.lbl(name, 70), base.HoverOn)
 	k.BeginPress(&pr, ui.RoleButton, ui.Px(r.W), ui.Px(r.H), ui.DrawBackground, nil)

@@ -167,8 +167,8 @@ func (s *Screen) row(e *screen.Env, i int) bool {
 	}
 	c.NextAxis(ui.AxisX)
 	c.NextCross(ui.CrossCenter)
-	c.NextGap(e.Pt(10))
-	c.NextPadding(e.Pt(8), 0, e.Pt(10), 0)
+	c.NextGap(e.Pt(12))
+	c.NextPadding(e.Pt(8), 0, e.Pt(8), 0)
 	flags := ui.Flags(0)
 	if current || pr.Hot > 0 {
 		flags = ui.DrawBackground
@@ -181,7 +181,7 @@ func (s *Screen) row(e *screen.Env, i int) bool {
 		pic, _ = ic.Request(key, img.File(en.picture))
 	}
 	rexui.Avatar(k.Kit, en.name, rexui.AvatarOpts{Size: avatarPt, Image: pic})
-	k.NextGap(1)
+	k.NextGap(2)
 	k.BeginContainer(ui.AxisY, ui.CrossStart, "names", ui.Pct(1), ui.Children(1), 0)
 	rexui.Label(k.Kit, en.name, rexui.LabelOpts{Style: rexui.TextSemibold})
 	if en.detail != "" {
@@ -212,8 +212,8 @@ func (s *Screen) addRow(e *screen.Env) bool {
 	}
 	c.NextAxis(ui.AxisX)
 	c.NextCross(ui.CrossCenter)
-	c.NextGap(e.Pt(10))
-	c.NextPadding(e.Pt(8), 0, e.Pt(10), 0)
+	c.NextGap(e.Pt(8))
+	c.NextPadding(e.Pt(8), 0, e.Pt(8), 0)
 	k.BeginPress(&pr, ui.RoleMenuItem, ui.Pct(1), ui.Px(e.Pt(36)), flags, nil)
 	k.Icon(s.plus, r.Colors[theme.Label])
 	rexui.Label(k.Kit, pr.Name, rexui.LabelOpts{})

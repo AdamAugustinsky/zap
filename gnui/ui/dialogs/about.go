@@ -103,7 +103,7 @@ func shortcutsWidth(winW float32) float32 {
 
 // barGutterPt is the room left at the end of a scrolled list for the
 // overlay scroll bar, in points.
-const barGutterPt = 14
+const barGutterPt = 16
 
 // shortcuts lists the 29 shortcuts with this platform's key names, and the
 // switch that brings back the hint bar under the message box.
@@ -131,7 +131,7 @@ func (s *Screen) shortcuts(e *screenEnv, dl *rexui.Dialog) {
 		k.NextGap(8)
 		k.BeginContainer(ui.AxisY, ui.CrossStart, e.C().Fmt().Str("column").Int(col).String(), ui.Pct(1), ui.Children(1), 0)
 		for i := lo; i < hi; i++ {
-			k.NextGap(18)
+			k.NextGap(16)
 			k.BeginContainer(ui.AxisX, ui.CrossStart, e.C().Fmt().Str("row").Int(i).String(), ui.Pct(1), ui.Children(1), 0)
 			k.NextWidth(k.Fixed(shortcutsKeys))
 			rexui.Label(k.Kit, list[i].Keys, rexui.LabelOpts{Style: rexui.TextSemibold})

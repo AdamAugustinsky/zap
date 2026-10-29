@@ -434,7 +434,8 @@ func TestEveryDemoPartApplies(t *testing.T) {
 	var parts []string
 	for _, p := range demoParts {
 		switch p {
-		case "login", "phone", "pair", "app-lock", "empty", "calls", "call-entries", "account-menu", "accounts", "locked", "locked-prompt":
+		case "login", "phone", "pair", "app-lock", "empty", "calls", "call-entries", "account-menu", "accounts", "locked", "locked-prompt",
+			"space": // a folder's space closes a chat outside it
 		default:
 			parts = append(parts, p)
 		}

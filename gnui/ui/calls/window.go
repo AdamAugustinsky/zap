@@ -34,7 +34,7 @@ const (
 	pickerRowPt = 52   // the pickers' row
 	previewPart = 0.24 // how much of the window our own camera's preview may take
 	maxTiles    = 12   // the most tiles a group call lays out
-	tileGap     = 10
+	tileGap     = 8
 	tileAspect  = 4.0 / 3.0
 	facesMax    = 5  // the faces a ringing group call shows before it counts the rest
 	facePt      = 36 // a face's side
@@ -419,7 +419,7 @@ func (w *Window) ringing(e *screen.Env, area screen.Rect) {
 // answer is one of a ringing call's answers, its word under it.
 func (w *Window) answer(e *screen.Env, ic icon.ID, label string, v *rexui.ButtonRecipe) bool {
 	k := e.K
-	k.NextGap(6)
+	k.NextGap(8)
 	k.BeginContainer(ui.AxisY, ui.CrossCenter, label, ui.Children(1), ui.Children(1), 0)
 	clicked := w.control(e, ic, label, v, true)
 	rexui.Label(k.Kit, label, rexui.LabelOpts{Style: rexui.TextSubheadline, Color: rexui.Of(theme.Label2)})
@@ -498,7 +498,7 @@ func (w *Window) overPicture(e *screen.Env, area screen.Rect) {
 	at(e, screen.Rect{X: area.X, Y: area.Y, W: area.W, H: bottom - area.Y}, ui.AxisY, "peer")
 	c.NextBG(0x00000096)
 	c.NextRadius(e.Pt(14))
-	c.NextPadding(e.Pt(14), e.Pt(6), e.Pt(14), e.Pt(6))
+	c.NextPadding(e.Pt(12), e.Pt(8), e.Pt(12), e.Pt(8))
 	c.NextAxis(ui.AxisY)
 	c.NextCross(ui.CrossCenter)
 	c.NextSize(ui.Children(1), ui.Children(1))
@@ -844,7 +844,7 @@ func (w *Window) tileBox(e *screen.Env, i int, r screen.Rect, name string) {
 	c.NextCross(ui.CrossCenter)
 	c.NextJustify(ui.JustifyCenter)
 	c.NextGap(e.Pt(8))
-	c.NextPadding(e.Pt(10), e.Pt(10), e.Pt(10), e.Pt(10))
+	c.NextPadding(e.Pt(12), e.Pt(12), e.Pt(12), e.Pt(12))
 	c.NextRole(ui.RoleGroup)
 	c.NextSemName(name)
 	c.Push(c.BoxKeyed(base.Floating|ui.DrawBackground|ui.Clip, ui.KeyN(c.ParentKey(), 0x711E00+uint64(i)), nil))

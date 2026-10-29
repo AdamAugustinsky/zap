@@ -26,9 +26,11 @@ type blk struct {
 	m   model.Message
 	sc  float32
 	own bool
-	key ui.Key
-	dm  *abi.Message // the decoded message, nil until decoded
-	nic uint64       // icons drawn so far, to key them apart
+	// flush: the block fills its bubble to the edges (BuildFlush)
+	flush bool
+	key   ui.Key
+	dm    *abi.Message // the decoded message, nil until decoded
+	nic   uint64       // icons drawn so far, to key them apart
 	// span is the bubble's settled width (SizeIn), 0 for none: a card
 	// spans it.
 	span float32
@@ -210,11 +212,11 @@ func (b *blk) labelB(s []byte, f fontID, col uint32, x, y, w float32) {
 }
 
 // metaB is labelB for metadata (a size, a count of pages), which Rex sets in
-// its monospaced face, on fCallout's line.
+// its metadata face (the UI face, tabular figures), on fCallout's line.
 func (b *blk) metaB(s []byte, col uint32, x, y, w float32) {
 	b.place(x, y, w, fCallout)
 	o := b.labelOpts(fCallout, col)
-	o.MonoPt = 11
+	o.MetaPt = 11
 	rexui.LabelBytes(b.k, s, o)
 }
 

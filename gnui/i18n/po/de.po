@@ -4791,3 +4791,167 @@ msgstr "Das kann eine Weile dauern. Öffne WhatsApp auf deinem Telefon."
 msgctxt "menu bar"
 msgid "Close Tab"
 msgstr "Tab schließen"
+
+#: gnui/ui/shell/panes.go
+msgid "Show the chat list (⌘B)"
+msgstr "Chatliste einblenden (⌘B)"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unarchived"
+msgstr "Aus dem Archiv geholt"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Muted for 8 hours"
+msgstr "Für 8 Stunden stummgeschaltet"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unmuted"
+msgstr "Ton wieder an"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Pinned"
+msgstr "Angeheftet"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unpinned"
+msgstr "Losgelöst"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Marked as unread"
+msgstr "Als ungelesen markiert"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Marked as read"
+msgstr "Als gelesen markiert"
+
+#: gnui/ui/shell/keyboard.go
+msgid "{what}: {chat}. Z to undo"
+msgstr "{what}: {chat}. Z macht es rückgängig"
+
+#: gnui
+msgid "Search everything"
+msgstr "Alles durchsuchen"
+
+#: gnui
+msgid "Chats, people, messages, files"
+msgstr "Chats, Personen, Nachrichten, Dateien"
+
+#: gnui
+msgid "Files and links"
+msgstr "Dateien und Links"
+
+#: gnui
+msgid "Nothing found"
+msgstr "Nichts gefunden"
+
+#: gnui
+msgid "People"
+msgstr "Personen"
+
+#: gnui
+msgid "Search everything: chats, people, messages, files"
+msgstr "Alles durchsuchen: Chats, Personen, Nachrichten, Dateien"
+
+#: gnui
+msgid "Search everything (when not typing)"
+msgstr "Alles durchsuchen (wenn nicht getippt wird)"
+
+#: gnui
+msgid "Next / previous chat (when not typing)"
+msgstr "Nächster / vorheriger Chat (wenn nicht getippt wird)"
+
+#: gnui
+msgid "Archive or unarchive the open chat (when not typing)"
+msgstr "Offenen Chat archivieren oder zurückholen (wenn nicht getippt wird)"
+
+#: gnui
+msgid "Mute the open chat for 8 hours, or unmute it (when not typing)"
+msgstr "Offenen Chat 8 Stunden stummschalten oder Ton wieder an (wenn nicht getippt wird)"
+
+#: gnui
+msgid "Pin or unpin the open chat (when not typing)"
+msgstr "Offenen Chat anheften oder lösen (wenn nicht getippt wird)"
+
+#: gnui
+msgid "Mark the open chat as unread or read (when not typing)"
+msgstr "Offenen Chat als ungelesen oder gelesen markieren (wenn nicht getippt wird)"
+
+#: gnui
+msgid "Reply to the last message (when not typing)"
+msgstr "Auf die letzte Nachricht antworten (wenn nicht getippt wird)"
+
+#: gnui
+msgid "Undo the last change a single key made"
+msgstr "Letzte Änderung per Einzeltaste rückgängig machen"
+
+#: gnui
+msgid "Go to the chats, Archived, Starred or Calls"
+msgstr "Zu den Chats, Archiv, Markierten oder Anrufen"
+
+#: gnui
+msgid "Starts a message in the open chat, or a search"
+msgstr "Beginnt eine Nachricht im offenen Chat oder eine Suche"
+
+#: gnui
+msgid "Dismiss the current action, return from search, Calls or Starred, leave the message input, or close the chat"
+msgstr "Aktuelle Aktion abbrechen, Suche, Anrufe oder Markierte verlassen, das Eingabefeld verlassen oder den Chat schließen"
+
+#: gnui
+msgid "Folder"
+msgstr "Ordner"
+
+#: gnui
+msgid "New folder"
+msgstr "Neuer Ordner"
+
+#: gnui
+msgid "New folder…"
+msgstr "Neuer Ordner …"
+
+#: gnui
+msgid "Take out of the folder"
+msgstr "Aus dem Ordner nehmen"
+
+#: gnui
+msgid "Folder name"
+msgstr "Ordnername"
+
+#: gnui
+msgid "Rename…"
+msgstr "Umbenennen …"
+
+#: gnui
+msgid "Icon"
+msgstr "Symbol"
+
+#: gnui
+msgid "Stop showing it as a space"
+msgstr "Nicht mehr als Bereich zeigen"
+
+#: gnui
+msgid "Show it as a space (⌃1–9)"
+msgstr "Als Bereich zeigen (⌃1–9)"
+
+#: gnui
+msgid "Delete folder (its chats stay)"
+msgstr "Ordner löschen (die Chats bleiben)"
+
+#: gnui
+msgid "Unread chats"
+msgstr "Ungelesene Chats"
+
+#: gnui
+msgid "Spaces"
+msgstr "Bereiche"
+
+#: gnui
+msgid "Go to the tab at this place"
+msgstr "Zum Tab an dieser Stelle"
+
+#: gnui
+msgid "Go to the space at this place"
+msgstr "Zum Bereich an dieser Stelle"
+
+#: gnui
+msgid "Next / previous space"
+msgstr "Nächster / vorheriger Bereich"

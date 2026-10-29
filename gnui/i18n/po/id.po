@@ -4747,3 +4747,167 @@ msgstr "Ini mungkin perlu waktu. Buka WhatsApp di ponselmu."
 msgctxt "menu bar"
 msgid "Close Tab"
 msgstr "Tutup Tab"
+
+#: gnui/ui/shell/panes.go
+msgid "Show the chat list (⌘B)"
+msgstr "Tampilkan daftar chat (⌘B)"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unarchived"
+msgstr "Dikeluarkan dari arsip"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Muted for 8 hours"
+msgstr "Dibisukan selama 8 jam"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unmuted"
+msgstr "Tidak dibisukan lagi"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Pinned"
+msgstr "Disematkan"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unpinned"
+msgstr "Tidak disematkan lagi"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Marked as unread"
+msgstr "Ditandai belum dibaca"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Marked as read"
+msgstr "Ditandai sudah dibaca"
+
+#: gnui/ui/shell/keyboard.go
+msgid "{what}: {chat}. Z to undo"
+msgstr "{what}: {chat}. Z untuk membatalkan"
+
+#: gnui
+msgid "Search everything"
+msgstr "Cari semua"
+
+#: gnui
+msgid "Chats, people, messages, files"
+msgstr "Chat, orang, pesan, file"
+
+#: gnui
+msgid "Files and links"
+msgstr "File dan tautan"
+
+#: gnui
+msgid "Nothing found"
+msgstr "Tidak ada yang ditemukan"
+
+#: gnui
+msgid "People"
+msgstr "Orang"
+
+#: gnui
+msgid "Search everything: chats, people, messages, files"
+msgstr "Cari semua: chat, orang, pesan, file"
+
+#: gnui
+msgid "Search everything (when not typing)"
+msgstr "Cari semua (saat tidak mengetik)"
+
+#: gnui
+msgid "Next / previous chat (when not typing)"
+msgstr "Chat berikutnya / sebelumnya (saat tidak mengetik)"
+
+#: gnui
+msgid "Archive or unarchive the open chat (when not typing)"
+msgstr "Arsipkan atau keluarkan chat yang terbuka (saat tidak mengetik)"
+
+#: gnui
+msgid "Mute the open chat for 8 hours, or unmute it (when not typing)"
+msgstr "Bisukan chat yang terbuka 8 jam, atau bunyikan lagi (saat tidak mengetik)"
+
+#: gnui
+msgid "Pin or unpin the open chat (when not typing)"
+msgstr "Sematkan atau lepas chat yang terbuka (saat tidak mengetik)"
+
+#: gnui
+msgid "Mark the open chat as unread or read (when not typing)"
+msgstr "Tandai chat yang terbuka belum dibaca atau dibaca (saat tidak mengetik)"
+
+#: gnui
+msgid "Reply to the last message (when not typing)"
+msgstr "Balas pesan terakhir (saat tidak mengetik)"
+
+#: gnui
+msgid "Undo the last change a single key made"
+msgstr "Batalkan perubahan terakhir dari satu tombol"
+
+#: gnui
+msgid "Go to the chats, Archived, Starred or Calls"
+msgstr "Buka chat, Arsip, Berbintang, atau Panggilan"
+
+#: gnui
+msgid "Starts a message in the open chat, or a search"
+msgstr "Memulai pesan di chat yang terbuka, atau pencarian"
+
+#: gnui
+msgid "Dismiss the current action, return from search, Calls or Starred, leave the message input, or close the chat"
+msgstr "Batalkan tindakan saat ini, kembali dari pencarian, Panggilan atau Berbintang, keluar dari kolom pesan, atau tutup chat"
+
+#: gnui
+msgid "Folder"
+msgstr "Folder"
+
+#: gnui
+msgid "New folder"
+msgstr "Folder baru"
+
+#: gnui
+msgid "New folder…"
+msgstr "Folder baru…"
+
+#: gnui
+msgid "Take out of the folder"
+msgstr "Keluarkan dari folder"
+
+#: gnui
+msgid "Folder name"
+msgstr "Nama folder"
+
+#: gnui
+msgid "Rename…"
+msgstr "Ganti nama…"
+
+#: gnui
+msgid "Icon"
+msgstr "Ikon"
+
+#: gnui
+msgid "Stop showing it as a space"
+msgstr "Berhenti tampilkan sebagai ruang"
+
+#: gnui
+msgid "Show it as a space (⌃1–9)"
+msgstr "Tampilkan sebagai ruang (⌃1–9)"
+
+#: gnui
+msgid "Delete folder (its chats stay)"
+msgstr "Hapus folder (chatnya tetap ada)"
+
+#: gnui
+msgid "Unread chats"
+msgstr "Chat belum dibaca"
+
+#: gnui
+msgid "Spaces"
+msgstr "Ruang"
+
+#: gnui
+msgid "Go to the tab at this place"
+msgstr "Buka tab di posisi ini"
+
+#: gnui
+msgid "Go to the space at this place"
+msgstr "Buka ruang di posisi ini"
+
+#: gnui
+msgid "Next / previous space"
+msgstr "Ruang berikutnya / sebelumnya"

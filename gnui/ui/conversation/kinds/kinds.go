@@ -140,12 +140,20 @@ func NoBubble(m model.Message) bool {
 
 // Build builds the block at r, in the coordinates of the box being built
 // (see the package's doc), and handles its input.
-func Build(e *screen.Env, m model.Message, r screen.Rect) {
+func Build(e *screen.Env, m model.Message, r screen.Rect) { build(e, m, r, false) }
+
+// BuildFlush is Build for a picture that is its bubble's whole content and
+// fills it to its edges: its corners are the bubble's, not nested in its
+// padding.
+func BuildFlush(e *screen.Env, m model.Message, r screen.Rect) { build(e, m, r, true) }
+
+func build(e *screen.Env, m model.Message, r screen.Rect, flush bool) {
 	mkey.Enter(e.Acct())
 	if !Has(m) || r.W < 1 || r.H < 1 {
 		return
 	}
 	b := use(e, m)
+	b.flush = flush
 	defer b.done()
 	b.span = r.W // Size's width: a card fills it
 	b.begin(r)

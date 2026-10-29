@@ -299,7 +299,7 @@ func (t *tour) observe(in *ui.Input) {
 }
 
 // label puts a shortcut's caption in the trace as its key goes down, as
-// upstream's Key cues carry one ("⌘ + K · Search chats").
+// upstream's Key cues carry one ("⌘ + ⇧ + F · Search chats").
 func (t *tour) label(text string, step script.Step) []script.Step {
 	return []script.Step{script.Do(func() {
 		if t.trace != "" {
@@ -399,7 +399,8 @@ func (t *tour) launch() []script.Step {
 	add := func(steps ...script.Step) { st = append(st, steps...) }
 	add(script.Idle(20)) // the opening shot (prepare, before the play)
 	// search the chats, open one, step through them
-	add(t.label("⌘ + K · Search chats", key('K', prim))...)
+	// (⌘K is Zap's search over everything; the list's is ⌘⇧F)
+	add(t.label("⌘ + ⇧ + F · Search chats", key('F', prim|ui.ModShift))...)
 	add(pause(200))
 	add(typing("Rust", 25)...)
 	// Enter opens the result under the pointer and leaves the search (the

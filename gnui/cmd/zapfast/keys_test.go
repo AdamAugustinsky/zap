@@ -78,9 +78,10 @@ func TestTheShellsShortcuts(t *testing.T) {
 		steps []widgettest.Step
 		check func(t *testing.T, r *rig, f *fake.Core)
 	}{
-		{"⌘K focuses the chat search (KB-001)", nil, []widgettest.Step{widgettest.Key('K', prim)}, func(t *testing.T, r *rig, _ *fake.Core) {
-			if got := r.focusedName(); got != "Search" {
-				t.Errorf("focus on %q", got)
+		// ⌘K is Zap's search over everything (ui/spotlight); ⌘⇧F keeps the list's
+		{"⌘K opens Spotlight on its field", nil, []widgettest.Step{widgettest.Key('K', prim), widgettest.Idle(2)}, func(t *testing.T, r *rig, _ *fake.Core) {
+			if got := r.focusedName(); !r.s.Spotlight || got != "Search everything" {
+				t.Errorf("Spotlight %v, focus on %q", r.s.Spotlight, got)
 			}
 		}},
 		{"⌘⇧F focuses the chat search (KB-001)", nil, []widgettest.Step{widgettest.Key('F', prim|ui.ModShift)}, func(t *testing.T, r *rig, _ *fake.Core) {
@@ -123,7 +124,9 @@ func TestTheShellsShortcuts(t *testing.T) {
 				t.Errorf("open %q", got)
 			}
 		}},
-		{"⌘2 opens the second chat in the list (KB-007)", nil, []widgettest.Step{widgettest.Key('2', prim)}, func(t *testing.T, r *rig, _ *fake.Core) {
+		// Zap's ⌘1–9 are the titlebar's tabs, as a browser's (upstream's KB-007
+		// opened the list's chats by place)
+		{"⌘2 opens the second tab", func(r *rig) { r.open(adaJID); r.open(graceJID); r.open(adaJID) }, []widgettest.Step{widgettest.Key('2', prim)}, func(t *testing.T, r *rig, _ *fake.Core) {
 			if got := r.openName(); got != "Grace Hopper" {
 				t.Errorf("open %q", got)
 			}
@@ -423,6 +426,8 @@ func TestChatShortcutsWaitForThePickerAndARecording(t *testing.T) {
 		t.Error("⌘E archived under the picker")
 	}
 	r.s.Panes.Picker = state.PickerNone
+	r.open(graceJID) // the tabs: Ada, Grace (⌘2)
+	r.open(adaJID)
 	recording := true
 	r.s.OnInUse(t, func(*state.State) bool { return recording })
 	r.Play(widgettest.Key('2', prim), widgettest.Idle(2))
@@ -513,6 +518,11 @@ func TestEscapeTakesBackOneThingAtATime(t *testing.T) {
 	esc("the picker", func() bool { return r.s.Panes.Picker == state.PickerNone })
 	esc("the selection", func() bool { return !r.s.Panes.Selecting })
 	esc("the search pane", func() bool { return r.s.Panes.Pane == state.PaneNone })
+	if r.focusedName() == "Message" {
+		// a focused composer lets go of the keyboard first (the single keys
+		// work then: shell/keyboard.go), and the next Escape closes the chat
+		esc("the composer's focus", func() bool { return r.focusedName() != "Message" })
+	}
 	esc("the chat", func() bool { return a.Open == 0 })
 }
 
@@ -625,7 +635,7 @@ func TestEscapeWholeOrderWithTheComposerFocused(t *testing.T) {
 		}
 		r.s.Staged = append(r.s.Staged, state.Staged{ID: 1, Path: []byte("/synthetic/attachment.txt")})
 		r.s.Req.FindInChat = true
-		r.Frames(3)
+		r.Frames(30) // the search pane slides in beside the chat, and lands
 		r.Play(widgettest.Click(ui.RoleButton, "Filter by date"), widgettest.Idle(2))
 		r.s.Req.FocusComposer = true
 		r.Frames(3)
@@ -649,10 +659,12 @@ func TestEscapeWholeOrderWithTheComposerFocused(t *testing.T) {
 			{"staged files", func() bool { return len(r.s.Staged) == 0 }},
 			{"edit or reply", func() bool { return p.Edit.Len() == 0 && p.Reply.Len() == 0 }},
 			{"search pane", func() bool { return p.Pane == state.PaneNone }},
+			// the composer lets go of the keyboard, then the chat closes
+			{"composer's focus", func() bool { return p.Pane == state.PaneNone && r.focusedName() != "Message" }},
 			{"chat", func() bool { return a.Open == 0 }},
 		}
 		for i, step := range steps {
-			if i > 1 && r.focusedName() != "Message" {
+			if i > 1 && step.name != "chat" && r.focusedName() != "Message" {
 				t.Fatalf("before %s: composer lost focus to %q", step.name, r.focusedName())
 			}
 			r.Play(widgettest.Key(ui.KeyEscape, 0), widgettest.Idle(3))

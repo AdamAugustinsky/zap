@@ -10,6 +10,7 @@ import (
 
 	"zapfast/abi"
 	"zapfast/i18n"
+	ztheme "zapfast/theme"
 	"zapfast/ui/screen"
 )
 
@@ -122,9 +123,9 @@ func (b *blk) locationBuild(r screen.Rect) {
 	if g.pic > 0 {
 		ref, _ := b.m.Thumbnail()
 		if hd, ok := b.thumbImage(ref, int32(g.w), int32(g.pic), img.Cover); ok {
-			b.imageBox(1, hd, 0, 0, g.w, g.pic, b.pt(8), ui.FitFill)
+			b.imageBox(1, hd, 0, 0, g.w, g.pic, b.pt(ztheme.Nested()), ui.FitFill)
 		} else {
-			b.fillBox(1, 0, 0, g.w, g.pic, b.pt(8), b.card())
+			b.fillBox(1, 0, 0, g.w, g.pic, b.pt(ztheme.Nested()), b.card())
 		}
 		y += g.pic + b.pt(4)
 	}

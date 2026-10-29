@@ -27,6 +27,7 @@ import (
 	"zapfast/internal/buildinfo"
 	"zapfast/state"
 	"zapfast/sys"
+	"zapfast/ui/playground"
 	"zapfast/ui/shell"
 )
 
@@ -37,8 +38,11 @@ type options struct {
 	dark bool
 	// page is upstream's --demo-page list (demopage.go).
 	page string
-	tour tourOptions // -demo-tour (tour.go)
-	args []string    // the positional arguments: a number or link to open, or quit, reload-themes
+	// playground is the design playground's file (-playground FILE: the
+	// window of sliders over the tunables, ui/playground).
+	playground string
+	tour       tourOptions // -demo-tour (tour.go)
+	args       []string    // the positional arguments: a number or link to open, or quit, reload-themes
 
 	budget budgetOptions // the measurement modes (budgets.go)
 }
@@ -53,6 +57,7 @@ func parseOptions(args []string) (options, error) {
 	fs.BoolVar(&o.dark, "dark", false, "with -o: render in dark mode")
 	fs.StringVar(&o.page, "demo-page", "", "with -demo: open in one of upstream's demo states (NAME[,NAME…], DEMO.md)")
 	shot := fs.String("demo-shot", "", "the demo's -o: render the demo page offscreen into this PNG, and quit")
+	fs.StringVar(&o.playground, "playground", "", "with -demo: open the design playground beside the window, its values kept in this JSON file")
 	o.tour.register(fs)
 	fs.Bool("start-hidden", false, "start without a window (the login item)")
 	o.budget.register(fs)
@@ -60,6 +65,9 @@ func parseOptions(args []string) (options, error) {
 	o.args = fs.Args()
 	if *shot != "" {
 		o.demo, o.out = true, *shot
+	}
+	if o.playground != "" {
+		o.demo = true
 	}
 	if o.page != "" || o.tour.on || o.tour.frames != "" {
 		o.demo = true
@@ -131,6 +139,10 @@ func main() {
 		fmt.Fprintln(os.Stderr, "zapfast:", err)
 		os.Exit(2)
 	}
+	if o.playground != "" {
+		set.Playground = playground.New(o.playground)
+		s.OpenWindow(state.WinPlayground)
+	}
 	sh, err := shell.New(s, set)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "zapfast:", err)
@@ -163,6 +175,9 @@ func main() {
 	}
 	defer closeCores(s)
 	defer s.CloseSettings()
+	if o.playground != "" {
+		seedDemoFolders(s.Acct()) // folders and a space to try
+	}
 
 	if o.tour.on {
 		if err := runTour(&o.tour, s, sh); err != nil {

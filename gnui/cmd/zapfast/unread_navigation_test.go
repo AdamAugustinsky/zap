@@ -40,8 +40,8 @@ func unreadNames(r *rig) []string {
 
 // CL-032: run the real shell, list and read reducer. Keyboard navigation must
 // retain the just-read row exactly as a click does, then clear retention when
-// the user leaves and returns to Unread. Numbered shortcuts share upstream's
-// KeepUnread action; explicit OpenChat requests do not.
+// the user leaves and returns to Unread; explicit OpenChat requests do not.
+// (Zap's ⌘1–9 go to the tabs, not to places in the list.)
 func TestUnreadKeyboardNavigationRetainsRowsLikeClicking(t *testing.T) {
 	for _, tc := range []struct {
 		name       string
@@ -53,7 +53,6 @@ func TestUnreadKeyboardNavigationRetainsRowsLikeClicking(t *testing.T) {
 		{"alt-previous", true, widgettest.Key(ui.KeyUp, ui.ModAlt)},
 		{"whatsapp-next", false, widgettest.Key(']', ui.PrimaryMod()|ui.ModShift)},
 		{"whatsapp-previous", true, widgettest.Key('[', ui.PrimaryMod()|ui.ModShift)},
-		{"numbered", false, widgettest.Key('1', ui.PrimaryMod())},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			r := unreadRig(t)

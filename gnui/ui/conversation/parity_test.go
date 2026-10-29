@@ -379,8 +379,10 @@ func TestNewestCountAndFloatingDay(t *testing.T) {
 			return false
 		}
 		day := dayLabel(r.Context().Fmt(), v.At(mi).Time(), r.scr.now).String()
+		// the list runs under the header: its content starts topInset down
+		top := list[1] + r.scr.topInset
 		for _, n := range r.all(ui.RoleLabel, day) {
-			if n.Bounds[1] >= list[1] && n.Bounds[1] < list[1]+20 {
+			if n.Bounds[1] >= top && n.Bounds[1] < top+20 {
 				return true
 			}
 		}
@@ -531,7 +533,7 @@ func TestTypersInAGroup(t *testing.T) {
 	list := r.node(ui.RoleList, "Messages").Bounds
 	found := false
 	for _, n := range r.all(ui.RoleLabel, "Bo Diddley, Cy Twombly and Di Prima are typing…") {
-		if n.Bounds[1] > list[1] {
+		if n.Bounds[1] > list[1]+r.scr.topInset { // below the header, which the list runs under
 			found = true
 			if want := list[0] + sidePt + senderPicPt + 2*senderPicPt*0.6; n.Bounds[0] < want-2 {
 				t.Errorf("the dots at %v, want them after three stacked pictures (%v)", n.Bounds[0], want)

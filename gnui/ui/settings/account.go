@@ -48,12 +48,12 @@ func (s *Screen) accountBlock(e *screen.Env) {
 	if r := c.RectOf(s.acctBtn.key); s.acctBtn.key != 0 && !s.acctBtn.stacked && r[2] > r[0] {
 		s.acctBtn.w = r[2] - r[0]
 	}
-	gap, indent := e.Pt(14), e.Pt(avatarPt+14)
+	gap, indent := e.Pt(16), e.Pt(avatarPt+16)
 	wrap := s.acctBtn.w > 0 && s.innerPx-indent-2*gap-s.acctBtn.w < e.Pt(160) // three gaps in the line
 	stack := wrap && s.acctBtn.w > s.innerPx-indent
-	k.NextGap(10)
+	k.NextGap(12)
 	k.BeginContainer(ui.AxisY, ui.CrossStart, "profile block", ui.Pct(1), ui.Children(1), 0)
-	k.NextGap(14)
+	k.NextGap(16)
 	k.BeginContainer(ui.AxisX, ui.CrossStart, "profile", ui.Pct(1), ui.Children(1), 0)
 
 	// the picture, which changes it when pressed
@@ -77,7 +77,7 @@ func (s *Screen) accountBlock(e *screen.Env) {
 		s.profileField(e, s.tx.yourName, &s.profile.name, nameLimit)
 		s.profileField(e, s.tx.aboutLabel, &s.profile.about, aboutLimit)
 	} else {
-		k.NextGap(6)
+		k.NextGap(8)
 		k.BeginContainer(ui.AxisX, ui.CrossCenter, "name", ui.Pct(1), ui.Children(1), 0)
 		line := me.Name()
 		if len(line) == 0 {
@@ -151,7 +151,7 @@ func (s *Screen) profileField(e *screen.Env, label string, buf *ui.TextBuffer, l
 func (s *Screen) profileButtons(e *screen.Env, a *state.Account, name, about string) {
 	k := e.K.Kit
 	k.NextGap(8)
-	k.NextPadding(avatarPt+14, 0, 0, 0)
+	k.NextPadding(avatarPt+16, 0, 0, 0)
 	k.BeginContainer(ui.AxisX, ui.CrossCenter, "profile buttons", ui.Pct(1), ui.Children(1), 0)
 	save := rexui.Button(k, s.tx.save, rexui.ButtonOpts{Variant: rexui.ButtonPrimary}).Clicked || s.profile.submit
 	cancel := button(e, s.tx.cancel)

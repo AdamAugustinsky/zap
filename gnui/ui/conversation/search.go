@@ -17,6 +17,7 @@ import (
 	"zapfast/markup"
 	"zapfast/model"
 	"zapfast/state"
+	ztheme "zapfast/theme"
 	"zapfast/ui/screen"
 )
 
@@ -439,10 +440,10 @@ func NewSearch() *Search { return &Search{} }
 func (p *Search) Init(e *screen.Env) error {
 	p.h = hubOf(e.S)
 	p.h.listen()
-	p.closeIc = e.K.AddIcon(icon.Spec{Symbol: "xmark", Fallback: '×', Pt: 15})
-	p.backIc = e.K.AddIcon(icon.Spec{Symbol: "chevron.left", Fallback: '‹', Pt: 15})
-	p.nextIc = e.K.AddIcon(icon.Spec{Symbol: "chevron.right", Fallback: '›', Pt: 15})
-	p.calIc = e.K.AddIcon(icon.Spec{Symbol: "calendar", Fallback: '▦', Pt: 15})
+	p.closeIc = e.K.AddIcon(ztheme.ToolIcon("xmark", '×'))
+	p.backIc = e.K.AddIcon(ztheme.ToolIcon("chevron.left", '‹'))
+	p.nextIc = e.K.AddIcon(ztheme.ToolIcon("chevron.right", '›'))
+	p.calIc = e.K.AddIcon(ztheme.ToolIcon("calendar", '▦'))
 	p.findIc = e.K.AddIcon(icon.Spec{Symbol: "magnifyingglass", Fallback: '⌕', Pt: 28})
 	p.ticks = addTickIcons(e.K.Kit)
 	return nil
@@ -479,13 +480,13 @@ func (p *Search) Build(e *screen.Env, r screen.Rect) {
 	c.Push(c.Box(0, "column"))
 	c.NextSize(ui.Pct(1), ui.Children(1))
 	c.NextAxis(ui.AxisY)
-	c.NextGap(e.Pt(10))
-	c.NextPadding(e.Pt(14), e.Pt(10), e.Pt(14), e.Pt(10))
+	c.NextGap(e.Pt(8))
+	c.NextPadding(e.Pt(16), e.Pt(12), e.Pt(16), e.Pt(12))
 	c.Push(c.Box(0, "top"))
 	c.NextSize(ui.Pct(1), ui.Px(e.Pt(32)))
 	c.NextAxis(ui.AxisX)
 	c.NextCross(ui.CrossCenter)
-	c.NextGap(e.Pt(6))
+	c.NextGap(e.Pt(8))
 	c.Push(c.Box(0, "title row"))
 	if e.S.Panes.Covering {
 		// Over a narrow window the pane has the whole window: Back folds it
@@ -508,7 +509,7 @@ func (p *Search) Build(e *screen.Env, r screen.Rect) {
 	c.NextSize(ui.Pct(1), ui.Children(1))
 	c.NextAxis(ui.AxisX)
 	c.NextCross(ui.CrossCenter)
-	c.NextGap(e.Pt(6))
+	c.NextGap(e.Pt(8))
 	c.Push(c.Box(0, "field row"))
 	p.calendarButton(e, st)
 	if st.focus {
@@ -545,7 +546,7 @@ func (p *Search) Build(e *screen.Env, r screen.Rect) {
 			name = a.Model.DisplayName(ch.ID())
 		}
 		c.NextSize(ui.Pct(1), ui.Children(1))
-		c.NextPadding(e.Pt(14), e.Pt(24), e.Pt(14), 0)
+		c.NextPadding(e.Pt(16), e.Pt(24), e.Pt(16), 0)
 		c.NextAxis(ui.AxisY)
 		c.NextCross(ui.CrossCenter)
 		c.Push(c.Box(0, "hint"))
@@ -640,7 +641,7 @@ func (p *Search) results(e *screen.Env, a *state.Account, ch model.Chat, st *sea
 	}
 	if st.truncated {
 		c.NextSize(ui.Pct(1), ui.Children(1))
-		c.NextPadding(e.Pt(14), e.Pt(10), e.Pt(14), e.Pt(8))
+		c.NextPadding(e.Pt(16), e.Pt(12), e.Pt(16), e.Pt(8))
 		c.Push(c.Box(0, "notice"))
 		rexui.LabelBytes(k, fillInt(c.Fmt(), i18n.T("Only the newest {} matches are listed. Narrow the search or pick a day."), "{}", n).Bytes(),
 			rexui.LabelOpts{Style: rexui.TextFootnote, Color: rexui.Of(theme.Label3), Wrap: true})

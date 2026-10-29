@@ -225,7 +225,8 @@ func TestDraftsLiveInTheModel(t *testing.T) {
 		t.Error("in use without a recording")
 	}
 	r.typeText("!")
-	r.Play(widgettest.Key(ui.KeyEscape, 0), widgettest.Idle(3))
+	// the first Escape lets go of the composer, the second closes the chat
+	r.Play(widgettest.Key(ui.KeyEscape, 0), widgettest.Idle(3), widgettest.Key(ui.KeyEscape, 0), widgettest.Idle(3))
 	if r.a.Open != 0 {
 		t.Fatal("Escape did not close the chat")
 	}

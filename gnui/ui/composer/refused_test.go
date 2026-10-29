@@ -329,6 +329,9 @@ func TestEscapeOrderWithTheComposerFocused(t *testing.T) {
 			{"staged files", func() bool { return len(r.s.Staged) == 0 }},
 			{"edit or reply", func() bool { return p.Edit.Len() == 0 && p.Reply.Len() == 0 }},
 			{"pane", func() bool { return p.Pane == state.PaneNone }},
+			// the composer lets go of the keyboard (the single keys work
+			// then: shell/keyboard.go), then the chat closes
+			{"focus", func() bool { return !r.scr.focused }},
 			{"chat", func() bool { return r.a.Open == 0 }},
 		}
 		for i, st := range steps {

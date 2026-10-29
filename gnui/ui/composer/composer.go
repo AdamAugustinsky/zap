@@ -17,15 +17,15 @@ import (
 	"zapfast/i18n"
 	"zapfast/model"
 	"zapfast/state"
+	ztheme "zapfast/theme"
 	"zapfast/ui/screen"
 )
 
 // Layout, in points (zf:src/ui/conversation.rs:1326-1941).
 const (
-	marginPt  = 8 // the band's inset at the sides and the bottom
-	stripGap  = 3 // from a strip (reply, edit) to the field
-	toolGapPt = 2 // between the plus and the emoji button
-	maxText   = 65536
+	marginPt = 8 // the band's inset at the sides and the bottom
+	stripGap = 8 // from a strip (reply, edit) to the field
+	maxText  = 65536
 	// composingTimeout is how long typing pauses before "typing…" stops
 	// (zf:src/app.rs:161).
 	composingTimeout = 4 * time.Second
@@ -137,14 +137,14 @@ func (s *Screen) Init(e *screen.Env) error {
 	add := func(sym string, fb rune, pt float32) icon.ID {
 		return k.AddIcon(icon.Spec{Symbol: sym, Fallback: fb, Pt: pt})
 	}
-	s.ic.plus = add("plus", '+', 17)
-	s.ic.smile = add("face.smiling", '☺', 17)
-	s.ic.mic = add("mic", '●', 17)
+	s.ic.plus = k.AddIcon(ztheme.LargeIcon("plus", '+'))
+	s.ic.smile = k.AddIcon(ztheme.LargeIcon("face.smiling", '☺'))
+	s.ic.mic = k.AddIcon(ztheme.LargeIcon("mic", '●'))
 	s.ic.send = add("arrow.up", '↑', 14)
 	s.ic.check = add("checkmark", '✓', 14)
-	s.ic.xmark = add("xmark", '×', 11)
+	s.ic.xmark = k.AddIcon(ztheme.SmallIcon("xmark", '×'))
 	s.ic.pencil = add("pencil", '✎', 13)
-	s.ic.keyboard = add("keyboard", '⌨', 11)
+	s.ic.keyboard = k.AddIcon(ztheme.SmallIcon("keyboard", '⌨'))
 	s.ic.clip = add("paperclip", '⎘', 26)
 	s.ic.trash = add("trash", '⌫', 15)
 	s.env, s.win, s.state = e, e.A.Win, e.S
@@ -407,7 +407,7 @@ func (s *Screen) syncRow(a *state.Account, ch model.Chat) {
 func (s *Screen) field(e *screen.Env, a *state.Account, ch model.Chat) {
 	k := e.K
 	c := e.C()
-	k.NextGap(toolGapPt)
+	k.NextGap(ztheme.T.DockGap) // between the dock's parts: the plus, the emoji button, the field
 	k.NextCross(ui.CrossEnd)
 	k.NextWidth(ui.Pct(1))
 	k.Row("line")
@@ -418,10 +418,10 @@ func (s *Screen) field(e *screen.Env, a *state.Account, ch model.Chat) {
 		c.NextSize(ui.Children(1), ui.Px(e.Pt(36)))
 		c.NextAxis(ui.AxisX)
 		c.NextCross(ui.CrossCenter)
-		c.NextGap(e.Pt(toolGapPt))
+		c.NextGap(e.Pt(ztheme.T.DockGap))
 		c.Push(c.Box(0, "tools"))
 		c.NextSemState(semOn(s.tools))
-		plus := rexui.IconButton(k.Kit, s.ic.plus, i18n.T("Attach"), rexui.IconButtonOpts{Variant: rexui.IconBorderless, Size: theme.SizeLarge})
+		plus := toolButton(k.Kit, i18n.T("Attach"), s.ic.plus, s.tools)
 		e.TabStop(screen.StopAttach, plus.ID)
 		s.plusRect = c.RectOf(c.KeyOf(plus.ID))
 		toolLabels(&s.toolLabels)
@@ -440,7 +440,7 @@ func (s *Screen) field(e *screen.Env, a *state.Account, ch model.Chat) {
 			s.tool(e, a, ch, i)
 		}
 		c.NextSemState(semOn(e.S.Panes.Picker != state.PickerNone))
-		smile := rexui.IconButton(k.Kit, s.ic.smile, i18n.T("Emoji, GIFs, and stickers"), rexui.IconButtonOpts{Variant: rexui.IconBorderless, Size: theme.SizeLarge})
+		smile := toolButton(k.Kit, i18n.T("Emoji, GIFs, and stickers"), s.ic.smile, e.S.Panes.Picker != state.PickerNone)
 		e.TabStop(screen.StopEmoji, smile.ID)
 		// The picker opens above the emoji button.
 		if sr := c.RectOf(c.KeyOf(smile.ID)); sr[2] > sr[0] {
@@ -510,6 +510,35 @@ func circleButton(k *base.Kit, name string, ic icon.ID, rc *rexui.ButtonRecipe) 
 	k.FocusRing(p.ID, p.Visual, side/2)
 	return k.EndPress(&p)
 }
+
+// toolButton is one of the dock's tools beside the field: a round plate as
+// tall as the field (HitLarge), quiet on the pane, lifting under the pointer
+// and while what it opens is open (on), so that the plus, the emoji button
+// and the field read as three things side by side.
+func toolButton(k *base.Kit, name string, ic icon.ID, on bool) base.Signal {
+	c, r := k.Context(), k.Theme()
+	p := k.PressState(name, base.HoverOn)
+	side := theme.Snap(ztheme.T.HitLarge * k.Scale())
+	t := ztheme.T.ToolRest + ztheme.T.ToolLift*max(p.Hot, p.Down)
+	if on {
+		t = ztheme.T.ToolRest + ztheme.T.ToolLift
+	}
+	c.NextBG(theme.WithAlpha(r.Colors[theme.Label], t))
+	c.NextRadius(side / 2)
+	c.NextAxis(ui.AxisX)
+	c.NextCross(ui.CrossCenter)
+	c.NextJustify(ui.JustifyCenter)
+	k.BeginPress(&p, ui.RoleButton, ui.Px(side), ui.Px(side), ui.DrawBackground, nil)
+	if f, disp := k.Icons().Prepare(c, ic, r.Colors[theme.Label2]); f != 0 {
+		c.BoxKeyed(f, ui.KeyN(p.Key, 1), disp)
+	}
+	k.FocusRing(p.ID, p.Visual, side/2)
+	return k.EndPress(&p)
+}
+
+// How much of the label colour a tool's plate lays over the pane at rest,
+// and how much more under the pointer or while its menu or picker is open,
+// are ztheme.T.ToolRest and ToolLift (tune.go).
 
 // keyDown reports whether the frame's input has code going down with mods.
 func keyDown(in *ui.Input, code ui.KeyCode, mods ui.Mods) bool {
@@ -716,7 +745,8 @@ func (s *Screen) tick(e *screen.Env, a *state.Account) {
 // escape is Escape in the composer (zf:src/ui/keys.rs:164): it closes the
 // picker, then leaves Starred for the chats, then drops what the composer
 // was in the middle of (the attachments, the edit, the reply), then the pane
-// beside the chat, then the chat.
+// beside the chat, then lets go of the keyboard (the single keys work then,
+// shell/keyboard.go), then the chat.
 func (s *Screen) escape(e *screen.Env, a *state.Account) {
 	p := &e.S.Panes
 	switch {
@@ -735,6 +765,9 @@ func (s *Screen) escape(e *screen.Env, a *state.Account) {
 		p.ReplyChat.Reset()
 	case p.Pane != state.PaneNone:
 		p.Pane = state.PaneNone
+	case s.focused:
+		e.C().SetFocus(0)
+		s.focused = false
 	default:
 		a.OpenChat(0) // the chat's text goes to the archive (OnChatClose)
 	}

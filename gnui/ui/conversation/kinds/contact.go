@@ -233,7 +233,7 @@ func (b *blk) contactOf() sharedContact {
 }
 
 const (
-	contactButtonGap = 6.0
+	contactButtonGap = 8.0
 	contactMaxName   = 2
 )
 

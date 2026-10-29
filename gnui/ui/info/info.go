@@ -14,12 +14,13 @@ import (
 	"zapfast/i18n"
 	"zapfast/model"
 	"zapfast/state"
+	ztheme "zapfast/theme"
 	"zapfast/ui/screen"
 )
 
 // Layout, in points (zf:src/ui/info.rs).
 const (
-	margin    = 14  // the panel's side margin
+	margin    = 16  // the panel's side margin
 	headerPt  = 52  // the header band
 	memberPt  = 30  // a member row
 	docPt     = 60  // a document or link row
@@ -106,7 +107,7 @@ func (s *Screen) Init(e *screen.Env) error {
 		fb  rune
 		pt  float32
 	}{
-		{&ic.closeX, "xmark", '✕', 13}, {&ic.back, "chevron.left", '‹', 13}, {&ic.chevronRight, "chevron.right", '›', 12},
+		{&ic.chevronRight, "chevron.right", '›', ztheme.SmallIconPt},
 		{&ic.check, "checkmark", '✓', 13}, {&ic.pencil, "pencil", '✎', 12},
 		{&ic.message, "message", '✉', 13}, {&ic.person, "person.badge.plus", '☺', 13}, {&ic.copy, "doc.on.doc", '⎘', 13},
 		{&ic.bell, "bell", '♪', 13}, {&ic.bellOff, "bell.slash", '♪', 13}, {&ic.pin, "pin", '⚲', 13}, {&ic.pinOff, "pin.slash", '⚲', 13},
@@ -116,6 +117,8 @@ func (s *Screen) Init(e *screen.Env) error {
 	} {
 		*it.dst = k.AddIcon(icon.Spec{Symbol: it.sym, Fallback: it.fb, Pt: it.pt})
 	}
+	// the title row's Close and Back as toolbar items (theme/icons.go)
+	ic.closeX, ic.back = k.AddIcon(ztheme.ToolIcon("xmark", '✕')), k.AddIcon(ztheme.ToolIcon("chevron.left", '‹'))
 	e.S.Listen(s, abi.EventTagChatShared, abi.EventTagChatSharedChanged, abi.EventTagGroupSaving, abi.EventTagChatUpdated, abi.EventTagChats)
 	s.contact.first.Max, s.contact.last.Max = 256, 256
 	s.contact.first.Reserve(256)

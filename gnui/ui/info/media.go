@@ -12,6 +12,7 @@ import (
 	"zapfast/i18n"
 	"zapfast/model"
 	"zapfast/state"
+	ztheme "zapfast/theme"
 	"zapfast/ui/screen"
 )
 
@@ -252,7 +253,7 @@ func (s *Screen) memberRow(e *screen.Env, a *state.Account, m *member, rowPx flo
 	p := k.PressState(model.S(s.v.text(m.label)), base.HoverOn)
 	c.NextAxis(ui.AxisX)
 	c.NextCross(ui.CrossCenter)
-	c.NextGap(k.Pt(10))
+	c.NextGap(k.Pt(8))
 	c.NextPadding(k.Pt(8), 0, k.Pt(8), 0)
 	c.NextRadius(k.Pt(6))
 	c.NextBG(theme.WithAlpha(th.Colors[theme.Label], 0.08*p.Hot))
@@ -303,7 +304,7 @@ func (s *Screen) mediaView(e *screen.Env, a *state.Account, r screen.Rect) {
 		return
 	}
 	s.tab = int(e.S.Panes.InfoView) - 1
-	k.NextPadding(margin, 10, margin, 10)
+	k.NextPadding(ztheme.T.InfoMargin, 12, ztheme.T.InfoMargin, 12)
 	k.BeginContainer(ui.AxisX, ui.CrossCenter, "tabs", ui.Pct(1), ui.Children(1), 0)
 	tabs := rexui.SegmentedControl(k.Kit, mediaTitle(), &s.tab, s.tabOptions(), rexui.SegmentedOpts{Role: rexui.SegmentedTabs})
 	// the chosen tab; the arrows go among them
@@ -321,7 +322,7 @@ func (s *Screen) mediaView(e *screen.Env, a *state.Account, r screen.Rect) {
 			s.findField(e, tab)
 		}
 		if s.sh.cut[tab] {
-			k.NextPadding(margin, 8, margin, 4)
+			k.NextPadding(ztheme.T.InfoMargin, 8, ztheme.T.InfoMargin, 4)
 			k.BeginContainer(ui.AxisX, ui.CrossStart, "note", ui.Pct(1), ui.Children(1), 0)
 			rexui.Label(k.Kit, i18n.T("Only the newest items are listed."), rexui.LabelOpts{Style: rexui.TextCallout, Color: rexui.Of(theme.Label2), Wrap: true})
 			k.EndContainer()
@@ -335,7 +336,7 @@ func (s *Screen) mediaView(e *screen.Env, a *state.Account, r screen.Rect) {
 			s.linksList(e, a, r)
 		}
 	case s.sh.failed:
-		k.NextPadding(margin, 24, margin, 0)
+		k.NextPadding(ztheme.T.InfoMargin, 24, ztheme.T.InfoMargin, 0)
 		k.BeginContainer(ui.AxisX, ui.CrossStart, "failed", ui.Pct(1), ui.Children(1), 0)
 		s.failure(e, a)
 		k.EndContainer()
@@ -351,7 +352,7 @@ func (s *Screen) mediaView(e *screen.Env, a *state.Account, r screen.Rect) {
 // findField is the search over the tab's list, under the tabs.
 func (s *Screen) findField(e *screen.Env, tab int) {
 	k := e.K
-	k.NextPadding(margin, 8, margin, 8)
+	k.NextPadding(ztheme.T.InfoMargin, 8, ztheme.T.InfoMargin, 8)
 	k.BeginContainer(ui.AxisX, ui.CrossCenter, "find", ui.Pct(1), ui.Children(1), 0)
 	k.NextWidth(ui.Pct(1))
 	sig := rexui.SearchField(k.Kit, i18n.T("Search")+"###info-find", &s.find.buf, i18n.T("Search"), rexui.FieldOpts{})
@@ -382,7 +383,7 @@ func (s *Screen) mediaGrid(e *screen.Env, a *state.Account, r screen.Rect) {
 		s.empty(e, i18n.T("No media"), i18n.T("Photos and videos shared in this chat will show here."), true)
 		return
 	}
-	width := r.W/k.Scale() - 2*margin - 17
+	width := r.W/k.Scale() - 2*ztheme.T.InfoMargin - 17
 	cols := 3
 	if width >= 4*84+3*gapPt {
 		cols = 4
@@ -396,7 +397,7 @@ func (s *Screen) mediaGrid(e *screen.Env, a *state.Account, r screen.Rect) {
 	rowPx := k.Pt(cell + gapPt)
 	k.NextSize(ui.Pct(1), widget.Fill)
 	v := k.BeginScroll(i18n.T("Pictures and videos"), &s.gridSc, base.ScrollVertical)
-	k.NextPadding(margin, 6, margin, 6)
+	k.NextPadding(ztheme.T.InfoMargin, 8, ztheme.T.InfoMargin, 8)
 	k.NextGap(0)
 	k.BeginContainer(ui.AxisY, ui.CrossStart, "grid", ui.Pct(1), ui.Children(1), 0)
 	first, last := s.window(e, v, rows, rowPx, r.H)
@@ -431,7 +432,7 @@ func (s *Screen) itemRow(e *screen.Env, label string, title, detail []byte, tile
 	c.NextAxis(ui.AxisX)
 	c.NextCross(ui.CrossCenter)
 	c.NextGap(k.Pt(12))
-	c.NextPadding(k.Pt(margin), 0, k.Pt(margin), 0)
+	c.NextPadding(k.Pt(ztheme.T.InfoMargin), 0, k.Pt(ztheme.T.InfoMargin), 0)
 	c.NextBG(theme.WithAlpha(th.Colors[theme.Label], 0.06*p.Hot))
 	k.BeginPress(&p, ui.RoleButton, ui.Pct(1), ui.Px(rowPx), 0, nil)
 	d := k.Pt(40)
@@ -450,7 +451,7 @@ func (s *Screen) itemRow(e *screen.Env, label string, title, detail []byte, tile
 	c.Pop()
 	c.NextAxis(ui.AxisY)
 	c.NextSize(ui.Pct(1), ui.Children(1))
-	c.NextGap(k.Pt(3))
+	c.NextGap(k.Pt(4))
 	c.Push(c.BoxKeyed(0, ui.KeyN(p.Key, 2), nil))
 	c.NextSize(ui.Pct(1), ui.Px(k.Pt(18)))
 	c.NextFont(s.font(e, 13.5, 500))

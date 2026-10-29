@@ -44,7 +44,7 @@ func (s *Screen) senderColumn(e *screen.Env, a *state.Account, ch model.Chat, m 
 	c.NextSize(ui.Pct(1), ui.Children(1))
 	c.NextAxis(ui.AxisX)
 	c.NextCross(ui.CrossStart)
-	c.NextGap(e.Pt(6))
+	c.NextGap(e.Pt(8))
 	c.Push(c.Box(0, "sender row"))
 	if first {
 		s.senderPic(e, a, ch, m, d)
@@ -212,7 +212,7 @@ func (s *Screen) stickyDay(e *screen.Env, v *model.Conversation, w float32) {
 	if pi := s.shownNext(e, v, mi, -1); (pi < 0 || dayOf(v.At(pi).Time()) != dayOf(m.Time())) && off < dividerPt {
 		return
 	}
-	s.chip(e, dayLabel(e.C().Fmt(), m.Time(), s.now).Bytes(), w, e.Pt(8), opacity)
+	s.chip(e, dayLabel(e.C().Fmt(), m.Time(), s.now).Bytes(), w, s.topInset+e.Pt(8), opacity)
 }
 
 const dividerPt = 36 // how far down a message its day divider reaches
@@ -291,7 +291,7 @@ func (s *Screen) notices(e *screen.Env, a *state.Account, ch model.Chat, from, u
 
 const (
 	reactPt    = 26 // REACTION_AFFORDANCE_SIZE
-	reactGapPt = 6  // REACTION_AFFORDANCE_GAP
+	reactGapPt = 8  // REACTION_AFFORDANCE_GAP
 )
 
 // affordances are the round React control beside a message, and Reply one

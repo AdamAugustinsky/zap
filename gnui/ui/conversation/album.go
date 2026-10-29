@@ -25,7 +25,7 @@ import (
 
 const (
 	albumCardPt = 320 // CARD_WIDTH
-	albumGapPt  = 3
+	albumGapPt  = 4
 	albumMinPt  = 80
 )
 
@@ -154,7 +154,7 @@ func (s *Screen) albumActions(e *screen.Env, a *state.Account, ch model.Chat, v 
 	}
 	c.NextSize(ui.Children(1), ui.Children(1))
 	c.NextAxis(ui.AxisX)
-	c.NextGap(e.Pt(6))
+	c.NextGap(e.Pt(8))
 	c.NextPadding(0, e.Pt(4), 0, 0)
 	c.Push(c.BoxKeyed(0, ui.KeyN(key, 400), nil))
 	if have > 0 && rexui.Button(k, i18n.T("Save all…"), rexui.ButtonOpts{Size: theme.SizeSmall}).Clicked {

@@ -145,6 +145,10 @@ func (s *Screen) item(e *screen.Env, a *state.Account, id uint64) (typing bool) 
 		s.star(e, a, int(itemN(id)))
 	case kDropped:
 		s.dropped(e)
+	case kFolder:
+		s.folderRow(e, a, int(itemN(id)))
+	case kRule:
+		s.rule(e)
 	}
 	return false
 }

@@ -40,6 +40,7 @@ const (
 	CmdShortcuts
 	CmdHelp
 	CmdSearchChats
+	CmdSpotlight
 	CmdFocusComposer
 	CmdPrevChat
 	CmdNextChat
@@ -58,6 +59,8 @@ const (
 	CmdHideOthers = CmdHide + 1
 	CmdShowAll    = CmdHideOthers + 1
 	CmdCloseTab   = CmdShowAll + 1
+	CmdSpace1     = CmdCloseTab + 1 // … CmdSpace9: ⌃1 … ⌃9 (state/folders.go's spaces)
+	cmdSpaceLast  = CmdSpace1 + 8
 )
 
 // helpURL is the user guide ZapFast Help opens (zf:src/macos.rs:234).
@@ -124,7 +127,8 @@ func buildModel(viewer bool) (*menu.Model, error) {
 		inModal(titled(menu.StandardCommand(CmdFullScreen, menu.RoleFullScreen), P("menu bar", "Enter Full Screen"))),
 		{ID: CmdShortcuts, Title: P("menu bar", "Keyboard Shortcuts"), Shortcut: prim('/', 0)},
 		{ID: CmdHelp, Title: P("menu bar", "Zap Help")},
-		{ID: CmdSearchChats, Title: T("Search chats"), Shortcut: prim('K', 0), Alias: prim('F', sh)},
+		{ID: CmdSpotlight, Title: T("Search everything"), Shortcut: prim('K', 0)},
+		{ID: CmdSearchChats, Title: T("Search chats"), Shortcut: prim('F', sh)},
 		{ID: CmdFocusComposer, Title: T("Focus the message input"), Shortcut: prim('L', 0)},
 		// zf:src/ui/keys.rs:630-631's descriptions, which upstream shows as is.
 		{ID: CmdPrevChat, Title: T("Previous / next chat"), Shortcut: menu.Shortcut{Key: ui.KeyUp, Mods: ui.ModAlt}},
@@ -139,7 +143,8 @@ func buildModel(viewer bool) (*menu.Model, error) {
 		{ID: CmdLock, Title: T("Lock Zap"), Shortcut: prim('L', sh)},
 	}
 	for i := 0; i < 9; i++ {
-		cmds = append(cmds, menu.Command{ID: CmdChat1 + menu.ID(i), Title: T("Open a chat by its position in the chat list"), Shortcut: prim(ui.KeyCode('1'+i), 0)})
+		cmds = append(cmds, menu.Command{ID: CmdChat1 + menu.ID(i), Title: T("Go to the tab at this place"), Shortcut: prim(ui.KeyCode('1'+i), 0)})
+		cmds = append(cmds, menu.Command{ID: CmdSpace1 + menu.ID(i), Title: T("Go to the space at this place"), Shortcut: menu.Shortcut{Key: ui.KeyCode('1' + i), Mods: ui.ModCtrl}})
 	}
 	zoomIn, zoomOut, actual := CmdZoomIn, CmdZoomOut, CmdActualSize
 	if viewer {
@@ -291,6 +296,10 @@ func (sh *Shell) Commands(e *screen.Env) {
 	if c := k.Context(); e.A == sh.a && !s.Lock.Locked && !c.TextFieldFocused() && !c.ModalOpen() && c.TakeKey('/', ui.ModShift) {
 		s.OpenDialog(state.Dialog{Kind: state.DialogShortcuts})
 	}
+	// the single keys, while nothing takes typing (keyboard.go)
+	if e.A == sh.a && main {
+		sh.keys(e)
+	}
 	// Native menus carry the role out; drawn ones leave it to us.
 	if k.Command(CmdFullScreen) && !k.Context().NativeMenus() {
 		if w := e.A.Window(); w != nil {
@@ -325,6 +334,10 @@ func (sh *Shell) Commands(e *screen.Env) {
 	}
 	if k.Command(CmdToggleSidebar) {
 		s.Panes.ListHidden = !s.Panes.ListHidden
+		s.Touch()
+	}
+	if k.Command(CmdSpotlight) && main {
+		s.Spotlight = !s.Spotlight
 		s.Touch()
 	}
 	if k.Command(CmdSearchChats) {
@@ -364,11 +377,22 @@ func (sh *Shell) Commands(e *screen.Env) {
 	if step != 0 {
 		sh.stepChat(a, step)
 	}
+	// ⌘1–9: the titlebar's tabs, as a browser's (Zap's own: upstream's
+	// opened the list's chats by place, which the tabs hold now)
 	for id := CmdChat1; id <= cmdChatLast; id++ {
-		if k.Command(id) && !busy && s.Page == state.PageChats {
-			if v := sh.visible(a); int(id-CmdChat1) < len(v) {
-				sh.keepUnread(v[id-CmdChat1])
-				a.OpenChat(v[id-CmdChat1])
+		if k.Command(id) && !busy {
+			if tabs := a.ChatTabs(); int(id-CmdChat1) < len(tabs) {
+				s.Page = state.PageChats
+				sh.keepUnread(tabs[id-CmdChat1])
+				a.OpenChat(tabs[id-CmdChat1])
+			}
+		}
+	}
+	// ⌃1–9: the spaces (state/folders.go)
+	for id := CmdSpace1; id <= cmdSpaceLast; id++ {
+		if k.Command(id) && !busy {
+			if sh.spaces = s.Spaces(sh.spaces[:0]); int(id-CmdSpace1) < len(sh.spaces) {
+				sh.goToSpace(sh.spaces[id-CmdSpace1])
 			}
 		}
 	}

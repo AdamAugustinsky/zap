@@ -140,7 +140,7 @@ func (s *Screen) gifBody(e *screen.Env) {
 	switch {
 	case g.pending:
 		c.NextAxis(ui.AxisX)
-		c.NextGap(e.Pt(6))
+		c.NextGap(e.Pt(8))
 		c.NextCross(ui.CrossCenter)
 		c.NextSize(ui.Pct(1), ui.Children(1))
 		c.Push(c.Box(0, "searching"))
@@ -222,7 +222,7 @@ func (s *Screen) giphyKeyPrompt(e *screen.Env, own string) {
 	g := &s.gif
 	c.NextSize(ui.Pct(1), ui.Children(1))
 	c.NextAxis(ui.AxisY)
-	c.NextGap(e.Pt(6))
+	c.NextGap(e.Pt(8))
 	c.NextPadding(0, e.Pt(8), 0, 0)
 	c.Push(c.Box(0, "api key"))
 	if g.badKey && g.err != "" {

@@ -68,6 +68,7 @@ type kitState struct {
 //
 // It is used from the main thread, except for its loader, which is its own.
 type Theme struct {
+	tuneGen uint32 // the T (tune.go) the recipes and the stock theme have
 	dir     string
 	presets bool
 
@@ -227,6 +228,18 @@ func (t *Theme) Apply(k *widget.Kit, s *state.State) {
 		}
 		t.resolve()
 		t.gen++
+	}
+	// the playground moved T (tune.go): into Rex's recipes and the stock
+	// theme's metrics, and the kits resolve it again
+	if t.tuneGen != Gen {
+		t.tuneGen = Gen
+		tuneRecipes()
+		if t.stock != nil {
+			tuneMetrics(t.stock)
+		}
+		for i := range t.kits {
+			t.kits[i].set = false
+		}
 	}
 	k.SetPreference(t.look.pref)
 	t.install(k)

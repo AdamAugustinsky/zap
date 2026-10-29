@@ -1,6 +1,9 @@
 package shell
 
 import (
+	"strconv"
+	"strings"
+
 	"gonativeui/img"
 	"gonativeui/rexui"
 	"gonativeui/theme"
@@ -10,6 +13,7 @@ import (
 	"zapfast/i18n"
 	"zapfast/model"
 	"zapfast/state"
+	ztheme "zapfast/theme"
 )
 
 // The titlebar's tabs are the chats opened lately (state.ChatTabs), as Rex's
@@ -27,9 +31,55 @@ const (
 // chatTabs is the bar's state on the shell: the frame's tabs, built in place,
 // and each slot's picture.
 type chatTabs struct {
-	bar  rexui.TabBar
-	tabs [state.MaxChatTabs]rexui.Tab
-	pics [state.MaxChatTabs]tabPic
+	bar    rexui.TabBar
+	tabs   [state.MaxChatTabs]rexui.Tab
+	pics   [state.MaxChatTabs]tabPic
+	unread [state.MaxChatTabs]tabCount
+}
+
+// tabCount is a tab's unread count as its detail shows it, kept so that the
+// text is made once per count, not each frame.
+type tabCount struct {
+	n int
+	s string
+}
+
+func (t *tabCount) of(n int) string {
+	if n != t.n || t.s == "" {
+		t.n, t.s = n, strconv.Itoa(n)
+	}
+	return t.s
+}
+
+// The tabs come up from ztheme.T.MinTabs open chats (2: one tab would only
+// repeat the open chat's header and its row).
+
+// tabsUp reports whether the tabs show between x0 and x1 this frame.
+func (sh *Shell) tabsUp(a *state.Account, x0, x1 float32) bool {
+	return len(a.ChatTabs()) >= int(ztheme.T.MinTabs) && x1-x0 >= sh.env.Pt(80)
+}
+
+// tabDetail is what a tab says after its name about a chat that is not on
+// screen, the most pressing first: someone typing in it, a draft left in
+// it, its unread messages. The chosen tab says nothing: its chat is there.
+func (sh *Shell) tabDetail(a *state.Account, ch model.Chat, i int, chosen bool) string {
+	if chosen {
+		return ""
+	}
+	switch {
+	case typingIn(a, ch.Ref()):
+		return i18n.T("typing…")
+	case len(a.Model.Draft(ch.ID())) > 0:
+		return strings.TrimSuffix(strings.TrimSpace(i18n.T("Draft:")), ":")
+	case ch.Unread() > 0 && !ch.Muted(sh.S.Now().Unix()):
+		return sh.tabs.unread[i].of(ch.Unread())
+	}
+	return ""
+}
+
+func typingIn(a *state.Account, ref model.ChatRef) bool {
+	_, n := a.Model.Typing(ref)
+	return n > 0
 }
 
 // tabPic is the picture of the chat in a tab slot, read again when the chat
@@ -68,7 +118,7 @@ func (p *tabPic) handle(a *state.Account, cache *img.Cache, ch model.Chat, px in
 // and does what they ask.
 func (sh *Shell) chatTabs(a *state.Account, x0, x1, tbH float32) {
 	refs := a.ChatTabs()
-	if len(refs) == 0 || x1-x0 < sh.env.Pt(80) {
+	if !sh.tabsUp(a, x0, x1) {
 		return
 	}
 	s, e, k := sh.S, &sh.env, sh.env.K
@@ -81,8 +131,9 @@ func (sh *Shell) chatTabs(a *state.Account, x0, x1, tbH float32) {
 		if len(title) == 0 {
 			title = a.Model.DisplayName(ch.ID())
 		}
-		t.tabs[i] = rexui.Tab{ID: uint64(ref), Title: model.S(title), Lead: tabLeadPt}
-		if ref == a.Open && s.Page == state.PageChats {
+		chosen := ref == a.Open && s.Page == state.PageChats
+		t.tabs[i] = rexui.Tab{ID: uint64(ref), Title: model.S(title), Detail: sh.tabDetail(a, ch, i, chosen), Lead: tabLeadPt}
+		if chosen {
 			sel = i
 		}
 	}

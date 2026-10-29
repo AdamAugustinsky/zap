@@ -27,7 +27,7 @@ const (
 	cardWidth  = 320.0 // CARD_WIDTH: an audio message's bubble
 	voiceBtn   = 36.0
 	voiceBarH  = 30.0
-	voiceGap   = 10.0
+	voiceGap   = 8.0
 	chipW      = 44.0
 	chipH      = 20.0
 	barPitch   = 3.0

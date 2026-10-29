@@ -367,7 +367,7 @@ func (d *dropState) build(s *Screen, e *screen.Env, r screen.Rect, ch model.Chat
 	c.NextRadius(e.Pt(14))
 	c.NextAxis(ui.AxisY)
 	c.NextCross(ui.CrossCenter)
-	c.NextGap(e.Pt(6))
+	c.NextGap(e.Pt(8))
 	c.NextPadding(e.Pt(28), e.Pt(20), e.Pt(28), e.Pt(20))
 	c.NextSize(ui.Children(1), ui.Children(1))
 	c.NextRole(ui.RoleGroup)
