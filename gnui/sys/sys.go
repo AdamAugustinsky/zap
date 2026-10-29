@@ -90,6 +90,7 @@ type System struct {
 	l loginState
 	k links
 	i instances
+	p peekState
 
 	picks []picking
 	watch []acctWatch
@@ -146,6 +147,7 @@ func (y *System) begin(s *state.State, hidden bool) {
 	}
 	y.startLogin()
 	y.startInstance()
+	y.startPeek()
 	if y.CallDock != nil {
 		y.CallDock(s, y.Dock())
 	}
@@ -190,6 +192,9 @@ func (y *System) appEvent(e *app.Event) bool {
 			y.respond(&r)
 			return true
 		}
+		if y.peekEvent(e) {
+			return true
+		}
 	case app.EvPost:
 		if e.ID == postInstance {
 			y.pollInstance()
@@ -207,6 +212,9 @@ func (y *System) appEvent(e *app.Event) bool {
 		y.active = true
 	case app.EvDeactivated:
 		y.active = false
+		if y.s != nil {
+			y.s.CloseFloatPeek() // a glance ends when the user turns to another app
+		}
 	case app.EvReopen:
 		y.shown = true
 	case app.EvWillSleep:
@@ -250,6 +258,7 @@ func (y *System) Frame(s *state.State) {
 	y.syncLogin()
 	y.watchChats(s)
 	y.syncTrayMenu(s)
+	y.syncDockMenu(s)
 	y.syncKeepRunning(s)
 	y.pollInstance()
 	y.drain(s)

@@ -272,7 +272,7 @@ func (sh *Shell) Init(a *app.App) error {
 	e := &sh.env
 	for _, p := range [...]screen.Initer{sh.Set.Login, sh.Set.Lock, sh.Set.Accounts, sh.Set.ChatList, sh.Set.Conversation,
 		sh.Set.Search, sh.Set.Composer, sh.Set.Info, sh.Set.MessageInfo, sh.Set.CallsPage,
-		sh.Set.Picker, sh.Set.Dialogs, sh.Set.Cropper, sh.Set.StickerMaker, sh.Set.CallsContent, sh.Set.CallBar, sh.Set.Spotlight} {
+		sh.Set.Picker, sh.Set.Dialogs, sh.Set.Cropper, sh.Set.StickerMaker, sh.Set.CallsContent, sh.Set.CallBar, sh.Set.Spotlight, sh.Set.Peek} {
 		if !nilSlot(p) {
 			if err := p.Init(e); err != nil {
 				return err
@@ -658,7 +658,7 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 		c.Box(base.Floating|ui.Clickable, "slide shield")
 	}
 
-	for _, o := range [...]screen.Overlay{sh.Set.Picker, sh.Set.Cropper, sh.Set.StickerMaker, sh.Set.Dialogs, sh.Set.Spotlight} {
+	for _, o := range [...]screen.Overlay{sh.Set.Picker, sh.Set.Cropper, sh.Set.StickerMaker, sh.Set.Dialogs, sh.Set.Peek, sh.Set.Spotlight} {
 		if o != nil {
 			o.Build(e)
 		}
@@ -1765,20 +1765,24 @@ func (sh *Shell) manage(op opener, alone bool) (pending bool) {
 			scr = sh.Set.Call
 		case state.WinPlayground:
 			scr = sh.Set.Playground
+		case state.WinPeek:
+			scr = sh.Set.PeekWindow
 		}
 		if scr == nil {
 			continue
 		}
 		b := screen.NewWindow(s, w, scr, sh.Set.Theme, sh)
-		win, err := op.OpenWindow(scr.Config(s), b)
+		cfg := scr.Config(s)
+		win, err := op.OpenWindow(cfg, b)
 		if err != nil {
 			s.Toast([]byte(err.Error()), true)
 			continue
 		}
 		sh.wins[w], sh.wbs[w] = win, b
 		s.Win.Open[w] = true
-		if alone {
+		if alone || cfg.Panel != nil {
 			// It opens at the app's next safe point; then it comes forward.
+			// A panel opens hidden however it opens (the floating peek).
 			sh.front[w] = true
 			pending = true
 		}

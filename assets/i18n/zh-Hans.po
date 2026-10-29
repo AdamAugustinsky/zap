@@ -4746,3 +4746,43 @@ msgstr "前往此位置的空间"
 #: gnui
 msgid "Next / previous space"
 msgstr "下一个 / 上一个空间"
+
+#: gnui
+msgid "Peek: {chat}"
+msgstr "速览：{chat}"
+
+#: gnui
+msgid "Peeking: it stays unread"
+msgstr "速览中：保持未读"
+
+#: gnui
+msgid "Reply to {chat}"
+msgstr "回复 {chat}"
+
+#: gnui
+msgid "Quick reply"
+msgstr "快速回复"
+
+#: gnui
+msgid "Peek at a chat without reading it"
+msgstr "速览聊天而不标为已读"
+
+#: gnui
+msgid "Peek"
+msgstr "速览"
+
+#: gnui
+msgid "Peek at {chat}"
+msgstr "速览 {chat}"
+
+#: gnui
+msgid "Peek at the newest chat"
+msgstr "速览最新的聊天"
+
+#: gnui
+msgid "Peek at the newest unread chat"
+msgstr "速览最新的未读聊天"
+
+#: gnui
+msgid "Peek at the newest unread chat, from any app"
+msgstr "在任意应用中速览最新的未读聊天"

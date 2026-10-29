@@ -41,6 +41,7 @@ type Tunables struct {
 	// Feedback.
 	RowHover, RowPress float32 // the label colour a chat row lays over the pane
 	ToolRest, ToolLift float32 // the composer tools' plates, at rest and lifted
+	ScrimDim           float32 // the black laid over the window under peek and Spotlight
 
 	// The header's soft scroll edge.
 	SoftBlur float32 // 1: on, 0: off
@@ -66,7 +67,7 @@ var Defaults = Tunables{
 	HitTool: HitTool, HitLarge: HitLarge,
 
 	DurMicro: 0.1, DurShort: 0.18, DurStandard: 0.25, DurLong: 0.35, ExitScale: 0.7,
-	RowHover: 0.05, RowPress: 0.04, ToolRest: 0.06, ToolLift: 0.06,
+	RowHover: 0.05, RowPress: 0.04, ToolRest: 0.06, ToolLift: 0.06, ScrimDim: 0.16,
 
 	SoftBlur: 1, SoftFade: Space6,
 
@@ -134,6 +135,7 @@ func Knobs() []Knob {
 
 		sp("listRowPad", "Chat list", "Row padding", &T.ListRowPad, d.ListRowPad, "a row's sides (Rex's was 10)"),
 		sp("listRowGap", "Chat list", "Avatar to text", &T.ListRowGap, d.ListRowGap, "inside a row (Rex's was 10)"),
+		{ID: "scrimDim", Group: "Chat list", Label: "Peek & Spotlight dim", V: &T.ScrimDim, Def: d.ScrimDim, Min: 0, Max: 0.5, Step: 0.02, Note: "black over the window under a floating panel"},
 		{ID: "rowHover", Group: "Chat list", Label: "Hover fill", V: &T.RowHover, Def: d.RowHover, Min: 0, Max: 0.2, Step: 0.01, Note: "label colour under the pointer"},
 		{ID: "rowPress", Group: "Chat list", Label: "Press fill", V: &T.RowPress, Def: d.RowPress, Min: 0, Max: 0.2, Step: 0.01},
 

@@ -21,6 +21,7 @@ const (
 	tReply                        // send text to a chat (a reply from a notification)
 	tInvite                       // show a group invite
 	tJoin                         // join a call link
+	tPeek                         // a message notification's click: the chat in the floating peek
 )
 
 // maxPending is how many targets wait; the oldest past it is dropped.
@@ -29,8 +30,8 @@ const maxPending = 16
 type target struct {
 	kind targetKind
 	acct string // the account's ID; "" for the one on screen when it opens
-	chat string // tChat, tOpen, tReply: the chat's JID
-	msg  string // tOpen: the message to land on; empty for a call
+	chat string // tChat, tOpen, tReply, tPeek: the chat's JID
+	msg  string // tOpen, tPeek: the message to land on; empty for a call
 	text string // tChat: the template; tReply: the reply
 	code string // tInvite
 	// tJoin
@@ -141,6 +142,12 @@ func (y *System) run(s *state.State, t *target) (done bool) {
 		return false
 	}
 	switch t.kind {
+	case tPeek:
+		if !a.Model.Chats.Loaded() {
+			return false
+		}
+		y.peekAt(a, a.Model.Chats.Find([]byte(t.chat)), []byte(t.msg))
+		return true
 	case tOpen:
 		if !a.Model.Chats.Loaded() {
 			return false

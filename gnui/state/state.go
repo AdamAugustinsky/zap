@@ -89,6 +89,7 @@ const (
 	WinViewer                   // the media viewer (zf:src/ui/image_preview.rs)
 	WinCall                     // the call (zf:src/ui/call.rs)
 	WinPlayground               // the design playground (dev builds: cmd/zapfast -playground)
+	WinPeek                     // a peek floating over the desktop (State.FloatPeek)
 	NumWindows
 )
 
@@ -605,6 +606,11 @@ type State struct {
 	AddingAccount, AccountMenu bool
 	// Spotlight is ⌘K's search over everything, open (ui/spotlight).
 	Spotlight bool
+	// Peek is a chat looked at without being read (ui/peek; Peek.Open).
+	Peek Peek
+	// FloatPeek is a peek in a panel of its own over the desktop (WinPeek):
+	// a clicked notification's, the Dock menu's or the global shortcut's.
+	FloatPeek Peek
 	// SpaceGen counts the moves between spaces: the list slides in from the
 	// side they came from (shell).
 	SpaceGen uint32

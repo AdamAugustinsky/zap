@@ -113,18 +113,27 @@ func (s *Screen) Build(e *screen.Env) {
 	w, h := c.Size()
 	W, H := float32(w), float32(h)
 
-	// a click outside closes it
-	theme.At(c, 0, 0, W, H)
+	// it comes down from where Spotlight lives, a little, and fades in
+	// (motion.go: Short, from its place)
+	t := c.AnimateValueFrom(ui.HashString(0, "spotlight in"), 0, 1, ztheme.Enter(r, ztheme.T.DurShort))
+
+	// A modal over the whole window, as peek's: the composer's native text
+	// view hides under it. A click outside closes it.
+	c.NextSize(ui.Pct(1), ui.Pct(1))
 	c.NextRole(ui.RoleGroup)
-	scrim := c.Box(base.Floating|ui.Clickable, "spotlight scrim")
+	if c.BeginOverlay(ui.HashString(0, "spotlight"), ui.OverlayModal, [4]float32{0, 0, W, H}, ui.PlaceCenter).Dismissed {
+		c.EndOverlay()
+		s.close(e)
+		return
+	}
+	defer c.EndOverlay()
+	theme.At(c, 0, 0, W, H)
+	c.NextBG(theme.WithAlpha(0x000000FF, ztheme.T.ScrimDim*t))
+	scrim := c.Box(base.Floating|ui.Clickable|ui.DrawBackground, "spotlight scrim")
 	if c.Signal(scrim).Clicked {
 		s.close(e)
 		return
 	}
-
-	// it comes down from where Spotlight lives, a little, and fades in
-	// (motion.go: Short, from its place)
-	t := c.AnimateValueFrom(ui.HashString(0, "spotlight in"), 0, 1, ztheme.Enter(r, ztheme.T.DurShort))
 	pw := min(e.Pt(panelW), W-e.Pt(ztheme.Space8))
 	x := theme.Snap((W - pw) / 2)
 	y := e.Pt(panelTop) - (1-t)*e.Pt(ztheme.Space2)

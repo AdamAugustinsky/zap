@@ -99,7 +99,8 @@ func TestTheShellsShortcuts(t *testing.T) {
 				t.Errorf("pane %v", r.s.Panes.Pane)
 			}
 		}},
-		{"⌘L focuses the message field (KB-004)", func(r *rig) { r.open(adaJID) }, []widgettest.Step{widgettest.Key('K', prim), widgettest.Idle(2), widgettest.Key('L', prim)}, func(t *testing.T, r *rig, _ *fake.Core) {
+		// from the list's search (⌘⇧F: ⌘K is Spotlight, a modal, under which the app's commands wait)
+		{"⌘L focuses the message field (KB-004)", func(r *rig) { r.open(adaJID) }, []widgettest.Step{widgettest.Key('F', prim|ui.ModShift), widgettest.Idle(2), widgettest.Key('L', prim)}, func(t *testing.T, r *rig, _ *fake.Core) {
 			if got := r.focusedName(); got != "Message" {
 				t.Errorf("focus on %q", got)
 			}

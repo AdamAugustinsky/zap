@@ -16,6 +16,7 @@ import (
 	"zapfast/ui/lock"
 	"zapfast/ui/login"
 	"zapfast/ui/msginfo"
+	"zapfast/ui/peek"
 	"zapfast/ui/picker"
 	"zapfast/ui/screen"
 	"zapfast/ui/settings"
@@ -57,6 +58,8 @@ func screens(demo bool) *screen.Set {
 		Picker:       picker.New(),
 		Dialogs:      dialogs.New(),
 		Spotlight:    spotlight.New(),
+		Peek:         peek.New(),
+		PeekWindow:   peek.NewWindow(),
 		Cropper:      cropper.New(),
 		StickerMaker: stickermaker.New(),
 

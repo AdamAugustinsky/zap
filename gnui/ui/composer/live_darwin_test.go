@@ -19,6 +19,7 @@ import (
 	"zapfast/core"
 	"zapfast/core/fake"
 	"zapfast/state"
+	"zapfast/ui/peek"
 	"zapfast/ui/screen"
 	"zapfast/ui/shell"
 )
@@ -54,7 +55,7 @@ func TestLiveHostedComposer(t *testing.T) {
 	s := state.New()
 	scr := New()
 	bar := &selBar{}
-	sh, err := shell.New(s, &screen.Set{Composer: scr, Conversation: bar})
+	sh, err := shell.New(s, &screen.Set{Composer: scr, Conversation: bar, Peek: peek.New()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -216,6 +217,23 @@ func TestLiveHostedComposer(t *testing.T) {
 	}
 	select1(false)
 	l.Until("the editor comes back, as it was", 300, func() bool { return shown() && text() == "🎉" })
+
+	// A peek over the window is a modal: the hosted view, which lies above
+	// everything drawn, hides under it, and comes back when it closes.
+	peekAt := func(open bool) {
+		l.Do(func(w *app.App) {
+			if open {
+				s.PeekChat(a, a.Model.Chats.Find([]byte(group)), [4]float32{0, 0, 10, 10})
+			} else {
+				s.ClosePeek()
+			}
+			w.Window().Wake()
+		})
+	}
+	peekAt(true)
+	l.Until("the editor hides under the peek", 300, func() bool { return !shown() })
+	peekAt(false)
+	l.Until("the editor comes back after the peek", 300, shown)
 	shot("compose-emoji") // CP-026
 
 	// CP-023, CP-024: a recording (the demo's microphone: this Mac grants

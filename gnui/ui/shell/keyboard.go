@@ -58,7 +58,7 @@ func (sh *Shell) keys(e *screen.Env) {
 	c := e.C()
 	a := s.Acct()
 	in := c.Input()
-	if a == nil || s.Lock.Locked || c.TextFieldFocused() || c.ModalOpen() || s.Dialog.Open() || s.Panes.Picker != state.PickerNone || s.AccountMenu || s.Spotlight {
+	if a == nil || s.Lock.Locked || c.TextFieldFocused() || c.ModalOpen() || s.Dialog.Open() || s.Panes.Picker != state.PickerNone || s.AccountMenu || s.Spotlight || s.Peek.Open() {
 		kb.held, kb.codes, kb.chord = kb.held[:0], kb.codes[:0], false
 		return
 	}
@@ -74,7 +74,12 @@ func (sh *Shell) keys(e *screen.Env) {
 	ti := 0
 	for i := 0; i < in.NKeys; i++ {
 		k := in.Keys[i]
-		if !k.Down || k.Repeat || k.Mods&^ui.ModShift != 0 || !letter(k.Code) {
+		if !k.Down || k.Repeat || k.Mods&^ui.ModShift != 0 {
+			continue
+		}
+		// a Space inside a burst is the typing's; alone it is a row's (peek)
+		space := k.Code == ui.KeySpace && len(kb.codes) > 0
+		if !letter(k.Code) && !space {
 			continue
 		}
 		at := k.Time

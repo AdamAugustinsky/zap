@@ -166,3 +166,40 @@ func TestFoldersAndSpaces(t *testing.T) {
 		t.Fatal("the account's space hides Ada")
 	}
 }
+
+// Peek (ui/peek): ⌥-click on a row opens it on the chat, which stays unread
+// (no MarkRead goes to the core); a reply from it is sent and reads nothing;
+// Open opens the chat.
+func TestPeek(t *testing.T) {
+	r, f := keyRig(t)
+	a := r.s.Accounts[0]
+	// Grace has unread messages: opening her chat would read them
+	f.Emit(ev(abi.EventTagChats, func(e *abi.Event) {
+		e.Chats = abi.EventChats{Batch: 2, Last: true, Chats: []abi.Chat{
+			{ID: []byte(graceJID), Name: []byte("Grace Hopper"), LastActivity: 30, Unread: 3},
+		}}
+	}))
+	r.Frames(4)
+	if ch, _ := a.Model.Chats.Get(a.Model.Chats.Find([]byte(graceJID))); ch.Unread() == 0 {
+		t.Fatal("the rig's Grace has nothing unread")
+	}
+	r.Play(widgettest.Click(ui.RoleListItem, "Grace Hopper").With(ui.ModAlt), widgettest.Idle(4))
+	if !r.s.Peek.Open() || a.Open != 0 {
+		t.Fatalf("⌥-click: peek %v, open %v; want a peek, no chat open", r.s.Peek, a.Open)
+	}
+	r.Play(widgettest.Type("on my way"), widgettest.Key(ui.KeyEnter, 0), widgettest.Idle(3))
+	if c, ok := lastSent(f, abi.CommandTagSendText); !ok || string(c.SendText.Text) != "on my way" {
+		t.Fatalf("the reply sent %v", f.SentTags())
+	}
+	if sentTag(f, abi.CommandTagMarkRead) != 0 {
+		t.Fatal("a peek marked the chat read")
+	}
+	if ch, _ := a.Model.Chats.Get(a.Model.Chats.Find([]byte(graceJID))); ch.Unread() == 0 {
+		t.Fatal("after the peek and its reply Grace's chat is read")
+	}
+	r.Click(ui.RoleButton, "Open")
+	r.Frames(3)
+	if r.s.Peek.Open() || r.openName() != "Grace Hopper" {
+		t.Fatalf("Open: peek %v, open %q", r.s.Peek.Open(), r.openName())
+	}
+}

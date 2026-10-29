@@ -4939,3 +4939,43 @@ msgstr "Zum Bereich an dieser Stelle"
 #: gnui
 msgid "Next / previous space"
 msgstr "Nächster / vorheriger Bereich"
+
+#: gnui
+msgid "Peek: {chat}"
+msgstr "Vorschau: {chat}"
+
+#: gnui
+msgid "Peeking: it stays unread"
+msgstr "Vorschau: bleibt ungelesen"
+
+#: gnui
+msgid "Reply to {chat}"
+msgstr "Antwort an {chat}"
+
+#: gnui
+msgid "Quick reply"
+msgstr "Schnellantwort"
+
+#: gnui
+msgid "Peek at a chat without reading it"
+msgstr "Einen Chat ansehen, ohne ihn zu lesen"
+
+#: gnui
+msgid "Peek"
+msgstr "Kurzansicht"
+
+#: gnui
+msgid "Peek at {chat}"
+msgstr "Kurz in {chat} schauen"
+
+#: gnui
+msgid "Peek at the newest chat"
+msgstr "Kurz in den neuesten Chat schauen"
+
+#: gnui
+msgid "Peek at the newest unread chat"
+msgstr "Kurz in den neuesten ungelesenen Chat schauen"
+
+#: gnui
+msgid "Peek at the newest unread chat, from any app"
+msgstr "Kurz in den neuesten ungelesenen Chat schauen, aus jeder App"

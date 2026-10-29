@@ -83,6 +83,9 @@ func (y *System) syncTrayMenu(s *state.State) {
 
 // command handles the status menu's commands.
 func (y *System) command(e *app.Event) bool {
+	if y.peekCommand(e) {
+		return true
+	}
 	switch menu.ID(e.ID) {
 	case cmdTrayShow:
 		// Show or hide: a window that is shown hides, and keeps the app
