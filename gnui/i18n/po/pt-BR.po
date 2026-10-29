@@ -4926,3 +4926,43 @@ msgstr "Ir para o espaço nesta posição"
 #: gnui
 msgid "Next / previous space"
 msgstr "Próximo / anterior espaço"
+
+#: gnui
+msgid "Peek: {chat}"
+msgstr "Espiar: {chat}"
+
+#: gnui
+msgid "Peeking: it stays unread"
+msgstr "Espiando: continua não lida"
+
+#: gnui
+msgid "Reply to {chat}"
+msgstr "Responder a {chat}"
+
+#: gnui
+msgid "Quick reply"
+msgstr "Resposta rápida"
+
+#: gnui
+msgid "Peek at a chat without reading it"
+msgstr "Espiar uma conversa sem marcá-la como lida"
+
+#: gnui
+msgid "Peek"
+msgstr "Espiar"
+
+#: gnui
+msgid "Peek at {chat}"
+msgstr "Espiar {chat}"
+
+#: gnui
+msgid "Peek at the newest chat"
+msgstr "Espiar a conversa mais recente"
+
+#: gnui
+msgid "Peek at the newest unread chat"
+msgstr "Espiar a conversa não lida mais recente"
+
+#: gnui
+msgid "Peek at the newest unread chat, from any app"
+msgstr "Espiar a conversa não lida mais recente, de qualquer app"

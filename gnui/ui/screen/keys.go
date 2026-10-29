@@ -56,4 +56,6 @@ var Shortcuts = [...]Shortcut{
 	{"Z", "Undo the last change a single key made", "shell (keyboard.go)"},
 	{"G then I / A / S / C", "Go to the chats, Archived, Starred or Calls", "shell (keyboard.go)"},
 	{"Typing", "Starts a message in the open chat, or a search", "shell (keyboard.go)"},
+	{"Space over a chat / ⌥-click", "Peek at a chat without reading it", "ui/chatlist, shell (ui/peek)"},
+	{"⌃⌥Z", "Peek at the newest unread chat, from any app", "sys/peek.go (ui/peek.Window)"},
 }

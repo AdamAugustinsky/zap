@@ -167,6 +167,9 @@ func (sh *Shell) chatTabs(a *state.Account, x0, x1, tbH float32) {
 		a.CloseChatTab(ev.Close)
 	case ev.MoveFrom >= 0:
 		a.MoveChatTab(ev.MoveFrom, ev.MoveTo)
+	case ev.Select >= 0 && k.Context().Input().Mods&ui.ModAlt != 0:
+		// ⌥-click peeks at the tab's chat, still unread (ui/peek)
+		s.PeekChat(a, refs[ev.Select], t.bar.TabRect(ev.Select))
 	case ev.Select >= 0:
 		ref := refs[ev.Select]
 		if s.Page != state.PageChats {

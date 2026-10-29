@@ -4940,3 +4940,43 @@ msgstr "Перейти к пространству на этом месте"
 #: gnui
 msgid "Next / previous space"
 msgstr "Следующее / предыдущее пространство"
+
+#: gnui
+msgid "Peek: {chat}"
+msgstr "Просмотр: {chat}"
+
+#: gnui
+msgid "Peeking: it stays unread"
+msgstr "Просмотр: останется непрочитанным"
+
+#: gnui
+msgid "Reply to {chat}"
+msgstr "Ответить: {chat}"
+
+#: gnui
+msgid "Quick reply"
+msgstr "Быстрый ответ"
+
+#: gnui
+msgid "Peek at a chat without reading it"
+msgstr "Просмотреть чат, не прочитав его"
+
+#: gnui
+msgid "Peek"
+msgstr "Быстрый просмотр"
+
+#: gnui
+msgid "Peek at {chat}"
+msgstr "Быстро просмотреть {chat}"
+
+#: gnui
+msgid "Peek at the newest chat"
+msgstr "Быстро просмотреть последний чат"
+
+#: gnui
+msgid "Peek at the newest unread chat"
+msgstr "Быстро просмотреть последний непрочитанный чат"
+
+#: gnui
+msgid "Peek at the newest unread chat, from any app"
+msgstr "Быстро просмотреть последний непрочитанный чат из любого приложения"

@@ -131,8 +131,10 @@ func TestAMessageDoesNotBounceTheDock(t *testing.T) {
 	}
 }
 
-// NT-003: a click opens the chat at the message and shows the window.
-func TestAClickOpensTheMessageAndRaisesTheWindow(t *testing.T) {
+// NT-003, as Zap's: a click on a message's notification peeks at its chat
+// in the floating panel (WinPeek), alone, without the main window and
+// without reading it.
+func TestAClickPeeksAtTheChatUnread(t *testing.T) {
 	r := newRig(t)
 	r.incoming(group, grace, "look here", 1)
 	n := r.lastNote()
@@ -140,14 +142,41 @@ func TestAClickOpensTheMessageAndRaisesTheWindow(t *testing.T) {
 		t.Error("the click was not handled")
 	}
 	r.frame()
-	if string(r.a.Model.Chats.At(r.a.Open).ID()) != group {
-		t.Fatalf("the chat did not open: %v", r.a.Open)
+	if !r.s.FloatPeek.Open() || string(r.a.Model.Chats.At(r.s.FloatPeek.Ref).ID()) != group {
+		t.Fatalf("no peek at the chat: %+v", r.s.FloatPeek)
 	}
-	if string(r.s.Panes.Jump.Msg.At(0)) != "m1" {
-		t.Errorf("the message was not jumped to")
+	if !r.s.Win.Want[state.WinPeek] || !r.s.Win.Alone[state.WinPeek] {
+		t.Error("the peek's panel was not asked for on its own")
 	}
-	if !r.s.Req.RaiseMain {
-		t.Error("the main window was not asked for")
+	if r.a.Open != 0 || r.s.Req.RaiseMain {
+		t.Errorf("the main window was used: open %v, raise %v", r.a.Open, r.s.Req.RaiseMain)
+	}
+	for _, c := range r.f.Sent() {
+		if c.Tag == abi.CommandTagMarkRead {
+			t.Fatal("the peek read the chat")
+		}
+	}
+	// the app going to the background ends it
+	r.y.AppEvent(nil, r.s, &app.Event{Kind: app.EvDeactivated})
+	if r.s.FloatPeek.Open() || r.s.Win.Want[state.WinPeek] {
+		t.Error("the peek outlived the app's deactivation")
+	}
+}
+
+// A click on the chat the main window shows opens it there, as before: a
+// peek would only repeat it.
+func TestAClickOnTheOpenChatOpensItInTheWindow(t *testing.T) {
+	r := newRig(t)
+	r.a.OpenChat(r.a.Model.Chats.Find([]byte(group)))
+	r.incoming(group, grace, "look here", 1)
+	n := r.lastNote()
+	r.y.AppEvent(nil, r.s, r.c.respond(notify.Response{Action: notify.ActionClick, UserData: n.UserData}))
+	r.frame()
+	if r.s.FloatPeek.Open() {
+		t.Error("a peek at the chat the window shows")
+	}
+	if string(r.s.Panes.Jump.Msg.At(0)) != "m1" || !r.s.Req.RaiseMain {
+		t.Errorf("jump %q, raise %v", r.s.Panes.Jump.Msg.At(0), r.s.Req.RaiseMain)
 	}
 }
 
@@ -254,8 +283,9 @@ func TestTheOldestWaitingNotificationIsReleasedWithoutBreakingItsClick(t *testin
 	}
 }
 
-// A click on a notification of an account that is not on screen switches to
-// that account and opens the message there (AC-008).
+// A click on a notification of an account that is not on screen peeks at
+// the chat in that account (AC-008, as Zap's: the account on screen stays,
+// and the peek's Open switches to it).
 func TestAClickOnAHiddenAccountsNoticeSwitchesToIt(t *testing.T) {
 	r := newRig(t)
 	f2 := fake.New(nil)
@@ -275,7 +305,10 @@ func TestAClickOnAHiddenAccountsNoticeSwitchesToIt(t *testing.T) {
 		t.Error("the click was not handled")
 	}
 	r.frame()
-	if r.s.Acct() != b || b.Open == 0 || string(b.Model.Chats.At(b.Open).ID()) != grace {
-		t.Errorf("after the click: account %v, open %v", r.s.Acct() == b, b.Open)
+	if p := r.s.FloatPeek; p.Acct != b.ID || string(b.Model.Chats.At(p.Ref).ID()) != grace {
+		t.Errorf("after the click: peek %+v", p)
+	}
+	if r.s.Acct() != r.a || b.Open != 0 {
+		t.Error("the click changed the main window")
 	}
 }

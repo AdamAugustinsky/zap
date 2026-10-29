@@ -4906,3 +4906,43 @@ msgstr "Bu sıradaki alana git"
 #: gnui
 msgid "Next / previous space"
 msgstr "Sonraki / önceki alan"
+
+#: gnui
+msgid "Peek: {chat}"
+msgstr "Göz at: {chat}"
+
+#: gnui
+msgid "Peeking: it stays unread"
+msgstr "Göz atılıyor: okunmamış kalır"
+
+#: gnui
+msgid "Reply to {chat}"
+msgstr "{chat} kişisine yanıtla"
+
+#: gnui
+msgid "Quick reply"
+msgstr "Hızlı yanıt"
+
+#: gnui
+msgid "Peek at a chat without reading it"
+msgstr "Bir sohbete okumadan göz at"
+
+#: gnui
+msgid "Peek"
+msgstr "Göz at"
+
+#: gnui
+msgid "Peek at {chat}"
+msgstr "{chat} sohbetine göz at"
+
+#: gnui
+msgid "Peek at the newest chat"
+msgstr "En yeni sohbete göz at"
+
+#: gnui
+msgid "Peek at the newest unread chat"
+msgstr "Okunmamış en yeni sohbete göz at"
+
+#: gnui
+msgid "Peek at the newest unread chat, from any app"
+msgstr "Herhangi bir uygulamadan okunmamış en yeni sohbete göz at"

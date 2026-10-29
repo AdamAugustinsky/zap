@@ -309,6 +309,7 @@ type Set struct {
 	Picker       Overlay // ui/picker: emoji, GIFs, stickers
 	Dialogs      Overlay // ui/dialogs
 	Spotlight    Overlay // ui/spotlight: ⌘K, the search over everything
+	Peek         Overlay // ui/peek: a chat looked at without being read
 	Cropper      Overlay // ui/cropper
 	StickerMaker Overlay // ui/stickermaker
 
@@ -318,6 +319,8 @@ type Set struct {
 	// Playground is the design playground's window (ui/playground), a dev
 	// build's only: nil otherwise.
 	Playground WindowScreen
+	// PeekWindow is the floating peek's window (ui/peek.Window, WinPeek).
+	PeekWindow WindowScreen
 
 	Theme  Theme   // theme
 	System System  // sys

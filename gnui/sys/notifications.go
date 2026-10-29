@@ -504,8 +504,8 @@ func decodeTarget(b []byte) (acct, chat, msg string, ok bool) {
 	return string(a), string(c), string(m), true
 }
 
-// respond is the user's response to a note: a click opens the chat at the
-// message (or the call), the Reply action sends the text.
+// respond is the user's response to a note: a click peeks at the message's
+// chat (or opens the call), the Reply action sends the text.
 func (y *System) respond(r *notify.Response) {
 	acct, chat, msg, ok := decodeTarget(r.UserData)
 	if !ok {
@@ -515,6 +515,11 @@ func (y *System) respond(r *notify.Response) {
 	case notify.ActionClick:
 		if y.s.Lock.Locked && y.DeferOpen != nil && y.DeferOpen(y.s, acct, chat, []byte(msg)) {
 			y.showMain() // the lock screen; the unlock opens the chat
+			return
+		}
+		if msg != "" && !y.s.Lock.Locked {
+			// A message's: the chat in the floating peek, unread (sys/peek.go).
+			y.queue(target{kind: tPeek, acct: acct, chat: chat, msg: msg})
 			return
 		}
 		y.queue(target{kind: tOpen, acct: acct, chat: chat, msg: msg})

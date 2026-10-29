@@ -50,7 +50,7 @@ type demoPage struct {
 // demoParts are the parts this port knows, for -demo-page help and tests.
 var demoParts = []string{
 	"chat", "empty", "light", "dark", "short-chat", "wide", "nosidebar", "rail",
-	"search", "spotlight", "folders", "space", "info", "info-media", "info-docs", "info-links", "group-info", "select", "select-delete", "delete-selection",
+	"search", "spotlight", "folders", "space", "peek", "float-peek", "info", "info-media", "info-docs", "info-links", "group-info", "select", "select-delete", "delete-selection",
 	"settings", "themes", "app-lock-settings", "shortcuts", "about", "new-chat", "new-contact",
 	"poll", "poll-create", "location", "unlink", "clear-media", "delete-chat", "clear-chat", "leave-group",
 	"delete-message", "forward", "reply", "private-reply", "edit", "message-info", "unread-divider",
@@ -198,6 +198,12 @@ func (p *demoPage) apply(s *state.State, a *state.Account) {
 			if i := a.FolderByID("f1"); i >= 0 {
 				s.GoToSpace(state.Space{Acct: a.Index, Folder: "f1"})
 			}
+		case "peek":
+			s.PeekChat(a, a.Model.Chats.Find([]byte(demoGroup)), [4]float32{116, 436, 692, 526})
+		case "float-peek":
+			// the floating peek's panel (a window of its own: a live run shows it,
+			// a shot of the main window does not)
+			s.FloatPeekChat(a, a.Model.Chats.Find([]byte(demoGroup)))
 		case "spotlight":
 			s.Spotlight = true
 			s.Req.SpotlightText = append(s.Req.SpotlightText, "an"...)

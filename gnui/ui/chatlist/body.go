@@ -196,12 +196,22 @@ func (s *Screen) chat(e *screen.Env, a *state.Account, ref model.ChatRef) (typin
 	// A row opens its chat when the button goes down, as a macOS list
 	// selects, not a click's length later; the keyboard's activation is
 	// its Clicked.
-	us := e.C().Signal(sig.ID)
-	if sig.Clicked || us.Pressed && e.C().Input().Mods&ui.ModCtrl == 0 {
+	c := e.C()
+	us := c.Signal(sig.ID)
+	alt := c.Input().Mods&ui.ModAlt != 0
+	switch {
+	case (sig.Clicked || us.Pressed) && alt:
+		// ⌥-click peeks: the chat in a panel, still unread (ui/peek)
+		e.S.PeekChat(a, ref, c.RectOf(c.KeyOf(sig.ID)))
+	case sig.Clicked || us.Pressed && c.Input().Mods&ui.ModCtrl == 0:
 		s.KeepUnread(e, ref)
 		a.OpenChat(ref)
-	} else if sig.Hovering {
+	case sig.Hovering:
 		s.dwell(e, a, ref)
+		// Space over a row peeks at it, when nothing takes typing
+		if !c.TextFieldFocused() && !c.ModalOpen() && c.TakeKey(ui.KeySpace, 0) {
+			e.S.PeekChat(a, ref, c.RectOf(c.KeyOf(sig.ID)))
+		}
 	}
 	if !s.native(e, sig.ID, menuChat, ref, 0) && sig.RightClicked {
 		inp := e.C().Input()
