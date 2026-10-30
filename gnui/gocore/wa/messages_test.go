@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"go.mau.fi/whatsmeow/proto/waAICommonDeprecated"
 	"go.mau.fi/whatsmeow/proto/waCommon"
 	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/proto/waHistorySync"
@@ -102,7 +103,7 @@ func TestIncomingContentKinds(t *testing.T) {
 				t.Fatalf("buttons: %+v", m.Content)
 			}
 		}},
-		{"unknown", &waE2E.Message{CallLogMesssage: &waE2E.CallLogMessage{}}, func(t *testing.T, m abi.Message) {
+		{"unknown", &waE2E.Message{ScheduledCallCreationMessage: &waE2E.ScheduledCallCreationMessage{}}, func(t *testing.T, m abi.Message) {
 			if m.Content.Tag != abi.ContentTagUnsupported {
 				t.Fatalf("unknown: %+v", m.Content)
 			}
@@ -708,5 +709,44 @@ func TestADirectChatFollowsItsTimer(t *testing.T) {
 	h.take()
 	if got := timer(); got != 0 {
 		t.Fatalf("turned off: %d", got)
+	}
+}
+
+// A Meta AI reply reads as one text message; one with no readable part is
+// a placeholder (zf:src/backend/worker/bot_replies.rs tests).
+func TestMetaAIRepliesReadAsText(t *testing.T) {
+	h := newHarness(t, options{})
+	raw, err := proto.Marshal(&waE2E.Message{CallLogMesssage: &waE2E.CallLogMessage{CallOutcome: waE2E.CallLogMessage_MISSED.Enum()}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// What an earlier build filed for a call-log message is mended.
+	storeMessage(t, h, store.Message{ID: "OLDCALL", ChatID: peer.String(), Sender: peer.String(), Timestamp: t0.Unix() - 60, Kind: kindUnsupported, Text: "call", Status: "delivered", Raw: raw})
+	h.start()
+	if m, err := h.e.arch.Message(peer.String(), "OLDCALL"); err != nil || m.Kind != store.KindCall || m.Call == nil || m.Call.Status != "missed" {
+		t.Fatalf("mended call: %+v %v", m, err)
+	}
+	sub := func(s string) *waAICommonDeprecated.AIRichResponseSubMessage {
+		return &waAICommonDeprecated.AIRichResponseSubMessage{MessageText: proto.String(s)}
+	}
+	code := &waAICommonDeprecated.AIRichResponseSubMessage{CodeMetadata: &waAICommonDeprecated.AIRichResponseCodeMetadata{CodeLanguage: proto.String("rust"),
+		CodeBlocks: []*waAICommonDeprecated.AIRichResponseCodeMetadata_AIRichResponseCodeBlock{{CodeContent: proto.String("fn main() ")}, {CodeContent: proto.String("{}")}, {CodeContent: proto.String("\n")}}}}
+	table := &waAICommonDeprecated.AIRichResponseSubMessage{TableMetadata: &waAICommonDeprecated.AIRichResponseTableMetadata{Title: proto.String("Planets"),
+		Rows: []*waAICommonDeprecated.AIRichResponseTableMetadata_AIRichResponseTableRow{{Items: []string{"Name", "Moons"}, IsHeading: proto.Bool(true)}, {Items: []string{"Mars", "2"}}}}}
+	mapPart := &waAICommonDeprecated.AIRichResponseSubMessage{MapMetadata: &waAICommonDeprecated.AIRichResponseMapMetadata{}}
+	reply := func(parts ...*waAICommonDeprecated.AIRichResponseSubMessage) *waE2E.Message {
+		// Bot replies carry their bot metadata in the context info.
+		return &waE2E.Message{RichResponseMessage: &waE2E.AIRichResponseMessage{Submessages: parts}, MessageContextInfo: &waE2E.MessageContextInfo{}}
+	}
+	h.inject(message(peer, peer, "AI1", t0, reply(sub("Here you go:\n"), code, table, mapPart)))
+	if m := one(t, h.take(), abi.EventTagIncoming).Incoming.Message; m.Content.Tag != abi.ContentTagText ||
+		string(m.Content.Text.Text) != "Here you go:\n\n```\nfn main() {}\n```\n\nPlanets\nName | Moons\nMars | 2" {
+		t.Fatalf("reply: %+v", m.Content)
+	}
+	for i, p := range []*waE2E.Message{reply(), reply(mapPart, sub("  "))} {
+		h.inject(message(peer, peer, fmt.Sprintf("AI%d", i+2), t0.Add(time.Second), p))
+		if m := one(t, h.take(), abi.EventTagIncoming).Incoming.Message; m.Content.Tag != abi.ContentTagUnsupported || string(m.Content.Unsupported.What) != "Meta AI reply" {
+			t.Fatalf("unreadable reply: %+v", m.Content)
+		}
 	}
 }

@@ -110,7 +110,7 @@ func (e *Engine) mendSignalling() {
 				e.messageDeleted(m.ChatID, m.ID)
 			}
 		case again.Kind != m.Kind || again.Text != m.Text:
-			err = e.arch.UpdateMessage(m.ChatID, m.ID, func(old *store.Message) { old.Kind, old.Text = again.Kind, again.Text })
+			err = e.arch.UpdateMessage(m.ChatID, m.ID, func(old *store.Message) { old.Kind, old.Text, old.Call = again.Kind, again.Text, again.Call })
 			if err == nil {
 				e.emitMessage(m.ChatID, m.ID)
 			}

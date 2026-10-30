@@ -11,6 +11,7 @@ import (
 	"math"
 	"net/url"
 	"strings"
+	"unicode"
 
 	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types"
@@ -108,12 +109,82 @@ func unsupportedWhat(p *waE2E.Message) string {
 		return "product"
 	case p.GetSendPaymentMessage() != nil, p.GetRequestPaymentMessage() != nil, p.GetPaymentInviteMessage() != nil, p.GetInvoiceMessage() != nil:
 		return "payment"
-	case p.GetScheduledCallCreationMessage() != nil, p.GetCallLogMesssage() != nil:
+	case p.GetScheduledCallCreationMessage() != nil:
 		return "call"
 	case p.GetLottieStickerMessage() != nil:
 		return "animated sticker"
 	}
 	return "message"
+}
+
+// botUnreadable is what a Meta AI reply with no readable part is called in
+// its placeholder (zf:src/backend/worker/bot_replies.rs:14).
+const botUnreadable = "Meta AI reply"
+
+// botReply is a Meta AI reply as the text it reads as: its text, code (in a
+// WhatsApp monospace block), table, formula and image-text parts, or a
+// placeholder when it has none (zf:src/backend/worker/bot_replies.rs:26).
+func botReply(reply *waE2E.AIRichResponseMessage) (kind, text string) {
+	var parts []string
+	for _, sub := range reply.GetSubmessages() {
+		var pieces []string
+		if t := sub.GetMessageText(); strings.TrimSpace(t) != "" {
+			pieces = append(pieces, strings.TrimRightFunc(t, unicode.IsSpace))
+		}
+		if code := sub.GetCodeMetadata(); code != nil {
+			var body strings.Builder
+			for _, block := range code.GetCodeBlocks() {
+				body.WriteString(block.GetCodeContent())
+			}
+			if b := strings.Trim(body.String(), "\n"); strings.TrimSpace(b) != "" {
+				pieces = append(pieces, "```\n"+b+"\n```")
+			}
+		}
+		if table := sub.GetTableMetadata(); table != nil {
+			var rows []string
+			if title := table.GetTitle(); strings.TrimSpace(title) != "" {
+				rows = append(rows, title)
+			}
+			for _, row := range table.GetRows() {
+				if len(row.GetItems()) > 0 {
+					rows = append(rows, strings.Join(row.GetItems(), " | "))
+				}
+			}
+			if len(rows) > 0 {
+				pieces = append(pieces, strings.Join(rows, "\n"))
+			}
+		}
+		if t := sub.GetLatexMetadata().GetText(); strings.TrimSpace(t) != "" {
+			pieces = append(pieces, strings.TrimRightFunc(t, unicode.IsSpace))
+		}
+		if t := sub.GetImageMetadata().GetImageText(); strings.TrimSpace(t) != "" {
+			pieces = append(pieces, strings.TrimRightFunc(t, unicode.IsSpace))
+		}
+		if len(pieces) > 0 {
+			parts = append(parts, strings.Join(pieces, "\n\n"))
+		}
+	}
+	if len(parts) == 0 {
+		return kindUnsupported, botUnreadable
+	}
+	return kindText, strings.Join(parts, "\n\n")
+}
+
+// callLogEntry is the call a call-log message files in its chat
+// (zf:src/backend/worker/calls.rs:1054).
+func callLogEntry(log *waE2E.CallLogMessage) *store.Call {
+	status := "missed" // missed, or silenced: nobody answered
+	switch log.GetCallOutcome() {
+	case waE2E.CallLogMessage_CONNECTED, waE2E.CallLogMessage_ONGOING:
+		status = "answered"
+	case waE2E.CallLogMessage_REJECTED:
+		status = "declined"
+	case waE2E.CallLogMessage_ACCEPTED_ELSEWHERE:
+		status = "answered-elsewhere"
+	case waE2E.CallLogMessage_FAILED:
+		status = "failed"
+	}
+	return &store.Call{Video: log.GetIsVideo(), Status: status, Seconds: uint32(min(max(log.GetDurationSecs(), 0), math.MaxUint32)), Group: len(log.GetParticipants()) > 1}
 }
 
 // parseMessage turns a whatsmeow message into the archive's row for chat
@@ -315,6 +386,12 @@ func parseDepth(e *events.Message, chat, sender string, depth int) store.Message
 		x := p.GetInteractiveResponseMessage()
 		m.Kind, m.Text = kindText, x.GetBody().GetText()
 		ctx = x.GetContextInfo()
+	case p.GetRichResponseMessage() != nil:
+		m.Kind, m.Text = botReply(p.GetRichResponseMessage())
+		ctx = p.GetRichResponseMessage().GetContextInfo()
+	case p.GetCallLogMesssage() != nil:
+		m.Kind = store.KindCall
+		m.Call = callLogEntry(p.GetCallLogMesssage())
 	case p.GetPinInChatMessage() != nil:
 		m.Kind = kindPin
 	case p.GetReactionMessage() != nil:

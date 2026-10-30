@@ -73,8 +73,11 @@ type rustContent struct {
 	Status   string
 	Duration uint64
 	Group    bool
-	// A view-once message.
-	ViewOnce bool `json:"view_once"`
+	// A phone-only message: view-once media (Once names it), or a live
+	// location (zf:src/model.rs:746).
+	ViewOnce     bool   `json:"view_once"`
+	LiveLocation bool   `json:"live_location"`
+	Once         string `json:"once"`
 }
 
 // delivery is a Rust delivery rank's name in the Go archive.
@@ -250,8 +253,23 @@ func (imp *importer) message(row map[string]any) (store.Message, bool) {
 		m.Deleted = true
 		m.Text = "This message was deleted"
 	case "phoneonly":
-		m.Kind = "phone-only"
-		m.Text = "Open this message on your phone"
+		// The Go engine's kinds for what Rust told apart by flag
+		// (gocore/wa/convert.go: kindViewOnce, an unavailable live location).
+		switch {
+		case content.ViewOnce:
+			m.Kind = "view-once"
+			switch m.Text = content.Once; m.Text {
+			case "photo", "video", "voice", "audio":
+			default:
+				m.Text = ""
+			}
+		case content.LiveLocation:
+			m.Kind, m.Text = "live-location", ""
+			m.LiveLocation = &store.LiveLocation{UpdatedAt: m.Timestamp}
+		default:
+			m.Kind = "phone-only"
+			m.Text = "Open this message on your phone"
+		}
 		unsupported = true
 	case "unsupported":
 		// The Rust core filed a message it could not decrypt yet as

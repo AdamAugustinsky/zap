@@ -247,6 +247,8 @@ func (e *Engine) loggedOut() {
 	clear(e.presence)
 	clear(e.avatars)
 	e.watch = nil
+	// Reads for the unlinked account must not be applied for the next.
+	e.early = earlyEvents{}
 	e.forgetAccount()
 	e.setStatus(linkTag(abi.LinkStatusTagLoggedOut))
 	e.newClient(e.acct.Devices.NewDevice())
