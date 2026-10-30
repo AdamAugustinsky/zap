@@ -239,11 +239,12 @@ scope. Never reset Adam's personal account.
   nothing is blocked today. A Windows Go build must not be published until
   a certificate exists (an OV/EV certificate or Azure Trusted Signing):
   without one, SmartScreen blocks the installer.
-- **The update feed.** The pinned framework already writes the ZIP that
-  `app/selfupdate` installs; the wrapper enables it for both output directories.
-  Feed hosting, the approved update-signing key and a newer signed/notarized
-  release for an end-to-end update remain pending. Never publish `dist/dev/`
-  as an update. Existing UP-003/UP-006 hand checks stay blocked without their
+- **The update feed.** Release builds read the latest GitHub release of
+  AdamAugustinsky/zap, signed with A3's keys (`packaging/UPDATE_SIGNING.md`),
+  and `packaging/macos/gnui-release.sh` builds, notarizes and signs one; a
+  published A3-signed release, and an end-to-end update from it, remain
+  pending. 0.20.0 has no feed: the first A3 release is installed by hand.
+  Never publish `dist/dev/` as an update. Existing UP-003/UP-006 hand checks stay blocked without their
   prerequisites; generating a ZIP does not satisfy them.
 - **The DMG's signature.** Only a Developer ID can sign the DMG. With
   `--notarize` it is also notarized and stapled.
