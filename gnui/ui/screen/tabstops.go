@@ -42,6 +42,7 @@ const (
 	StopBack    TabStop = 600
 	StopNewChat TabStop = 610
 	StopSidebar TabStop = 620
+	StopUpdate  TabStop = 625 // the titlebar's update button, at its end
 	StopSearch  TabStop = 630
 	// The chips: All (the chat list's and the Calls page's), Missed (the
 	// Calls page's), then the chat list's; StopLabel + n the label row's by

@@ -224,6 +224,15 @@ type UpdateNotice interface {
 	Available() (version string, ok bool)
 }
 
+// UpdatePill is an Updater that offers the titlebar's update button, as
+// Ghostty's: Pill is its label, "" for none; PressPill downloads the update
+// or restarts into it, and reports false when the update needs Settings
+// instead (the shell then opens it).
+type UpdatePill interface {
+	Pill() string
+	PressPill() bool
+}
+
 // The viewer window's View menu zooms the picture, as upstream's ⌘+ ⌘- ⌘0
 // do over the picture: the window's own menu model (WindowMenus) has these
 // commands where the shared one has the app zoom roles. ui/viewer reads them

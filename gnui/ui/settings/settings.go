@@ -366,8 +366,8 @@ func (s *Screen) section(e *screen.Env, f *rexui.Form, sec secID) bool {
 		}
 	}
 	footer := ""
-	if sec == secUpdates {
-		footer = s.tx.feedNote
+	if sec == secUpdates && !s.up.releaseFeed {
+		footer = s.tx.feedNote // a test feed, or none
 	}
 	f.EndSection(k, footer)
 	return true

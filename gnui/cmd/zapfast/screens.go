@@ -92,6 +92,10 @@ func (u updates) Available() (string, bool) {
 	return r.Version, ok
 }
 
+// Pill and PressPill are the titlebar's update button (screen.UpdatePill).
+func (u updates) Pill() string    { return u.u.Pill() }
+func (u updates) PressPill() bool { return u.u.PressPill() }
+
 // morePanes are n split view panes' screens beside the first.
 func morePanes(n int) []screen.PaneScreens {
 	p := make([]screen.PaneScreens, n)

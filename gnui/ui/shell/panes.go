@@ -1,6 +1,8 @@
 package shell
 
 import (
+	"unicode/utf8"
+
 	"gonativeui/rexui"
 	"gonativeui/theme"
 	"gonativeui/ui"
@@ -212,11 +214,69 @@ func (sh *Shell) titlebar(a *state.Account) {
 		}
 	}
 	tb.Flexible()
+	sh.updatePill(tb)
 	tb.End()
 	if s.AccountMenu {
 		sh.accounts(sh.anchorOf(key, screen.Rect{X: e.Pt(trafficPt), Y: e.Pt(9), W: e.Pt(accountChipPt), H: e.Pt(28)}))
 	}
 }
+
+// updatePill is the titlebar's update button at the band's end, as
+// Ghostty's: "Update to 1.2", then the download's progress, then "Restart to
+// update" (screen.UpdatePill). Where the update needs Settings (this copy
+// cannot replace itself, say) it opens Settings, as the banner's Update.
+func (sh *Shell) updatePill(tb *rexui.Toolbar) {
+	s, e, k := sh.S, &sh.env, sh.env.K
+	label := sh.pillLabel()
+	if label == "" {
+		sh.pillKey = 0
+		return
+	}
+	c := k.Context()
+	tb.BeginCustom("###update", ui.Px(sh.pillW(label)))
+	c.NextAxis(ui.AxisX)
+	c.NextCross(ui.CrossCenter)
+	c.NextSize(ui.Pct(1), ui.Pct(1))
+	c.Push(c.Box(0, "update row"))
+	sig := rexui.Button(k.Kit, label, rexui.ButtonOpts{Variant: rexui.ButtonPrimary, Size: theme.SizeSmall})
+	c.Pop()
+	tb.EndCustom()
+	sh.pillKey = c.KeyOf(sig.ID)
+	e.TabStop(screen.StopUpdate, sig.ID)
+	if sig.Clicked && !sh.pills.PressPill() {
+		s.OpenWindow(state.WinSettings)
+	}
+}
+
+// pillLabel is the update button's label, "" when there is none.
+func (sh *Shell) pillLabel() string {
+	if sh.pills == nil || sh.S.Lock.Locked {
+		return ""
+	}
+	return sh.pills.Pill()
+}
+
+// pillW is the update button's width, pixels: last frame's, else one
+// estimated from its label for the frame it appears in.
+func (sh *Shell) pillW(label string) float32 {
+	if r := sh.env.K.Context().RectOf(sh.pillKey); sh.pillKey != 0 && r[2] > r[0] {
+		return r[2] - r[0]
+	}
+	return sh.env.Pt(float32(utf8.RuneCountInString(label))*6.5 + 2*10)
+}
+
+// pillRoom is what the update button takes from the end of the titlebar,
+// pixels, for the chat tabs, which end before it: 0 with no button.
+func (sh *Shell) pillRoom() float32 {
+	label := sh.pillLabel()
+	if label == "" {
+		return 0
+	}
+	return sh.pillW(label) + sh.env.Pt(pillGapPt)
+}
+
+// pillGapPt is the space between the chat tabs and the update button.
+const pillGapPt = 8
 
 // sidebarW is the room the list's toggle takes in the titlebar after the
 // account block, pixels: none in a narrow window or on a page without the

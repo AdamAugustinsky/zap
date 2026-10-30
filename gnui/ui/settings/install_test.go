@@ -2,8 +2,12 @@ package settings
 
 import (
 	"crypto/ed25519"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
@@ -240,16 +244,20 @@ func (r *rig) screenText(s string) bool {
 	return false
 }
 
-// UP-004: the release key and the next one are both embedded, byte for byte
-// what upstream ships, and a distinct pair.
+// UP-004: the release key and the next one are both embedded, a distinct pair:
+// A3's (packaging/UPDATE_SIGNING.md), which replaced upstream's.
 func TestBothPublisherKeysAreEmbedded(t *testing.T) {
 	ks := publisherKeys()
 	if len(ks) != 2 || string(ks[0]) == string(ks[1]) {
 		t.Fatalf("%d keys, want the current and the next, different", len(ks))
 	}
-	const upstream = "c3b4b0b96b2d3047dcd8ac082dd125b9ee3a8d72c043e19f38b771678358e888" // assets/update-public-key-next.hex of upstream
-	if got := strings.TrimSpace(nextPublisherKey); got != upstream {
-		t.Errorf("the next key %q is not upstream's", got)
+	for _, k := range []struct{ name, got, want string }{
+		{"current", publisherKey, "c5adf2e534da47ab5dfd6064a3c7d8eb66f913203f950254d2515c6958edb563"},
+		{"next", nextPublisherKey, "c18503262212bbcdfba02846da2cf1caf2b4409f44b4f7c077718a9c502853cf"},
+	} {
+		if got := strings.TrimSpace(k.got); got != k.want {
+			t.Errorf("the %s key is %q, want A3's %q", k.name, got, k.want)
+		}
 	}
 }
 
@@ -384,4 +392,32 @@ func TestStagedVersionMustBeTheAnnouncedOne(t *testing.T) {
 			}
 		})
 	}
+}
+
+// UP-004: whatever a feed serves as latest.json, verification accepts it only
+// for exactly the signed manifest under the version its file name carries;
+// parsing and checking never panic.
+func FuzzLatestJSON(f *testing.F) {
+	pub, priv, _ := ed25519.GenerateKey(rand.New(rand.NewSource(1)))
+	sum := sha256.Sum256([]byte("the update"))
+	signed := Release{Version: "0.21.0", File: "ZapFast-0.21.0.zip", SHA256: hex.EncodeToString(sum[:])}
+	signed.Signature = hex.EncodeToString(ed25519.Sign(priv, manifestLine(&signed)))
+	b, _ := json.Marshal(signed)
+	f.Add(b)
+	f.Add([]byte(strings.Replace(string(b), "0.21.0", "0.22.0", 1)))
+	f.Add([]byte(strings.Replace(string(b), signed.SHA256, strings.ToUpper(signed.SHA256), 1)))
+	f.Add([]byte(`{"version":"v0.21.0","file":"ZapFast-0.21.0.zip"}`))
+	f.Add([]byte(`null`))
+	f.Fuzz(func(t *testing.T, b []byte) {
+		rel, err := parseRelease(b)
+		if err != nil || rel == nil {
+			return
+		}
+		if verifyManifest(rel, []ed25519.PublicKey{pub}) != nil {
+			return
+		}
+		if string(manifestLine(rel)) != string(manifestLine(&signed)) || rel.File != releaseFileName(rel.Version) {
+			t.Fatalf("accepted %q: manifest %q, file %q for version %q", b, manifestLine(rel), rel.File, rel.Version)
+		}
+	})
 }

@@ -25,11 +25,13 @@ import (
 	"zapfast/state"
 )
 
-// The updater (zf:src/updates.rs, UP-001…UP-005), built against a local test
-// feed: a folder or an address that serves latest.json and the file it names.
-// Until a release feed exists Settings → Updates says so. The feed is named by
-// the ZAPFAST_UPDATE_FEED environment variable (a folder, or an http(s)
-// address that ends where latest.json is).
+// The updater (zf:src/updates.rs, UP-001…UP-005) reads a feed: a folder or an
+// address that serves latest.json and the file it names. Release builds read
+// the GitHub releases of AdamAugustinsky/zap (releaseFeed); other builds read
+// none. The ZAPFAST_UPDATE_FEED environment variable names another (a folder,
+// or an http(s) address that ends where latest.json is), and set but empty
+// turns the feed off; Settings → Updates says when the feed is not the
+// release one.
 //
 // latest.json:
 //
@@ -160,14 +162,20 @@ type Updates struct {
 	started, noted, resultReady atomic.Bool
 	result                      selfupdate.Result
 	proxy                       string // the proxy the feed goes through: the setting, else the environment's
+	pill                        pillText
+	releaseFeed                 bool // the feed is releaseFeed, not a test one
 }
 
-// NewUpdates returns the updater over the feed the environment names, or
-// over none.
+// NewUpdates returns the updater over the feed the environment names, else
+// over the release feed (none outside release builds).
 func NewUpdates() *Updates {
 	u := &Updates{now: time.Now, wake: func() {}}
 	u.keys = publisherKeys()
-	if v := os.Getenv("ZAPFAST_UPDATE_FEED"); v != "" {
+	v, named := os.LookupEnv("ZAPFAST_UPDATE_FEED")
+	if !named {
+		v, u.releaseFeed = releaseFeed, releaseFeed != ""
+	}
+	if v != "" {
 		u.SetFeed(NewFeed(v))
 	}
 	u.sys = osSelf{}
@@ -635,7 +643,7 @@ func parseProxy(value string) *fetch.Proxy {
 
 // releasesPage is where the release notes link goes when the feed names no
 // usable page.
-const releasesPage = "https://github.com/crmne/zapfast/releases"
+const releasesPage = "https://github.com/AdamAugustinsky/zap/releases"
 
 // releaseURL is the release page the feed names if it is one a person may be
 // sent to: an absolute https address with a host and no credentials. The feed's

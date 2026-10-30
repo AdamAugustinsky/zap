@@ -144,6 +144,8 @@ type Shell struct {
 	callsTB screen.ToolbarPart    // the CallsPage slot's toolbar items
 	compact compactList           // the ChatList slot's avatars in the rail
 	updates screen.UpdateNotice   // the Updates slot's newer version
+	pills   screen.UpdatePill     // and its titlebar button, when it offers one
+	pillKey ui.Key                // the button's box, last frame
 	viewerM *menu.Model           // the viewer window's menu model
 	menuLoc i18n.Locale           // the language the models are in
 	menuRev int                   // moves with every rebuild (RefreshMenus)
@@ -204,6 +206,7 @@ func New(s *state.State, set *screen.Set) (*Shell, error) {
 	sh.callsTB, _ = set.CallsPage.(screen.ToolbarPart)
 	sh.compact, _ = set.ChatList.(compactList)
 	sh.updates, _ = set.Updates.(screen.UpdateNotice)
+	sh.pills, _ = set.Updates.(screen.UpdatePill)
 	return sh, nil
 }
 
@@ -568,7 +571,8 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 	if l.Shown(paneChat) {
 		tabX0 = max(tabX0, sh.chatPane[0])
 	}
-	e.SetTabbed(sh.tabsUp(a, tabX0, W-in))
+	tabX1 := W - in - sh.pillRoom() // the tabs end before the update button
+	e.SetTabbed(sh.tabsUp(a, tabX0, tabX1))
 
 	// A narrow window slides between the list and what it opens (SH-007):
 	// an opened chat comes in from the right over the list, dimmed beneath
@@ -657,7 +661,7 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 	}
 	sh.titlebar(a)
 	// the tabs start over the conversation, after the account block
-	sh.chatTabs(a, tabX0, W-in, tbH)
+	sh.chatTabs(a, tabX0, tabX1, tbH)
 	sh.divider()
 	if sliding {
 		// A slide moves what is drawn, so the window takes no press, hover
