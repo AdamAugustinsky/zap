@@ -30,10 +30,10 @@ type slot struct {
 func (p *slot) Init(*screen.Env) error { return nil }
 func (p *slot) Build(e *screen.Env, r screen.Rect) {
 	p.built, p.rect = true, r
-	// the conversation's content starts the shell's inset below its Rect,
-	// under the title row and the banner
-	in := e.ContentInset()
-	e.Begin(screen.Rect{X: r.X, Y: r.Y + in, W: r.W, H: max(r.H-in, 0)}, p.name)
+	// a transcript's rect runs under the title row: its content starts
+	// below it (ContentInset), as the conversation's does
+	in := min(e.ContentInset(), r.H)
+	e.Begin(screen.Rect{X: r.X, Y: r.Y + in, W: r.W, H: r.H - in}, p.name)
 	rexui.Button(e.K.Kit, p.name, rexui.ButtonOpts{}) // something to press in the pane
 	e.End()
 }

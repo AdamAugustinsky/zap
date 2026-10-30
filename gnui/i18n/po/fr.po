@@ -3164,9 +3164,13 @@ msgstr "Groupe"
 msgid "Group invite"
 msgstr "Invitation de groupe"
 
-#: gnui/ui/chatlist/chatlist.go:658
+#: gnui/ui/shell/panes.go
 msgid "Hide the chat list (⌘B)"
 msgstr "Masquer la liste des discussions (⌘B)"
+
+#: gnui/ui/shell/panes.go
+msgid "Show the chat list (⌘B)"
+msgstr "Afficher la liste des discussions (⌘B)"
 
 #. Translators: the verb-less menu item that opens a chat's info panel.
 #: gnui/ui/chatlist/menu.go:375 gnui/ui/conversation/menu.go:377
@@ -4784,26 +4788,6 @@ msgstr "Transparence"
 msgid "The desktop shows softly through the window's background. The system's Reduce transparency setting turns it off too."
 msgstr "Le bureau transparaît doucement à travers le fond de la fenêtre. Le réglage système Réduire la transparence la désactive aussi."
 
-#. Translators: a message this device could not decrypt yet; the sender's phone is asked to send it again.
-#: gnui/ui/conversation/kinds/note.go
-msgid "Waiting for this message"
-msgstr "En attente de ce message"
-
-#. Translators: the line under "Waiting for this message".
-#: gnui/ui/conversation/kinds/note.go
-msgid "This may take a while. Open WhatsApp on your phone."
-msgstr "Cela peut prendre un moment. Ouvrez WhatsApp sur votre téléphone."
-
-#. Translators: the File menu: closes the open chat's tab (⌘W), as Safari's.
-#: gnui/ui/shell/menu.go
-msgctxt "menu bar"
-msgid "Close Tab"
-msgstr "Fermer l’onglet"
-
-#: gnui/ui/shell/panes.go
-msgid "Show the chat list (⌘B)"
-msgstr "Afficher la liste des discussions (⌘B)"
-
 #: gnui/ui/shell/keyboard.go
 msgid "Unarchived"
 msgstr "Désarchivé"
@@ -5219,3 +5203,19 @@ msgstr "À côté de l'opposée"
 #: gnui
 msgid "Free"
 msgstr "Libre"
+
+#. Translators: a message this device could not decrypt yet; the sender's phone is asked to send it again.
+#: gnui/ui/conversation/kinds/note.go
+msgid "Waiting for this message"
+msgstr "En attente de ce message"
+
+#. Translators: the line under "Waiting for this message".
+#: gnui/ui/conversation/kinds/note.go
+msgid "This may take a while. Open WhatsApp on your phone."
+msgstr "Cela peut prendre un moment. Ouvrez WhatsApp sur votre téléphone."
+
+#. Translators: the File menu: closes the open chat's tab (⌘W), as Safari's.
+#: gnui/ui/shell/menu.go
+msgctxt "menu bar"
+msgid "Close Tab"
+msgstr "Fermer l’onglet"

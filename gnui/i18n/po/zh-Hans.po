@@ -3030,9 +3030,13 @@ msgstr "群组"
 msgid "Group invite"
 msgstr "群组邀请"
 
-#: gnui/ui/chatlist/chatlist.go:658
+#: gnui/ui/shell/panes.go
 msgid "Hide the chat list (⌘B)"
 msgstr "隐藏聊天列表 (⌘B)"
+
+#: gnui/ui/shell/panes.go
+msgid "Show the chat list (⌘B)"
+msgstr "显示聊天列表 (⌘B)"
 
 #. Translators: the verb-less menu item that opens a chat's info panel.
 #: gnui/ui/chatlist/menu.go:375 gnui/ui/conversation/menu.go:377
@@ -4583,26 +4587,6 @@ msgstr "透明度"
 msgid "The desktop shows softly through the window's background. The system's Reduce transparency setting turns it off too."
 msgstr "桌面会柔和地透过窗口背景显示。系统的“降低透明度”设置也会将其关闭。"
 
-#. Translators: a message this device could not decrypt yet; the sender's phone is asked to send it again.
-#: gnui/ui/conversation/kinds/note.go
-msgid "Waiting for this message"
-msgstr "正在等待此消息"
-
-#. Translators: the line under "Waiting for this message".
-#: gnui/ui/conversation/kinds/note.go
-msgid "This may take a while. Open WhatsApp on your phone."
-msgstr "这可能需要一些时间。请在手机上打开 WhatsApp。"
-
-#. Translators: the File menu: closes the open chat's tab (⌘W), as Safari's.
-#: gnui/ui/shell/menu.go
-msgctxt "menu bar"
-msgid "Close Tab"
-msgstr "关闭标签页"
-
-#: gnui/ui/shell/panes.go
-msgid "Show the chat list (⌘B)"
-msgstr "显示聊天列表 (⌘B)"
-
 #: gnui/ui/shell/keyboard.go
 msgid "Unarchived"
 msgstr "已取消归档"
@@ -5018,3 +5002,19 @@ msgstr "分裂互补"
 #: gnui
 msgid "Free"
 msgstr "自由"
+
+#. Translators: a message this device could not decrypt yet; the sender's phone is asked to send it again.
+#: gnui/ui/conversation/kinds/note.go
+msgid "Waiting for this message"
+msgstr "正在等待此消息"
+
+#. Translators: the line under "Waiting for this message".
+#: gnui/ui/conversation/kinds/note.go
+msgid "This may take a while. Open WhatsApp on your phone."
+msgstr "这可能需要一些时间。请在手机上打开 WhatsApp。"
+
+#. Translators: the File menu: closes the open chat's tab (⌘W), as Safari's.
+#: gnui/ui/shell/menu.go
+msgctxt "menu bar"
+msgid "Close Tab"
+msgstr "关闭标签页"

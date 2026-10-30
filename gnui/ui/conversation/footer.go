@@ -70,35 +70,39 @@ func tickOf(d abi.Delivery) tickMark {
 	return tickSent
 }
 
-// tickStep is how far right of the first check the second of a pair sits.
-func tickStep(e *screen.Env) float32 { return theme.Snap(e.Pt(4)) }
+// tickStep is how far right of the first check the second of a pair sits,
+// iw being a check's width: TickStep of it (ztheme).
+func tickStep(iw float32) float32 { return theme.Snap(iw * ztheme.TickStep) }
 
-// tickIcons are a kit's icons for the delivery marks: the chat list's
-// (chatlist/rows.go), a check, and a pair of them one overlapping the other.
-type tickIcons struct{ tick, wait icon.ID }
+// tickIcons are a kit's icons for the delivery marks, the chat list's look
+// (chatlist/rows.go, ztheme.TickIcon): a check, a pair of them one
+// overlapping the other, a clock while sending, a red mark when it failed.
+type tickIcons struct{ tick, wait, fail icon.ID }
 
 func addTickIcons(k interface{ AddIcon(icon.Spec) icon.ID }) tickIcons {
 	return tickIcons{
-		tick: k.AddIcon(icon.Spec{Symbol: "checkmark", Fallback: '✓', Pt: 11, Weight: 0.3}),
-		wait: k.AddIcon(icon.Spec{Symbol: "clock", Fallback: '◷', Pt: 11}),
+		tick: k.AddIcon(ztheme.TickIcon("checkmark", '✓')),
+		wait: k.AddIcon(ztheme.TickIcon("clock", '◷')),
+		fail: k.AddIcon(ztheme.TickIcon("exclamationmark.circle.fill", '!')),
 	}
 }
 
-// width is the width of mark t as drawn; a failed message's "!" is in font.
+// width is the width of mark t as drawn.
 func (ic tickIcons) width(e *screen.Env, font text.FontKey, t tickMark) float32 {
 	k := e.K.Kit
 	switch t {
 	case tickNone:
 		return 0
 	case tickFailed:
-		return k.TextWidthBytes(font, base.StrBytes("!"))
+		w, _ := k.IconSize(ic.fail)
+		return w
 	case tickPending:
 		w, _ := k.IconSize(ic.wait)
 		return w
 	}
 	w, _ := k.IconSize(ic.tick)
 	if t == tickBoth {
-		w += tickStep(e)
+		w += tickStep(w)
 	}
 	return w
 }
@@ -107,16 +111,12 @@ func (ic tickIcons) width(e *screen.Env, font text.FontKey, t tickMark) float32 
 // whose pair the font sets apart.
 func (ic tickIcons) draw(e *screen.Env, font text.FontKey, t tickMark, ink uint32, key ui.Key) {
 	c, k := e.C(), e.K.Kit
-	if t == tickFailed {
-		c.NextFont(font)
-		c.NextTextColor(ink)
-		c.NextSize(ui.TextSize(0), ui.TextSize(0))
-		c.BoxKeyed(ui.DrawText, ui.KeyN(key, 20), base.StrBytes("!"))
-		return
-	}
 	id := ic.tick
-	if t == tickPending {
+	switch t {
+	case tickPending:
 		id = ic.wait
+	case tickFailed:
+		id = ic.fail
 	}
 	iw, ih := k.IconSize(id)
 	c.NextSize(ui.Px(ic.width(e, font, t)), ui.Px(ih))
@@ -129,7 +129,7 @@ func (ic tickIcons) draw(e *screen.Env, font text.FontKey, t tickMark, ink uint3
 	}
 	one(0, 0)
 	if t == tickBoth {
-		one(1, tickStep(e))
+		one(1, tickStep(iw))
 	}
 	c.Pop()
 }

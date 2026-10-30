@@ -3135,9 +3135,13 @@ msgstr "Grup"
 msgid "Group invite"
 msgstr "Grup daveti"
 
-#: gnui/ui/chatlist/chatlist.go:658
+#: gnui/ui/shell/panes.go
 msgid "Hide the chat list (⌘B)"
 msgstr "Sohbet listesini gizle (⌘B)"
+
+#: gnui/ui/shell/panes.go
+msgid "Show the chat list (⌘B)"
+msgstr "Sohbet listesini göster (⌘B)"
 
 #. Translators: the verb-less menu item that opens a chat's info panel.
 #: gnui/ui/chatlist/menu.go:375 gnui/ui/conversation/menu.go:377
@@ -4727,26 +4731,6 @@ msgstr "Saydamlık"
 msgid "The desktop shows softly through the window's background. The system's Reduce transparency setting turns it off too."
 msgstr "Masaüstü pencerenin arka planından hafifçe görünür. Sistemin Saydamlığı azalt ayarı da bunu kapatır."
 
-#. Translators: a message this device could not decrypt yet; the sender's phone is asked to send it again.
-#: gnui/ui/conversation/kinds/note.go
-msgid "Waiting for this message"
-msgstr "Bu mesaj bekleniyor"
-
-#. Translators: the line under "Waiting for this message".
-#: gnui/ui/conversation/kinds/note.go
-msgid "This may take a while. Open WhatsApp on your phone."
-msgstr "Bu biraz zaman alabilir. Telefonunuzda WhatsApp'ı açın."
-
-#. Translators: the File menu: closes the open chat's tab (⌘W), as Safari's.
-#: gnui/ui/shell/menu.go
-msgctxt "menu bar"
-msgid "Close Tab"
-msgstr "Sekmeyi Kapat"
-
-#: gnui/ui/shell/panes.go
-msgid "Show the chat list (⌘B)"
-msgstr "Sohbet listesini göster (⌘B)"
-
 #: gnui/ui/shell/keyboard.go
 msgid "Unarchived"
 msgstr "Arşivden çıkarıldı"
@@ -5162,3 +5146,19 @@ msgstr "Karşıtın yanında"
 #: gnui
 msgid "Free"
 msgstr "Serbest"
+
+#. Translators: a message this device could not decrypt yet; the sender's phone is asked to send it again.
+#: gnui/ui/conversation/kinds/note.go
+msgid "Waiting for this message"
+msgstr "Bu mesaj bekleniyor"
+
+#. Translators: the line under "Waiting for this message".
+#: gnui/ui/conversation/kinds/note.go
+msgid "This may take a while. Open WhatsApp on your phone."
+msgstr "Bu biraz zaman alabilir. Telefonunuzda WhatsApp'ı açın."
+
+#. Translators: the File menu: closes the open chat's tab (⌘W), as Safari's.
+#: gnui/ui/shell/menu.go
+msgctxt "menu bar"
+msgid "Close Tab"
+msgstr "Sekmeyi Kapat"

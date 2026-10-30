@@ -2985,8 +2985,12 @@ msgstr ""
 msgid "Group invite"
 msgstr ""
 
-#: gnui/ui/chatlist/chatlist.go:658
+#: gnui/ui/shell/panes.go
 msgid "Hide the chat list (⌘B)"
+msgstr ""
+
+#: gnui/ui/shell/panes.go
+msgid "Show the chat list (⌘B)"
 msgstr ""
 
 #. Translators: the verb-less menu item that opens a chat's info panel.
@@ -4537,26 +4541,6 @@ msgstr ""
 msgid "The desktop shows softly through the window's background. The system's Reduce transparency setting turns it off too."
 msgstr ""
 
-#. Translators: a message this device could not decrypt yet; the sender's phone is asked to send it again.
-#: gnui/ui/conversation/kinds/note.go
-msgid "Waiting for this message"
-msgstr ""
-
-#. Translators: the line under "Waiting for this message".
-#: gnui/ui/conversation/kinds/note.go
-msgid "This may take a while. Open WhatsApp on your phone."
-msgstr ""
-
-#. Translators: the File menu: closes the open chat's tab (⌘W), as Safari's.
-#: gnui/ui/shell/menu.go
-msgctxt "menu bar"
-msgid "Close Tab"
-msgstr ""
-
-#: gnui/ui/shell/panes.go
-msgid "Show the chat list (⌘B)"
-msgstr ""
-
 #: gnui/ui/shell/keyboard.go
 msgid "Unarchived"
 msgstr ""
@@ -4971,4 +4955,19 @@ msgstr ""
 
 #: gnui
 msgid "Free"
+
+#. Translators: a message this device could not decrypt yet; the sender's phone is asked to send it again.
+#: gnui/ui/conversation/kinds/note.go
+msgid "Waiting for this message"
+msgstr ""
+
+#. Translators: the line under "Waiting for this message".
+#: gnui/ui/conversation/kinds/note.go
+msgid "This may take a while. Open WhatsApp on your phone."
+msgstr ""
+
+#. Translators: the File menu: closes the open chat's tab (⌘W), as Safari's.
+#: gnui/ui/shell/menu.go
+msgctxt "menu bar"
+msgid "Close Tab"
 msgstr ""
