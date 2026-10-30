@@ -113,7 +113,12 @@ var relativeTime = regexp.MustCompile(`\bt[+-]\d+\b`)
 
 // sameLine compares two shown records: equal but for their relative times,
 // which may differ by two seconds.
+// encodedSize is a demo voice note's size, which is the system encoder's
+// (AudioToolbox's Opus differs by macOS release), not the backend's.
+var encodedSize = regexp.MustCompile(`(note-\d+-v\d+\.ogg" Size:)\d+`)
+
 func sameLine(want, got string) bool {
+	want, got = encodedSize.ReplaceAllString(want, "${1}n"), encodedSize.ReplaceAllString(got, "${1}n")
 	if relativeTime.ReplaceAllString(want, "t") != relativeTime.ReplaceAllString(got, "t") {
 		return false
 	}
