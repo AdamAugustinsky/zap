@@ -410,33 +410,43 @@ func (e *Engine) receipt(evt *events.Receipt) error {
 	if !evt.Timestamp.IsZero() {
 		at = evt.Timestamp.Unix()
 	}
-	names := []string{"sent", "delivered", "read", "played"}
 	for _, id := range evt.MessageIDs {
-		level, known, err := e.arch.ReceiptAt(chat, id, sender, status, at, evt.IsGroup)
+		known, err := e.fileReceipt(chat, id, sender, status, at, evt.IsGroup)
 		if err != nil {
 			return err
 		}
-		if !known {
-			continue
-		}
-		err = e.arch.UpdateMessage(chat, id, func(m *store.Message) {
-			rank := map[string]int{"pending": -1, "failed": -1, "sent": 0, "delivered": 1, "read": 2, "played": 3}
-			if m.FromMe && level > rank[m.Status] {
-				m.Status = names[level]
+		if known {
+			e.emitMessage(chat, id)
+			if e.watch != nil && string(e.watch.Chat) == chat && string(e.watch.Message) == id {
+				e.emitReceipts()
 			}
-		})
-		if noRows(err) {
-			continue
-		}
-		if err != nil {
-			return err
-		}
-		e.emitMessage(chat, id)
-		if e.watch != nil && string(e.watch.Chat) == chat && string(e.watch.Message) == id {
-			e.emitReceipts()
+		} else if evt.Chat.Server != types.BroadcastServer && !e.isMe(sender) {
+			// Our message may reach us after this (early.go).
+			e.waitReceipt(chat, id, sender, status, at)
 		}
 	}
 	return nil
+}
+
+// fileReceipt records one recipient's receipt of our message and moves its
+// ticks; false when the message is not ours, not here, or the recipient
+// is not in its audience.
+func (e *Engine) fileReceipt(chat, id, sender string, status int, at int64, group bool) (bool, error) {
+	level, known, err := e.arch.ReceiptAt(chat, id, sender, status, at, group)
+	if err != nil || !known {
+		return false, err
+	}
+	names := []string{"sent", "delivered", "read", "played"}
+	err = e.arch.UpdateMessage(chat, id, func(m *store.Message) {
+		rank := map[string]int{"pending": -1, "failed": -1, "sent": 0, "delivered": 1, "read": 2, "played": 3}
+		if m.FromMe && level > rank[m.Status] {
+			m.Status = names[level]
+		}
+	})
+	if noRows(err) {
+		return false, nil
+	}
+	return err == nil, err
 }
 
 // readElsewhere is our own read receipt from another device: the chat is
