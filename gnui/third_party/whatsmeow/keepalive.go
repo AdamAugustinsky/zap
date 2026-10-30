@@ -63,7 +63,11 @@ func (cli *Client) keepAliveLoop(ctx, connCtx context.Context) {
 }
 
 func (cli *Client) sendKeepAlive(ctx context.Context) (isSuccess, shouldContinue bool) {
-	respCh, err := cli.sendIQAsync(ctx, infoQuery{
+	// ZAP PATCH (see ZAP-PATCH.md): a write into a wedged socket counts as a
+	// failed ping instead of stopping the loop until the socket dies.
+	sendCtx, cancel := context.WithTimeout(ctx, KeepAliveResponseDeadline) // ZAP PATCH
+	defer cancel()                                                         // ZAP PATCH
+	respCh, err := cli.sendIQAsync(sendCtx, infoQuery{
 		Namespace: "w:p",
 		Type:      "get",
 		To:        types.ServerJID,

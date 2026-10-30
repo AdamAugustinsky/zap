@@ -310,6 +310,10 @@ func (e *Engine) fetchAvatar(id string, full bool) {
 		e.avatar(id, full, path)
 		return
 	}
+	if isChannel(id) {
+		e.fetchChannelAvatar(id, full)
+		return
+	}
 	target := id
 	if e.isMe(id) {
 		target = e.me()
@@ -320,10 +324,7 @@ func (e *Engine) fetchAvatar(id string, full bool) {
 		return
 	}
 	if !e.cli.IsConnected() {
-		// Asked for again once connected.
-		if _, waiting := e.avatars[avatarKey{id, full}]; !waiting {
-			e.avatars[avatarKey{id, full}] = 0
-		}
+		e.avatarLater(id, full)
 		return
 	}
 	cli := e.cli
@@ -331,39 +332,57 @@ func (e *Engine) fetchAvatar(id string, full bool) {
 		info, err := cli.ProfilePicture(ctx, j, !full)
 		var data []byte
 		if err == nil && info != nil {
-			data, err = cli.Fetch(ctx, info.URL, avatarMax)
-			if err == nil && !strings.HasPrefix(httpType(data), "image/") {
-				err = errors.New("not a picture")
-			}
+			data, err = fetchPicture(ctx, cli, info.URL)
 		}
-		return func() {
-			if err != nil {
-				tries := e.avatars[avatarKey{id, full}] + 1
-				if tries >= avatarTries {
-					delete(e.avatars, avatarKey{id, full})
-					e.avatar(id, full, "")
-					return
-				}
-				e.avatars[avatarKey{id, full}] = tries
-				return
-			}
-			delete(e.avatars, avatarKey{id, full})
-			if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-				e.avatar(id, full, "")
-				return
-			}
-			// No picture is kept as an empty file, so it is not asked for
-			// again until it is stale.
-			if err := os.WriteFile(path, data, 0o600); err != nil {
-				e.avatar(id, full, "")
-				return
-			}
-			if len(data) == 0 {
-				path = ""
-			}
-			e.avatar(id, full, path)
-		}
+		return func() { e.avatarFetched(id, full, data, err) }
 	})
+}
+
+// avatarLater asks for a picture again once connected.
+func (e *Engine) avatarLater(id string, full bool) {
+	if _, waiting := e.avatars[avatarKey{id, full}]; !waiting {
+		e.avatars[avatarKey{id, full}] = 0
+	}
+}
+
+// fetchPicture reads a profile picture from WhatsApp's servers.
+func fetchPicture(ctx context.Context, cli Client, url string) ([]byte, error) {
+	data, err := cli.Fetch(ctx, url, avatarMax)
+	if err == nil && !strings.HasPrefix(httpType(data), "image/") {
+		err = errors.New("not a picture")
+	}
+	return data, err
+}
+
+// avatarFetched keeps and sends a fetched picture (empty data: there is
+// none), or counts a failed try.
+func (e *Engine) avatarFetched(id string, full bool, data []byte, err error) {
+	if err != nil {
+		tries := e.avatars[avatarKey{id, full}] + 1
+		if tries >= avatarTries {
+			delete(e.avatars, avatarKey{id, full})
+			e.avatar(id, full, "")
+			return
+		}
+		e.avatars[avatarKey{id, full}] = tries
+		return
+	}
+	delete(e.avatars, avatarKey{id, full})
+	path := e.avatarFile(id, full)
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		e.avatar(id, full, "")
+		return
+	}
+	// No picture is kept as an empty file, so it is not asked for
+	// again until it is stale.
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		e.avatar(id, full, "")
+		return
+	}
+	if len(data) == 0 {
+		path = ""
+	}
+	e.avatar(id, full, path)
 }
 
 // retryAvatars asks again for the pictures wanted while offline.
