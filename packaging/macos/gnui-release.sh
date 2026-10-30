@@ -67,7 +67,9 @@ PY
     echo "the bundle was built from $revision (dirty: $dirty), not HEAD" >&2
     exit 1
 }
-codesign -dv "$app" 2>&1 | grep -qx "TeamIdentifier=$team" || {
+# Not piped into grep -q: under pipefail the grep's early exit fails codesign.
+signer=$(codesign -dv "$app" 2>&1)
+grep -qx "TeamIdentifier=$team" <<<"$signer" || {
     echo "dist/Zap.app is not signed by team $team" >&2
     exit 1
 }

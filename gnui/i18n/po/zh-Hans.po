@@ -5018,3 +5018,15 @@ msgstr "这可能需要一些时间。请在手机上打开 WhatsApp。"
 msgctxt "menu bar"
 msgid "Close Tab"
 msgstr "关闭标签页"
+
+#: gnui
+msgid "Space colour…"
+msgstr "空间颜色…"
+
+#: gnui
+msgid "Like the app"
+msgstr "跟随应用"
+
+#: gnui
+msgid "Grain"
+msgstr "颗粒"

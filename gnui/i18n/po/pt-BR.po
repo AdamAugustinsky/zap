@@ -5182,3 +5182,15 @@ msgstr "Isso pode levar algum tempo. Abra o WhatsApp no seu celular."
 msgctxt "menu bar"
 msgid "Close Tab"
 msgstr "Fechar Aba"
+
+#: gnui
+msgid "Space colour…"
+msgstr "Cor do espaço…"
+
+#: gnui
+msgid "Like the app"
+msgstr "Como o app"
+
+#: gnui
+msgid "Grain"
+msgstr "Granulação"

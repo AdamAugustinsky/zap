@@ -5167,3 +5167,15 @@ msgstr "Ini mungkin perlu waktu. Buka WhatsApp di ponselmu."
 msgctxt "menu bar"
 msgid "Close Tab"
 msgstr "Tutup Tab"
+
+#: gnui
+msgid "Space colour…"
+msgstr "Warna ruang…"
+
+#: gnui
+msgid "Like the app"
+msgstr "Seperti aplikasi"
+
+#: gnui
+msgid "Grain"
+msgstr "Butiran"

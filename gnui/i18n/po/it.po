@@ -5194,3 +5194,15 @@ msgstr "Potrebbe volerci un po'. Apri WhatsApp sul telefono."
 msgctxt "menu bar"
 msgid "Close Tab"
 msgstr "Chiudi pannello"
+
+#: gnui
+msgid "Space colour…"
+msgstr "Colore dello spazio…"
+
+#: gnui
+msgid "Like the app"
+msgstr "Come l’app"
+
+#: gnui
+msgid "Grain"
+msgstr "Grana"

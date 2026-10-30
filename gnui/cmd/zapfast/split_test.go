@@ -6,6 +6,7 @@ import (
 	"testing"
 	"zapfast/model"
 	ztheme "zapfast/theme"
+	"zapfast/ui/shell"
 
 	"gonativeui/ui"
 	"gonativeui/widget/widgettest"
@@ -343,5 +344,48 @@ func TestASpacesColour(t *testing.T) {
 	}
 	if r.sh.Accent()|0xFF != ztheme.Accent(true)|0xFF {
 		t.Errorf("back in a space with no colour the accent is %08X, not Zap's green", r.sh.Accent())
+	}
+}
+
+// A window with one space has no strip to right-click: View → Space colour…
+// opens the same colours, under the list's title row, for the space on
+// screen.
+func TestTheSpaceColourFromTheMenu(t *testing.T) {
+	r, _ := keyRig(t)
+	a := r.s.Accounts[0]
+	if len(a.Settings.Folders) != 0 {
+		t.Fatal("the rig has folders")
+	}
+	r.Play(widgettest.Command(uint16(shell.CmdSpaceColour)), widgettest.Idle(3))
+	r.Click(ui.RoleButton, "Purple")
+	r.Frames(2)
+	if got := a.Settings.SpaceTint; got != "purple" || r.s.SpaceTint() != "purple" {
+		t.Fatalf("the account's colour %q, the space's %q", got, r.s.SpaceTint())
+	}
+}
+
+// A space can keep its own appearance, as Zen's: Light in the Work space
+// lights the window while it shows, whatever the app's (the rig's is dark),
+// and the account's space, which follows the app, is dark again.
+func TestASpacesOwnAppearance(t *testing.T) {
+	r, _ := keyRig(t)
+	a := r.s.Accounts[0]
+	work := a.FolderByID(a.NewFolder("Work", "briefcase"))
+	a.EditFolder(work, func(f *state.Folder) { f.Space = true })
+	r.s.GoToSpace(state.Space{Acct: a.Index, Folder: a.Settings.Folders[work].ID})
+	r.Play(widgettest.Settle())
+	if !ztheme.Dark() {
+		t.Fatal("the rig is not dark")
+	}
+	r.Play(widgettest.RClick(ui.RoleButton, "Work"), widgettest.Idle(2))
+	r.Click(ui.RoleButton, "Light")
+	r.Play(widgettest.Settle())
+	if got := a.Settings.Folders[work].TintMode; got != "light" || ztheme.Dark() {
+		t.Fatalf("Work's mode %q, the window dark %v", got, ztheme.Dark())
+	}
+	r.s.GoToSpace(state.Space{Acct: a.Index})
+	r.Play(widgettest.Settle())
+	if !ztheme.Dark() {
+		t.Error("the account's space did not go back to the app's dark")
 	}
 }

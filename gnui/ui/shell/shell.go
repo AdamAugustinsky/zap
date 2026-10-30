@@ -123,7 +123,10 @@ type Shell struct {
 	kb         keyboard      // the single keys' layer (keyboard.go)
 	spaces     []state.Space // the spaces, as last listed (spaces.go)
 	sp         spaceUI
-	tint       tintUI                 // the space colour on screen (spaceTint)
+	tint       tintUI     // the space colour on screen (spaceTint)
+	glide      paneGlide  // where the panes are drawn (glide.go)
+	grain      img.Handle // the grain's tile (grain.go), once asked for
+	grainAsked bool
 	bannerH    float32                // the open chat's banner, last frame, which the transcript runs under
 	front      [state.NumWindows]bool // opened alone: to bring forward once open
 	placed     bool                   // the main window was put back where it was
@@ -410,6 +413,7 @@ func (sh *Shell) Build(c *ui.Context) {
 	c.Push(c.Box(base.Floating, "window"))
 	r.Chrome.Background(c, r) // Rex's field, under everything
 	sh.spaceTint(W, H)
+	sh.spaceGrain(W, H)
 	a := s.Acct()
 	sh.composerH = 0
 	switch {
@@ -600,19 +604,32 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 			dx = -(1 - p) * W
 		}
 	}
-	// where pane id is drawn this frame, the slide's distance on
+	// where pane id is drawn this frame (glide.go), the slide's distance on,
+	// and how far it is shown
+	panes := [...]workspace.PaneID{paneList, paneChat, paneSide}
+	sh.glideFrame(W, H, narrow, ev.Moved)
+	var drawn [4][4]float32
+	var showing [4]float32
+	for _, id := range panes {
+		drawn[id], showing[id] = sh.glided(id, gut)
+	}
 	rect := func(id workspace.PaneID) [4]float32 {
-		pr := l.Rect(id)
+		pr := drawn[id]
 		pr[0], pr[2] = pr[0]+dx, pr[2]+dx
 		return pr
 	}
-	panes := [...]workspace.PaneID{paneList, paneChat, paneSide}
+	// a pane shows while the layout has it or it glides away
+	up := func(id workspace.PaneID) bool { return l.Shown(id) || showing[id] > 0.001 }
 	if railW > 0 {
 		sh.rail(a, dx, railW, H, tbH)
 	}
 	for _, id := range panes {
-		if l.Shown(id) && !(split && id == paneChat) {
-			sh.surface(id, rect(id))
+		if up(id) && !(split && id == paneChat) {
+			op := showing[id]
+			if id == paneChat {
+				op = 1
+			}
+			sh.surfaceAt(id, rect(id), op)
 		}
 	}
 	// A pane that puts none of its controls in the Tab order (a screen not
@@ -624,9 +641,11 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 	}
 	// The slots build in the window's root, over their panes, so that their
 	// Rects are window coordinates; each pane's title row after its content.
-	if l.Shown(paneList) {
+	if up(paneList) {
 		n := e.TabStops()
-		sh.listIn(rect(paneList), W, H)
+		c.PushOpacity(showing[paneList])
+		sh.listIn(rect(paneList), sh.glideFull(paneList), W, H)
+		c.PopOpacity()
 		if e.TabStops() == n {
 			e.TabInBuildOrder()
 		}
@@ -638,6 +657,8 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 		sh.chat(a, rect(paneChat), open)
 	}
 	if l.Shown(paneSide) {
+		c.PushOpacity(showing[paneSide])
+		defer c.PopOpacity()
 		sp := rect(paneSide)
 		sr := sh.body(sp)
 		if side != nil {
@@ -659,6 +680,7 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 		}
 		sh.sideTB.End()
 	}
+	sh.tintPopover() // a space's colours: from its strip cell or the View menu
 	sh.titlebar(a)
 	// the tabs start over the conversation, after the account block
 	sh.chatTabs(a, tabX0, tabX1, tbH)
@@ -679,13 +701,19 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 
 // listIn builds the list in its pane r inside the one box it always has,
 // at the window's corner so that its Rects stay window coordinates and its
-// boxes keep their identities from frame to frame. A space's list comes in
-// from the side of the one it left (spaces.go): the box then clips it at
-// the pane's edges. At rest it clips nothing, so what the list opens past
-// its edge (a menu, a popover) is whole.
-func (sh *Shell) listIn(r [4]float32, W, H float32) {
+// boxes keep their identities from frame to frame. While its edge sweeps
+// (glide.go) the list keeps its full width fullW and the box clips it at
+// the edge; a space's list comes in from the side of the one it left
+// (spaces.go), clipped the same way. At rest it clips nothing, so what the
+// list opens past its edge (a menu, a popover) is whole.
+func (sh *Shell) listIn(r [4]float32, fullW, W, H float32) {
 	c := sh.env.C()
 	w, fl := W, ui.Flags(0)
+	if r[2]-r[0] < fullW-0.5 {
+		// its edge sweeping (glide.go): the list at its full width, clipped
+		w, fl = r[2], ui.Clip
+		r[2] = r[0] + fullW
+	}
 	dx, fade := sh.spaceShift()
 	if dx != 0 {
 		w, fl = r[2], ui.Clip

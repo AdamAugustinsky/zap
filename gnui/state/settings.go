@@ -284,6 +284,8 @@ type AccountSettings struct {
 	SpaceTintMix   string    // the colours that join it (TintMixes)
 	SpaceTintLevel float32   // its opacity (SpaceTheme.Level)
 	SpaceTintDots  [3]uint32 // colours of the person's own (SpaceTheme.Dots)
+	SpaceTintMode  string    // its appearance (SpaceTheme.Mode)
+	SpaceTintGrain float32   // its grain (SpaceTheme.Grain)
 }
 
 // DefaultAccountSettings are upstream's defaults (zf:src/settings.rs:852).
