@@ -945,6 +945,9 @@ func (s *Archive) Canonicalize(from, to string) error {
 	if err = moveReceiptTimes(tx, from, to); err != nil {
 		return err
 	}
+	if err = moveWaitingReceipts(tx, from, to); err != nil {
+		return err
+	}
 	// Move scoped auxiliary rows before deleting the old identity. Vote/receipt
 	// collisions use the newer vote and the least-progress receipt; neither a
 	// duplicate identity nor a membership change can invent an acknowledgement.

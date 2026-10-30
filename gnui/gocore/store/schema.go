@@ -71,6 +71,9 @@ func (s *Archive) migrate() error {
 	if version > SchemaVersion {
 		return fmt.Errorf("%w (schema %d, this build knows %d)", ErrNewerArchive, version, SchemaVersion)
 	}
+	if err := addTables(s.db); err != nil {
+		return err
+	}
 	if version == SchemaVersion {
 		return nil
 	}

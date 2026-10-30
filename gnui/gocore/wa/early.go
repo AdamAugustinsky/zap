@@ -8,6 +8,7 @@ import (
 
 	"go.mau.fi/whatsmeow/types"
 
+	"zapfast/abi"
 	"zapfast/gocore/store"
 )
 
@@ -141,10 +142,13 @@ func (q *earlyEvents) prune(now time.Time) {
 	q.reactions = slices.DeleteFunc(q.reactions, func(r earlyReaction) bool { return now.Sub(r.queued) >= earlyMaxAge })
 }
 
-// settleEarly applies the reactions that waited for m, now filed, and
-// reports whether the phone read it before it was
+// settleEarly applies the receipts and reactions that waited for m, now
+// filed, and reports whether the phone read it before it was
 // (zf:src/backend/worker.rs:4594).
 func (e *Engine) settleEarly(m store.Message) bool {
+	if m.FromMe {
+		e.settleReceipts(m.ChatID, m.ID)
+	}
 	read := e.early.takeRead(m.ChatID, m.ID) && !m.FromMe
 	for _, r := range e.early.takeReactions(m.ChatID, m.ID) {
 		sender := r.sender
@@ -172,6 +176,7 @@ func (e *Engine) readThrough(chat string, m store.Message) error {
 // settleFiled settles what waited for messages filed outside keep: history
 // (zf:src/backend/worker.rs:5395). It reports whether any was read.
 func (e *Engine) settleFiled(chat string, ids []string) (bool, error) {
+	e.settleWaiting(chat)
 	if len(e.early.reads) == 0 && len(e.early.reactions) == 0 {
 		return false, nil
 	}
@@ -197,10 +202,15 @@ func (e *Engine) settleFiled(chat string, ids []string) (bool, error) {
 // after the current event, which may be filing under the number itself.
 func (e *Engine) remapEarly(from, to string) {
 	ids := e.early.rekey(from, to)
-	if len(ids) == 0 {
+	waiting, _ := e.arch.WaitingFiled(to)
+	if len(ids) == 0 && len(waiting) == 0 {
 		return
 	}
 	e.post(func() {
+		moved := e.settleWaiting(to)
+		for _, id := range moved {
+			e.emitMessage(to, id)
+		}
 		var filed []string
 		for _, id := range ids {
 			if _, err := e.arch.Message(to, id); err == nil {
@@ -208,6 +218,9 @@ func (e *Engine) remapEarly(from, to string) {
 			}
 		}
 		if len(filed) == 0 {
+			if len(moved) > 0 {
+				e.emitChat(to)
+			}
 			return
 		}
 		if _, err := e.settleFiled(to, filed); err != nil {
@@ -218,4 +231,88 @@ func (e *Engine) remapEarly(from, to string) {
 		}
 		e.emitChat(to)
 	})
+}
+
+// waitReceipt keeps a recipient's receipt of a message not filed yet, on
+// disk: ours, sent from the phone, may come after it, live or by history
+// (zf:src/backend/worker.rs:3903).
+func (e *Engine) waitReceipt(chat, id, sender string, status int, at int64) {
+	if _, err := e.arch.Message(chat, id); !noRows(err) {
+		return
+	}
+	if err := e.arch.WaitReceipt(chat, id, sender, status, at, time.Now().Unix()); err != nil {
+		slog.Warn("zapfast wa: an early receipt was not kept", "err", err)
+	}
+}
+
+// settleReceipts applies the receipts that waited for our message, now
+// filed, and reports whether its ticks moved
+// (zf:src/backend/worker.rs:3993). A group message sent elsewhere has no
+// saved audience: the group's current members are the best record of who
+// it went to, so they become it.
+func (e *Engine) settleReceipts(chat, id string) bool {
+	waiting, err := e.arch.TakeWaitingReceipts(chat, id)
+	if err != nil {
+		slog.Warn("zapfast wa: early receipts were not applied", "err", err)
+		return false
+	}
+	if len(waiting) == 0 {
+		return false
+	}
+	group := chatKind("", chat) == abi.ChatKindGroup
+	if c, err := e.arch.Chat(chat); group && err == nil {
+		var audience []string
+		for _, p := range c.Participants {
+			if !e.isMe(p) {
+				audience = append(audience, p)
+			}
+		}
+		if len(audience) > 0 {
+			if err := e.arch.SetAudience(chat, id, audience); err != nil {
+				slog.Warn("zapfast wa: storing a group audience", "err", err)
+			}
+		}
+	}
+	moved := false
+	for _, w := range waiting {
+		sender := w.Sender
+		// The recipient's privacy id may have been mapped since.
+		if j, ok := jidOf(sender); ok && j.Server == types.HiddenUserServer {
+			sender = e.canonical(j)
+		}
+		// Each stage at the time it was first seen; the furthest even
+		// without one.
+		times := [...]int64{0, w.DeliveredAt, w.ReadAt, w.Played}
+		for stage := 1; stage <= min(w.Status, 3); stage++ {
+			if times[stage] == 0 && stage < w.Status {
+				continue
+			}
+			known, err := e.fileReceipt(chat, id, sender, stage, times[stage], group)
+			if err != nil {
+				slog.Warn("zapfast wa: an early receipt was not applied", "err", err)
+				break
+			}
+			moved = moved || known
+		}
+	}
+	return moved
+}
+
+// settleWaiting applies the receipts that wait for messages already filed
+// in chat: by history, or under a privacy id mapped since
+// (zf:src/backend/worker.rs:2790). It returns the messages whose ticks
+// moved.
+func (e *Engine) settleWaiting(chat string) []string {
+	ids, err := e.arch.WaitingFiled(chat)
+	if err != nil {
+		slog.Warn("zapfast wa: early receipts were not applied", "err", err)
+		return nil
+	}
+	var moved []string
+	for _, id := range ids {
+		if e.settleReceipts(chat, id) {
+			moved = append(moved, id)
+		}
+	}
+	return moved
 }
