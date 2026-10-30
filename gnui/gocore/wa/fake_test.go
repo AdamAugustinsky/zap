@@ -85,6 +85,8 @@ type fakeClient struct {
 
 	x *fakeMore // WP4b's answers (fake_more_test.go)
 
+	channels fakeChannels // profile_test.go
+
 	callClient calls.Client // the call signaling's (calls_test.go); nil: none
 }
 

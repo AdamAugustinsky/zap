@@ -330,6 +330,7 @@ func (e *Engine) connected() {
 	e.emitMe()
 	e.announcePresence()
 	e.retryAvatars()
+	e.profileConnected()
 	e.announcePinLimit()
 	e.pumpPrefetch()
 	e.mendSignalling()

@@ -109,6 +109,8 @@ type Engine struct {
 	failed    map[string]error // the last failed download of a message
 	avatars   map[avatarKey]int
 
+	channelPics channelPictures // followed channels' pictures (profile.go)
+
 	// WP4b's state.
 	openFailed   bool                 // the account's storage did not open: Reconnect and StartOverArchive try again
 	keepArchived bool                 // SetKeepChatsArchived: a new message leaves an archived chat archived

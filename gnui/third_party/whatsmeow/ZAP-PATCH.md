@@ -32,3 +32,11 @@ call signaling over whatsmeow and needs what whatsmeow hides:
 
 Files: `types/call.go` (the fields), `call.go` (their values and
 `typedCallAck`).
+
+5. The keepalive's ping is written under a `KeepAliveResponseDeadline`
+   context (`keepalive.go`). Upstream writes it under the connection's own
+   context, which has no deadline: after a sleep or a network change a
+   write can wait forever for socket buffer space, and the loop never gets
+   to count a failure or force the reconnect after `KeepAliveMaxFailTime`.
+   Zap's Rust core hit the same in whatsapp-rust (its
+   `src/backend/worker/link_watch.rs`, issue #177).

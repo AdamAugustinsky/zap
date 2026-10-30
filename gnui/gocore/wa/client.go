@@ -78,6 +78,10 @@ type Client interface {
 	ProfilePicture(ctx context.Context, jid types.JID, preview bool) (*types.ProfilePictureInfo, error)
 	// Fetch reads an https URL (a profile picture), at most limit bytes.
 	Fetch(ctx context.Context, rawURL string, limit int64) ([]byte, error)
+	// Channels is GetSubscribedNewsletters: the followed channels' metadata.
+	Channels(ctx context.Context) ([]*types.NewsletterMetadata, error)
+	// Channel is GetNewsletterInfo: one channel's metadata.
+	Channel(ctx context.Context, jid types.JID) (*types.NewsletterMetadata, error)
 
 	// Groups.
 	GroupInfo(ctx context.Context, group types.JID) (*types.GroupInfo, error)
@@ -247,6 +251,14 @@ func (w *waClient) ProfilePicture(ctx context.Context, jid types.JID, preview bo
 		return nil, nil
 	}
 	return info, err
+}
+
+func (w *waClient) Channels(ctx context.Context) ([]*types.NewsletterMetadata, error) {
+	return w.c.GetSubscribedNewsletters(ctx)
+}
+
+func (w *waClient) Channel(ctx context.Context, jid types.JID) (*types.NewsletterMetadata, error) {
+	return w.c.GetNewsletterInfo(ctx, jid)
 }
 
 func (w *waClient) GroupInfo(ctx context.Context, group types.JID) (*types.GroupInfo, error) {

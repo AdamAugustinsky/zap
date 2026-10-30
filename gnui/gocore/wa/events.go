@@ -38,7 +38,11 @@ func (e *Engine) handle(evt any) {
 	case *events.TemporaryBan:
 		e.setStatus(linkFailed(v.String()))
 	case *events.PushNameSetting:
-		e.emitMe()
+		e.pushNameSet(v)
+	case *events.Picture:
+		e.pictureEvent(v)
+	case *events.UserAbout:
+		e.aboutEvent(v)
 
 	case *events.Message:
 		err = e.incoming(v)
