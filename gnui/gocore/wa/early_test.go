@@ -295,3 +295,41 @@ func TestAnEarlyReceiptUnderAPrivacyIDFollowsItsNumber(t *testing.T) {
 	}
 	nothingWaits(t, h, peer.String(), "L1")
 }
+
+// zf:src/backend/worker.rs:3927, a read in a direct chat reads what came before
+func TestAReadReadsOurEarlierMessages(t *testing.T) {
+	h := newHarness(t, options{})
+	h.start()
+	for i, id := range []string{"R1", "R2", "R3"} {
+		h.inject(message(peer, me, id, t0.Add(time.Duration(i)*time.Minute), text(id)))
+	}
+	h.inject(theirReceipt(peer, peer, types.ReceiptTypeDelivered, t0.Add(3*time.Minute), "R1", "R2", "R3"))
+	h.take()
+	h.inject(theirReceipt(peer, peer, types.ReceiptTypeRead, t0.Add(4*time.Minute), "R2"))
+	h.take()
+	for id, want := range map[string]string{"R1": "read", "R2": "read", "R3": "delivered"} {
+		if s := statusOf(t, h, peer, id); s != want {
+			t.Fatalf("%s: %q, want %q", id, s, want)
+		}
+	}
+}
+
+// zf:src/archive/receipts.rs:12, a group message whose audience is unknown
+func TestAGroupMessageWithoutAudienceKeepsItsReceipts(t *testing.T) {
+	h := newHarness(t, options{})
+	h.start()
+	// No members known: the phone's copy files without an audience.
+	h.inject(message(group, me, "B1", t0, text("hello all")))
+	h.take()
+	h.inject(theirReceipt(group, peer, types.ReceiptTypeRead, t0.Add(time.Minute), "B1"))
+	h.take()
+	details, err := h.e.arch.ReceiptDetails(group.String(), "B1")
+	if err != nil || len(details) != 1 || details[0].Sender != peer.String() || details[0].ReadAt != t0.Add(time.Minute).Unix() {
+		t.Fatalf("kept for its info: %+v %v", details, err)
+	}
+	// One reader of an unknown audience proves nothing about the rest.
+	if s := statusOf(t, h, group, "B1"); s == "read" {
+		t.Fatalf("status %q", s)
+	}
+	nothingWaits(t, h, group.String(), "B1")
+}

@@ -410,12 +410,16 @@ func (e *Engine) receipt(evt *events.Receipt) error {
 	if !evt.Timestamp.IsZero() {
 		at = evt.Timestamp.Unix()
 	}
+	var newest int64
 	for _, id := range evt.MessageIDs {
 		known, err := e.fileReceipt(chat, id, sender, status, at, evt.IsGroup)
 		if err != nil {
 			return err
 		}
 		if known {
+			if m, err := e.arch.Message(chat, id); err == nil {
+				newest = max(newest, m.Timestamp)
+			}
 			e.emitMessage(chat, id)
 			if e.watch != nil && string(e.watch.Chat) == chat && string(e.watch.Message) == id {
 				e.emitReceipts()
@@ -423,6 +427,21 @@ func (e *Engine) receipt(evt *events.Receipt) error {
 		} else if evt.Chat.Server != types.BroadcastServer && !e.isMe(sender) {
 			// Our message may reach us after this (early.go).
 			e.waitReceipt(chat, id, sender, status, at)
+		}
+	}
+	// In a direct chat a read reads every earlier message of ours
+	// (zf:src/backend/worker.rs:3927).
+	if status >= 2 && !evt.IsGroup && newest > 0 {
+		ids, err := e.arch.OursUnreadThrough(chat, newest)
+		if err != nil {
+			return err
+		}
+		for _, id := range ids {
+			if known, err := e.fileReceipt(chat, id, sender, status, at, false); err != nil {
+				return err
+			} else if known {
+				e.emitMessage(chat, id)
+			}
 		}
 	}
 	return nil

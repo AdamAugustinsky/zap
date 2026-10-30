@@ -20,6 +20,23 @@ func (s *Archive) ReceiptAt(chat, id, sender string, status int, timestamp int64
 		return 0, false, err
 	}
 	defer tx.Rollback()
+	// A group message of ours whose audience was never saved (sent from
+	// the phone while the members were unknown) keeps each receipt for its
+	// info, but no partial set of readers can move its ticks
+	// (zf:src/archive/receipts.rs:12).
+	blind := false
+	if group {
+		var own, audience int
+		if err = tx.QueryRow("SELECT COALESCE((SELECT from_me FROM message_flags WHERE chat=? AND id=?),0),(SELECT count(*) FROM audiences WHERE chat=? AND id=?)", chat, id, chat, id).Scan(&own, &audience); err != nil {
+			return 0, false, err
+		}
+		if own == 1 && audience == 0 {
+			blind = true
+			if _, err = tx.Exec("INSERT OR IGNORE INTO receipts(chat,id,sender,status) VALUES(?,?,?,0)", chat, id, sender); err != nil {
+				return 0, false, err
+			}
+		}
+	}
 	if !group {
 		var own bool
 		err = tx.QueryRow("SELECT from_me FROM message_flags WHERE chat=? AND id=?", chat, id).Scan(&own)
@@ -56,6 +73,9 @@ func (s *Archive) ReceiptAt(chat, id, sender string, status int, timestamp int64
 		}
 	}
 	level := status
+	if blind {
+		return 0, true, tx.Commit()
+	}
 	if group {
 		err = tx.QueryRow("SELECT MIN(status) FROM receipts WHERE chat=? AND id=?", chat, id).Scan(&level)
 	} else {
@@ -161,4 +181,27 @@ func moveReceiptTimes(tx *sql.Tx, from, to string) error {
 		}
 	}
 	return nil
+}
+
+// OursUnreadThrough lists our messages in chat sent up to a time (Unix
+// seconds) that went out and were not yet read: a read receipt for a later
+// one reads them too (zf:src/archive.rs:2300).
+func (s *Archive) OursUnreadThrough(chat string, through int64) ([]string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	rows, err := s.db.Query(`SELECT f.id FROM message_flags f JOIN messages m ON m.chat=f.chat AND m.id=f.id
+WHERE f.chat=? AND f.from_me=1 AND f.status IN ('sent','delivered') AND m.ts<=?`, chat, through)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
 }

@@ -13,7 +13,7 @@ require (
 	go.mau.fi/libsignal v0.2.2
 	go.mau.fi/whatsmeow v0.0.0-20261007111105-c386243a72ba
 	golang.org/x/image v0.23.0
-	golang.org/x/text v0.42.0
+	golang.org/x/text v0.43.0
 	gonativeui v0.0.0-00010101000000-000000000000
 	google.golang.org/protobuf v1.36.12
 )
@@ -31,13 +31,15 @@ require (
 	github.com/pion/randutil v0.1.0 // indirect
 	github.com/pion/transport/v5 v5.1.1 // indirect
 	github.com/rs/zerolog v1.35.1 // indirect
+	github.com/srwiley/oksvg v0.0.0-20221011165216-be6e8873101c // indirect
+	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
 	github.com/vektah/gqlparser/v2 v2.5.27 // indirect
 	go.mau.fi/util v0.10.1 // indirect
-	golang.org/x/crypto v0.57.0 // indirect
+	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/exp v0.0.0-20260908205506-85c1c2202aba // indirect
-	golang.org/x/net v0.59.0 // indirect
-	golang.org/x/sync v0.23.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/net v0.62.0 // indirect
+	golang.org/x/sync v0.24.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
 )
 
 // gonativeui's module path is a placeholder (D1), so it is never fetched: this
