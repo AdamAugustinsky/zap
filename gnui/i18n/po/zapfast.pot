@@ -5019,3 +5019,7 @@ msgstr ""
 #: gnui
 msgid "Bubble colour"
 msgstr ""
+
+#: gnui
+msgid "This copy of Zap was built on this Mac, so it updates by being rebuilt, not from a release."
+msgstr ""

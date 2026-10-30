@@ -5215,3 +5215,7 @@ msgstr "Ukuran teks"
 #: gnui
 msgid "Bubble colour"
 msgstr "Warna gelembung"
+
+#: gnui
+msgid "This copy of Zap was built on this Mac, so it updates by being rebuilt, not from a release."
+msgstr "Salinan Zap ini dibuat di Mac ini, jadi diperbarui dengan membuatnya ulang, bukan dari rilis."

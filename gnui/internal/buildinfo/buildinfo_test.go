@@ -38,3 +38,18 @@ func TestLogIsOneInfoRecord(t *testing.T) {
 	}
 	Log(nil, "0.19.0") // no log file: nothing, no panic
 }
+
+// A build the packaging script signed with the development identity says so,
+// and one it signed for release does not.
+func TestDevSigned(t *testing.T) {
+	was := devSigned
+	defer func() { devSigned = was }()
+	devSigned = "true"
+	if !Read().DevSigned {
+		t.Error("a development-signed build reads as a release")
+	}
+	devSigned = ""
+	if Read().DevSigned {
+		t.Error("a release reads as development-signed")
+	}
+}

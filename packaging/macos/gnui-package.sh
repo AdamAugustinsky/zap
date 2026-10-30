@@ -175,6 +175,9 @@ else
     # app loads only Contents/Frameworks' copies: sqlite.FindLibrary, av's
     # WebP loader). A Developer
     # ID signs them all with one Team ID and gets no such exception.
+    # No release is signed so, so the app's updater could only refuse one:
+    # it says this copy updates by being rebuilt instead (buildinfo.DevSigned).
+    ldflags="$ldflags -X zapfast/internal/buildinfo.devSigned=true"
 fi
 python3 - "$config" "$derived" "$work/build-manifest.json" "$library_validation" <<'PY'
 import json

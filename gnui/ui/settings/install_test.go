@@ -39,6 +39,7 @@ func TestUnsupportedWording(t *testing.T) {
 		{selfupdate.ErrReadOnly, "/x/zapfast", "Move the app to Applications, then open it to update."},
 		{selfupdate.ErrDevBundle, "/x/zapfast", "This app bundle is not a release of this app."},
 		{selfupdate.ErrNotWritable, "/x/zapfast", "Zap cannot replace itself here. Move it to a folder you can write to, such as Applications, or use the download page."},
+		{errDevSigned, "/Applications/Zap.app/Contents/MacOS/zapfast", "This copy of Zap was built on this Mac, so it updates by being rebuilt, not from a release."},
 		{selfupdate.ErrNotSigned, "/x/zapfast", "This copy of Zap has no publisher signature, so an update cannot be checked against it. Use the download page."},
 		{selfupdate.ErrUnsupported, "/x/zapfast", "Use the download page for this operating system or architecture."},
 		{errors.New("selfupdate: no bundle"), "/x/zapfast", "Cannot inspect this installation: no bundle"},

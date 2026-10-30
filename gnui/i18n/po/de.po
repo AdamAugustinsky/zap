@@ -5259,3 +5259,7 @@ msgstr "Textgröße"
 #: gnui
 msgid "Bubble colour"
 msgstr "Blasenfarbe"
+
+#: gnui
+msgid "This copy of Zap was built on this Mac, so it updates by being rebuilt, not from a release."
+msgstr "Diese Kopie von Zap wurde auf diesem Mac erstellt und wird daher durch Neuerstellen aktualisiert, nicht über eine Veröffentlichung."

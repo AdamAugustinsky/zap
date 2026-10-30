@@ -13,6 +13,7 @@ import (
 	"gonativeui/app/selfupdate"
 
 	"zapfast/i18n"
+	"zapfast/internal/buildinfo"
 	"zapfast/state"
 	"zapfast/ui/screen"
 )
@@ -47,7 +48,18 @@ type StagedUpdate interface {
 
 type osSelf struct{}
 
-func (osSelf) Supported() error { return selfupdate.Supported() }
+func (osSelf) Supported() error {
+	if buildinfo.Read().DevSigned {
+		return errDevSigned
+	}
+	return selfupdate.Supported()
+}
+
+// errDevSigned: this copy was signed on the Mac that built it (the packaging
+// script's development identity), and a release, signed by its publisher,
+// would only be refused (selfupdate's publisher check), after the download.
+var errDevSigned = errors.New("zap: built and signed on this Mac; a release cannot replace it")
+
 func (osSelf) Prepare(zip string) (StagedUpdate, error) {
 	s, err := selfupdate.Prepare(zip)
 	if err != nil {
@@ -79,6 +91,7 @@ const (
 	whyInspect      = "Cannot inspect this installation: {reason}"
 	whyNotWritable  = "Zap cannot replace itself here. Move it to a folder you can write to, such as Applications, or use the download page."
 	whyNotSigned    = "This copy of Zap has no publisher signature, so an update cannot be checked against it. Use the download page."
+	whyDevSigned    = "This copy of Zap was built on this Mac, so it updates by being rebuilt, not from a release."
 	whyNotNewer     = "This update is not newer than the version you are running."
 	whyRejected     = "The update was not installed: {reason}"
 	whyPrepare      = "Could not prepare the update: {reason}"
@@ -127,6 +140,8 @@ func whySelf(err error) string {
 		return i18n.T(whyNotWritable)
 	case errors.Is(err, selfupdate.ErrNotSigned):
 		return i18n.T(whyNotSigned)
+	case errors.Is(err, errDevSigned):
+		return i18n.T(whyDevSigned)
 	case errors.Is(err, errors.ErrUnsupported):
 		return i18n.T(whyPlatform)
 	}
@@ -220,7 +235,7 @@ func describeInstall(err error) string {
 }
 
 func isRefusal(err error) bool {
-	for _, e := range []error{selfupdate.ErrNotBundled, selfupdate.ErrTranslocated, selfupdate.ErrReadOnly, selfupdate.ErrNotWritable, selfupdate.ErrDevBundle, selfupdate.ErrNotSigned} {
+	for _, e := range []error{selfupdate.ErrNotBundled, selfupdate.ErrTranslocated, selfupdate.ErrReadOnly, selfupdate.ErrNotWritable, selfupdate.ErrDevBundle, selfupdate.ErrNotSigned, errDevSigned} {
 		if errors.Is(err, e) {
 			return true
 		}

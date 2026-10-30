@@ -5242,3 +5242,7 @@ msgstr "Dimensione testo"
 #: gnui
 msgid "Bubble colour"
 msgstr "Colore dei fumetti"
+
+#: gnui
+msgid "This copy of Zap was built on this Mac, so it updates by being rebuilt, not from a release."
+msgstr "Questa copia di Zap è stata compilata su questo Mac, quindi si aggiorna ricompilandola, non da una versione pubblicata."

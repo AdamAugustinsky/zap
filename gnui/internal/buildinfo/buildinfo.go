@@ -20,6 +20,7 @@ var (
 	frameworkRevision string
 	frameworkDirty    string
 	frameworkPin      string // "pinned" (gnui/release-deps.json) or "override"
+	devSigned         string // "true": signed with the framework's development identity
 )
 
 // Info is one build's identity.
@@ -32,6 +33,11 @@ type Info struct {
 	FrameworkRevision, FrameworkPin string
 	FrameworkDirty                  bool
 	Go, Tags                        string // the toolchain and the -tags it built with
+	// DevSigned: the packaging script signed this build with the
+	// framework's development identity (gnui-dev, made on the Mac that
+	// built it), which no published release carries, so only a rebuild
+	// replaces it.
+	DevSigned bool
 }
 
 // Read returns this binary's identity.
@@ -39,6 +45,7 @@ func Read() Info {
 	i := Info{
 		Revision: revision, Dirty: dirty == "true",
 		FrameworkRevision: frameworkRevision, FrameworkPin: frameworkPin, FrameworkDirty: frameworkDirty == "true",
+		DevSigned: devSigned == "true",
 	}
 	if bi, ok := debug.ReadBuildInfo(); ok {
 		i.fill(bi)
@@ -91,7 +98,7 @@ func Log(w io.Writer, version string) {
 	slog.New(slog.NewTextHandler(w, nil)).Info("build",
 		"version", version, "revision", orUnknown(i.Revision), "dirty", i.Dirty,
 		"framework", orUnknown(i.FrameworkRevision), "framework_pin", orUnknown(i.FrameworkPin),
-		"framework_dirty", i.FrameworkDirty, "go", i.Go, "tags", i.Tags)
+		"framework_dirty", i.FrameworkDirty, "go", i.Go, "tags", i.Tags, "dev_signed", i.DevSigned)
 }
 
 func orUnknown(s string) string {

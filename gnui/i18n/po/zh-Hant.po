@@ -5067,3 +5067,7 @@ msgstr "文字大小"
 #: gnui
 msgid "Bubble colour"
 msgstr "氣泡顏色"
+
+#: gnui
+msgid "This copy of Zap was built on this Mac, so it updates by being rebuilt, not from a release."
+msgstr "此 Zap 副本是在這台 Mac 上建置的，因此需要重新建置來更新，而不是從發行版更新。"

@@ -5210,3 +5210,7 @@ msgstr "Metin boyutu"
 #: gnui
 msgid "Bubble colour"
 msgstr "Balon rengi"
+
+#: gnui
+msgid "This copy of Zap was built on this Mac, so it updates by being rebuilt, not from a release."
+msgstr "Zap'ın bu kopyası bu Mac'te derlendi; bir sürümden değil, yeniden derlenerek güncellenir."
