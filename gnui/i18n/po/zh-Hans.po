@@ -5030,3 +5030,39 @@ msgstr "跟随应用"
 #: gnui
 msgid "Grain"
 msgstr "颗粒"
+
+#: gnui
+msgid "Move the colours together"
+msgstr "一起移动颜色"
+
+#: gnui
+msgid "Move each colour on its own"
+msgstr "分别移动每种颜色"
+
+#: gnui
+msgid "Your own"
+msgstr "自定"
+
+#: gnui
+msgid "How this chat reads"
+msgstr "此聊天的显示方式"
+
+#: gnui
+msgid "Serif"
+msgstr "衬线"
+
+#: gnui
+msgid "Sans"
+msgstr "无衬线"
+
+#: gnui
+msgid "Mono"
+msgstr "等宽"
+
+#: gnui
+msgid "Text size"
+msgstr "文字大小"
+
+#: gnui
+msgid "Bubble colour"
+msgstr "气泡颜色"

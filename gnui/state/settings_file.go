@@ -76,26 +76,35 @@ type settingsFile struct {
 
 // accountFile is accounts/<id>/settings.json (zf:src/settings.rs:828).
 type accountFile struct {
-	present             bool         // distinguishes a read {} from a missing file
-	SendReadReceipts    bool         `json:"send_read_receipts"`
-	SendTyping          bool         `json:"send_typing"`
-	AutoDownload        bool         `json:"auto_download"`
-	AutoDownloadImages  *bool        `json:"auto_download_images,omitempty"` // read only
-	LastChat            *string      `json:"last_chat"`
-	Notifications       bool         `json:"notifications"`
-	LimitNotifications  string       `json:"limit_notifications"`
-	SaveContactsToPhone bool         `json:"save_contacts_to_phone"`
-	WallpaperImage      *string      `json:"wallpaper_image"`
-	HistoryPrefetch     bool         `json:"history_prefetch"`
-	ListFilter          *string      `json:"list_filter"`
-	CallFilter          *string      `json:"call_filter"`
-	Folders             []folderFile `json:"folders,omitempty"`
-	SpaceTint           string       `json:"space_tint,omitempty"`
-	SpaceTintMix        string       `json:"space_tint_mix,omitempty"`
-	SpaceTintLevel      float32      `json:"space_tint_level,omitempty"`
-	SpaceTintColors     []string     `json:"space_tint_colors,omitempty"`
-	SpaceTintMode       string       `json:"space_tint_mode,omitempty"`
-	SpaceTintGrain      float32      `json:"space_tint_grain,omitempty"`
+	present             bool                 // distinguishes a read {} from a missing file
+	SendReadReceipts    bool                 `json:"send_read_receipts"`
+	SendTyping          bool                 `json:"send_typing"`
+	AutoDownload        bool                 `json:"auto_download"`
+	AutoDownloadImages  *bool                `json:"auto_download_images,omitempty"` // read only
+	LastChat            *string              `json:"last_chat"`
+	Notifications       bool                 `json:"notifications"`
+	LimitNotifications  string               `json:"limit_notifications"`
+	SaveContactsToPhone bool                 `json:"save_contacts_to_phone"`
+	WallpaperImage      *string              `json:"wallpaper_image"`
+	HistoryPrefetch     bool                 `json:"history_prefetch"`
+	ListFilter          *string              `json:"list_filter"`
+	CallFilter          *string              `json:"call_filter"`
+	Folders             []folderFile         `json:"folders,omitempty"`
+	SpaceTint           string               `json:"space_tint,omitempty"`
+	SpaceTintMix        string               `json:"space_tint_mix,omitempty"`
+	SpaceTintLevel      float32              `json:"space_tint_level,omitempty"`
+	SpaceTintColors     []string             `json:"space_tint_colors,omitempty"`
+	SpaceTintMode       string               `json:"space_tint_mode,omitempty"`
+	SpaceTintGrain      float32              `json:"space_tint_grain,omitempty"`
+	SpaceTintLock       *bool                `json:"space_tint_lock,omitempty"`
+	ChatBoosts          map[string]boostFile `json:"chat_boosts,omitempty"`
+}
+
+// boostFile is a ChatBoost in the account's settings file.
+type boostFile struct {
+	Font string  `json:"font,omitempty"`
+	Size float32 `json:"size,omitempty"`
+	Tint string  `json:"tint,omitempty"`
 }
 
 // folderFile is a Folder in the account's settings file.
@@ -112,6 +121,7 @@ type folderFile struct {
 	TintColors []string `json:"tint_colors,omitempty"`
 	TintMode   string   `json:"tint_mode,omitempty"`
 	TintGrain  float32  `json:"tint_grain,omitempty"`
+	TintLock   *bool    `json:"tint_lock,omitempty"`
 }
 
 func foldersToFile(fs []Folder) []folderFile {
@@ -120,7 +130,7 @@ func foldersToFile(fs []Folder) []folderFile {
 	}
 	out := make([]folderFile, len(fs))
 	for i, f := range fs {
-		out[i] = folderFile{ID: f.ID, Name: f.Name, Icon: f.Icon, Collapsed: f.Collapsed, Space: f.Space, Tint: f.Tint, TintMix: f.TintMix, TintLevel: f.TintLevel, TintColors: dotsToFile(f.TintDots), TintMode: f.TintMode, TintGrain: f.TintGrain}
+		out[i] = folderFile{ID: f.ID, Name: f.Name, Icon: f.Icon, Collapsed: f.Collapsed, Space: f.Space, Tint: f.Tint, TintMix: f.TintMix, TintLevel: f.TintLevel, TintColors: dotsToFile(f.TintDots), TintMode: f.TintMode, TintGrain: f.TintGrain, TintLock: lockToFile(f.TintLock, f.TintMix)}
 		for _, c := range f.Chats {
 			out[i].Chats = append(out[i].Chats, string(c))
 		}
@@ -156,13 +166,59 @@ func dotsFromFile(cs []string) [3]uint32 {
 	return d
 }
 
+// boostsToFile are the chats' boosts as the file keeps them; nil for none.
+func boostsToFile(bs map[string]ChatBoost) map[string]boostFile {
+	if len(bs) == 0 {
+		return nil
+	}
+	out := make(map[string]boostFile, len(bs))
+	for jid, b := range bs {
+		out[jid] = boostFile(b)
+	}
+	return out
+}
+
+// boostsFromFile reads boostsToFile's boosts back, what is not a choice left
+// out (ChatBoost.valid).
+func boostsFromFile(fs map[string]boostFile) map[string]ChatBoost {
+	var out map[string]ChatBoost
+	for jid, f := range fs {
+		if b := ChatBoost(f).valid(); b != (ChatBoost{}) && jid != "" {
+			if out == nil {
+				out = map[string]ChatBoost{}
+			}
+			out[jid] = b
+		}
+	}
+	return out
+}
+
+// lockToFile is a space theme's lock as the file keeps it: nil where it is
+// what a theme of harmony mix had before there was a lock (a harmony held its
+// colours together, colours without one moved each on its own), so files
+// stay as they were until the person changes it.
+func lockToFile(lock bool, mix string) *bool {
+	if lock == (mix != "") {
+		return nil
+	}
+	return &lock
+}
+
+// lockFromFile reads lockToFile's lock back.
+func lockFromFile(v *bool, mix string) bool {
+	if v == nil {
+		return mix != ""
+	}
+	return *v
+}
+
 func foldersFromFile(fs []folderFile) []Folder {
 	if len(fs) == 0 {
 		return nil
 	}
 	out := make([]Folder, len(fs))
 	for i, f := range fs {
-		out[i] = Folder{ID: f.ID, Name: f.Name, Icon: f.Icon, Collapsed: f.Collapsed, Space: f.Space, Tint: f.Tint, TintMix: f.TintMix, TintLevel: f.TintLevel, TintDots: dotsFromFile(f.TintColors), TintMode: f.TintMode, TintGrain: f.TintGrain}
+		out[i] = Folder{ID: f.ID, Name: f.Name, Icon: f.Icon, Collapsed: f.Collapsed, Space: f.Space, Tint: f.Tint, TintMix: f.TintMix, TintLevel: f.TintLevel, TintDots: dotsFromFile(f.TintColors), TintMode: f.TintMode, TintGrain: f.TintGrain, TintLock: lockFromFile(f.TintLock, f.TintMix)}
 		for _, c := range f.Chats {
 			out[i].Chats = append(out[i].Chats, []byte(c))
 		}
@@ -588,6 +644,7 @@ func (a *AccountSettings) toFile() accountFile {
 		ListFilter: optString(nonEmpty(a.ListFilter)), CallFilter: optString(nonEmpty(a.CallFilter)),
 		Folders: foldersToFile(a.Folders), SpaceTint: a.SpaceTint,
 		SpaceTintMix: a.SpaceTintMix, SpaceTintLevel: a.SpaceTintLevel, SpaceTintColors: dotsToFile(a.SpaceTintDots), SpaceTintMode: a.SpaceTintMode, SpaceTintGrain: a.SpaceTintGrain,
+		SpaceTintLock: lockToFile(a.SpaceTintLock, a.SpaceTintMix), ChatBoosts: boostsToFile(a.Boosts),
 	}
 }
 
@@ -600,6 +657,7 @@ func (f *accountFile) settings() AccountSettings {
 		ListFilter: fromOpt(f.ListFilter), CallFilter: fromOpt(f.CallFilter),
 		Folders: foldersFromFile(f.Folders), SpaceTint: f.SpaceTint,
 		SpaceTintMix: f.SpaceTintMix, SpaceTintLevel: f.SpaceTintLevel, SpaceTintDots: dotsFromFile(f.SpaceTintColors), SpaceTintMode: f.SpaceTintMode, SpaceTintGrain: f.SpaceTintGrain,
+		SpaceTintLock: lockFromFile(f.SpaceTintLock, f.SpaceTintMix), Boosts: boostsFromFile(f.ChatBoosts),
 	}
 	if f.AutoDownloadImages != nil {
 		a.AutoDownload = *f.AutoDownloadImages

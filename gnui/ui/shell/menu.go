@@ -368,7 +368,8 @@ func (sh *Shell) Commands(e *screen.Env) {
 	case k.Command(CmdPaneRight):
 		sh.stepPane(a, 1, true)
 	}
-	if k.Command(CmdSpaceColour) && main {
+	if (k.Command(CmdSpaceColour) || s.Req.SpaceColour) && main {
+		s.Req.SpaceColour = false
 		sh.openTint(state.Space{Acct: a.Index, Folder: a.SpaceFolder})
 	}
 	if k.Command(CmdFloat) {

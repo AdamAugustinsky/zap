@@ -42,6 +42,9 @@ type spaceUI struct {
 	tintOpen bool
 	tintDown bool // opens below tintAt (the menu's, under a pane's title row), not above (the strip's)
 	grab     int  // the theme creator's dot being dragged, plus one; 0 none
+	// the locked dots' places from the space's own as the drag began: each
+	// one's turn (degrees) and distance over the first's (heldPlaces)
+	held [3][2]float64
 }
 
 // goToSpace puts sp on screen, the list coming in from its side.
@@ -328,7 +331,7 @@ func (sh *Shell) tintPopover() {
 	}
 	swatch("", i18n.T("No colour"))
 	for _, name := range state.SpaceTints {
-		swatch(name, tintLabel(name))
+		swatch(name, screen.TintLabel(name))
 	}
 	c.Pop()
 
@@ -492,16 +495,21 @@ func (sh *Shell) tintField(cur state.SpaceTheme, w, h float32) (state.SpaceTheme
 	}
 
 	t, changed := cur, false
-	// a press takes the dot under it, or the space's own to put it there
+	// a press takes the dot under it, or the space's own to put it there;
+	// locked, it is always the space's own, the others turning with it
 	r := c.RectOf(c.KeyOf(id))
 	in := c.Input()
 	mx, my := in.MouseX-r[0], in.MouseY-r[1]
 	if sig.Pressed {
 		sp.grab = 1
-		best := e.Pt(16)
-		for i := 0; i < n; i++ {
-			if d := float32(math.Hypot(float64(mx-px[i]), float64(my-py[i]))); d < best {
-				best, sp.grab = d, i+1
+		if cur.Lock {
+			sp.held = heldPlaces(cols, n)
+		} else {
+			best := e.Pt(16)
+			for i := 0; i < n; i++ {
+				if d := float32(math.Hypot(float64(mx-px[i]), float64(my-py[i]))); d < best {
+					best, sp.grab = d, i+1
+				}
 			}
 		}
 	}
@@ -509,13 +517,13 @@ func (sh *Shell) tintField(cur state.SpaceTheme, w, h float32) (state.SpaceTheme
 		dx, dy := float64(mx-cx), float64(my-cy)
 		ang := math.Atan2(dx, -dy) * 180 / math.Pi
 		out := math.Hypot(dx, dy) / float64(R)
-		t, changed = moveDot(cur, cols, n, sp.grab-1, ang, out), true
+		t, changed = moveDot(cur, cols, n, sp.grab-1, sp.held, ang, out), true
 	}
 	if !sig.Dragging && !sig.Pressed {
 		sp.grab = 0
 	}
 
-	// add, take away, harmony
+	// add, take away, lock, harmony
 	c.NextAnchor(ui.AnchorBottom, 0, e.Pt(ztheme.Space1))
 	c.NextAxis(ui.AxisX)
 	c.NextGap(e.Pt(ztheme.Space4))
@@ -535,7 +543,15 @@ func (sh *Shell) tintField(cur state.SpaceTheme, w, h float32) (state.SpaceTheme
 	if tool("minus", i18n.T("Remove a colour"), n <= 1) {
 		t, changed = dropDot(cur, cols, n), true
 	}
-	harm := i18n.Format(i18n.T("Harmony: {name}"), "{name}", mixLabel(cur.Mix, n))
+	lock, lockSym := i18n.T("Move the colours together"), "lock.open"
+	if cur.Lock {
+		lock, lockSym = i18n.T("Move each colour on its own"), "lock"
+	}
+	if tool(lockSym, lock, n <= 1) {
+		t, changed = cur, true
+		t.Lock = !cur.Lock
+	}
+	harm := i18n.Format(i18n.T("Harmony: {name}"), "{name}", mixLabel(cur.Mix, n, cur.Lock))
 	if tool("point.3.connected.trianglepath.dotted", harm, n <= 1) {
 		t, changed = nextMix(cur, cols, n), true
 	}
@@ -552,32 +568,49 @@ func custom(t state.SpaceTheme, cols [3]uint32, n int) state.SpaceTheme {
 	return t
 }
 
-// moveDot is theme t with its dot i moved to angle and distance out: alone
-// with no harmony, or carrying the others with it as its harmony holds them.
-func moveDot(t state.SpaceTheme, cols [3]uint32, n, i int, angle, out float64) state.SpaceTheme {
+// moveDot is theme t with dot i moved to angle and distance out. Unlocked,
+// it moves alone and the theme has no harmony any more (its colours are
+// where the person put them); locked, it is the space's own, and the others
+// take their places from it as held (heldPlaces) when the drag began.
+func moveDot(t state.SpaceTheme, cols [3]uint32, n, i int, held [3][2]float64, angle, out float64) state.SpaceTheme {
 	if n == 0 {
 		cols[0], n = ztheme.FieldColor(angle, out), 1
 		return custom(t, cols, n)
 	}
-	turns, hn := ztheme.MixTurns(t.Mix)
-	if t.Mix == "" || hn != n {
+	if !t.Lock || n == 1 {
 		cols[i] = ztheme.FieldColor(angle, out)
+		t.Mix = ""
 		return custom(t, cols, n)
 	}
-	if i > 0 {
-		angle -= turns[i-1] // where the first goes for this one to be here
+	out = min(max(out, 0), 1)
+	cols[0] = ztheme.FieldColor(angle, out)
+	for j := 1; j < n; j++ {
+		cols[j] = ztheme.FieldColor(angle+held[j][0], out*held[j][1])
 	}
-	ztheme.Harmonize(ztheme.FieldColor(angle, out), t.Mix, &cols)
 	return custom(t, cols, n)
 }
 
-// addDot is theme t with a colour more: where its harmony puts it, or,
-// free, a third of the way round from the first.
+// heldPlaces are where n colours cols lie from the first: each one's turn
+// round the field from it and its distance over the first's, which a locked
+// drag keeps. Near the centre, where the first has no angle to speak of,
+// the others keep their own distance.
+func heldPlaces(cols [3]uint32, n int) [3][2]float64 {
+	var held [3][2]float64
+	a0, o0 := ztheme.FieldPlace(cols[0])
+	for j := 1; j < n; j++ {
+		a, o := ztheme.FieldPlace(cols[j])
+		held[j] = [2]float64{a - a0, o / max(o0, 0.05)}
+	}
+	return held
+}
+
+// addDot is theme t with a colour more: locked, in the harmony n+1 colours
+// take; free, opposite the first, or a quarter of the way round from it.
 func addDot(t state.SpaceTheme, cols [3]uint32, n int) state.SpaceTheme {
 	if n == 0 || n >= 3 {
 		return t
 	}
-	if t.Mix != "" {
+	if t.Lock {
 		t.Mix = defaultMix(n + 1)
 		ztheme.Harmonize(cols[0], t.Mix, &cols)
 		return custom(t, cols, n+1)
@@ -591,38 +624,42 @@ func addDot(t state.SpaceTheme, cols [3]uint32, n int) state.SpaceTheme {
 	return custom(t, cols, n+1)
 }
 
-// dropDot is theme t with its last colour taken away.
+// dropDot is theme t with its last colour taken away; a harmony becomes
+// the one its colours left take.
 func dropDot(t state.SpaceTheme, cols [3]uint32, n int) state.SpaceTheme {
 	if n <= 1 {
 		return t
 	}
 	if t.Mix != "" {
 		t.Mix = defaultMix(n - 1)
+		if t.Mix != "" {
+			ztheme.Harmonize(cols[0], t.Mix, &cols)
+		}
 	}
 	return custom(t, cols, n-1)
 }
 
-// nextMix is theme t with the next harmony for its n colours (free first).
+// nextMix is theme t with the next harmony for its n colours placed from the
+// space's own and locked, so that they turn together; after the last the
+// first again.
 func nextMix(t state.SpaceTheme, cols [3]uint32, n int) state.SpaceTheme {
 	var ring []string
 	switch n {
 	case 2:
-		ring = []string{"", "complementary"}
+		ring = []string{"complementary"}
 	case 3:
-		ring = []string{"", "analogous", "split", "triadic"}
+		ring = []string{"analogous", "split", "triadic"}
 	default:
 		return t
 	}
-	at := 0
+	at := -1
 	for i, m := range ring {
 		if m == t.Mix {
 			at = i
 		}
 	}
-	t.Mix = ring[(at+1)%len(ring)]
-	if t.Mix != "" {
-		ztheme.Harmonize(cols[0], t.Mix, &cols)
-	}
+	t.Mix, t.Lock = ring[(at+1)%len(ring)], true
+	ztheme.Harmonize(cols[0], t.Mix, &cols)
 	return custom(t, cols, n)
 }
 
@@ -638,8 +675,8 @@ func defaultMix(n int) string {
 	return ""
 }
 
-// mixLabel is how harmony mix of n colours reads.
-func mixLabel(mix string, n int) string {
+// mixLabel is how harmony mix of n colours reads, locked or not.
+func mixLabel(mix string, n int, lock bool) string {
 	switch mix {
 	case "analogous":
 		return i18n.T("Neighbours")
@@ -650,35 +687,13 @@ func mixLabel(mix string, n int) string {
 	case "triadic":
 		return i18n.T("Triad")
 	}
-	if n <= 1 {
+	switch {
+	case n <= 1:
 		return i18n.T("One colour")
+	case lock:
+		return i18n.T("Your own")
 	}
 	return i18n.T("Free")
-}
-
-// tintLabel is a space colour's name as the person reads it.
-func tintLabel(name string) string {
-	switch name {
-	case "blue":
-		return i18n.T("Blue")
-	case "purple":
-		return i18n.T("Purple")
-	case "pink":
-		return i18n.T("Pink")
-	case "red":
-		return i18n.T("Red")
-	case "orange":
-		return i18n.T("Orange")
-	case "yellow":
-		return i18n.T("Yellow")
-	case "green":
-		return i18n.T("Green")
-	case "teal":
-		return i18n.T("Teal")
-	case "gray":
-		return i18n.T("Gray")
-	}
-	return i18n.T("No colour")
 }
 
 // spaceName is how a space is named, and its folder's symbol ("" for an
@@ -715,8 +730,9 @@ func (sh *Shell) folderIcon(sym string) icon.ID {
 // showing through the panes' glass. A theme of two or three colours (its
 // mix) runs across the field as a gradient: two from opposite corners, as
 // Zen's 150° pair; three with the space's own along the foot and the others
-// glowing from the top corners. The accent takes the space's colour too
-// (TintAccent). A change of space crossfades from the colours that showed.
+// glowing from the top corners, never so strong the labels over it stop
+// reading (SpaceAlpha). The accent takes the space's colour too
+// (TintAccent, held to 4.5:1 on the panes). A change of space crossfades from the colours that showed.
 func (sh *Shell) spaceTint(W, H float32) {
 	s, e := sh.S, &sh.env
 	c, r := e.C(), e.K.Theme()
@@ -734,6 +750,7 @@ func (sh *Shell) spaceTint(W, H float32) {
 		}
 		// the default opacity is the plain tint; full is nearly three times it
 		alpha *= float32(math.Pow(float64(th.Strength()/state.DefaultTintLevel), 1.5))
+		alpha = ztheme.SpaceAlpha(cols, n, alpha, dark)
 		ti.goal = tintCorners(cols, n, alpha)
 		ti.goalAcc = [2]uint32{}
 		if n > 0 {

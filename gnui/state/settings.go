@@ -286,6 +286,9 @@ type AccountSettings struct {
 	SpaceTintDots  [3]uint32 // colours of the person's own (SpaceTheme.Dots)
 	SpaceTintMode  string    // its appearance (SpaceTheme.Mode)
 	SpaceTintGrain float32   // its grain (SpaceTheme.Grain)
+	SpaceTintLock  bool      // its colours move together (SpaceTheme.Lock)
+	// Boosts are the chats' boosts (boosts.go), by JID.
+	Boosts map[string]ChatBoost
 }
 
 // DefaultAccountSettings are upstream's defaults (zf:src/settings.rs:852).

@@ -3,6 +3,8 @@ package theme
 import (
 	"math"
 
+	gtheme "gonativeui/theme"
+
 	"zapfast/state"
 )
 
@@ -94,42 +96,134 @@ func MixTurns(mix string) ([2]float64, int) {
 }
 
 // Harmonize places mix's colours from c into dst (c first) and returns how
-// many there are.
+// many there are: c's hue turned in OKLCH (oklab.go) at c's lightness and
+// chroma, so that the colours look equally light, as a yellow and a blue of
+// one HSL lightness do not.
 func Harmonize(c uint32, mix string, dst *[3]uint32) int {
 	turns, n := MixTurns(mix)
 	dst[0] = c
-	h, s, l := toHSL(c)
+	l, ch, h := toOKLCH(c)
 	for i := 1; i < n; i++ {
-		dst[i] = fromHSL(h+turns[i-1], s, l)
+		dst[i] = fromOKLCH(l, ch, h+turns[i-1])
 	}
 	return n
 }
 
+// fieldChroma is the chroma at the theme creator's field's edge, and
+// fieldL the lightness at its centre and the edge's: pale at the centre,
+// full at the edge, one lightness for one distance whatever the hue.
+const (
+	fieldChroma = 0.19
+	fieldLIn    = 0.95
+	fieldLOut   = 0.68
+)
+
 // FieldColor is the colour at a place of the theme creator's field: the
-// angle round its centre (degrees) is the hue and the distance out (0..1)
-// the saturation, pale at the centre and full at the edge, as Zen's picker.
+// angle round its centre (degrees) is the OKLCH hue and the distance out
+// (0..1) the chroma, pale at the centre and full at the edge, as Zen's
+// picker; dots at one distance look equally light.
 func FieldColor(angle, out float64) uint32 {
 	out = min(max(out, 0), 1)
-	return fromHSL(angle, out, 0.86-0.36*out)
+	return fromOKLCH(fieldLIn+(fieldLOut-fieldLIn)*out, fieldChroma*out, angle)
 }
 
-// FieldPlace is where colour c lies on the field: FieldColor's angle and
-// distance.
+// FieldPlace is where colour c lies on the field: its hue round it, and out
+// as far as its lightness (FieldColor's lightness for a distance, which
+// fromOKLCH keeps where sRGB cuts the chroma), so that colours of one
+// lightness, a harmony's, lie at one distance. A grey, with no hue to place
+// it by, lies by its chroma, near the centre.
 func FieldPlace(c uint32) (angle, out float64) {
-	h, s, _ := toHSL(c)
-	return h, s
+	l, ch, h := toOKLCH(c)
+	if ch < 0.02 {
+		return h, min(ch/fieldChroma, 1)
+	}
+	return h, min(max((fieldLIn-l)/(fieldLIn-fieldLOut), 0), 1)
 }
+
+// SpaceAlpha is alpha, the opacity a space's colours cols (n of them) are
+// laid over the field at, lessened as far as the field's labels need: its
+// primary text keeps 7:1 and its secondary 3:1 (GuardTint), so a deep or
+// strong colour shows as much of itself as reading allows.
+func SpaceAlpha(cols [3]uint32, n int, alpha float32, dark bool) float32 {
+	f := uint32(lightField)
+	if dark {
+		f = darkField
+	}
+	label, label2 := labels(dark)
+	for _, c := range cols[:n] {
+		alpha = GuardTint(c, alpha, f, label, 7)
+		alpha = GuardTint(c, alpha, f, label2, secondaryFloor)
+	}
+	return alpha
+}
+
+// secondaryFloor is the contrast secondary text keeps over a colour: 3:1,
+// what macOS's own secondaryLabelColor has on a light window (white gives it
+// under 4:1), so a colour is not refused for lowering text that never
+// reached 4.5:1. Primary text keeps 7:1.
+const secondaryFloor = 3
+
+// labels are the primary and secondary text colours (labelColor and
+// secondaryLabelColor) in light or dark.
+func labels(dark bool) (label, label2 uint32) {
+	if dark {
+		return 0xFFFFFFD8, 0xFFFFFF8C
+	}
+	return 0x000000D8, 0x0000007F
+}
+
+// BoostFace is the family of a chat boost's face (state.BoostFonts), or the
+// system's monospace: faces every Mac has, so no fallback is needed, and
+// few of them, quiet ones: a serif for long reading, a humanist sans, code.
+func BoostFace(name string) (family string, mono bool) {
+	switch name {
+	case "serif":
+		return "Charter", false
+	case "humanist":
+		return "Avenir Next", false
+	case "mono":
+		return "", true
+	}
+	return "", false
+}
+
+// BoostBubble is your bubbles' fill in a chat whose boost gives them colour
+// name (a state.SpaceTints name), over the pane pane: the colour laid on
+// as lightly as Zap's green is, and lighter still where the text on it
+// would stop reading (GuardTint); 0 for no colour.
+func BoostBubble(name string, pane uint32, dark bool) uint32 {
+	col := TintColor(name)
+	if col == 0 {
+		return 0
+	}
+	a := float32(ownTint)
+	if dark {
+		a = ownTintDark
+	}
+	label, label2 := labels(dark)
+	a = GuardTint(col, a, pane, label, 7)
+	a = GuardTint(col, a, pane, label2, secondaryFloor)
+	return gtheme.WithAlpha(col, a)
+}
+
+// accentSurface is what the accent reads on: the panes, white in light and
+// Zap's dark pane in dark.
+var accentSurface = [2]uint32{0xFFFFFFFF, darkPane}
 
 // TintAccent is the accent a space of colour c takes, as Zen derives its
-// interface accent from a theme: more saturated, and its lightness pulled
-// most of the way to one that holds text on it (0.42 in light, 0.62 in dark).
+// interface accent from a theme (more chroma, the lightness of a colour that
+// holds text) but held, as Zen's is not, to 4.5:1 on the panes: its hue
+// kept, its lightness taken from 0.58 (light) or 0.70 (dark) toward darker or
+// lighter until text in it reads, whatever the hue.
 func TintAccent(c uint32, dark bool) uint32 {
-	h, s, l := toHSL(c)
-	target := 0.42
-	if dark {
-		target = 0.62
+	_, ch, h := toOKLCH(c)
+	if ch > 0.02 {
+		ch = min(ch*1.15+0.02, 0.2)
 	}
-	return fromHSL(h, min(s+0.3, 1), l*0.4+target*0.6)
+	if dark {
+		return fromOKLCH(readableL(0.70, ch, h, accentSurface[1], 4.5, true), ch, h)
+	}
+	return fromOKLCH(readableL(0.58, ch, h, accentSurface[0], 4.5, false), ch, h)
 }
 
 // toHSL is c's hue (degrees), saturation and lightness (0..1).

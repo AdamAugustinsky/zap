@@ -273,3 +273,31 @@ func TestGroupNameSitsBesideItsPencil(t *testing.T) {
 		t.Errorf("the name and pencil are %v px off the centre", d)
 	}
 }
+
+// A chat's boost folds under its row: its face, size and your bubbles'
+// colour are the chat's, kept on the account, and a steady frame with them
+// open makes nothing.
+func TestAChatsBoost(t *testing.T) {
+	r := newRig(t, teamChat(nil))
+	r.open(team, team)
+	if _, ok := r.Find(ui.RoleRadio, "Serif"); ok {
+		t.Fatal("the boost's controls show before its row is opened")
+	}
+	r.click(ui.RoleButton, "How this chat reads")
+	r.click(ui.RoleRadio, "Serif")
+	r.click(ui.RoleRadio, "125%")
+	r.click(ui.RoleButton, "Teal")
+	if got := r.a.BoostOf(b(team)); got != (state.ChatBoost{Font: "serif", Size: 1.25, Tint: "teal"}) {
+		t.Fatalf("the chat's boost is %+v", got)
+	}
+	r.Frames(10)
+	if n := testing.AllocsPerRun(30, r.Frame); n != 0 {
+		t.Errorf("the boost open: %v allocations per frame", n)
+	}
+	r.click(ui.RoleRadio, "Default")
+	r.click(ui.RoleRadio, "100%")
+	r.click(ui.RoleButton, "No colour")
+	if len(r.a.Settings.Boosts) != 0 {
+		t.Errorf("a boost back to none left %v", r.a.Settings.Boosts)
+	}
+}

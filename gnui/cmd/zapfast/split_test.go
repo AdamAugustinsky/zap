@@ -334,6 +334,30 @@ func TestASpacesColour(t *testing.T) {
 	if d := math.Abs(math.Mod(m1-m0+360, 360) - 180); d > 2 {
 		t.Errorf("after the drag the pair is %v° from opposite", d)
 	}
+	// a harmony locks the colours; unlocked, a drag moves one alone and the
+	// theme has no harmony any more; locked again, the pair keeps the turn
+	// it was left at
+	if !moved.Lock {
+		t.Fatalf("a harmony did not lock the colours: %+v", moved)
+	}
+	r.Click(ui.RoleButton, "Move each colour on its own")
+	r.Frames(2)
+	r.Play(widgettest.Drag(ui.RoleGroup, "Colours", -14, 9), widgettest.Idle(2))
+	free := r.s.SpaceTheme()
+	if free.Lock || free.Mix != "" || free.Dots[1] != moved.Dots[1] || free.Dots[0] == moved.Dots[0] {
+		t.Fatalf("unlocked, a drag gave %+v from %+v", free, moved)
+	}
+	f0, _ := ztheme.FieldPlace(free.Dots[0])
+	f1, _ := ztheme.FieldPlace(free.Dots[1])
+	r.Click(ui.RoleButton, "Move the colours together")
+	r.Frames(2)
+	r.Play(widgettest.Drag(ui.RoleGroup, "Colours", 12, -8), widgettest.Idle(2))
+	held := r.s.SpaceTheme()
+	h0, _ = ztheme.FieldPlace(held.Dots[0])
+	h1, _ = ztheme.FieldPlace(held.Dots[1])
+	if d := math.Abs(math.Mod((h1-h0)-(f1-f0)+540, 360) - 180); !held.Lock || held.Dots[1] == free.Dots[1] || d > 3 {
+		t.Errorf("locked again, the pair went from %v° apart to %v° (%+v)", f1-f0, h1-h0, held)
+	}
 	if _, ok := r.Find(ui.RoleSlider, "Opacity"); !ok {
 		t.Error("there is no Opacity slider")
 	}

@@ -4983,3 +4983,39 @@ msgstr ""
 #: gnui
 msgid "Grain"
 msgstr ""
+
+#: gnui
+msgid "Move the colours together"
+msgstr ""
+
+#: gnui
+msgid "Move each colour on its own"
+msgstr ""
+
+#: gnui
+msgid "Your own"
+msgstr ""
+
+#: gnui
+msgid "How this chat reads"
+msgstr ""
+
+#: gnui
+msgid "Serif"
+msgstr ""
+
+#: gnui
+msgid "Sans"
+msgstr ""
+
+#: gnui
+msgid "Mono"
+msgstr ""
+
+#: gnui
+msgid "Text size"
+msgstr ""
+
+#: gnui
+msgid "Bubble colour"
+msgstr ""

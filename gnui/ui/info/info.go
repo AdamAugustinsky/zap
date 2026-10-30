@@ -34,7 +34,8 @@ const (
 
 // icons are the panel's symbols.
 type icons struct {
-	closeX, back, chevronRight, check, pencil         icon.ID
+	closeX, back, chevronRight, chevronDown, check    icon.ID
+	pencil                                            icon.ID
 	message, person, copy, bell, bellOff, pin, pinOff icon.ID
 	archive, unarchive, photo, video, play, doc, link icon.ID
 	refresh                                           icon.ID
@@ -46,13 +47,17 @@ type Screen struct {
 	ic  icons
 
 	// the panel's chat
-	jid   [jidMax]byte
-	jidN  int
-	acct  int
-	owner model.ChatRef // the open chat the panel was opened over
-	valid bool
-	v     view
-	sh    shared
+	jid  [jidMax]byte
+	jidN int
+	// the boost's segments' labels (boost.go), kept so a frame makes none
+	faceOpts  [4]string
+	sizeOpts  [5]string
+	boostOpen bool // the boost's controls show
+	acct      int
+	owner     model.ChatRef // the open chat the panel was opened over
+	valid     bool
+	v         view
+	sh        shared
 
 	// pending asks
 	openJID  [jidMax]byte // a chat to open once the core has made it
@@ -108,6 +113,7 @@ func (s *Screen) Init(e *screen.Env) error {
 		pt  float32
 	}{
 		{&ic.chevronRight, "chevron.right", '›', ztheme.SmallIconPt},
+		{&ic.chevronDown, "chevron.down", '⌄', ztheme.SmallIconPt},
 		{&ic.check, "checkmark", '✓', 13}, {&ic.pencil, "pencil", '✎', 12},
 		{&ic.message, "message", '✉', 13}, {&ic.person, "person.badge.plus", '☺', 13}, {&ic.copy, "doc.on.doc", '⎘', 13},
 		{&ic.bell, "bell", '♪', 13}, {&ic.bellOff, "bell.slash", '♪', 13}, {&ic.pin, "pin", '⚲', 13}, {&ic.pinOff, "pin.slash", '⚲', 13},
@@ -285,6 +291,8 @@ func (s *Screen) sync(e *screen.Env, a *state.Account) bool {
 		s.jidN = copy(s.jid[:], jid)
 		s.acct, s.owner, s.valid = a.Index, a.Open, true
 		s.contact.on, s.rename.on = false, false
+		// a boosted chat's panel opens on its boost, a plain one's folded
+		s.boostOpen = a.BoostOf(jid) != (state.ChatBoost{})
 		s.tab = 0
 		s.find.reset()
 		s.scroll, s.gridSc, s.docSc, s.linkSc, s.memberSc, s.descSc = widget.ScrollState{}, widget.ScrollState{}, widget.ScrollState{}, widget.ScrollState{}, widget.ScrollState{}, widget.ScrollState{}

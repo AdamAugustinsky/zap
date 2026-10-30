@@ -176,7 +176,14 @@ type look struct {
 	smallMed text.FontKey  // its "Not sent"
 	badge    text.FontKey  // a count badge's (semibold 11)
 	jumbo    text.FontKey
-	ok       bool
+	// the chat's boost (state.ChatBoost) the fonts were made for: the body
+	// and its semibold in its face and size, your bubbles' fill in its
+	// colour (0 Zap's)
+	boost      state.ChatBoost
+	dark       bool
+	body, semi text.FontKey
+	own        uint32
+	ok         bool
 }
 
 type icons struct {
@@ -268,27 +275,41 @@ func (s *Screen) addIcons(e *screen.Env) {
 	ic.ok = true
 }
 
-// styles rebuilds the bubbles' rich-text styles when the theme moved.
-func (s *Screen) styles(e *screen.Env) {
+// styles rebuilds the bubbles' rich-text styles when the theme moved or
+// the chat's boost b changed.
+func (s *Screen) styles(e *screen.Env, b state.ChatBoost) {
 	k := e.K.Kit
 	r := k.Theme()
 	lk := &s.look
 	sc := k.Scale()
 	colors := [3]uint32{r.Colors[theme.Label2], r.Colors[theme.Link], r.Colors[theme.Accent]}
-	if lk.ok && lk.scale == sc && lk.colors == colors && lk.tune == ztheme.Gen {
+	dark := r.Dark()
+	if lk.ok && lk.scale == sc && lk.colors == colors && lk.tune == ztheme.Gen && lk.boost == b && lk.dark == dark {
 		return
 	}
 	ts := k.TextSystem()
+	// the body's fonts in the boost's face (the code stays monospace) and
+	// size; the footer's keep Zap's
+	family, faceMono := ztheme.BoostFace(b.Font)
+	zoom := b.Scale()
 	font := func(w int, italic, mono bool, size float32) text.FontKey {
-		return ts.Font(text.FontDesc{SizePt: size, Weight: w, Italic: italic, Mono: mono, Scale: sc})
+		if !mono {
+			return ts.Font(text.FontDesc{Family: family, Mono: faceMono, SizePt: size * zoom, Weight: w, Italic: italic, Scale: sc})
+		}
+		return ts.Font(text.FontDesc{SizePt: size * zoom, Weight: w, Italic: italic, Mono: mono, Scale: sc})
 	}
+	lk.body, lk.semi = r.Styles[theme.StyleBody].Font, r.Styles[rexui.TextStyles[rexui.TextSemibold]].Font
+	if b.Font != "" || zoom != 1 {
+		lk.body, lk.semi = font(400, false, false, 13), font(600, false, false, 13)
+	}
+	lk.own = ztheme.BoostBubble(b.Tint, r.Colors[theme.Pane]|0xFF, dark)
 	// Rex's metadata: the UI face with tabular figures (ztheme.Meta); a
 	// bubble's time a step under the list's, on its last line's baseline
 	meta := func(size float32) text.FontKey {
 		return ts.Font(text.FontDesc{SizePt: size, TabularDigits: true, Scale: sc})
 	}
 	f := markup.Fonts{
-		Regular: r.Styles[theme.StyleBody].Font, Bold: font(700, false, false, 13), Italic: font(400, true, false, 13),
+		Regular: lk.body, Bold: font(700, false, false, 13), Italic: font(400, true, false, 13),
 		BoldItalic: font(700, true, false, 13), Mono: font(400, false, true, 13*0.95),
 	}
 	lk.rich = markup.RichStyles(f, markup.Colors{Secondary: colors[0], Link: colors[1], Mention: colors[2]})
@@ -297,7 +318,7 @@ func (s *Screen) styles(e *screen.Env) {
 	lk.smallMed = font(500, false, false, 11)
 	lk.badge = font(600, false, false, 11)
 	lk.jumbo = font(400, false, false, 13*text.JumboScale)
-	lk.scale, lk.colors, lk.tune, lk.ok = sc, colors, ztheme.Gen, true
+	lk.scale, lk.colors, lk.tune, lk.boost, lk.dark, lk.ok = sc, colors, ztheme.Gen, b, dark, true
 }
 
 // Build builds the transcript at r.
@@ -316,7 +337,7 @@ func (s *Screen) Build(e *screen.Env, r screen.Rect) {
 	if s.h == nil {
 		s.Init(e)
 	}
-	s.styles(e)
+	s.styles(e, a.BoostOf(ch.ID()))
 	fr := e.C().Frame()
 	s.gap, s.frame = s.frame != 0 && fr != s.frame+1, fr
 	s.now = e.S.Now()

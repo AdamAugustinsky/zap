@@ -22,6 +22,7 @@ type Folder struct {
 	TintDots  [3]uint32 // colours of the person's own (SpaceTheme.Dots)
 	TintMode  string    // light or dark while the space shows (SpaceTheme.Mode)
 	TintGrain float32   // its grain (SpaceTheme.Grain)
+	TintLock  bool      // its colours move together (SpaceTheme.Lock)
 }
 
 // SpaceTints are the colours a space can take, as Arc's: the window's field
@@ -53,6 +54,10 @@ type SpaceTheme struct {
 	// Grain is how much film grain lies over the space's colours, 0..1 (0
 	// none), as Zen's texture dial.
 	Grain float32
+	// Lock holds the colours together: only the space's own moves, and the
+	// others turn round with it, keeping their angle from it and their
+	// distance in proportion. Unlocked, each moves on its own.
+	Lock bool
 }
 
 // SpaceModes are the appearances a space can keep: the app's, light, dark.
@@ -238,12 +243,12 @@ func (a *Account) ThemeOf(sp Space) SpaceTheme {
 	if sp.Folder != "" {
 		if i := a.FolderByID(sp.Folder); i >= 0 {
 			f := &a.Settings.Folders[i]
-			return SpaceTheme{Tint: f.Tint, Mix: f.TintMix, Level: f.TintLevel, Dots: f.TintDots, Mode: f.TintMode, Grain: f.TintGrain}
+			return SpaceTheme{Tint: f.Tint, Mix: f.TintMix, Level: f.TintLevel, Dots: f.TintDots, Mode: f.TintMode, Grain: f.TintGrain, Lock: f.TintLock}
 		}
 		return SpaceTheme{}
 	}
 	st := &a.Settings
-	return SpaceTheme{Tint: st.SpaceTint, Mix: st.SpaceTintMix, Level: st.SpaceTintLevel, Dots: st.SpaceTintDots, Mode: st.SpaceTintMode, Grain: st.SpaceTintGrain}
+	return SpaceTheme{Tint: st.SpaceTint, Mix: st.SpaceTintMix, Level: st.SpaceTintLevel, Dots: st.SpaceTintDots, Mode: st.SpaceTintMode, Grain: st.SpaceTintGrain, Lock: st.SpaceTintLock}
 }
 
 // SetTint gives space sp of a the named colour tint ("" none) in place of
@@ -261,12 +266,12 @@ func (a *Account) SetTint(sp Space, tint string) {
 func (a *Account) SetTheme(sp Space, t SpaceTheme) {
 	if sp.Folder != "" {
 		a.EditFolder(a.FolderByID(sp.Folder), func(f *Folder) {
-			f.Tint, f.TintMix, f.TintLevel, f.TintDots, f.TintMode, f.TintGrain = t.Tint, t.Mix, t.Level, t.Dots, t.Mode, t.Grain
+			f.Tint, f.TintMix, f.TintLevel, f.TintDots, f.TintMode, f.TintGrain, f.TintLock = t.Tint, t.Mix, t.Level, t.Dots, t.Mode, t.Grain, t.Lock
 		})
 		return
 	}
 	st := &a.Settings
-	st.SpaceTint, st.SpaceTintMix, st.SpaceTintLevel, st.SpaceTintDots, st.SpaceTintMode, st.SpaceTintGrain = t.Tint, t.Mix, t.Level, t.Dots, t.Mode, t.Grain
+	st.SpaceTint, st.SpaceTintMix, st.SpaceTintLevel, st.SpaceTintDots, st.SpaceTintMode, st.SpaceTintGrain, st.SpaceTintLock = t.Tint, t.Mix, t.Level, t.Dots, t.Mode, t.Grain, t.Lock
 	a.SettingsChanged()
 }
 

@@ -5179,3 +5179,39 @@ msgstr "Seperti aplikasi"
 #: gnui
 msgid "Grain"
 msgstr "Butiran"
+
+#: gnui
+msgid "Move the colours together"
+msgstr "Pindahkan warna bersama"
+
+#: gnui
+msgid "Move each colour on its own"
+msgstr "Pindahkan tiap warna sendiri"
+
+#: gnui
+msgid "Your own"
+msgstr "Milik sendiri"
+
+#: gnui
+msgid "How this chat reads"
+msgstr "Tampilan chat ini"
+
+#: gnui
+msgid "Serif"
+msgstr "Serif"
+
+#: gnui
+msgid "Sans"
+msgstr "Sans"
+
+#: gnui
+msgid "Mono"
+msgstr "Mono"
+
+#: gnui
+msgid "Text size"
+msgstr "Ukuran teks"
+
+#: gnui
+msgid "Bubble colour"
+msgstr "Warna gelembung"

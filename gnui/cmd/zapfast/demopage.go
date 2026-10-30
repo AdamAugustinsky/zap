@@ -50,7 +50,7 @@ type demoPage struct {
 // demoParts are the parts this port knows, for -demo-page help and tests.
 var demoParts = []string{
 	"chat", "empty", "light", "dark", "short-chat", "wide", "nosidebar", "rail",
-	"search", "spotlight", "folders", "space", "space-theme", "peek", "float-peek", "split", "split3", "tabs", "pip", "pip-mini", "info", "info-media", "info-docs", "info-links", "group-info", "select", "select-delete", "delete-selection",
+	"search", "spotlight", "folders", "space", "space-theme", "theme-creator", "boost", "peek", "float-peek", "split", "split3", "tabs", "pip", "pip-mini", "info", "info-media", "info-docs", "info-links", "group-info", "select", "select-delete", "delete-selection",
 	"settings", "themes", "app-lock-settings", "shortcuts", "about", "new-chat", "new-contact",
 	"poll", "poll-create", "location", "unlink", "clear-media", "delete-chat", "clear-chat", "leave-group",
 	"delete-message", "forward", "reply", "private-reply", "edit", "message-info", "unread-divider",
@@ -205,13 +205,15 @@ func (p *demoPage) apply(s *state.State, a *state.Account) {
 			if i := a.FolderByID("f1"); i >= 0 {
 				s.GoToSpace(state.Space{Acct: a.Index, Folder: "f1"})
 			}
-		case "space-theme":
-			// the Work space in three colours (a space theme's mix), stronger
+		case "space-theme", "theme-creator":
+			// the Work space in three colours (a space theme's mix), stronger;
+			// theme-creator opens the creator on it (View → Space colour…)
 			seedDemoFolders(a)
 			if i := a.FolderByID("f1"); i >= 0 {
 				sp := state.Space{Acct: a.Index, Folder: "f1"}
-				a.SetTheme(sp, state.SpaceTheme{Tint: "purple", Mix: "triadic", Level: 0.8})
+				a.SetTheme(sp, state.SpaceTheme{Tint: "purple", Mix: "triadic", Level: 0.8, Lock: true})
 				s.GoToSpace(sp)
+				s.Req.SpaceColour = p.has("theme-creator")
 			}
 		case "peek":
 			s.PeekChat(a, a.Model.Chats.Find([]byte(demoGroup)), [4]float32{116, 436, 692, 526})
@@ -235,6 +237,13 @@ func (p *demoPage) apply(s *state.State, a *state.Account) {
 		case "spotlight":
 			s.Spotlight = true
 			s.Req.SpotlightText = append(s.Req.SpotlightText, "an"...)
+		case "boost":
+			// the open chat boosted (a serif a step larger, your bubbles purple),
+			// its info open on the boost's controls
+			if c, ok := a.OpenChatView(); ok {
+				a.SetBoost(c.ID(), state.ChatBoost{Font: "serif", Size: 1.1, Tint: "purple"})
+				s.Panes.SetInfo(c.ID())
+			}
 		case "info", "group-info", "info-media", "info-docs", "info-links":
 			if c, ok := a.OpenChatView(); ok {
 				s.Panes.SetInfo(c.ID())

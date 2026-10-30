@@ -5208,3 +5208,39 @@ msgstr "Как в приложении"
 #: gnui
 msgid "Grain"
 msgstr "Зернистость"
+
+#: gnui
+msgid "Move the colours together"
+msgstr "Двигать цвета вместе"
+
+#: gnui
+msgid "Move each colour on its own"
+msgstr "Двигать каждый цвет отдельно"
+
+#: gnui
+msgid "Your own"
+msgstr "Своя"
+
+#: gnui
+msgid "How this chat reads"
+msgstr "Вид этого чата"
+
+#: gnui
+msgid "Serif"
+msgstr "С засечками"
+
+#: gnui
+msgid "Sans"
+msgstr "Без засечек"
+
+#: gnui
+msgid "Mono"
+msgstr "Моно"
+
+#: gnui
+msgid "Text size"
+msgstr "Размер текста"
+
+#: gnui
+msgid "Bubble colour"
+msgstr "Цвет пузырей"

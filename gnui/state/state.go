@@ -597,6 +597,7 @@ type Requests struct {
 	FindInChat    bool // ⌘F with a chat open: ui/conversation opens the search pane
 	FindSettings  bool // ⌘F in the Settings window: ui/settings
 	JumpToBottom  bool // ⌘End: ui/conversation scrolls to the newest message
+	SpaceColour   bool // View → Space colour…: the shell opens the theme creator on the space on screen
 	// RaiseMain brings the main window forward (State.RaiseMain): the shell.
 	RaiseMain bool
 	// Insert is text for the composer to insert at its cursor

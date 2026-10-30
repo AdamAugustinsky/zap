@@ -289,6 +289,7 @@ func (s *Screen) bubble(e *screen.Env, a *state.Account, ch model.Chat, m model.
 	}
 	if out {
 		o.Variant = rexui.BubbleOutgoing
+		o.Fill = s.look.own // the chat's boost's colour, if it has one
 		switch m.Status() {
 		case abi.DeliveryPending:
 			o.Status = rexui.BubbleSending
@@ -470,9 +471,9 @@ func (s *Screen) text(e *screen.Env, a *state.Account, m model.Message, id uint6
 	if alone && markup.Big(m.Text()) {
 		ro.EmojiLarge, ro.JumboFont = true, s.look.jumbo
 	}
-	font := r.Styles[theme.StyleBody].Font
+	font := s.look.body
 	if m.Kind() == abi.ContentTagPoll {
-		font = r.Styles[rexui.TextStyles[rexui.TextSemibold]].Font
+		font = s.look.semi
 	}
 	c.NextFont(font)
 	c.NextTextColor(rexui.BubbleLook.TextIn.RGBA(r))
@@ -704,6 +705,9 @@ func (s *Screen) quote(e *screen.Env, a *state.Account, ch model.Chat, m model.M
 	fill := rexui.BubbleLook.Incoming.RGBA(r)
 	if m.FromMe() {
 		fill = rexui.BubbleLook.Outgoing.RGBA(r)
+		if s.look.own != 0 {
+			fill = s.look.own
+		}
 	}
 	bar := readableOn(theme.Over(fill, r.Colors[theme.Pane]|0xFF), hue, rexui.BubbleLook.TextIn.RGBA(r), 3)
 	nameCol, text := bar, r.Colors[theme.Label2]
@@ -799,7 +803,7 @@ func (s *Screen) textAndFooter(e *screen.Env, a *state.Account, ch model.Chat, m
 	// keeps under its baseline beyond what the time's does, the time sits on
 	// the last line's baseline
 	ts := e.K.Kit.TextSystem()
-	body, tm := ts.Metrics(e.K.Kit.Theme().Styles[theme.StyleBody].Font), ts.Metrics(s.look.time)
+	body, tm := ts.Metrics(s.look.body), ts.Metrics(s.look.time)
 	c.NextPadding(0, 0, 0, theme.Snap(max(body.Descent+body.LineGap-tm.Descent-tm.LineGap, 0)))
 	s.footRow(e, m, &f, out, key, footInline)
 	c.Pop()
@@ -832,10 +836,9 @@ func (s *Screen) settle(e *screen.Env, a *state.Account, ch model.Chat, m model.
 	if len(m.Text()) == 0 || (kinds.Has(m) && kinds.Caption(m) == kinds.Nowhere) || (!kinds.Has(m) && !av.Has(m) && !hasText(m)) {
 		return floor
 	}
-	r := e.K.Kit.Theme()
-	font := r.Styles[theme.StyleBody].Font
+	font := s.look.body
 	if m.Kind() == abi.ContentTagPoll {
-		font = r.Styles[rexui.TextStyles[rexui.TextSemibold]].Font
+		font = s.look.semi
 	}
 	s.shownForBubble(a, m)
 	var w, last float32

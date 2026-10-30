@@ -5194,3 +5194,39 @@ msgstr "Como o app"
 #: gnui
 msgid "Grain"
 msgstr "Granulação"
+
+#: gnui
+msgid "Move the colours together"
+msgstr "Mover as cores juntas"
+
+#: gnui
+msgid "Move each colour on its own"
+msgstr "Mover cada cor sozinha"
+
+#: gnui
+msgid "Your own"
+msgstr "Sua"
+
+#: gnui
+msgid "How this chat reads"
+msgstr "Como esta conversa aparece"
+
+#: gnui
+msgid "Serif"
+msgstr "Serifa"
+
+#: gnui
+msgid "Sans"
+msgstr "Sem serifa"
+
+#: gnui
+msgid "Mono"
+msgstr "Mono"
+
+#: gnui
+msgid "Text size"
+msgstr "Tamanho do texto"
+
+#: gnui
+msgid "Bubble colour"
+msgstr "Cor dos balões"

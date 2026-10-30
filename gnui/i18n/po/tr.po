@@ -5174,3 +5174,39 @@ msgstr "Uygulama gibi"
 #: gnui
 msgid "Grain"
 msgstr "Gren"
+
+#: gnui
+msgid "Move the colours together"
+msgstr "Renkleri birlikte taşı"
+
+#: gnui
+msgid "Move each colour on its own"
+msgstr "Her rengi ayrı taşı"
+
+#: gnui
+msgid "Your own"
+msgstr "Kendi"
+
+#: gnui
+msgid "How this chat reads"
+msgstr "Bu sohbetin görünümü"
+
+#: gnui
+msgid "Serif"
+msgstr "Serif"
+
+#: gnui
+msgid "Sans"
+msgstr "Sans"
+
+#: gnui
+msgid "Mono"
+msgstr "Mono"
+
+#: gnui
+msgid "Text size"
+msgstr "Metin boyutu"
+
+#: gnui
+msgid "Bubble colour"
+msgstr "Balon rengi"
