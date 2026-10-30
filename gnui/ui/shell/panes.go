@@ -43,12 +43,11 @@ var paneFocusKey = ui.HashString(0, "zapfast/pane focus")
 // settings, before the conversation, and the side pane, closed, after it.
 // It returns the layout and the list's divider.
 func newPanes() (workspace.Layout, uint32) {
-	l := workspace.Layout{Key: ui.HashString(0, "zapfast/pane")}
-	l.Reset(paneList)
 	// The side pane covering a narrow window covers the chat without taking
 	// its place: the chat stays in use and the covering pane translucent, as
-	// before the workspace. Set after Reset, which clears the options.
-	l.SoloKeepsFocus = true
+	// before the workspace.
+	l := workspace.Layout{Key: ui.HashString(0, "zapfast/pane"), SoloKeepsFocus: true}
+	l.Reset(paneList)
 	div := l.Split(paneList, paneChat, workspace.Right, 0.7)
 	l.Split(paneChat, paneSide, workspace.Right, 0.3)
 	l.SetLimits(paneList, workspace.Limits{Min: [2]float32{minListPt}, Max: [2]float32{maxListPt}})
