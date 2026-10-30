@@ -30,7 +30,10 @@ type Chat struct {
 	Participants     []string `json:"participants,omitempty"`
 	Labels           []string `json:"labels,omitempty"`
 	EphemeralSeconds uint32   `json:"ephemeral_seconds"`
-	HistoryStart     bool     `json:"history_start"`
+	// Zap: when the timer was set (Unix seconds), so an older change
+	// cannot undo a newer one; 0 while unknown.
+	EphemeralAt  int64 `json:"ephemeral_at,omitempty"`
+	HistoryStart bool  `json:"history_start"`
 	// Zap: a group's description, nil until WhatsApp has said (empty: it
 	// has none).
 	Description *string `json:"description,omitempty"`

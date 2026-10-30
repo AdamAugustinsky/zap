@@ -143,6 +143,17 @@ func (f *fakeClient) PNForLID(_ context.Context, lid types.JID) (types.JID, erro
 	return f.lids[lid], nil
 }
 
+func (f *fakeClient) LIDForPN(_ context.Context, pn types.JID) (types.JID, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for lid, p := range f.lids {
+		if p == pn {
+			return lid, nil
+		}
+	}
+	return types.EmptyJID, nil
+}
+
 func (f *fakeClient) AddEventHandler(h func(any)) {
 	f.mu.Lock()
 	f.handler = h

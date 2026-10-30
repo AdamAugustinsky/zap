@@ -387,12 +387,12 @@ func (s *Archive) Message(chat, id string) (Message, error) {
 	return scanMessage(s.db.QueryRow("SELECT payload,raw FROM messages WHERE chat=? AND id=?", chat, id))
 }
 
-// Unsupported returns the messages filed as unsupported that kept their
-// protobuf, for a newer parser to look at again.
-func (s *Archive) Unsupported() ([]Message, error) {
+// OfKind returns the messages of a kind sent since a time (Unix seconds),
+// with their protobufs, for a newer parser or the phone to look at again.
+func (s *Archive) OfKind(kind string, since int64) ([]Message, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	rows, err := s.db.Query(`SELECT payload,raw FROM messages WHERE raw IS NOT NULL AND payload LIKE '%"kind":"unsupported"%'`)
+	rows, err := s.db.Query(`SELECT payload,raw FROM messages WHERE ts>=? AND payload LIKE ? ORDER BY ts,ord`, since, `%"kind":"`+kind+`"%`)
 	if err != nil {
 		return nil, err
 	}
@@ -403,12 +403,13 @@ func (s *Archive) Unsupported() ([]Message, error) {
 		if err != nil {
 			return nil, err
 		}
-		if m.Kind == "unsupported" {
+		if m.Kind == kind {
 			result = append(result, m)
 		}
 	}
 	return result, rows.Err()
 }
+
 func clamp(limit int) int {
 	if limit <= 0 {
 		return 50

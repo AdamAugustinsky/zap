@@ -577,6 +577,8 @@ func TestSignallingIsNoMessage(t *testing.T) {
 
 func TestSignallingFiledAsUnsupportedIsMended(t *testing.T) {
 	h := newHarness(t, options{})
+	peerLID := types.NewJID("88001234567", types.HiddenUserServer)
+	h.f.lids[peerLID] = peer
 	raw := func(p *waE2E.Message) []byte {
 		b, err := proto.Marshal(p)
 		if err != nil {
@@ -587,16 +589,17 @@ func TestSignallingFiledAsUnsupportedIsMended(t *testing.T) {
 	row := func(id string, at int64, p *waE2E.Message) store.Message {
 		return store.Message{ID: id, ChatID: group.String(), Sender: peer.String(), Timestamp: at, Kind: kindUnsupported, Text: "message", Status: "delivered", Raw: raw(p)}
 	}
+	base := time.Now().Unix() - 1000
 	// What an earlier build filed for a group.
-	if err := h.e.arch.UpsertChat(store.Chat{ID: group.String(), Kind: "group", LastActivity: 104}); err != nil {
+	if err := h.e.arch.UpsertChat(store.Chat{ID: group.String(), Kind: "group", LastActivity: base + 4}); err != nil {
 		t.Fatal(err)
 	}
 	if err := h.e.arch.SaveMessages([]store.Message{
-		row("U1", 100, &waE2E.Message{SenderKeyDistributionMessage: &waE2E.SenderKeyDistributionMessage{}, MessageContextInfo: &waE2E.MessageContextInfo{}}),
-		row("U2", 101, &waE2E.Message{KeepInChatMessage: &waE2E.KeepInChatMessage{}}),
-		row("U3", 102, &waE2E.Message{EventMessage: &waE2E.EventMessage{}}),
-		row("U4", 103, &waE2E.Message{RequestPhoneNumberMessage: &waE2E.RequestPhoneNumberMessage{}}),
-		row("U5", 104, &waE2E.Message{EncCommentMessage: &waE2E.EncCommentMessage{}}),
+		row("U1", base+0, &waE2E.Message{SenderKeyDistributionMessage: &waE2E.SenderKeyDistributionMessage{}, MessageContextInfo: &waE2E.MessageContextInfo{}}),
+		row("U2", base+1, &waE2E.Message{KeepInChatMessage: &waE2E.KeepInChatMessage{}}),
+		row("U3", base+2, &waE2E.Message{EventMessage: &waE2E.EventMessage{}}),
+		row("U4", base+3, &waE2E.Message{RequestPhoneNumberMessage: &waE2E.RequestPhoneNumberMessage{}}),
+		row("U5", base+4, &waE2E.Message{EncCommentMessage: &waE2E.EncCommentMessage{}}),
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -620,11 +623,11 @@ func TestSignallingFiledAsUnsupportedIsMended(t *testing.T) {
 	if len(h.f.peer) != 1 {
 		t.Fatalf("asked the phone %d times", len(h.f.peer))
 	}
-	if r := h.f.peer[0].GetProtocolMessage().GetPeerDataOperationRequestMessage().GetPlaceholderMessageResendRequest(); len(r) != 1 || r[0].GetMessageKey().GetID() != "U1" || r[0].GetMessageKey().GetParticipant() != peer.String() {
+	if r := h.f.peer[0].GetProtocolMessage().GetPeerDataOperationRequestMessage().GetPlaceholderMessageResendRequest(); len(r) != 2 || r[0].GetMessageKey().GetID() != "U1" || r[0].GetMessageKey().GetParticipant() != peer.String() || r[1].GetMessageKey().GetParticipant() != peerLID.String() {
 		t.Fatalf("request: %+v", r)
 	}
 	// Its answer fills the row, quietly: the message is old news.
-	resent := message(group, peer, "U1", time.Unix(100, 0), text("found it"))
+	resent := message(group, peer, "U1", time.Unix(base, 0), text("found it"))
 	resent.UnavailableRequestID = "R1"
 	h.inject(resent)
 	expectTags(t, h.take(), "MessageUpdated ChatUpdated")
@@ -633,5 +636,77 @@ func TestSignallingFiledAsUnsupportedIsMended(t *testing.T) {
 	h.settle()
 	if len(h.f.peer) != 1 {
 		t.Fatalf("asked the phone again: %d", len(h.f.peer))
+	}
+}
+
+func TestStatusUpdatesAndBroadcastListsAreNoChats(t *testing.T) {
+	h := newHarness(t, options{})
+	// What an earlier build filed: a status update made a chat.
+	if err := h.e.arch.UpsertChat(store.Chat{ID: types.StatusBroadcastJID.String(), Kind: "channel", LastActivity: 100}); err != nil {
+		t.Fatal(err)
+	}
+	if err := h.e.arch.SaveMessages([]store.Message{{ID: "B0", ChatID: types.StatusBroadcastJID.String(), Sender: peer.String(), Timestamp: 100, Kind: kindText, Text: "my day"}}); err != nil {
+		t.Fatal(err)
+	}
+	h.start()
+	if _, err := h.e.arch.Chat(types.StatusBroadcastJID.String()); !noRows(err) {
+		t.Fatalf("the status chat stayed: %v", err)
+	}
+	// A status update is no message here.
+	h.inject(message(types.StatusBroadcastJID, peer, "B1", t0, text("my day")))
+	h.inject(&events.UndecryptableMessage{Info: message(types.StatusBroadcastJID, peer, "B2", t0, nil).Info})
+	expectTags(t, h.take(), "")
+	// A broadcast list's message lands in its sender's chat; ours to a
+	// list is not shown.
+	list := types.NewJID("1730000000", types.BroadcastServer)
+	h.inject(message(list, peer, "B3", t0, text("to all my friends")))
+	if m := one(t, h.take(), abi.EventTagIncoming).Incoming.Message; string(m.Chat) != peer.String() {
+		t.Fatalf("list message in %s", m.Chat)
+	}
+	h.inject(message(list, me, "B4", t0, text("to my list")))
+	expectTags(t, h.take(), "")
+	if _, err := h.e.arch.Chat(list.String()); !noRows(err) {
+		t.Fatalf("a list chat: %v", err)
+	}
+}
+
+func TestADirectChatFollowsItsTimer(t *testing.T) {
+	h := newHarness(t, options{})
+	h.start()
+	setting := func(seconds uint32, at int64) *waE2E.Message {
+		return &waE2E.Message{ProtocolMessage: &waE2E.ProtocolMessage{Type: waE2E.ProtocolMessage_EPHEMERAL_SETTING.Enum(), EphemeralExpiration: proto.Uint32(seconds), EphemeralSettingTimestamp: proto.Int64(at)}}
+	}
+	timer := func() uint32 {
+		t.Helper()
+		c, err := h.e.arch.Chat(peer.String())
+		if err != nil {
+			t.Fatal(err)
+		}
+		return c.EphemeralSeconds
+	}
+	// A message sent under a timer tells it while the chat's is unknown.
+	h.inject(message(peer, peer, "T1", t0, &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{Text: proto.String("hi"), ContextInfo: &waE2E.ContextInfo{Expiration: proto.Uint32(86400)}}}))
+	h.take()
+	if got := timer(); got != 86400 {
+		t.Fatalf("from a message: %d", got)
+	}
+	// The contact turns it to a week, then an older change arrives late.
+	h.inject(message(peer, peer, "T2", t0.Add(time.Minute), setting(604800, t0.Add(time.Minute).Unix())))
+	if c := one(t, h.take(), abi.EventTagChatUpdated).ChatUpdated.Chat; !c.HasEphemeralExpiration || c.EphemeralExpiration != 604800 {
+		t.Fatalf("chat: %+v", c)
+	}
+	h.inject(message(peer, peer, "T3", t0, setting(0, t0.Unix())))
+	expectTags(t, h.take(), "")
+	// Once set, a message's own expiration does not override it; turning
+	// it off does.
+	h.inject(message(peer, peer, "T4", t0.Add(2*time.Minute), &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{Text: proto.String("x"), ContextInfo: &waE2E.ContextInfo{Expiration: proto.Uint32(86400)}}}))
+	h.take()
+	if got := timer(); got != 604800 {
+		t.Fatalf("after a message: %d", got)
+	}
+	h.inject(message(peer, peer, "T5", t0.Add(3*time.Minute), setting(0, t0.Add(3*time.Minute).Unix())))
+	h.take()
+	if got := timer(); got != 0 {
+		t.Fatalf("turned off: %d", got)
 	}
 }

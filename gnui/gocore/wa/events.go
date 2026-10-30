@@ -7,8 +7,10 @@ package wa
 import (
 	"log/slog"
 
+	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"zapfast/abi"
 	"zapfast/gocore/store"
@@ -199,7 +201,13 @@ func (e *Engine) deleted(chat string, through int64) bool {
 // incoming stores a live message (theirs, or ours from another device),
 // or applies what it changes: a reaction, a revocation, an edit.
 func (e *Engine) incoming(evt *events.Message) error {
-	chat, sender := e.canonical(evt.Info.Chat), e.canonical(evt.Info.Sender)
+	if noChat(evt.Info) {
+		return nil
+	}
+	chat, sender := e.canonical(e.chatOf(evt.Info)), e.canonical(evt.Info.Sender)
+	if x := unwrap(evt.Message); x != nil {
+		e.timerOf(chat, x, evt.Info)
+	}
 	if parent, clip, ok := motionClip(unwrap(evt.Message)); ok {
 		return e.motionArrived(chat, parent, clip)
 	}
@@ -225,7 +233,8 @@ func (e *Engine) incoming(evt *events.Message) error {
 	case kindPin:
 		return e.pinMessage(evt, chat, sender)
 	case kindProtocol:
-		// Other protocol messages change nothing shown.
+		// Other protocol messages change nothing shown; a timer change
+		// was taken above.
 		return nil
 	}
 	old, existsErr := e.arch.Message(chat, m.ID)
@@ -263,10 +272,10 @@ func (e *Engine) incoming(evt *events.Message) error {
 // incoming replaces the row and notifies then, so the placeholder does not.
 func (e *Engine) undecryptable(evt *events.UndecryptableMessage) error {
 	// The sender marks internal traffic, such as reactions, as hidden.
-	if evt.Info.Chat == types.StatusBroadcastJID || evt.DecryptFailMode == events.DecryptFailHide {
+	if noChat(evt.Info) || evt.DecryptFailMode == events.DecryptFailHide {
 		return nil
 	}
-	chat, sender := e.canonical(evt.Info.Chat), e.canonical(evt.Info.Sender)
+	chat, sender := e.canonical(e.chatOf(evt.Info)), e.canonical(evt.Info.Sender)
 	if _, err := e.arch.Message(chat, evt.Info.ID); !noRows(err) {
 		return err // stored already, or the archive failed
 	}
@@ -424,4 +433,84 @@ func (e *Engine) readElsewhere(evt *events.Receipt) error {
 		c.Unread = min(c.Unread, left)
 		c.MarkedUnread = false
 	})
+}
+
+// noChat reports a message that belongs to no chat here: a status update
+// (zf:src/backend/worker.rs:4102), or one we sent to a broadcast list,
+// which Zap does not show.
+func noChat(info types.MessageInfo) bool {
+	return info.Chat == types.StatusBroadcastJID || info.Chat.Server == types.BroadcastServer && info.IsFromMe
+}
+
+// chatOf is the chat a message belongs to: a broadcast list's message
+// goes to its sender's chat, as on the phone.
+func (e *Engine) chatOf(info types.MessageInfo) types.JID {
+	if info.Chat.Server == types.BroadcastServer {
+		return info.Sender
+	}
+	return info.Chat
+}
+
+// timerOf follows a chat's disappearing-message timer: a protocol message
+// sets it, as of its own timestamp, and a message carrying an expiration
+// sets it only while the chat's is unknown (zf:src/backend/worker.rs:4113).
+func (e *Engine) timerOf(chat string, p *waE2E.Message, info types.MessageInfo) {
+	at := info.Timestamp.Unix()
+	var seconds uint32
+	set := false
+	if x := p.GetProtocolMessage(); x.GetType() == waE2E.ProtocolMessage_EPHEMERAL_SETTING {
+		seconds, set = x.GetEphemeralExpiration(), true
+		if t := x.GetEphemeralSettingTimestamp(); t > 0 {
+			at = t
+		}
+	} else if s, ok := expirationOf(p); ok {
+		seconds = s
+	} else {
+		return
+	}
+	changed := false
+	err := e.arch.UpdateChat(chat, func(c *store.Chat) {
+		if c.Kind == "" {
+			c.Kind = archiveKind(chat)
+		}
+		if set && at < c.EphemeralAt || !set && (c.EphemeralAt != 0 || c.EphemeralSeconds != 0) {
+			return
+		}
+		changed = c.EphemeralSeconds != seconds
+		c.EphemeralSeconds = seconds
+		if set {
+			c.EphemeralAt = at
+		}
+	})
+	if err != nil {
+		slog.Warn("zapfast wa: a chat's timer", "err", err)
+		return
+	}
+	if changed {
+		e.emitChat(chat)
+	}
+}
+
+// expirationOf is the disappearing timer a message's content was sent
+// under, when it says.
+func expirationOf(p *waE2E.Message) (uint32, bool) {
+	var seconds uint32
+	found := false
+	p.ProtoReflect().Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
+		if fd.Kind() != protoreflect.MessageKind || fd.IsList() || fd.IsMap() {
+			return true
+		}
+		inner := v.Message()
+		ctx := inner.Descriptor().Fields().ByName("contextInfo")
+		if ctx == nil || !inner.Has(ctx) {
+			return true
+		}
+		info, ok := inner.Get(ctx).Message().Interface().(*waE2E.ContextInfo)
+		if ok && info.Expiration != nil {
+			seconds, found = info.GetExpiration(), true
+			return false
+		}
+		return true
+	})
+	return seconds, found
 }

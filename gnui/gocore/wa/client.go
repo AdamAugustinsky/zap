@@ -38,6 +38,8 @@ type Client interface {
 	PushName() string
 	// PNForLID is the phone-number id of a privacy id, empty when unknown.
 	PNForLID(ctx context.Context, lid types.JID) (types.JID, error)
+	// LIDForPN is the privacy id of a phone-number id, empty when unknown.
+	LIDForPN(ctx context.Context, pn types.JID) (types.JID, error)
 
 	// AddEventHandler registers the one handler of whatsmeow's events.
 	AddEventHandler(handler func(evt any))
@@ -177,6 +179,13 @@ func (w *waClient) PNForLID(ctx context.Context, lid types.JID) (types.JID, erro
 		return types.EmptyJID, nil
 	}
 	return w.c.Store.LIDs.GetPNForLID(ctx, lid)
+}
+
+func (w *waClient) LIDForPN(ctx context.Context, pn types.JID) (types.JID, error) {
+	if w.c.Store.LIDs == nil {
+		return types.EmptyJID, nil
+	}
+	return w.c.Store.LIDs.GetLIDForPN(ctx, pn)
 }
 
 func (w *waClient) AddEventHandler(h func(any)) { w.c.AddEventHandler(h) }

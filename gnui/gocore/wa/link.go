@@ -332,5 +332,5 @@ func (e *Engine) connected() {
 	e.retryAvatars()
 	e.announcePinLimit()
 	e.pumpPrefetch()
-	e.mendSignalling()
+	e.mend()
 }

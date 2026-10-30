@@ -79,7 +79,9 @@ func (e *Engine) history(evt *events.HistorySync) error {
 			return e.ctx.Err()
 		}
 		j, ok := jidOf(conv.GetID())
-		if !ok {
+		// Status updates and broadcast lists are no chats
+		// (zf:src/backend/worker.rs:5145).
+		if !ok || j.Server == types.BroadcastServer {
 			continue
 		}
 		id := e.canonical(j)
@@ -125,7 +127,9 @@ func (e *Engine) history(evt *events.HistorySync) error {
 			}
 			c.MarkedUnread = conv.GetMarkedAsUnread()
 			c.HistoryStart = c.HistoryStart || conv.GetEndOfHistoryTransfer()
-			c.EphemeralSeconds = conv.GetEphemeralExpiration()
+			if at := int64(conv.GetEphemeralSettingTimestamp()); at >= c.EphemeralAt {
+				c.EphemeralSeconds, c.EphemeralAt = conv.GetEphemeralExpiration(), at
+			}
 		}); err != nil {
 			return err
 		}
@@ -419,17 +423,19 @@ func historyRequest(key *waCommon.MessageKey, timestamp int64, count int) *waE2E
 	}
 }
 
-// resendRequest is whatsmeow's BuildUnavailableMessageRequest for key: the
-// phone sends its copy of the message back.
-func resendRequest(key *waCommon.MessageKey) *waE2E.Message {
+// resendRequest is whatsmeow's BuildUnavailableMessageRequest for keys:
+// the phone sends its copies of the messages back.
+func resendRequest(keys ...*waCommon.MessageKey) *waE2E.Message {
+	var asks []*waE2E.PeerDataOperationRequestMessage_PlaceholderMessageResendRequest
+	for _, k := range keys {
+		asks = append(asks, &waE2E.PeerDataOperationRequestMessage_PlaceholderMessageResendRequest{MessageKey: k})
+	}
 	return &waE2E.Message{
 		ProtocolMessage: &waE2E.ProtocolMessage{
 			Type: waE2E.ProtocolMessage_PEER_DATA_OPERATION_REQUEST_MESSAGE.Enum(),
 			PeerDataOperationRequestMessage: &waE2E.PeerDataOperationRequestMessage{
-				PeerDataOperationRequestType: waE2E.PeerDataOperationRequestType_PLACEHOLDER_MESSAGE_RESEND.Enum(),
-				PlaceholderMessageResendRequest: []*waE2E.PeerDataOperationRequestMessage_PlaceholderMessageResendRequest{{
-					MessageKey: key,
-				}},
+				PeerDataOperationRequestType:    waE2E.PeerDataOperationRequestType_PLACEHOLDER_MESSAGE_RESEND.Enum(),
+				PlaceholderMessageResendRequest: asks,
 			},
 		},
 	}
