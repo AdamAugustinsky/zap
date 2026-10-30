@@ -138,15 +138,31 @@ func fromGoCore(pc uintptr) bool {
 // WhatsmeowLog is whatsmeow's logger over the default slog logger (the
 // run's log once StartLog ran): its warnings and errors only, formatted
 // and redacted, with source=whatsmeow and the module. Its debug and info
-// lines, which name messages and contacts freely, are dropped.
+// lines name messages and contacts freely: only those about decrypting
+// and asking for messages again pass, and only when the log is that
+// verbose (ZAP_LOG, StartLog). The traffic itself never does.
 func WhatsmeowLog() waLog.Logger { return waLogger{module: "whatsmeow"} }
 
 type waLogger struct{ module string }
 
+// waTopic is what a whatsmeow debug or info line must be about to pass.
+var waTopic = regexp.MustCompile(`(?i)decrypt|sender key|retry|resend|placeholder|unavailable|from phone|prekey|session`)
+
 func (l waLogger) Warnf(msg string, args ...any)  { l.log(slog.LevelWarn, msg, args) }
 func (l waLogger) Errorf(msg string, args ...any) { l.log(slog.LevelError, msg, args) }
-func (waLogger) Infof(string, ...any)             {}
-func (waLogger) Debugf(string, ...any)            {}
+func (l waLogger) Infof(msg string, args ...any)  { l.chatter(slog.LevelInfo, msg, args) }
+func (l waLogger) Debugf(msg string, args ...any) { l.chatter(slog.LevelDebug, msg, args) }
+
+func (l waLogger) chatter(level slog.Level, msg string, args []any) {
+	for _, m := range []string{"/Send", "/Recv", "/Socket"} {
+		if strings.Contains(l.module, m) {
+			return
+		}
+	}
+	if waTopic.MatchString(msg) {
+		l.log(level, msg, args)
+	}
+}
 func (l waLogger) Sub(module string) waLog.Logger {
 	return waLogger{module: l.module + "/" + module}
 }

@@ -242,10 +242,22 @@ func (e *Engine) incoming(evt *events.Message) error {
 	case kindProtocol:
 		// Other protocol messages change nothing shown; a timer change
 		// was taken above.
+		if r := unwrap(evt.Message).GetProtocolMessage().GetPeerDataOperationRequestResponseMessage(); r != nil {
+			answered := 0
+			for _, part := range r.GetPeerDataOperationResult() {
+				if len(part.GetPlaceholderMessageResendResponse().GetWebMessageInfoBytes()) > 0 {
+					answered++
+				}
+			}
+			slog.Info("zapfast wa: the phone answered a request", "type", r.GetPeerDataOperationRequestType().String(), "results", len(r.GetPeerDataOperationResult()), "resent", answered)
+		}
 		return nil
 	}
 	old, existsErr := e.arch.Message(chat, m.ID)
 	existed := existsErr == nil
+	if evt.UnavailableRequestID != "" {
+		slog.Info("zapfast wa: the phone resent a message", "kind", m.Kind, "existed", existed, "waited", existed && old.Kind == kindWaiting)
+	}
 	if m.Deleted {
 		if !existed {
 			return nil
@@ -282,6 +294,7 @@ func (e *Engine) undecryptable(evt *events.UndecryptableMessage) error {
 	if noChat(evt.Info) || evt.DecryptFailMode == events.DecryptFailHide {
 		return nil
 	}
+	slog.Info("zapfast wa: a message did not decrypt", "group", evt.Info.IsGroup, "unavailable", evt.IsUnavailable, "type", string(evt.UnavailableType))
 	chat, sender := e.canonical(e.chatOf(evt.Info)), e.canonical(evt.Info.Sender)
 	if _, err := e.arch.Message(chat, evt.Info.ID); !noRows(err) {
 		return err // stored already, or the archive failed

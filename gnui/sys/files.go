@@ -82,7 +82,7 @@ func StartLog(dir string) (*Log, error) {
 		note(err)
 	} else {
 		l.log = f
-		slog.SetDefault(slog.New(RedactHandler(slog.NewTextHandler(io.MultiWriter(f, os.Stderr), &slog.HandlerOptions{Level: slog.LevelWarn}))))
+		slog.SetDefault(slog.New(RedactHandler(slog.NewTextHandler(io.MultiWriter(f, os.Stderr), &slog.HandlerOptions{Level: logLevel()}))))
 	}
 	// The crash file is kept between runs (a crash is read after it); a
 	// clean run leaves it as it found it, and removes one it made empty.
@@ -122,4 +122,16 @@ func (l *Log) Close() {
 		l.log.Close()
 		l.log = nil
 	}
+}
+
+// logLevel is the log's: warnings, or more for a diagnosis when ZAP_LOG
+// says info or debug.
+func logLevel() slog.Level {
+	switch os.Getenv("ZAP_LOG") {
+	case "debug":
+		return slog.LevelDebug
+	case "info":
+		return slog.LevelInfo
+	}
+	return slog.LevelWarn
 }

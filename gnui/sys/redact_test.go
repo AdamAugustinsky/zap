@@ -74,3 +74,32 @@ func TestRedactLeavesOrdinaryTextAlone(t *testing.T) {
 		}
 	}
 }
+
+// A verbose log (ZAP_LOG=debug) lets whatsmeow's lines about decrypting
+// and asking again through, redacted, and nothing else of its chatter.
+func TestAVerboseLogKeepsOnlyWhatsmeowsDecryptLines(t *testing.T) {
+	t.Setenv("ZAP_LOG", "debug")
+	dir := t.TempDir()
+	l, err := StartLog(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wl := WhatsmeowLog().Sub("Client")
+	wl.Debugf("Processed sender key distribution message from %s in %s", "5511987654321:3@s.whatsapp.net", "120363025246125888@g.us")
+	wl.Debugf("Got push name %s for %s in history sync", "Grace Hopper", "5511987654321@s.whatsapp.net")
+	WhatsmeowLog().Sub("Recv").Debugf("<message>decrypt %s</message>", "meet me at the usual place")
+	l.Close()
+	b, err := os.ReadFile(filepath.Join(dir, "zapfast.log"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	log := string(b)
+	if !strings.Contains(log, "Processed sender key distribution message from [number]:3@s.whatsapp.net in [number]@g.us") {
+		t.Errorf("the decrypt line is missing:\n%s", log)
+	}
+	for _, kept := range []string{"Grace", "usual place", "5511987654321"} {
+		if strings.Contains(log, kept) {
+			t.Errorf("the log holds %q:\n%s", kept, log)
+		}
+	}
+}

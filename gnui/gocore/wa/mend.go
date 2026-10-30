@@ -70,6 +70,7 @@ func (e *Engine) mend() {
 		}
 		requests = append(requests, resendRequest(keys...))
 	}
+	slog.Info("zapfast wa: asking the phone for waiting messages", "waiting", len(waiting), "requests", len(requests))
 	if len(requests) == 0 {
 		return
 	}
