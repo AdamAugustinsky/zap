@@ -5196,3 +5196,15 @@ msgstr "Это может занять некоторое время. Откро
 msgctxt "menu bar"
 msgid "Close Tab"
 msgstr "Закрыть вкладку"
+
+#: gnui
+msgid "Space colour…"
+msgstr "Цвет пространства…"
+
+#: gnui
+msgid "Like the app"
+msgstr "Как в приложении"
+
+#: gnui
+msgid "Grain"
+msgstr "Зернистость"

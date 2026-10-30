@@ -5162,3 +5162,15 @@ msgstr "Bu biraz zaman alabilir. Telefonunuzda WhatsApp'ı açın."
 msgctxt "menu bar"
 msgid "Close Tab"
 msgstr "Sekmeyi Kapat"
+
+#: gnui
+msgid "Space colour…"
+msgstr "Alan rengi…"
+
+#: gnui
+msgid "Like the app"
+msgstr "Uygulama gibi"
+
+#: gnui
+msgid "Grain"
+msgstr "Gren"

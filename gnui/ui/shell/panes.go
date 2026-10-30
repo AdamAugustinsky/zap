@@ -144,7 +144,10 @@ func (sh *Shell) body(r [4]float32) screen.Rect {
 // surface builds pane p's glass at r, its focus animating toward whether it
 // is the pane in use. The pane's content builds after it, over it, in window
 // coordinates (the slots' Rects).
-func (sh *Shell) surface(p workspace.PaneID, r [4]float32) {
+func (sh *Shell) surface(p workspace.PaneID, r [4]float32) { sh.surfaceAt(p, r, 1) }
+
+// surfaceAt is surface at opacity op: a pane gliding in or away (glide.go).
+func (sh *Shell) surfaceAt(p workspace.PaneID, r [4]float32, op float32) {
 	k := sh.env.K
 	c, th := k.Context(), k.Theme()
 	target := float32(0)
@@ -153,7 +156,7 @@ func (sh *Shell) surface(p workspace.PaneID, r [4]float32) {
 	}
 	s := theme.Surface{
 		Key: sh.panes.PaneKey(p), Slot: sh.panes.Slot(p), Rect: r,
-		Focus: c.AnimateValue(ui.KeyN(paneFocusKey, uint64(p)), target, 14), Opacity: 1, Top: true,
+		Focus: c.AnimateValue(ui.KeyN(paneFocusKey, uint64(p)), target, 14), Opacity: op, Top: true,
 	}
 	th.Chrome.SurfaceShadow(c, th, s)
 	kg := th.Chrome.BeginSurface(c, th, s)

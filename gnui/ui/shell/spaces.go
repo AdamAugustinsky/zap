@@ -40,7 +40,8 @@ type spaceUI struct {
 	tinting  state.Space
 	tintAt   [4]float32
 	tintOpen bool
-	grab     int // the theme creator's dot being dragged, plus one; 0 none
+	tintDown bool // opens below tintAt (the menu's, under a pane's title row), not above (the strip's)
+	grab     int  // the theme creator's dot being dragged, plus one; 0 none
 }
 
 // goToSpace puts sp on screen, the list coming in from its side.
@@ -207,11 +208,25 @@ func (sh *Shell) spaceStrip(r screen.Rect) {
 		if sig.RightClicked {
 			// its colour: a row of swatches over the strip
 			sh.sp.tinting, sh.sp.tintAt = sp, c.RectOf(c.KeyOf(sig.ID))
-			sh.sp.tintOpen = true
+			sh.sp.tintOpen, sh.sp.tintDown = true, false
 		}
 	}
 	c.Pop()
-	sh.tintPopover()
+}
+
+// openTint opens the theme creator on space sp from the View menu (Space
+// colour…): under the list's title row, or the conversation's when the list
+// is hidden, so that a window with one space, which has no strip to
+// right-click, can colour it too.
+func (sh *Shell) openTint(sp state.Space) {
+	l := &sh.panes
+	r := l.Rect(paneList)
+	if !l.Shown(paneList) {
+		r = l.Rect(paneChat)
+	}
+	sh.sp.tinting, sh.sp.tintAt = sp, [4]float32{r[0], r[1], r[2], r[1] + sh.headerH()}
+	sh.sp.tintOpen, sh.sp.tintDown = true, true
+	sh.S.Touch()
 }
 
 // tintPopover is the right-clicked space's theme creator, Zen's made small:
@@ -246,7 +261,11 @@ func (sh *Shell) tintPopover() {
 	c.NextSize(ui.Children(1), ui.Children(1))
 	c.NextRole(ui.RoleMenu)
 	c.NextSemName(i18n.T("Space colour"))
-	ov := c.BeginOverlay(ui.HashString(0, "zapfast/space tint"), ui.OverlayPopup, sp.tintAt, ui.PlaceAbove)
+	place := ui.PlaceAbove
+	if sp.tintDown {
+		place = ui.PlaceBelow
+	}
+	ov := c.BeginOverlay(ui.HashString(0, "zapfast/space tint"), ui.OverlayPopup, sp.tintAt, place)
 	if ov.Dismissed && sp.grab == 0 {
 		sp.tintOpen = false
 	}
@@ -261,6 +280,11 @@ func (sh *Shell) tintPopover() {
 	c.NextShadow(ui.Shadow{OffY: e.Pt(4), Sigma: e.Pt(12), Color: 0x00000040})
 	c.Push(c.Box(ui.DrawBackground|ui.DrawBorder, "panel"))
 
+	if mode, ok := sh.modeRow(cur.Mode, fw); ok {
+		t := cur
+		t.Mode = mode
+		set(t)
+	}
 	if t, ok := sh.tintField(cur, fw, fw*0.9); ok {
 		set(t)
 	}
@@ -294,7 +318,7 @@ func (sh *Shell) tintPopover() {
 		k.BeginPress(&ps, ui.RoleButton, ui.Px(sw), ui.Px(sw), ui.DrawBackground|ui.DrawBorder, nil)
 		if k.EndPress(&ps).Clicked {
 			if name == "" {
-				set(state.SpaceTheme{Level: cur.Level})
+				set(state.SpaceTheme{Level: cur.Level, Mode: cur.Mode})
 				sp.tintOpen = false // nothing more to choose
 				return
 			}
@@ -325,9 +349,78 @@ func (sh *Shell) tintPopover() {
 			t.Level = level
 			set(t)
 		}
+		// the grain, as Zen's texture dial: 16 steps
+		c.NextAxis(ui.AxisX)
+		c.NextSize(ui.Px(fw), ui.Children(1))
+		c.Push(c.Box(0, "grain head"))
+		k.NextWidth(ui.Grow(1))
+		rexui.Label(k.Kit, i18n.T("Grain"), rexui.LabelOpts{Style: rexui.TextCaption, Color: rexui.Of(theme.Label2)})
+		c.Pop()
+		grain := cur.Grain
+		k.NextWidth(ui.Px(fw))
+		rexui.Slider(k.Kit, i18n.T("Grain")+"###tint grain", &grain, 0, 1, 1.0/16, rexui.SliderOpts{Size: theme.SizeSmall})
+		if grain != cur.Grain {
+			t := cur
+			t.Grain = grain
+			set(t)
+		}
 	}
 	c.Pop()
 	c.EndOverlay()
+}
+
+// modeRow is the theme creator's appearance, as Zen's: the app's, light or
+// dark while the space shows (state.SpaceTheme.Mode), w pixels wide. It
+// returns the mode chosen, and whether one was.
+func (sh *Shell) modeRow(cur string, w float32) (string, bool) {
+	e := &sh.env
+	k := e.K
+	c, th := k.Context(), k.Theme()
+	gap := e.Pt(ztheme.Space1)
+	h := e.Pt(ztheme.T.HitTool)
+	c.NextAxis(ui.AxisX)
+	c.NextGap(gap)
+	c.NextSize(ui.Px(w), ui.Children(1))
+	c.NextRole(ui.RoleGroup)
+	c.NextSemName(i18n.T("Appearance"))
+	c.Push(c.Box(0, "tint modes"))
+	chosen, picked := cur, false
+	for _, mode := range state.SpaceModes {
+		sym, label := "circle.lefthalf.filled", i18n.T("Like the app")
+		switch mode {
+		case "light":
+			sym, label = "sun.max", i18n.T("Light")
+		case "dark":
+			sym, label = "moon", i18n.T("Dark")
+		}
+		ps := k.PressState(c.Fmt().Str("tint mode ").Str(mode).String(), base.HoverOn)
+		ps.Name = label
+		on := mode == cur
+		c.NextAxis(ui.AxisX)
+		c.NextCross(ui.CrossCenter)
+		c.NextJustify(ui.JustifyCenter)
+		c.NextRadius(h / 2)
+		fill := th.Colors[theme.Field] | 0xFF
+		if ps.Hot > 0 && !on {
+			fill = theme.MixRGBA(fill, th.Colors[theme.Label], 0.06*ps.Hot)
+		}
+		c.NextBG(fill)
+		if on {
+			c.NextBorder(th.Colors[theme.Label], th.Lines.Hairline*2)
+			c.NextSemState(ui.SemSelected)
+		}
+		k.BeginPress(&ps, ui.RoleButton, ui.Grow(1), ui.Px(h), ui.DrawBackground|ui.DrawBorder, nil)
+		col := th.Colors[theme.Label2]
+		if on {
+			col = th.Colors[theme.Label]
+		}
+		k.Icon(sh.folderIcon(sym), col)
+		if k.EndPress(&ps).Clicked && !on {
+			chosen, picked = mode, true
+		}
+	}
+	c.Pop()
+	return chosen, picked
 }
 
 // tintField is the theme creator's field, w×h pixels: a preview of the

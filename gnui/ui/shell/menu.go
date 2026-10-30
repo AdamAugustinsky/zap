@@ -52,22 +52,23 @@ const (
 	CmdNextAccount
 	CmdJumpToBottom
 	CmdLock
-	CmdChat1      // … CmdChat9: ⌘1 … ⌘9
-	cmdChatLast   = CmdChat1 + 8
-	CmdFullScreen = cmdChatLast + 1
-	CmdHide       = CmdFullScreen + 1
-	CmdHideOthers = CmdHide + 1
-	CmdShowAll    = CmdHideOthers + 1
-	CmdCloseTab   = CmdShowAll + 1
-	CmdSpace1     = CmdCloseTab + 1 // … CmdSpace9: ⌃1 … ⌃9 (state/folders.go's spaces)
-	cmdSpaceLast  = CmdSpace1 + 8
-	CmdSplit      = cmdSpaceLast + 1 // ⌃⌥V: the open chat beside its neighbour tab (ui/chatview.Split)
-	CmdUnsplit    = CmdSplit + 1     // ⌃⌥U
-	CmdFloat      = CmdUnsplit + 1   // ⌃⌥P: the open chat floating over other apps (ui/chatview.Pip)
-	CmdPrevPane   = CmdFloat + 1     // ⌥⌘←: the split view's pane on the left in use
-	CmdNextPane   = CmdPrevPane + 1  // ⌥⌘→
-	CmdPaneLeft   = CmdNextPane + 1  // ⌥⌘⇧←: the pane in use one place left
-	CmdPaneRight  = CmdPaneLeft + 1  // ⌥⌘⇧→
+	CmdChat1       // … CmdChat9: ⌘1 … ⌘9
+	cmdChatLast    = CmdChat1 + 8
+	CmdFullScreen  = cmdChatLast + 1
+	CmdHide        = CmdFullScreen + 1
+	CmdHideOthers  = CmdHide + 1
+	CmdShowAll     = CmdHideOthers + 1
+	CmdCloseTab    = CmdShowAll + 1
+	CmdSpace1      = CmdCloseTab + 1 // … CmdSpace9: ⌃1 … ⌃9 (state/folders.go's spaces)
+	cmdSpaceLast   = CmdSpace1 + 8
+	CmdSplit       = cmdSpaceLast + 1 // ⌃⌥V: the open chat beside its neighbour tab (ui/chatview.Split)
+	CmdUnsplit     = CmdSplit + 1     // ⌃⌥U
+	CmdFloat       = CmdUnsplit + 1   // ⌃⌥P: the open chat floating over other apps (ui/chatview.Pip)
+	CmdPrevPane    = CmdFloat + 1     // ⌥⌘←: the split view's pane on the left in use
+	CmdNextPane    = CmdPrevPane + 1  // ⌥⌘→
+	CmdPaneLeft    = CmdNextPane + 1  // ⌥⌘⇧←: the pane in use one place left
+	CmdPaneRight   = CmdPaneLeft + 1  // ⌥⌘⇧→
+	CmdSpaceColour = CmdPaneRight + 1 // the space on screen's colours (spaces.go's theme creator)
 )
 
 // helpURL is the user guide ZapFast Help opens (zf:src/macos.rs:234).
@@ -151,6 +152,7 @@ func buildModel(viewer bool) (*menu.Model, error) {
 		{ID: CmdSplit, Title: T("Split with the next tab"), Shortcut: menu.Shortcut{Key: 'V', Mods: ui.ModCtrl | ui.ModAlt}, Symbol: "rectangle.split.2x1"},
 		{ID: CmdUnsplit, Title: T("Close the split"), Shortcut: menu.Shortcut{Key: 'U', Mods: ui.ModCtrl | ui.ModAlt}},
 		{ID: CmdFloat, Title: T("Float the chat over other apps"), Shortcut: menu.Shortcut{Key: 'P', Mods: ui.ModCtrl | ui.ModAlt}, Symbol: "pip"},
+		{ID: CmdSpaceColour, Title: T("Space colour…"), Symbol: "paintpalette"},
 		{ID: CmdPrevPane, Title: T("Previous pane"), Shortcut: prim(ui.KeyLeft, ui.ModAlt)},
 		{ID: CmdNextPane, Title: T("Next pane"), Shortcut: prim(ui.KeyRight, ui.ModAlt)},
 		{ID: CmdPaneLeft, Title: T("Move the pane left"), Shortcut: prim(ui.KeyLeft, ui.ModAlt|ui.ModShift)},
@@ -188,7 +190,7 @@ func buildModel(viewer bool) (*menu.Model, error) {
 		{Title: "Zap", Items: []menu.Item{item(CmdAbout), sep, item(CmdSettings), sep, item(CmdQuit)}},
 		{Title: P("menu bar", "File"), Items: []menu.Item{item(CmdNewChat), sep, item(CmdCloseTab), item(CmdCloseWindow)}},
 		{Title: P("menu bar", "Edit"), Items: []menu.Item{item(CmdUndo), item(CmdRedo), sep, item(CmdCut), item(CmdCopy), item(CmdPaste), item(CmdSelectAll), sep, item(CmdFind)}},
-		{Title: P("menu bar", "View"), Items: []menu.Item{item(CmdToggleSidebar), sep, item(CmdSplit), item(CmdUnsplit), item(CmdPrevPane), item(CmdNextPane), item(CmdPaneLeft), item(CmdPaneRight), item(CmdFloat), sep, item(zoomIn), item(zoomOut), item(actual), sep, item(CmdFullScreen)}},
+		{Title: P("menu bar", "View"), Items: []menu.Item{item(CmdToggleSidebar), sep, item(CmdSplit), item(CmdUnsplit), item(CmdPrevPane), item(CmdNextPane), item(CmdPaneLeft), item(CmdPaneRight), item(CmdFloat), sep, item(CmdSpaceColour), sep, item(zoomIn), item(zoomOut), item(actual), sep, item(CmdFullScreen)}},
 		{Title: P("menu bar", "Window"), Role: menu.MenuWindow, Items: []menu.Item{item(CmdMinimize), item(CmdZoom), sep, item(CmdShowWindow)}},
 		{Title: P("menu bar", "Help"), Role: menu.MenuHelp, Items: []menu.Item{item(CmdShortcuts), item(CmdHelp)}},
 		{Title: P("menu bar", "Services"), Role: menu.MenuServices},
@@ -365,6 +367,9 @@ func (sh *Shell) Commands(e *screen.Env) {
 		sh.stepPane(a, -1, true)
 	case k.Command(CmdPaneRight):
 		sh.stepPane(a, 1, true)
+	}
+	if k.Command(CmdSpaceColour) && main {
+		sh.openTint(state.Space{Acct: a.Index, Folder: a.SpaceFolder})
 	}
 	if k.Command(CmdFloat) {
 		if ch, ok := a.OpenChatView(); ok {

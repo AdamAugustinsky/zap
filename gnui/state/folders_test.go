@@ -41,6 +41,12 @@ func TestSpaceThemesRoundTrip(t *testing.T) {
 	if d := dotsFromFile([]string{"#zz0000", "#00ff00", "red"}); d != [3]uint32{0x00FF00FF} {
 		t.Errorf("bad colours read as %08X", d)
 	}
+	// a space's own appearance
+	m := AccountSettings{SpaceTintMode: "light", SpaceTintGrain: 0.5, Folders: []Folder{{ID: "f1", Name: "Work", TintMode: "dark", TintGrain: 0.25}}}
+	mf := m.toFile()
+	if mb := mf.settings(); mb.SpaceTintMode != "light" || mb.Folders[0].TintMode != "dark" || mb.SpaceTintGrain != 0.5 || mb.Folders[0].TintGrain != 0.25 {
+		t.Errorf("modes came back %q %q", mb.SpaceTintMode, mb.Folders[0].TintMode)
+	}
 	if (SpaceTheme{}).Strength() != DefaultTintLevel || (SpaceTheme{Level: 2}).Strength() != 1 {
 		t.Error("Strength does not default or cap")
 	}

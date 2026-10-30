@@ -4971,3 +4971,15 @@ msgstr ""
 msgctxt "menu bar"
 msgid "Close Tab"
 msgstr ""
+
+#: gnui
+msgid "Space colour…"
+msgstr ""
+
+#: gnui
+msgid "Like the app"
+msgstr ""
+
+#: gnui
+msgid "Grain"
+msgstr ""
