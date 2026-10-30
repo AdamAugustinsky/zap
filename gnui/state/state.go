@@ -118,8 +118,9 @@ type Account struct {
 	Pending *core.Pending
 	Err     string
 	Started bool // zf_core_start sent, after the first frame
-	// startOnOpen: the core was opened again (Reopen) after the cores
-	// started, so it gets its permit as soon as it is open.
+	// startOnOpen: the core was still opening when the cores started, or
+	// was opened again (Reopen) after, so it gets its permit as soon as it
+	// is open.
 	startOnOpen bool
 	// Removed: the core said the account is gone (AccountRemoved); the
 	// state drops it after the drain (State.Pump).
@@ -1003,10 +1004,16 @@ func (s *State) Pump(budget time.Duration) bool {
 }
 
 // StartCores gives every open core its startup permit (after the first
-// frame).
+// frame). A core still opening gets it once it is open (startReopened, from
+// Pump): a slow open (an account taken over from the Rust core, a Keychain
+// prompt) would otherwise never connect.
 func (s *State) StartCores() {
 	s.coresStarted = true
 	for _, a := range s.Accounts {
+		if a.Conn == nil && a.Pending != nil {
+			a.startOnOpen = true
+			continue
+		}
 		if a.Conn != nil && !a.Started {
 			a.Started = true
 			if err := a.Conn.Start(); err != nil {
