@@ -14,6 +14,7 @@ import (
 	"unicode"
 
 	"go.mau.fi/whatsmeow/proto/waE2E"
+	"go.mau.fi/whatsmeow/proto/waWeb"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
 	"google.golang.org/protobuf/proto"
@@ -96,6 +97,36 @@ func signalling(p *waE2E.Message) bool {
 	bare := proto.Clone(p).(*waE2E.Message)
 	bare.MessageContextInfo = nil
 	return proto.Size(bare) == 0
+}
+
+// stub is what a history entry with no message, only a stub type (a
+// system notice: "messages are end-to-end encrypted", a security code that
+// changed, a member who joined), files as: a missed call is a call, as the
+// phone lists it; any other notice is no message, as the phone mostly
+// hides them (kindProtocol: not filed).
+func stub(t waWeb.WebMessageInfo_StubType, m *store.Message) {
+	switch t {
+	case waWeb.WebMessageInfo_CALL_MISSED_VOICE, waWeb.WebMessageInfo_CALL_MISSED_VIDEO,
+		waWeb.WebMessageInfo_CALL_MISSED_GROUP_VOICE, waWeb.WebMessageInfo_CALL_MISSED_GROUP_VIDEO:
+		m.Kind = store.KindCall
+		m.Call = &store.Call{
+			Status: "missed",
+			Video:  t == waWeb.WebMessageInfo_CALL_MISSED_VIDEO || t == waWeb.WebMessageInfo_CALL_MISSED_GROUP_VIDEO,
+			Group:  t == waWeb.WebMessageInfo_CALL_MISSED_GROUP_VOICE || t == waWeb.WebMessageInfo_CALL_MISSED_GROUP_VIDEO,
+		}
+	default:
+		m.Kind = kindProtocol
+	}
+}
+
+// hdCopy reports whether p is the HD copy of a photo or video, which
+// WhatsApp sends after the standard one as its associated child.
+func hdCopy(p *waE2E.Message) bool {
+	switch p.GetMessageContextInfo().GetMessageAssociation().GetAssociationType() {
+	case waE2E.MessageAssociation_HD_IMAGE_DUAL_UPLOAD, waE2E.MessageAssociation_HD_VIDEO_DUAL_UPLOAD:
+		return p.GetAssociatedChildMessage() != nil
+	}
+	return false
 }
 
 // unsupportedWhat names what an unshown message is, for its row.
@@ -198,6 +229,15 @@ func parseDepth(e *events.Message, chat, sender string, depth int) store.Message
 	m := store.Message{ID: e.Info.ID, ChatID: chat, Sender: sender, SenderName: e.Info.PushName, FromMe: e.Info.IsFromMe, Timestamp: e.Info.Timestamp.Unix(), Kind: kindUnsupported, Status: "delivered", Edited: e.IsEdit}
 	p := unwrap(e.Message)
 	if p == nil {
+		if depth == 0 && e.Message == nil {
+			stub(e.SourceWebMsg.GetMessageStubType(), &m)
+		}
+		return m
+	}
+	if hdCopy(p) {
+		// The HD copy of a photo or video sent before it: the phone shows
+		// the one picture.
+		m.Kind = kindProtocol
 		return m
 	}
 	if e.SourceWebMsg != nil {

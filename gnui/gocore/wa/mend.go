@@ -12,6 +12,7 @@ import (
 	"go.mau.fi/whatsmeow/types/events"
 	"google.golang.org/protobuf/proto"
 
+	"zapfast/abi"
 	"zapfast/gocore/store"
 )
 
@@ -44,6 +45,7 @@ func (e *Engine) mend() {
 		}
 	}
 	e.mendSignalling()
+	e.mendStubs()
 	e.mendPrivacyIDs()
 	waiting, err := e.arch.OfKind(kindWaiting, time.Now().Add(-askBack).Unix())
 	if err != nil {
@@ -140,6 +142,69 @@ func (e *Engine) mendSignalling() {
 			e.emitChat(chat)
 		}
 	}
+}
+
+// mendStubs drops what history filed before stub (parse.go) told system
+// notices apart: a row with no message and no text was one, never shown on
+// the phone, and a direct chat it leaves with nothing else goes with it.
+func (e *Engine) mendStubs() {
+	rows, err := e.arch.OfKind(kindUnsupported, 0)
+	if err != nil {
+		slog.Warn("zapfast wa: listing unsupported messages", "err", err)
+		return
+	}
+	gone := map[string][]string{}
+	for _, m := range rows {
+		if len(m.Raw) != 0 || m.Text != "" {
+			continue
+		}
+		if err := e.arch.DeleteLocal(m.ChatID, m.ID); err != nil {
+			slog.Warn("zapfast wa: mending a message", "err", err)
+			continue
+		}
+		gone[m.ChatID] = append(gone[m.ChatID], m.ID)
+	}
+	for chat, ids := range gone {
+		if e.dropIfEmpty(chat, true) {
+			continue
+		}
+		for _, id := range ids {
+			e.messageDeleted(chat, id)
+		}
+		if newest, _, err := e.arch.Messages(chat, "", 1); err == nil && len(newest) == 1 {
+			if err := e.arch.UpdateChat(chat, func(c *store.Chat) { c.Preview = summary(newest[0]) }); err == nil {
+				e.emitChat(chat)
+			}
+		}
+	}
+}
+
+// dropIfEmpty removes direct chat chat when nothing is left in it: no
+// message, name, pin, archive, favourite, lock or draft. announce says so
+// to the reader (a history chunk sends the whole list after). It reports
+// whether it did. No barrier is left: the person's next message makes the
+// chat again.
+func (e *Engine) dropIfEmpty(chat string, announce bool) bool {
+	c, err := e.arch.Chat(chat)
+	if err != nil || chatKind(c.Kind, chat) != abi.ChatKindDirect || c.Name != "" || c.Pinned || c.Archived || c.Favorite || c.Locked {
+		return false
+	}
+	if page, _, err := e.arch.Messages(chat, "", 1); err != nil || len(page) > 0 {
+		return false
+	}
+	if d, err := e.arch.Draft(chat); err != nil || d != "" {
+		return false
+	}
+	if err := e.arch.DeleteChat(chat, 0); err != nil {
+		slog.Warn("zapfast wa: dropping an empty chat", "err", err)
+		return false
+	}
+	if announce {
+		ev := abi.Event{Tag: abi.EventTagChatRemoved}
+		ev.ChatRemoved.Chat = b(chat)
+		e.out.Emit(&ev)
+	}
+	return true
 }
 
 // mendPrivacyIDs files each chat kept under a privacy id under its phone

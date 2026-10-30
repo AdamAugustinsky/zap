@@ -260,6 +260,10 @@ func (e *Engine) history(evt *events.HistorySync) error {
 		}
 		if onDemand {
 			answered = append(answered, filed{id, count, count > 0 && !conv.GetEndOfHistoryTransfer()})
+		} else if count == 0 {
+			// A conversation of system notices alone (stub) is no chat on
+			// the phone either.
+			e.dropIfEmpty(id, false)
 		}
 	}
 	if !onDemand {
