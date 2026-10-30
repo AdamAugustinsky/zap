@@ -89,7 +89,8 @@ type Theme struct {
 	selGen    uint32
 	missing   bool // the selected file is not in the catalogue
 	look      look
-	good      look // the last working custom look
+	pref      gtheme.Preference // the look's, or the space on screen's own mode (Apply)
+	good      look              // the last working custom look
 	hasGood   bool
 	gen       uint32 // bumps when the look changes
 	mixT      float32
@@ -241,7 +242,14 @@ func (t *Theme) Apply(k *widget.Kit, s *state.State) {
 			t.kits[i].set = false
 		}
 	}
-	k.SetPreference(t.look.pref)
+	t.pref = t.look.pref
+	switch s.SpaceTheme().Mode {
+	case "light": // the space on screen keeps its own (state.SpaceTheme.Mode)
+		t.pref = gtheme.ForceLight
+	case "dark":
+		t.pref = gtheme.ForceDark
+	}
+	k.SetPreference(t.pref)
 	t.install(k)
 	c := k.Context()
 
@@ -263,7 +271,7 @@ func (t *Theme) Apply(k *widget.Kit, s *state.State) {
 
 // target is the mode the look heads for.
 func (t *Theme) target(c *ui.Context) gtheme.Mode {
-	switch t.look.pref {
+	switch t.pref {
 	case gtheme.ForceLight:
 		return gtheme.Light
 	case gtheme.ForceDark:

@@ -94,6 +94,8 @@ type accountFile struct {
 	SpaceTintMix        string       `json:"space_tint_mix,omitempty"`
 	SpaceTintLevel      float32      `json:"space_tint_level,omitempty"`
 	SpaceTintColors     []string     `json:"space_tint_colors,omitempty"`
+	SpaceTintMode       string       `json:"space_tint_mode,omitempty"`
+	SpaceTintGrain      float32      `json:"space_tint_grain,omitempty"`
 }
 
 // folderFile is a Folder in the account's settings file.
@@ -108,6 +110,8 @@ type folderFile struct {
 	TintMix    string   `json:"tint_mix,omitempty"`
 	TintLevel  float32  `json:"tint_level,omitempty"`
 	TintColors []string `json:"tint_colors,omitempty"`
+	TintMode   string   `json:"tint_mode,omitempty"`
+	TintGrain  float32  `json:"tint_grain,omitempty"`
 }
 
 func foldersToFile(fs []Folder) []folderFile {
@@ -116,7 +120,7 @@ func foldersToFile(fs []Folder) []folderFile {
 	}
 	out := make([]folderFile, len(fs))
 	for i, f := range fs {
-		out[i] = folderFile{ID: f.ID, Name: f.Name, Icon: f.Icon, Collapsed: f.Collapsed, Space: f.Space, Tint: f.Tint, TintMix: f.TintMix, TintLevel: f.TintLevel, TintColors: dotsToFile(f.TintDots)}
+		out[i] = folderFile{ID: f.ID, Name: f.Name, Icon: f.Icon, Collapsed: f.Collapsed, Space: f.Space, Tint: f.Tint, TintMix: f.TintMix, TintLevel: f.TintLevel, TintColors: dotsToFile(f.TintDots), TintMode: f.TintMode, TintGrain: f.TintGrain}
 		for _, c := range f.Chats {
 			out[i].Chats = append(out[i].Chats, string(c))
 		}
@@ -158,7 +162,7 @@ func foldersFromFile(fs []folderFile) []Folder {
 	}
 	out := make([]Folder, len(fs))
 	for i, f := range fs {
-		out[i] = Folder{ID: f.ID, Name: f.Name, Icon: f.Icon, Collapsed: f.Collapsed, Space: f.Space, Tint: f.Tint, TintMix: f.TintMix, TintLevel: f.TintLevel, TintDots: dotsFromFile(f.TintColors)}
+		out[i] = Folder{ID: f.ID, Name: f.Name, Icon: f.Icon, Collapsed: f.Collapsed, Space: f.Space, Tint: f.Tint, TintMix: f.TintMix, TintLevel: f.TintLevel, TintDots: dotsFromFile(f.TintColors), TintMode: f.TintMode, TintGrain: f.TintGrain}
 		for _, c := range f.Chats {
 			out[i].Chats = append(out[i].Chats, []byte(c))
 		}
@@ -583,7 +587,7 @@ func (a *AccountSettings) toFile() accountFile {
 		WallpaperImage: optString(nonEmpty(a.WallpaperImage)), HistoryPrefetch: a.HistoryPrefetch,
 		ListFilter: optString(nonEmpty(a.ListFilter)), CallFilter: optString(nonEmpty(a.CallFilter)),
 		Folders: foldersToFile(a.Folders), SpaceTint: a.SpaceTint,
-		SpaceTintMix: a.SpaceTintMix, SpaceTintLevel: a.SpaceTintLevel, SpaceTintColors: dotsToFile(a.SpaceTintDots),
+		SpaceTintMix: a.SpaceTintMix, SpaceTintLevel: a.SpaceTintLevel, SpaceTintColors: dotsToFile(a.SpaceTintDots), SpaceTintMode: a.SpaceTintMode, SpaceTintGrain: a.SpaceTintGrain,
 	}
 }
 
@@ -595,7 +599,7 @@ func (f *accountFile) settings() AccountSettings {
 		WallpaperImage: fromOpt(f.WallpaperImage), HistoryPrefetch: f.HistoryPrefetch,
 		ListFilter: fromOpt(f.ListFilter), CallFilter: fromOpt(f.CallFilter),
 		Folders: foldersFromFile(f.Folders), SpaceTint: f.SpaceTint,
-		SpaceTintMix: f.SpaceTintMix, SpaceTintLevel: f.SpaceTintLevel, SpaceTintDots: dotsFromFile(f.SpaceTintColors),
+		SpaceTintMix: f.SpaceTintMix, SpaceTintLevel: f.SpaceTintLevel, SpaceTintDots: dotsFromFile(f.SpaceTintColors), SpaceTintMode: f.SpaceTintMode, SpaceTintGrain: f.SpaceTintGrain,
 	}
 	if f.AutoDownloadImages != nil {
 		a.AutoDownload = *f.AutoDownloadImages

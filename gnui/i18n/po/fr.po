@@ -5219,3 +5219,15 @@ msgstr "Cela peut prendre un moment. Ouvrez WhatsApp sur votre téléphone."
 msgctxt "menu bar"
 msgid "Close Tab"
 msgstr "Fermer l’onglet"
+
+#: gnui
+msgid "Space colour…"
+msgstr "Couleur de l’espace…"
+
+#: gnui
+msgid "Like the app"
+msgstr "Comme l’app"
+
+#: gnui
+msgid "Grain"
+msgstr "Grain"
