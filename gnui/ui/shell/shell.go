@@ -461,14 +461,15 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 	l := &sh.panes
 	// A drag of the list's divider moves the list's width, which the
 	// settings keep.
-	if l.Update(c, workspace.Keys{}).Moved {
+	// A press anywhere in a pane makes it the one in use (Rex focuses a pane
+	// on a click), its content's boxes included.
+	if l.Update(c, workspace.Keys{PressAnywhere: true}).Moved {
 		if w := l.Fixed(paneList); w > 0 && w != s.Settings.SidebarWidth {
 			s.Settings.SidebarWidth = w
 			s.Touch()
 		}
 	}
 	was := l.Focus()
-	sh.notePress()
 	ref := model.ChatRef(0)
 	if open {
 		ref = ch.Ref()

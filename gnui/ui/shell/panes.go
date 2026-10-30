@@ -104,22 +104,6 @@ func (sh *Shell) syncPanes(ref model.ChatRef, open, narrow bool) {
 	}
 }
 
-// notePress makes the pane pressed in the one in use (Rex focuses a pane on
-// a click). The panes' content builds over their surfaces rather than in
-// them, so a press on it is the content's, not the surface's: Update sees
-// only presses on the bare glass.
-func (sh *Shell) notePress() {
-	in, l := sh.env.C().Input(), &sh.panes
-	if !in.Pressed[ui.ButtonLeft] {
-		return
-	}
-	for _, id := range [...]workspace.PaneID{paneList, paneChat, paneSide} {
-		if r := l.Rect(id); l.Shown(id) && in.MouseX >= r[0] && in.MouseX < r[2] && in.MouseY >= r[1] && in.MouseY < r[3] {
-			l.SetFocus(id)
-		}
-	}
-}
-
 // keepFocus is Zap's fallback when the pane in use stops showing: the open
 // chat, else the list, rather than the pane used before it (so a side pane
 // in use that closes gives the focus to the chat, even when the list was
