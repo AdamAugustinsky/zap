@@ -24,6 +24,7 @@ import (
 	"gonativeui/theme"
 	"gonativeui/ui"
 	"gonativeui/widget/base"
+	"gonativeui/widget/workspace"
 
 	"zapfast/abi"
 	"zapfast/i18n"
@@ -44,6 +45,9 @@ const (
 	maxListPt      = 520
 	narrowPt       = 720 // a window narrower than this hides the rail and the list beside an open chat
 	sideMinPt      = 240 // the narrowest side pane: without room for it beside the chat it does not show
+	sideMaxPt      = 640 // the widest (ui/info's drag)
+	searchMinPt    = 300 // the in-chat search's narrowest and widest (zf:src/ui/pane.rs:22-23)
+	searchMaxPt    = 520
 )
 
 // ToolbarStyle is the main window's toolbar: Rex's band.
@@ -102,14 +106,14 @@ type Shell struct {
 	listTB     rexui.Toolbar // the panes' title rows
 	chatTB     rexui.Toolbar
 	sideTB     rexui.Toolbar
-	focus      paneID        // the pane in use, opaque (noteFocus)
-	focusChat  model.ChatRef // the open chat noteFocus last saw
-	phone      []byte        // our number, formatted for the account block
-	tabs       chatTabs      // the titlebar's tabs of open chats
+	panes      workspace.Layout // where the panes lie and the one in use (panes.go)
+	listDiv    uint32           // the list's divider in panes
+	focusChat  model.ChatRef    // the open chat syncPanes last saw
+	phone      []byte           // our number, formatted for the account block
+	tabs       chatTabs         // the titlebar's tabs of open chats
 	railScroll base.ScrollState
 	slide      narrowSlide
 	front      [state.NumWindows]bool // opened alone: to bring forward once open
-	listDrag   float32                // the list's width as a drag of its edge goes
 	placed     bool                   // the main window was put back where it was
 	seenW      float32                // the window's size last frame (points)
 	seenH      float32
@@ -439,7 +443,7 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 	e.SetNarrow(narrow)
 	// A locked chat outside the open locked folder is not shown, whatever
 	// left it open: no header, transcript, composer or side pane.
-	_, open := a.OpenChatView()
+	ch, open := a.OpenChatView()
 	if !open {
 		sh.noChatDrop(W, H)
 	}
@@ -451,68 +455,45 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 			b.BuildBand(e, screen.Rect{X: 0, Y: H, W: W, H: bh})
 		}
 	}
-	railW, listW := e.Pt(railPt), e.Pt(min(max(s.Settings.SidebarWidth, minListPt), maxListPt))
-	if s.Panes.ListHidden {
-		listW = 0
+	if !sh.panes.Has(paneList) {
+		sh.panes, sh.listDiv = newPanes()
 	}
-	if narrow && (open || s.Panes.ListHidden) {
-		railW, listW = 0, 0
+	l := &sh.panes
+	// A drag of the list's divider moves the list's width, which the
+	// settings keep.
+	if l.Update(c, workspace.Keys{}).Moved {
+		if w := l.Fixed(paneList); w > 0 && w != s.Settings.SidebarWidth {
+			s.Settings.SidebarWidth = w
+			s.Touch()
+		}
 	}
-	if narrow && !open {
-		listW = W - railW
+	was := l.Focus()
+	sh.notePress()
+	ref := model.ChatRef(0)
+	if open {
+		ref = ch.Ref()
 	}
-	sideW := float32(0)
+	sh.syncPanes(ref, open, narrow)
 	side := sh.sideSlot(s.Panes.Pane)
 	// A narrow window gives an open side pane the whole window: it shows
 	// Back (Panes.Covering), and closing it shows the chat again.
-	covering := narrow && open && s.Panes.Pane != state.PaneNone
+	covering := l.Solo() == paneSide
 	if covering != s.Panes.Covering {
 		s.Panes.Covering = covering
 		s.Touch()
 	}
-	switch {
-	case covering:
-		railW, listW, sideW = 0, 0, W
-	case s.Panes.Pane != state.PaneNone && open:
-		sideW = e.Pt(s.Settings.InfoPaneWidth)
-		if side != nil {
-			sideW = side.Width(e)
-		}
-		// A width asked below the least (an old or hand-edited file) opens
-		// at the least, as upstream clamps it (zf:src/ui/pane.rs:108-109),
-		// rather than never; the room left for the chat still decides.
-		sideW = min(max(sideW, e.Pt(sideMinPt)), W-railW-listW-e.Pt(320))
-		if sideW < e.Pt(sideMinPt) {
-			sideW = 0
-		}
+	// The rail goes with the list beside what a narrow window shows alone.
+	railW := e.Pt(railPt)
+	if solo := l.Solo(); solo == paneChat || solo == paneSide {
+		railW = 0
 	}
 	// The panes float on the field (panes.go): Inset from the window's
 	// edges, Gutter between them, under the titlebar band.
-	in, gut := r.Px.Inset, r.Px.Gutter
-	bottom := H - in
-	var panes paneRects
-	left := max(railW, in)
-	if listW > 0 {
-		x1 := left + listW
-		if narrow && !open {
-			x1 = W - in
-		}
-		panes[paneList] = [4]float32{left, tbH, x1, bottom}
-		left = x1 + gut
-	}
-	right := W - in
-	if sideW > 0 {
-		x0 := max(right-sideW, left)
-		if covering {
-			x0 = in
-		}
-		panes[paneSide] = [4]float32{x0, tbH, right, bottom}
-		right = x0 - gut
-	}
-	if !covering && right-left > e.Pt(120) {
-		panes[paneChat] = [4]float32{left, tbH, right, bottom}
-	}
-	sh.noteFocus(a, &panes)
+	prof := r.Surface(theme.SurfacePane, k.Inactive())
+	in, gut := prof.Inset, prof.Gutter
+	l.Arrange([4]float32{theme.Snap(max(railW, in)), tbH, theme.Snap(W - in), H - in},
+		workspace.Metrics{Scale: k.Scale(), Gutter: [2]float32{gut, gut}, Min: [2]float32{e.Pt(120), e.Pt(120)}})
+	sh.keepFocus(was)
 
 	// A narrow window slides between the list and what it opens (SH-007):
 	// an opened chat comes in from the right over the list, dimmed beneath
@@ -539,19 +520,20 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 			c.Box(base.Floating|ui.DrawBackground, "slide backdrop")
 			dx = -(1 - p) * W
 		}
-		for i := range panes {
-			if shown(panes[i]) {
-				panes[i][0] += dx
-				panes[i][2] += dx
-			}
-		}
 	}
+	// where pane id is drawn this frame, the slide's distance on
+	rect := func(id workspace.PaneID) [4]float32 {
+		pr := l.Rect(id)
+		pr[0], pr[2] = pr[0]+dx, pr[2]+dx
+		return pr
+	}
+	panes := [...]workspace.PaneID{paneList, paneChat, paneSide}
 	if railW > 0 {
 		sh.rail(a, dx, railW, H, tbH)
 	}
-	for i := range panes {
-		if shown(panes[i]) {
-			sh.surface(paneID(i), panes[i])
+	for _, id := range panes {
+		if l.Shown(id) {
+			sh.surface(id, rect(id))
 		}
 	}
 	// A pane that puts none of its controls in the Tab order (a screen not
@@ -563,17 +545,18 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 	}
 	// The slots build in the window's root, over their panes, so that their
 	// Rects are window coordinates; each pane's title row after its content.
-	if lp := panes[paneList]; shown(lp) {
+	if l.Shown(paneList) {
 		n := e.TabStops()
-		sh.list(lp)
+		sh.list(rect(paneList))
 		if e.TabStops() == n {
 			e.TabInBuildOrder()
 		}
 	}
-	if cp := panes[paneChat]; shown(cp) {
-		sh.chat(a, cp, open)
+	if l.Shown(paneChat) {
+		sh.chat(a, rect(paneChat), open)
 	}
-	if sp := panes[paneSide]; shown(sp) {
+	if l.Shown(paneSide) {
+		sp := rect(paneSide)
 		sr := sh.body(sp)
 		if side != nil {
 			n := e.TabStops()
@@ -597,13 +580,11 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 	sh.titlebar(a)
 	// the tabs start over the conversation, after the account block
 	tx0 := e.Pt(trafficPt + accountChipPt + 16)
-	if cp := panes[paneChat]; shown(cp) {
-		tx0 = max(tx0, cp[0])
+	if l.Shown(paneChat) {
+		tx0 = max(tx0, rect(paneChat)[0])
 	}
 	sh.chatTabs(a, tx0, W-in, tbH)
-	if lp, cp := panes[paneList], panes[paneChat]; shown(lp) && shown(cp) {
-		sh.listHandle(lp[2]+gut/2, tbH, bottom-tbH)
-	}
+	sh.divider()
 	if sliding {
 		// A slide moves what is drawn, so the window takes no press, hover
 		// or scroll until it ends (zf:src/ui/mod.rs slide_shield).
@@ -1071,34 +1052,6 @@ func (sh *Shell) keepFrame(x, y float64) {
 	st := &sh.S.Settings
 	if !st.HasWindowPos || float32(x) != st.WindowX || float32(y) != st.WindowY {
 		st.WindowX, st.WindowY, st.HasWindowPos = float32(x), float32(y), true
-	}
-}
-
-// listHandle is the chat list's right edge at x, from y down h: dragging it
-// resizes the list within 260–520 points, and the width is saved
-// (Settings.SidebarWidth, zf:src/ui/chats.rs:18-36).
-func (sh *Shell) listHandle(x, y, h float32) {
-	s, e := sh.S, &sh.env
-	c := e.C()
-	w := e.Pt(6)
-	theme.At(c, x-w/2, y, w, h)
-	c.NextCursor(ui.CursorResizeEW)
-	c.NextAuditExempt(ui.AuditOverflow.Mask() | ui.AuditCovered.Mask())
-	c.NextRole(ui.RoleSplitter)
-	c.NextSemName(i18n.T("Resize"))
-	sig := c.Signal(c.BoxKeyed(ui.Clickable|base.Floating, ui.HashString(0, "zapfast/list-edge"), nil))
-	switch {
-	case sig.Dragging && sig.DragDelta[0] != 0:
-		if sh.listDrag == 0 {
-			sh.listDrag = s.Settings.SidebarWidth
-		}
-		sh.listDrag += sig.DragDelta[0] / e.K.Scale()
-		if wd := min(max(sh.listDrag, minListPt), maxListPt); wd != s.Settings.SidebarWidth {
-			s.Settings.SidebarWidth = wd
-			s.Touch()
-		}
-	case !sig.Dragging:
-		sh.listDrag = 0
 	}
 }
 

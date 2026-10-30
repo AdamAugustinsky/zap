@@ -5,6 +5,7 @@ import (
 
 	"gonativeui/app"
 	"gonativeui/rexui"
+	"gonativeui/theme"
 	"gonativeui/ui"
 	"gonativeui/widget/widgettest"
 
@@ -116,8 +117,11 @@ func TestThePanesWidths(t *testing.T) {
 	}
 	p.side.width = 5000
 	p.frames()
-	if room := float32(1100 - railPt - 300 - 320); !p.side.built || p.side.rect.W != room {
-		t.Errorf("a side pane asking 5000 is %v wide, want the room left, %v", p.side.rect.W, room)
+	// It takes the room the list and the conversation's 320 points leave, up
+	// to the window's inset.
+	if right := theme.Snap(1100 - p.sh.env.K.Theme().Px.Inset); !p.side.built || p.chat.rect.W != 320 || p.side.rect.X+p.side.rect.W != right {
+		t.Errorf("a side pane asking 5000 is %v wide, to %v, beside a conversation %v wide; want it to %v beside 320",
+			p.side.rect.W, p.side.rect.X+p.side.rect.W, p.chat.rect.W, right)
 	}
 	// A width below the pane's least (a hand-edited or old settings file)
 	// opens it at its least, as upstream clamps it, rather than never.
@@ -157,34 +161,34 @@ func TestANarrowWindowShowsOnePane(t *testing.T) {
 // account switch and back keeps the parked chat and the hidden list.
 func TestThePaneInUse(t *testing.T) {
 	p := newPaneRig(t, 1100)
-	if p.sh.focus != paneList {
-		t.Errorf("at start the pane in use is %v, want the list", p.sh.focus)
+	if p.sh.panes.Focus() != paneList {
+		t.Errorf("at start the pane in use is %v, want the list", p.sh.panes.Focus())
 	}
 	p.open("1@s.whatsapp.net")
-	if p.sh.focus != paneChat {
-		t.Errorf("an opened chat left the pane in use at %v", p.sh.focus)
+	if p.sh.panes.Focus() != paneChat {
+		t.Errorf("an opened chat left the pane in use at %v", p.sh.panes.Focus())
 	}
 	p.r.Click(ui.RoleButton, "List slot")
 	p.frames()
-	if p.sh.focus != paneList {
-		t.Errorf("a press in the list left the pane in use at %v", p.sh.focus)
+	if p.sh.panes.Focus() != paneList {
+		t.Errorf("a press in the list left the pane in use at %v", p.sh.panes.Focus())
 	}
 	p.r.Click(ui.RoleButton, "Chat slot")
 	p.frames()
-	if p.sh.focus != paneChat {
-		t.Errorf("a press in the chat left the pane in use at %v", p.sh.focus)
+	if p.sh.panes.Focus() != paneChat {
+		t.Errorf("a press in the chat left the pane in use at %v", p.sh.panes.Focus())
 	}
 	p.s.Panes.SetInfo([]byte("1@s.whatsapp.net"))
 	p.frames()
 	p.r.Click(ui.RoleButton, "Side slot")
 	p.frames()
-	if p.sh.focus != paneSide {
-		t.Errorf("a press in the side pane left the pane in use at %v", p.sh.focus)
+	if p.sh.panes.Focus() != paneSide {
+		t.Errorf("a press in the side pane left the pane in use at %v", p.sh.panes.Focus())
 	}
 	p.s.Panes.SetInfo(nil)
 	p.frames()
-	if p.sh.focus != paneChat {
-		t.Errorf("the side pane in use closed, and the pane in use is %v, want the open chat", p.sh.focus)
+	if p.sh.panes.Focus() != paneChat {
+		t.Errorf("the side pane in use closed, and the pane in use is %v, want the open chat", p.sh.panes.Focus())
 	}
 
 	open := p.a.Model.Chats.Find([]byte("2@s.whatsapp.net"))
@@ -196,8 +200,8 @@ func TestThePaneInUse(t *testing.T) {
 	p.frames()
 	p.s.SwitchAccount(p.a.Index)
 	p.frames()
-	if p.a.Open != open || !p.s.Panes.ListHidden || p.sh.focus != paneChat {
-		t.Errorf("back on account 1: open %v (want %v), list hidden %v, pane in use %v", p.a.Open, open, p.s.Panes.ListHidden, p.sh.focus)
+	if p.a.Open != open || !p.s.Panes.ListHidden || p.sh.panes.Focus() != paneChat {
+		t.Errorf("back on account 1: open %v (want %v), list hidden %v, pane in use %v", p.a.Open, open, p.s.Panes.ListHidden, p.sh.panes.Focus())
 	}
 }
 
