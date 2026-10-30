@@ -140,6 +140,8 @@ func (s *Screen) summaryOf(f *ui.Fmt, m model.Message, withCaption bool) *ui.Fmt
 		return f.Str(i18n.T("This message was deleted"))
 	case abi.ContentTagUnsupported:
 		return fill(f, i18n.T("Unsupported message ({what})"), "{what}", model.S(m.Text()))
+	case abi.ContentTagWaiting:
+		return f.Str(i18n.T("Waiting for this message"))
 	case abi.ContentTagPhoneOnly:
 		if m.Decode(&s.dec) != nil {
 			return f.Str(i18n.T("Message on your phone"))

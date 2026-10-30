@@ -370,7 +370,7 @@ func TestTheMenuBarIsUpstreams(t *testing.T) {
 	m := sh.Menu()
 	want := []struct{ title, items string }{
 		{"Zap", "About Zap|Settings…|Quit Zap"},
-		{"File", "New Chat…|Close Window"},
+		{"File", "New Chat…|Close Tab|Close Window"},
 		{"Edit", "Undo|Redo|Cut|Copy|Paste|Select All|Find…"},
 		{"View", "Toggle Sidebar|Split with the next tab|Close the split|Previous pane|Next pane|Move the pane left|Move the pane right|Float the chat over other apps|Zoom In|Zoom Out|Actual Size|Enter Full Screen"}, // Zap's split and floating chat after the sidebar
 		{"Window", "Minimize|Zoom|Show Zap"},

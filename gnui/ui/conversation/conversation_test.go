@@ -499,13 +499,13 @@ func TestHeader(t *testing.T) {
 	}
 }
 
-// A group has no call buttons, and names who wrote each first bubble.
+// A group has call buttons, and names who wrote each first bubble.
 func TestGroupHeaderAndSenders(t *testing.T) {
 	r := newRig(t)
 	m := msg(group, "g1", base0, false, "from Bo")
 	m.Sender, m.SenderName, m.HasSenderName = []byte("2@s.whatsapp.net"), []byte("Bo"), true
 	r.open(group, m)
-	r.mustNot(ui.RoleButton, "Voice call")
+	r.must(ui.RoleButton, "Voice call")
 	r.must(ui.RoleLabel, "~Bo")
 	r.must(ui.RoleLabel, "Group")
 }

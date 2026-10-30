@@ -9,7 +9,6 @@ import (
 	"gonativeui/rexui"
 	"gonativeui/theme"
 	"gonativeui/ui"
-	"gonativeui/widget/base"
 
 	"zapfast/abi"
 	"zapfast/format"
@@ -142,7 +141,7 @@ func (s *Screen) Toolbar(e *screen.Env, tb *rexui.Toolbar) {
 
 // shrinkingLabel is a header label's width: its text's, giving way entirely
 // when the header is narrower (the label fades at the end).
-var shrinkingLabel = ui.TextSize(base.LabelSlack).Strict(0)
+var shrinkingLabel = ui.TextSize(0).Strict(0)
 
 // presenceDot is the avatar's dot: online, from the open chat's presence.
 func (s *Screen) presenceDot(a *state.Account, ch model.Chat) rexui.AvatarPresence {
@@ -353,10 +352,14 @@ func (r *avatarPaths) of(path []byte) string {
 	return s
 }
 
-// canCall reports whether the chat has call buttons: calls are one to one,
-// so not a group, a channel, a broadcast list or the chat with ourselves.
+// canCall reports whether the chat has call buttons: a person or a group,
+// not a channel, a broadcast list or the chat with ourselves.
 func canCall(a *state.Account, ch model.Chat) bool {
-	if ch.Kind() != abi.ChatKindDirect {
+	switch ch.Kind() {
+	case abi.ChatKindGroup:
+		return true
+	case abi.ChatKindDirect:
+	default:
 		return false
 	}
 	me := a.Model.Me.ID()

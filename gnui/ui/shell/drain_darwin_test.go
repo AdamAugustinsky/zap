@@ -22,7 +22,7 @@ import (
 
 // The tests here run the shell's app over a fake core and check that the
 // cores' events are handled whatever the main window does. A core wakes the
-// app once and then waits to be drained (core.Core's wake), so a drain that
+// app once and then waits to be drained (gocore.Conn's wake), so a drain that
 // is lost leaves a resident ZapFast deaf: no message, no call. The fake wakes
 // at each event, so a test checks the event that came with the lost wake.
 

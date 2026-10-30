@@ -67,7 +67,7 @@ func TestLiveARealClipPlaysToItsEnd(t *testing.T) {
 	if os.Getenv("ZAPFAST_LIVE") == "" {
 		t.Skip("opens a real window: set ZAPFAST_LIVE=1")
 	}
-	demo, err := filepath.Abs("../../../assets/demo/videos/launch.mp4")
+	demo, err := filepath.Abs("../../gocore/demo/assets/videos/launch.mp4")
 	if err != nil {
 		t.Fatal(err)
 	}

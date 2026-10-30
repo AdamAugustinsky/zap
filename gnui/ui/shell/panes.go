@@ -5,6 +5,7 @@ import (
 	"gonativeui/theme"
 	"gonativeui/ui"
 	"gonativeui/widget/base"
+	"gonativeui/widget/workspace"
 
 	"zapfast/format"
 	"zapfast/i18n"
@@ -17,10 +18,9 @@ import (
 // The main window is Rex's (gonativeui D17): the field shows round the panes,
 // Inset from the window's edges and Gutter between them, under the titlebar
 // band. Each pane is a glass surface with its title row at its top: opaque
-// while it is the one in use, translucent over the field otherwise.
-
-// paneHeaderPt is a pane's title row, which holds the pane's toolbar items.
-const paneHeaderPt = 40
+// while it is the one in use, translucent over the field otherwise. Where
+// the panes lie and which is in use is a workspace layout, list | (chat |
+// side); the rail and the titlebar band are not panes.
 
 // accountChipPt is the width of the titlebar's account block: our picture,
 // name and number, as Rex's host block.
@@ -30,30 +30,107 @@ const accountChipPt = 200
 // block.
 const trafficPt = 80
 
-// paneID names the main window's panes, which are also their surfaces' cache
-// slots (theme.Surface.Slot).
-type paneID int8
-
+// The main window's panes. Their slots in the layout (Slot) are also their
+// surfaces' cache slots (theme.Surface.Slot).
 const (
-	paneList paneID = iota // the chat list, or the Calls page's
-	paneChat               // the conversation, or what the page shows
-	paneSide               // the side pane (info, search, starred…)
-	numPanes               // the split view's other panes follow (splitID)
+	paneList workspace.PaneID = 1 + iota // the chat list, or the Calls page's
+	paneChat                             // the conversation, or what the page shows
+	paneSide                             // the side pane (info, search, starred…)
 )
 
-var (
-	paneKey      = ui.HashString(0, "zapfast/pane")
-	paneFocusKey = ui.HashString(0, "zapfast/pane focus")
-)
+var paneFocusKey = ui.HashString(0, "zapfast/pane focus")
 
-// paneRects is where each pane lies this frame, window pixels (x0, y0, x1,
-// y1); a pane not shown is zero.
-type paneRects [numPanes][4]float32
+// newPanes is the main window's layout: the list, at its width from the
+// settings, before the conversation, and the side pane, closed, after it.
+// It returns the layout and the list's divider.
+func newPanes() (workspace.Layout, uint32) {
+	// The side pane covering a narrow window covers the chat without taking
+	// its place: the chat stays in use and the covering pane translucent, as
+	// before the workspace.
+	l := workspace.Layout{Key: ui.HashString(0, "zapfast/pane"), SoloKeepsFocus: true}
+	l.Reset(paneList)
+	div := l.Split(paneList, paneChat, workspace.Right, 0.7)
+	l.Split(paneChat, paneSide, workspace.Right, 0.3)
+	l.SetLimits(paneList, workspace.Limits{Min: [2]float32{minListPt}, Max: [2]float32{maxListPt}})
+	l.SetHidden(paneSide, true)
+	return l, div
+}
 
-func shown(r [4]float32) bool { return r[2] > r[0] && r[3] > r[1] }
+// syncPanes tells the layout this frame's state: the list's width and
+// whether it is hidden, the side pane and its width, the open chat, and
+// which pane a narrow window shows alone. Every call is idempotent.
+func (sh *Shell) syncPanes(ref model.ChatRef, open, narrow bool) {
+	s, e, l := sh.S, &sh.env, &sh.panes
+	l.SetFixed(paneList, s.Settings.SidebarWidth)
+	l.SetHidden(paneList, s.Panes.ListHidden)
+	side := s.Panes.Pane != state.PaneNone && open
+	l.SetHidden(paneSide, !side)
+	// The side pane shows only with room for its least beside the
+	// conversation's 320 points (it yields); without one the conversation
+	// takes what the list leaves.
+	chat := workspace.Limits{}
+	if side {
+		chat.Min[0] = 320
+		lim := workspace.Limits{Min: [2]float32{sideMinPt}, Max: [2]float32{sideMaxPt}, Yield: true}
+		if s.Panes.Pane == state.PaneSearch {
+			lim.Min[0], lim.Max[0] = searchMinPt, searchMaxPt // zf:src/ui/pane.rs:22-23
+		}
+		l.SetLimits(paneSide, lim)
+		w := s.Settings.InfoPaneWidth
+		if slot := sh.sideSlot(s.Panes.Pane); slot != nil {
+			w = slot.Width(e) / e.K.Scale()
+		}
+		// A width asked below the least (an old or hand-edited file) opens
+		// at the least, as upstream clamps it (zf:src/ui/pane.rs:108-109),
+		// rather than never; the room left for the chat still decides.
+		l.SetFixed(paneSide, max(w, lim.Min[0]))
+	}
+	l.SetLimits(paneChat, chat)
+	// A chat that opens is the pane in use, whichever pane a narrow window
+	// showed alone (the focus cannot move to a pane the solo one leaves out,
+	// so the solo pane is let go first and set again below, keeping the
+	// focus); with none open the conversation (but for the Calls page's
+	// content) is empty and passes the focus by.
+	if open && ref != sh.focusChat {
+		l.SetSolo(0)
+		l.SetEmpty(paneChat, false)
+		l.SetFocus(paneChat)
+	}
+	sh.focusChat = ref
+	l.SetEmpty(paneChat, !open && (s.Page != state.PageCalls || sh.Set.CallsContent == nil))
+	solo := workspace.PaneID(0)
+	switch {
+	case narrow && side:
+		solo = paneSide // covers the window (Panes.Covering)
+	case narrow && (open || s.Panes.ListHidden):
+		solo = paneChat
+	case narrow:
+		solo = paneList
+	}
+	if l.Solo() != solo {
+		l.SetSolo(solo)
+	}
+}
+
+// keepFocus is Zap's fallback when the pane in use stops showing: the open
+// chat, else the list, rather than the pane used before it (so a side pane
+// in use that closes gives the focus to the chat, even when the list was
+// used in between).
+func (sh *Shell) keepFocus(was workspace.PaneID) {
+	l := &sh.panes
+	if l.Focus() == was || l.Shown(was) {
+		return
+	}
+	if !l.SetFocus(paneChat) {
+		l.SetFocus(paneList)
+	}
+}
 
 // headerH is a pane's title row, pixels.
-func (sh *Shell) headerH() float32 { return theme.Snap(sh.env.Pt(paneHeaderPt)) }
+func (sh *Shell) headerH() float32 {
+	k := sh.env.K
+	return theme.Snap(k.Theme().Surface(theme.SurfacePane, k.Inactive()).Header)
+}
 
 // body is the part of pane rect r under its title row.
 func (sh *Shell) body(r [4]float32) screen.Rect {
@@ -61,79 +138,44 @@ func (sh *Shell) body(r [4]float32) screen.Rect {
 	return screen.Rect{X: r[0], Y: r[1] + hh, W: r[2] - r[0], H: max(r[3]-r[1]-hh, 0)}
 }
 
-// noteFocus follows which pane is in use: the one pressed in, and the
-// conversation when a chat opens (Rex focuses a pane on a click). In the
-// split view (split) a press in a pane whose chat is not in use puts it in
-// use, before anything builds, so that the press acts on its own chat.
-func (sh *Shell) noteFocus(a *state.Account, panes *paneRects, split bool) {
-	c := sh.env.C()
-	sp := &sh.split
-	ref, open := model.ChatRef(0), false
-	if ch, ok := a.OpenChatView(); ok {
-		ref, open = ch.Ref(), true
-	}
-	// the open chat's pane
-	live := paneChat
-	if split {
-		for i, r := range sp.chats {
-			if r == a.Open {
-				live = splitID(i)
-			}
-		}
-	}
-	if open && ref != sh.focusChat {
-		sh.focus = live
-	}
-	sh.focusChat = ref
-	if in := c.Input(); in.Pressed[ui.ButtonLeft] {
-		inside := func(r [4]float32) bool {
-			return shown(r) && in.MouseX >= r[0] && in.MouseX < r[2] && in.MouseY >= r[1] && in.MouseY < r[3]
-		}
-		for p := range panes {
-			if inside(panes[p]) {
-				sh.focus = paneID(p)
-			}
-		}
-		if split {
-			for i, r := range sp.rects {
-				if inside(r) && sp.chats[i] != 0 {
-					sh.focus = splitID(i)
-					if sp.chats[i] != a.Open {
-						a.UsePane(sp.chats[i])
-						sh.focusChat = a.Open
-					}
-				}
-			}
-		}
-	}
-	if sh.focus >= numPanes && split {
-		return
-	}
-	if sh.focus >= numPanes || !shown(panes[sh.focus]) {
-		sh.focus = paneList
-		if shown(panes[paneChat]) && open {
-			sh.focus = paneChat
-		}
-	}
-}
-
 // surface builds pane p's glass at r, its focus animating toward whether it
 // is the pane in use. The pane's content builds after it, over it, in window
 // coordinates (the slots' Rects).
-func (sh *Shell) surface(p paneID, r [4]float32) {
+func (sh *Shell) surface(p workspace.PaneID, r [4]float32) {
 	k := sh.env.K
 	c, th := k.Context(), k.Theme()
 	target := float32(0)
-	if p == sh.focus && !k.Inactive() {
+	if p == sh.panes.Focus() && !k.Inactive() {
 		target = 1
 	}
 	s := theme.Surface{
-		Key: ui.KeyN(paneKey, uint64(p)), Slot: int(p), Rect: r,
-		Focus: c.AnimateValue(ui.KeyN(paneFocusKey, uint64(p)), target, th.Motion.Dim), Opacity: 1, Top: true, // DurShort, at once under Reduce Motion
+		Key: sh.panes.PaneKey(p), Slot: sh.panes.Slot(p), Rect: r,
+		Focus: c.AnimateValue(ui.KeyN(paneFocusKey, uint64(p)), target, 14), Opacity: 1, Top: true,
 	}
 	th.Chrome.SurfaceShadow(c, th, s)
 	kg := th.Chrome.BeginSurface(c, th, s)
 	th.Chrome.EndSurface(c, th, s, kg)
+}
+
+// divider is the grab area of the list's divider, whose drag (Update)
+// resizes the list within 260–520 points; the width is saved
+// (Settings.SidebarWidth, zf:src/ui/chats.rs:18-36).
+func (sh *Shell) divider() {
+	e, l := &sh.env, &sh.panes
+	c := e.C()
+	for i := 0; i < l.NumDividers(); i++ {
+		d := l.Divider(i)
+		if d.ID != sh.listDiv {
+			continue
+		}
+		x, w := (d.Gutter[0]+d.Gutter[2])/2, e.Pt(6)
+		theme.At(c, x-w/2, d.Gutter[1], w, d.Gutter[3]-d.Gutter[1])
+		c.NextCursor(ui.CursorResizeEW)
+		c.NextAuditExempt(ui.AuditOverflow.Mask() | ui.AuditCovered.Mask())
+		c.NextRole(ui.RoleSplitter)
+		c.NextSemName(i18n.T("Resize"))
+		c.BoxKeyed(ui.Clickable|base.Floating, d.Key, nil)
+	}
 }
 
 // header opens pane r's title row on tb, which lives on the shell: the slots

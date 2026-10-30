@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	"zapfast/abi"
 	"zapfast/core"
 	"zapfast/core/fake"
+	"zapfast/gocore/demo"
 	"zapfast/state"
 	"zapfast/ui/screen"
 	"zapfast/ui/shell"
@@ -142,17 +142,10 @@ func TestOpensChatsAndRunsTheShortcuts(t *testing.T) {
 	}
 }
 
-// The demo core (the real library): the shell builds over it and its chat
+// The demo core: the shell builds over it and its chat
 // list shows the demo's chats by name.
 func TestShellOnTheDemoCore(t *testing.T) {
-	path, err := core.ResolveLibrary("")
-	if err != nil {
-		if os.Getenv("ZAPFAST_CORE") != "" {
-			t.Fatal(err)
-		}
-		t.Skip("no core library:", err)
-	}
-	c, err := core.Open(core.Config{Library: path, Demo: true})
+	c, err := demo.Open(core.Config{})
 	if err != nil {
 		t.Fatal(err)
 	}

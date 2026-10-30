@@ -7,7 +7,6 @@ import (
 	"gonativeui/rexui"
 	"gonativeui/theme"
 	"gonativeui/ui"
-	"gonativeui/widget/base"
 
 	"zapfast/abi"
 	"zapfast/i18n"
@@ -338,7 +337,7 @@ func (s *Screen) fitHints(e *screen.Env, rowW float32) string {
 	xw, _ := k.IconSize(s.ic.xmark)
 	kw, _ := k.IconSize(s.ic.keyboard)
 	icon := theme.Snap(r.Sizes[theme.SizeSmall].Icon)
-	room := rowW - max(icon, xw) - max(icon, kw) - 3*hintsGap - base.LabelSlack
+	room := rowW - max(icon, xw) - max(icon, kw) - 3*hintsGap
 	font := ztheme.Meta(k, ztheme.T.MetaPt) // the hints' size, the metadata's
 	h := s.hints.hint
 	for len(h) > 0 && k.TextWidth(font, h) > room {

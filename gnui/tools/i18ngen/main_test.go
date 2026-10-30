@@ -121,7 +121,7 @@ func TestGenerateIsDeterministicAndRejectsUnknownPluralRules(t *testing.T) {
 // The committed tables are what the .po files generate; this is the test
 // behind `go run ./tools/i18ngen -check`.
 func TestCheckModeFailsOnAStaleFile(t *testing.T) {
-	const po, gen = "../../../assets/i18n", "../../i18n/tables_gen.go"
+	const po, gen = "../../i18n/po", "../../i18n/tables_gen.go"
 	var out, errb bytes.Buffer
 	if code := run([]string{"-po", po, "-out", gen, "-check"}, &out, &errb); code != 0 {
 		t.Fatalf("the committed tables are stale (run go generate ./i18n): %s", errb.String())

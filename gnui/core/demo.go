@@ -7,8 +7,8 @@ import (
 )
 
 // The DemoIncoming texts that ring a call on the demo core instead of
-// filing a message (zfcore.h, "The demo core"): a voice or a video call from
-// the sender, in the chat; a group chat rings a group call.
+// filing a message: a voice or a video call from the sender, in the chat; a
+// group chat rings a group call.
 const (
 	DemoCallText      = "zf-demo:call"
 	DemoVideoCallText = "zf-demo:video-call"

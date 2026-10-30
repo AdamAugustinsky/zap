@@ -64,7 +64,7 @@ func Caption(m model.Message) Place {
 	switch m.Kind() {
 	case abi.ContentTagPoll, abi.ContentTagInteractive:
 		return Above
-	case abi.ContentTagLocation, abi.ContentTagContact, abi.ContentTagUnsupported:
+	case abi.ContentTagLocation, abi.ContentTagContact, abi.ContentTagUnsupported, abi.ContentTagWaiting:
 		return Nowhere
 	}
 	return Below
@@ -75,7 +75,8 @@ func Has(m model.Message) bool {
 	switch m.Kind() {
 	case abi.ContentTagImage, abi.ContentTagSticker, abi.ContentTagStickerPack, abi.ContentTagDocument,
 		abi.ContentTagLocation, abi.ContentTagLiveLocation, abi.ContentTagContact, abi.ContentTagPoll,
-		abi.ContentTagRevoked, abi.ContentTagUnsupported, abi.ContentTagPhoneOnly, abi.ContentTagCall:
+		abi.ContentTagRevoked, abi.ContentTagUnsupported, abi.ContentTagPhoneOnly, abi.ContentTagCall,
+		abi.ContentTagWaiting:
 		return true
 	case abi.ContentTagText, abi.ContentTagInteractive:
 		return cachedHas(m)

@@ -6,7 +6,6 @@
 //
 //	zapfast -demo            the demo core: a synthetic account, no network, no disk
 //	zapfast -demo -o out.png render the main window offscreen once the chat list is in, and quit
-//	zapfast -core PATH       load this libzapfast_core.dylib (default: $ZAPFAST_CORE, the bundle, or the cargo build)
 //
 // Without -demo it opens the real account in the app's own data folder
 // (ai.a3lab.zap). Tests and screenshots use -demo only.
@@ -25,6 +24,7 @@ import (
 	"gonativeui/ui"
 
 	"zapfast/core"
+	"zapfast/internal/buildinfo"
 	"zapfast/state"
 	"zapfast/sys"
 	"zapfast/ui/playground"
@@ -33,7 +33,6 @@ import (
 
 // options are the command line's flags.
 type options struct {
-	core string
 	demo bool
 	out  string
 	dark bool
@@ -49,11 +48,10 @@ type options struct {
 }
 
 // parseOptions parses args (without the program name) with package flag's
-// syntax: -core PATH, -core=PATH, --core PATH and --core=PATH alike.
+// syntax: -o PATH, -o=PATH, --o PATH and --o=PATH alike.
 func parseOptions(args []string) (options, error) {
 	var o options
 	fs := flag.NewFlagSet("zapfast", flag.ContinueOnError)
-	fs.StringVar(&o.core, "core", "", "the libzapfast_core.dylib to load (unbundled runs only)")
 	fs.BoolVar(&o.demo, "demo", false, "open the demo core: a synthetic account, no network, no disk")
 	fs.StringVar(&o.out, "o", "", "render the main window offscreen into this PNG once the chat list is in, and quit")
 	fs.BoolVar(&o.dark, "dark", false, "with -o: render in dark mode")
@@ -107,17 +105,12 @@ func main() {
 				fmt.Fprintln(os.Stderr, "zapfast:", err)
 				os.Exit(1)
 			}
-			lg, err = sys.StartLog(p.Data, func() (sys.CoreLog, error) {
-				path, err := core.ResolveLibrary(o.core)
-				if err != nil {
-					return nil, err
-				}
-				return core.Load(path) // the library the cores open with: loaded once
-			})
+			lg, err = sys.StartLog(p.Data)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, "zapfast: the log:", err)
 			}
 			defer lg.Close()
+			buildinfo.Log(lg.File(), state.Version) // the revisions this run was built from
 			loading = state.LoadSettings(p)
 		}
 	}
@@ -163,10 +156,9 @@ func main() {
 	// then the cores close and the log ends (terminate).
 	h.Terminate = terminate(s, lg)
 	// Each account's core loads and opens on its own goroutine, so the
-	// window never waits for the dylib.
-	s.OpenCore = func(id string) (*core.Pending, core.Conn) {
-		return core.OpenAsync(core.Config{Library: o.core, Demo: o.demo, Account: id, Wake: h.Wake}), nil
-	}
+	// window never waits for SQLCipher, the Keychain or a migration.
+	cores := &coreOpener{demo: o.demo, wake: h.Wake}
+	s.OpenCore = cores.open
 	if !o.demo {
 		s.ArchiveKeys = secret.Open(core.KeyringService) // a removed account's key goes with its archive
 	}

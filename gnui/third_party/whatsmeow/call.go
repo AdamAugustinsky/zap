@@ -1,0 +1,157 @@
+// Copyright (c) 2021 Tulir Asokan
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+package whatsmeow
+
+import (
+	"context"
+
+	waBinary "go.mau.fi/whatsmeow/binary"
+	"go.mau.fi/whatsmeow/types"
+	"go.mau.fi/whatsmeow/types/events"
+)
+
+func (cli *Client) handleCallEvent(ctx context.Context, node *waBinary.Node) {
+	defer cli.maybeDeferredAck(ctx, typedCallAck(node))()
+
+	if len(node.GetChildren()) != 1 {
+		cli.dispatchEvent(&events.UnknownCallEvent{Node: node})
+		return
+	}
+	ag := node.AttrGetter()
+	child := node.GetChildren()[0]
+	cag := child.AttrGetter()
+	basicMeta := types.BasicCallMeta{
+		From:        ag.JID("from"),
+		Timestamp:   ag.UnixTime("t"),
+		CallCreator: cag.JID("call-creator"),
+		CallID:      cag.String("call-id"),
+		GroupJID:    cag.OptionalJIDOrEmpty("group-jid"),
+		StanzaID:    ag.OptionalString("id"),              // ZAP PATCH
+		Participant: ag.OptionalJIDOrEmpty("participant"), // ZAP PATCH
+	}
+	if basicMeta.CallCreator.Server == types.HiddenUserServer {
+		basicMeta.CallCreatorAlt = cag.OptionalJIDOrEmpty("caller_pn")
+	} else {
+		// This may not actually exist
+		basicMeta.CallCreatorAlt = cag.OptionalJIDOrEmpty("caller_lid")
+	}
+	switch child.Tag {
+	case "offer":
+		cli.dispatchEvent(&events.CallOffer{
+			BasicCallMeta: basicMeta,
+			CallRemoteMeta: types.CallRemoteMeta{
+				RemotePlatform: ag.String("platform"),
+				RemoteVersion:  ag.String("version"),
+			},
+			Data: &child,
+		})
+	case "offer_notice":
+		cli.dispatchEvent(&events.CallOfferNotice{
+			BasicCallMeta: basicMeta,
+			Media:         cag.String("media"),
+			Type:          cag.String("type"),
+			Data:          &child,
+		})
+	case "relaylatency":
+		cli.dispatchEvent(&events.CallRelayLatency{
+			BasicCallMeta: basicMeta,
+			Data:          &child,
+		})
+	case "accept":
+		cli.dispatchEvent(&events.CallAccept{
+			BasicCallMeta: basicMeta,
+			CallRemoteMeta: types.CallRemoteMeta{
+				RemotePlatform: ag.String("platform"),
+				RemoteVersion:  ag.String("version"),
+			},
+			Data: &child,
+		})
+	case "preaccept":
+		cli.dispatchEvent(&events.CallPreAccept{
+			BasicCallMeta: basicMeta,
+			CallRemoteMeta: types.CallRemoteMeta{
+				RemotePlatform: ag.String("platform"),
+				RemoteVersion:  ag.String("version"),
+			},
+			Data: &child,
+		})
+	case "transport":
+		cli.dispatchEvent(&events.CallTransport{
+			BasicCallMeta: basicMeta,
+			CallRemoteMeta: types.CallRemoteMeta{
+				RemotePlatform: ag.String("platform"),
+				RemoteVersion:  ag.String("version"),
+			},
+			Data: &child,
+		})
+	case "terminate":
+		cli.dispatchEvent(&events.CallTerminate{
+			BasicCallMeta: basicMeta,
+			Reason:        cag.String("reason"),
+			Data:          &child,
+		})
+	case "reject":
+		cli.dispatchEvent(&events.CallReject{
+			BasicCallMeta: basicMeta,
+			Data:          &child,
+		})
+	default:
+		cli.dispatchEvent(&events.UnknownCallEvent{Node: node})
+	}
+}
+
+// typedCallAck is the node a <call> is acknowledged as. ZAP PATCH (see
+// ZAP-PATCH.md): a <video> state change is acknowledged with
+// type="video", which replaces the generic ack (whatsapp-rust's
+// build_call_video_ack); the peer's video upgrade waits for that typed ack.
+// A group call's waiting_room_update, user_action or screen_share, among
+// any children, is acknowledged with its own tag as the type
+// (build_call_control_ack).
+func typedCallAck(node *waBinary.Node) *waBinary.Node {
+	children := node.GetChildren()
+	typ := ""
+	for _, c := range children {
+		switch c.Tag {
+		case "waiting_room_update", "user_action", "screen_share":
+			typ = c.Tag
+		}
+		if typ != "" {
+			break
+		}
+	}
+	if typ == "" && len(children) == 1 && children[0].Tag == "video" {
+		typ = "video"
+	}
+	if typ == "" {
+		return node
+	}
+	attrs := make(waBinary.Attrs, len(node.Attrs)+1)
+	for k, v := range node.Attrs {
+		attrs[k] = v
+	}
+	attrs["type"] = typ
+	return &waBinary.Node{Tag: node.Tag, Attrs: attrs}
+}
+
+// RejectCall reject an incoming call.
+func (cli *Client) RejectCall(ctx context.Context, callFrom types.JID, callID string) error {
+	ownID := cli.getOwnID()
+	if ownID.IsEmpty() {
+		return ErrNotLoggedIn
+	}
+	ownID, callFrom = ownID.ToNonAD(), callFrom.ToNonAD()
+	rejectNode := waBinary.Node{
+		Tag:     "reject",
+		Attrs:   waBinary.Attrs{"call-id": callID, "call-creator": callFrom, "count": "0"},
+		Content: nil,
+	}
+	return cli.sendNode(ctx, waBinary.Node{
+		Tag:     "call",
+		Attrs:   waBinary.Attrs{"id": cli.GenerateMessageID(), "from": ownID, "to": callFrom},
+		Content: []waBinary.Node{rejectNode},
+	})
+}

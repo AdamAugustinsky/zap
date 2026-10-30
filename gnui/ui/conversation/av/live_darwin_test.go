@@ -16,6 +16,7 @@ import (
 
 	"zapfast/abi"
 	"zapfast/core"
+	"zapfast/gocore/demo"
 	"zapfast/logic"
 	"zapfast/state"
 	"zapfast/ui/conversation/av"
@@ -31,7 +32,7 @@ func TestLiveGIFPausesWhenHidden(t *testing.T) {
 	if os.Getenv("AV_LIVE") == "" {
 		t.Skip("AV_LIVE=1 plays a muted demo GIF")
 	}
-	path, err := filepath.Abs("../../../../assets/demo/videos/launch.mp4")
+	path, err := filepath.Abs("../../../gocore/demo/assets/videos/launch.mp4")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -124,10 +125,7 @@ func TestLiveDemoVideos(t *testing.T) {
 	if os.Getenv("AV_LIVE") == "" {
 		t.Skip("AV_LIVE=1 plays video and sound")
 	}
-	if _, err := core.FindLibrary(); err != nil {
-		t.Skipf("no core library: %v", err)
-	}
-	c, err := core.Open(core.Config{Demo: true, Wake: func() {}})
+	c, err := demo.Open(core.Config{Wake: func() {}})
 	if err != nil {
 		t.Fatal(err)
 	}

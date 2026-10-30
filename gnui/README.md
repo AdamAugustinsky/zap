@@ -1,12 +1,16 @@
-# gnui: ZapFast's Go UI
+# gnui: Zap
 
-The Go module `zapfast`: the app on go-native-ui (`gonativeui`) over the Rust
-core in `../zfcore`. The plan is `../docs/GNUI-MIGRATION-PLAN.md`.
+The Go module `zapfast`: the app on go-native-ui (`gonativeui`) and its
+backend, gocore (the demo, or whatsmeow). The plans are
+`../docs/GNUI-MIGRATION-PLAN.md` (the UI) and `../docs/go-backend/PLAN.md`
+(the backend).
 
 ## Against upstream ZapFast
 
 These are measured on macOS, Apple M4, with the same 0.19.0 core and the
-demo's sample chats. Each figure is the median of six interleaved runs.
+demo's sample chats, before WP9: Zap then ran on ZapFast's Rust core, which
+the bundle's 45.2 MB included. Each figure is the median of six interleaved
+runs.
 
 | | Zap (Go) | ZapFast (egui) |
 |---|---:|---:|
@@ -22,8 +26,9 @@ launch tour) are still to be measured on a live screen.
 
 | Path | What |
 |---|---|
-| `abi/` | the records, generated from `../zfcore/abi/zf.schema` (`go run ./tools/abigen`) |
-| `core/` | the bindings: loading the library, `Send`, `Drain`, blobs, `OpenAsync`, `OpenPath`; `core.Conn` is what screens use |
+| `abi/` | the records, generated from `abi/zf.schema` (`go run ./tools/abigen`); `abi/testdata`, the encoder fixtures zfcore's Rust wrote |
+| `core/` | what screens use of a backend: `core.Conn`, `Config`, `OpenAsync`/`Pending`, the errors, frames and voice types, `OpenPath` |
+| `gocore/` | the backend: the Conn (`gocore.Conn`), the demo (`demo/`), WhatsApp on whatsmeow (`wa/`), the stores on SQLCipher (`store/`), audio and pictures (`av/`), calls (`calls/`, `voip/`), taking over an account the Rust core kept (`migrate/`) |
 | `core/fake/` | a `core.Conn` without the library, for UI tests on any OS: replays scripted events and fixtures, records commands |
 | `model/` | one account's pointer-free stores (chats, messages, contacts, link status) applied from the core's events |
 | `state/` | the app's UI state: accounts, open chat, page, panes, dialog, windows, lock, settings; command helpers; event listeners |
@@ -33,15 +38,19 @@ launch tour) are still to be measured on a live screen.
 | `format/` | upstream's util.rs text helpers the screens share: phone numbers, stamps, dates, durations, the 12/24-hour clock |
 | `lockhash/` | the app lock's and locked chats' password verifiers, the only implementation |
 | `theme/`, `sys/`, `logic/` | upstream's themes on Rex; the process's services; upstream's reducers |
-| `cmd/zapfast/` | the app: `app.Main`, the core opened async, `screens.go` wires every screen |
+| `cmd/zapfast/` | the app: `app.Main`, the core opened async (`engine.go`), `screens.go` wires every screen |
+| `i18n/` | the strings and their translations, generated from `i18n/po/*.po` (`go generate ./i18n`) |
+| `third_party/whatsmeow/` | whatsmeow with Zap's call patch (`ZAP-PATCH.md`) |
 | `internal/procinfo/` | exec-relative times for the startup numbers |
 
 ## The framework
 
-`go.mod` replaces `gonativeui` with `../../go-native-ui`, the framework's
-checkout beside this repository's (`~/Projects/go-native-ui` next to
-`~/Projects/zap`). A worktree anywhere else uses a `go.work` here,
-which is ignored by git:
+`release-deps.json` pins the framework Zap is built against: go-native-ui at
+commit `6b316c1cb51c`, with that commit's tree hash and the hash of the
+CI-built `shaders.metallib` it embeds. `go.mod` replaces
+`gonativeui` with `../../go-native-ui`, the framework's checkout beside this
+repository's (`~/Projects/go-native-ui` next to `~/Projects/zap`). A worktree
+anywhere else uses a `go.work` here, which is ignored by git:
 
 ```
 go 1.27.1
@@ -53,29 +62,68 @@ replace gonativeui => /Users/you/Projects/go-native-ui
 replace github.com/go-text/typesetting => /Users/you/Projects/go-native-ui/third_party/typesetting
 ```
 
+`go build` and `go test` take whatever that resolves to. Packaging does not.
+`packaging/macos/gnui-package.sh` (through `scripts/gnui/release_identity.py`)
+refuses a framework at another commit or with uncommitted changes, and an
+export without git unless its files hash to the pinned tree. To package
+against another framework on purpose, set `ZAP_FRAMEWORK_DIR` to it: the
+script warns, and the manifest records `"pin": "override"`. Moving the pin
+means changing `release-deps.json`'s commit and tree together
+(`git rev-parse <commit>^{tree}`).
+
+Every bundle carries `Contents/Resources/build-manifest.json`
+(`zap.build/v1`):
+
+- `framework` is the framework's identity (`module`, `revision`, `dirty`,
+  `source`), read by one adapter. When the gnui CLI has `gnui provenance
+  -json` (schema `gnui.provenance/v1`, still provisional), its framework
+  block is used (`source` `git` or `stamp`), and the whole JSON is kept
+  verbatim as `frameworkProvenance`. Otherwise the adapter reads git
+  (`source: "git"`), or the tree hash of an export that matched the pin
+  (`tree-hash`, Zap's own value; the framework's reader refuses an export
+  without a `.gnui-revision` stamp, so an unstamped one takes this path). The framework's Ghostty pin stays inside
+  `frameworkProvenance`: Zap links neither libghostty-vt nor the terminal
+  widget, so it has no `ghostty` entry. `shaders` is the framework's report,
+  or without one the embedded `internal/metallib/lib/shaders.metallib`'s
+  hash (`{"artifact": "none"}` when there is none); the file must match the
+  report, and a pinned build refuses any artifact or hash
+  `release-deps.json` does not expect.
+- Zap's own fields: `app` (revision, dirty), `build` (variant, tags), `go`,
+  and `whatsmeow`. `whatsmeow` gives go.mod's required version, the
+  `./third_party/whatsmeow` replace (checked), and the patched copy's tree
+  in Zap's commit with a dirty flag (`third_party/whatsmeow/ZAP-PATCH.md`
+  says what the patch is). `nativeLibs` has each bundled library's
+  `builtSha256` and the source release its build script pins and verifies.
+  The hash is of the library as built: `gnui package` signs the bundle's
+  copy again, which changes its bytes.
+- `basis` names which fields are build-verified (computed from the
+  artifacts: the libraries' `builtSha256`) and which are packager-asserted
+  (read from git, go.mod, the build scripts, `go env` or the framework's
+  reader).
+
+The executable carries the same revisions, stamped with `-ldflags -X` into
+`internal/buildinfo` once they are checked. The framework's
+`gonativeui/provenance.FrameworkRevision` is stamped too wherever the
+framework has that package. The first line of each run's log names them
+(`msg=build revision=... framework=... framework_pin=...`), and About shows
+Zap's short revision. `debug.ReadBuildInfo` supplies only the go version,
+the tags and Zap's own VCS revision for an unstamped build: a replaced
+module records no framework revision.
+
 ## Building and testing
 
-Build the core first, from the repository root (always with `-p`, see
-`../zfcore/README.md`):
+With `CGO_ENABLED=0`, here:
 
 ```sh
-cargo build -p zapfast_core                          # target/debug/libzapfast_core.dylib
-cargo build -p zapfast_core --profile core-release   # what ships, and the startup numbers
-```
-
-Then, here, with `CGO_ENABLED=0`:
-
-```sh
-go test ./...                    # core's tests load the newest cargo build, demo core only
+go test ./...                           # the demo, fakes and fixtures; no account, no network
 go run ./cmd/zapfast -demo              # the app on the demo core
 go run ./cmd/zapfast -demo -o out.png   # the main window offscreen, once the chat list is in
 ```
 
-The loading policy (`core.ResolveLibrary`): a bundled app (its executable
-in `X.app/Contents/MacOS`) loads only `Contents/Frameworks/libzapfast_core.dylib`
-and fails closed without it; `$ZAPFAST_CORE`, `-core` and the cargo search are
-ignored or refused there. An unbundled run takes an explicit path (`-core`),
-then `$ZAPFAST_CORE`, then the newest of `target/{core-release,debug,release}`
-above the working directory or the executable. Without one, the tests skip
-(unless `$ZAPFAST_CORE` is set). Without `-demo` the app opens the real account (its own data,
-`ai.a3lab.zap`); the tests use the demo core only.
+A real account (without `-demo`) and the store tests need SQLCipher, and
+stickers need libwebp: `../packaging/macos/sqlcipher/build.sh` and
+`../packaging/macos/libwebp/build.sh` build them into `../target/`, where
+unbundled runs find them (or `$ZAPFAST_SQLCIPHER`, `$ZAPFAST_LIBWEBP`); a
+bundled app loads only its own `Contents/Frameworks` copies. Without them
+those tests skip. Without `-demo` the app opens the real account (its own
+data, `ai.a3lab.zap`); the tests use the demo core only.

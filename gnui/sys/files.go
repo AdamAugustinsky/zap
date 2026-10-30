@@ -1,7 +1,6 @@
 package sys
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -9,7 +8,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
-	"sync"
 
 	"zapfast/state"
 )
@@ -46,11 +44,6 @@ const (
 	panicName = "panic.log"
 )
 
-// CoreLog is the core library's log switch (*core.Lib).
-type CoreLog interface {
-	SetLog(f *os.File, level slog.Level) error
-}
-
 // Log is the run's log and panic file.
 type Log struct {
 	log       *os.File
@@ -58,15 +51,10 @@ type Log struct {
 	crashPath string
 	crashSize int64
 	prev      *slog.Logger
-
-	core sync.WaitGroup // the goroutine that gives the core the file
-	mu   sync.Mutex     // guards lib
-	lib  CoreLog        // set once the core writes here
 }
 
-// File is the log file, open for append: the core writes to a duplicate of
-// its descriptor, so its lines and this process's share one offset and never
-// overwrite each other. Nil when the log could not be opened.
+// File is the log file, open for append. Nil when the log could not be
+// opened.
 func (l *Log) File() *os.File {
 	if l == nil {
 		return nil
@@ -76,14 +64,12 @@ func (l *Log) File() *os.File {
 
 // StartLog replaces dir/zapfast.log with this run's log, which records
 // warnings and errors (never message contents, numbers or keys: the code
-// that logs names none), makes it the default logger, and sends a crash's
-// goroutine dump to dir/panic.log. When load is not nil, the core library's
-// own log (warnings and errors) goes to the same file: load runs on a
-// goroutine, since loading the library takes a while, and may be the loader
-// the app opens its cores with (an older library without the log is fine, and
-// said once). The returned Log is closed at quit. The error says what could
+// that logs names none, and every record is redacted on its way in,
+// RedactHandler), makes it the default logger, and sends a crash's
+// goroutine dump to dir/panic.log. The backend logs through slog, so its
+// lines come here too. The returned Log is closed at quit. The error says what could
 // not be set up; the Log it returns still works for what could.
-func StartLog(dir string, load func() (CoreLog, error)) (*Log, error) {
+func StartLog(dir string) (*Log, error) {
 	l := &Log{prev: slog.Default()}
 	var first error
 	note := func(err error) {
@@ -96,11 +82,7 @@ func StartLog(dir string, load func() (CoreLog, error)) (*Log, error) {
 		note(err)
 	} else {
 		l.log = f
-		slog.SetDefault(slog.New(slog.NewTextHandler(io.MultiWriter(f, os.Stderr), &slog.HandlerOptions{Level: slog.LevelWarn})))
-		if load != nil {
-			l.core.Add(1)
-			go l.attachCore(load)
-		}
+		slog.SetDefault(slog.New(RedactHandler(slog.NewTextHandler(io.MultiWriter(f, os.Stderr), &slog.HandlerOptions{Level: logLevel()}))))
 	}
 	// The crash file is kept between runs (a crash is read after it); a
 	// clean run leaves it as it found it, and removes one it made empty.
@@ -122,39 +104,10 @@ func StartLog(dir string, load func() (CoreLog, error)) (*Log, error) {
 	return l, first
 }
 
-// attachCore gives the core the log file, from warnings up.
-func (l *Log) attachCore(load func() (CoreLog, error)) {
-	defer l.core.Done()
-	lib, err := load()
-	if err != nil {
-		slog.Warn("the core's log is not wired", "err", err)
-		return
-	}
-	switch err := lib.SetLog(l.log, slog.LevelWarn); {
-	case err == nil:
-		l.mu.Lock()
-		l.lib = lib
-		l.mu.Unlock()
-	case errors.Is(err, errors.ErrUnsupported):
-		slog.Warn("the core library is older than its log: its warnings are not recorded")
-	default:
-		slog.Warn("the core's log is not wired", "err", err)
-	}
-}
-
-// Close ends the run's log: the core stops writing to it, and a clean run
-// leaves no panic.log it made.
+// Close ends the run's log; a clean run leaves no panic.log it made.
 func (l *Log) Close() {
 	if l == nil {
 		return
-	}
-	l.core.Wait()
-	l.mu.Lock()
-	lib := l.lib
-	l.lib = nil
-	l.mu.Unlock()
-	if lib != nil {
-		_ = lib.SetLog(nil, slog.LevelWarn)
 	}
 	if l.crash != nil {
 		_ = debug.SetCrashOutput(nil, debug.CrashOptions{})
@@ -169,4 +122,16 @@ func (l *Log) Close() {
 		l.log.Close()
 		l.log = nil
 	}
+}
+
+// logLevel is the log's: warnings, or more for a diagnosis when ZAP_LOG
+// says info or debug.
+func logLevel() slog.Level {
+	switch os.Getenv("ZAP_LOG") {
+	case "debug":
+		return slog.LevelDebug
+	case "info":
+		return slog.LevelInfo
+	}
+	return slog.LevelWarn
 }

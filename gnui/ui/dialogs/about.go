@@ -7,6 +7,7 @@ import (
 	"gonativeui/widget"
 
 	"zapfast/i18n"
+	"zapfast/internal/buildinfo"
 	"zapfast/state"
 	"zapfast/ui/screen"
 )
@@ -30,6 +31,10 @@ func (s *Screen) about(e *screenEnv, dl *rexui.Dialog) {
 	rexui.Label(k.Kit, "Zap", rexui.LabelOpts{Style: rexui.TextTitle2})
 	if s.paras[2] == "" {
 		s.paras[2] = i18n.Format(i18n.T("Version {version}"), "{version}", state.Version)
+		// the revision, for bug reports: build-manifest.json in the bundle has the rest
+		if c := buildinfo.Read().Short(); c != "" {
+			s.paras[2] += " · " + c
+		}
 	}
 	rexui.Label(k.Kit, s.paras[2], rexui.LabelOpts{Style: rexui.TextCallout, Color: secondary})
 	para(k, i18n.T("A native WhatsApp client written in Go with gonativeui. It connects through whatsapp-rust. Messages are end-to-end encrypted on this device."), rexui.TextBody, rexui.Tint{})

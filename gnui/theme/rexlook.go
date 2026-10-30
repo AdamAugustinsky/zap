@@ -162,7 +162,7 @@ func scale(v uint32, k float32) uint32 { return uint32(min(float32(v)*k+0.5, 255
 // under the text it sits beside (rexui.MetaFont). Asking for it each frame
 // is a lookup.
 func Meta(k *widget.Kit, sizePt float32) text.FontKey {
-	return k.TextSystem().Font(text.FontDesc{SizePt: sizePt, Tabular: true, Scale: k.Scale()})
+	return k.TextSystem().Font(text.FontDesc{SizePt: sizePt, TabularDigits: true, Scale: k.Scale()})
 }
 
 // MetaPt is the metadata's size beside body text: times in the chat list,

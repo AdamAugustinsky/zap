@@ -46,7 +46,10 @@ func TestTheBundleDescriptionServesWhatTheServicesNeed(t *testing.T) {
 	if len(c.LoginAgents) != 1 || c.LoginAgents[0].Name != agentName || !slices.Equal(c.LoginAgents[0].Arguments, []string{"--start-hidden"}) {
 		t.Errorf("login agents %+v", c.LoginAgents)
 	}
-	if len(c.Frameworks) != 1 || c.Usage["NSMicrophoneUsageDescription"] == "" || c.Usage["NSCameraUsageDescription"] == "" {
+	// The two bundled C libraries, SQLCipher and WebP; everything else
+	// (calls included: gocore/voip/engine) is Go, in the executable.
+	frameworks := []string{"../target/sqlcipher/libsqlcipher.dylib", "../target/libwebp/libzfwebp.dylib"}
+	if !slices.Equal(c.Frameworks, frameworks) || c.Usage["NSMicrophoneUsageDescription"] == "" || c.Usage["NSCameraUsageDescription"] == "" {
 		t.Errorf("frameworks %v usage %v", c.Frameworks, c.Usage)
 	}
 	if c.Entitlements["com.apple.security.device.audio-input"] != true || c.Entitlements["com.apple.security.device.camera"] != true {

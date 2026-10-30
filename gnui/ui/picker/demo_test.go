@@ -12,13 +12,13 @@ import (
 
 	"zapfast/abi"
 	"zapfast/core"
+	"zapfast/gocore/demo"
 	"zapfast/state"
 	"zapfast/ui/screen"
 	"zapfast/ui/shell"
 )
 
-// The picker against the real demo core (the library: $ZAPFAST_CORE or a
-// cargo build; skipped without one, and with -short). The demo answers GIF
+// The picker against the demo core (skipped with -short). The demo answers GIF
 // searches from six stock stills (a bad-key answer for the key
 // zf-demo:bad-key), lists a shelf of stickers (Recent, Favorites, Received,
 // a shared pack and a local one), and sends into the chat as upstream's core.
@@ -32,10 +32,7 @@ func newDemoRig(t *testing.T) *demoRig {
 	if testing.Short() {
 		t.Skip("the demo core takes seconds")
 	}
-	if _, err := core.FindLibrary(); err != nil {
-		t.Skipf("no core library: %v", err)
-	}
-	c, err := core.Open(core.Config{Demo: true, Wake: func() {}})
+	c, err := demo.Open(core.Config{Wake: func() {}})
 	if err != nil {
 		t.Fatal(err)
 	}

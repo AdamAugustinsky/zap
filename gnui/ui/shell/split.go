@@ -76,24 +76,62 @@ func (sp *splitUI) init(e *screen.Env) {
 	sp.slotOf = map[model.ChatRef]int{}
 }
 
-// splitID is pane i's surface: the chat pane's for the first.
-func splitID(i int) paneID {
-	if i == 0 {
-		return paneChat
+// splitSlot is the first split pane's surface cache slot
+// (theme.Surface.Slot), past the workspace's panes.
+const splitSlot = 8
+
+var splitSurfaceKey = ui.HashString(0, "zapfast/split surface")
+
+// splitSurface builds split pane i's glass at r, as surface builds a
+// workspace pane's: in use (opaque) while its chat is the open one (live)
+// and the conversation's pane is the one in use.
+func (sh *Shell) splitSurface(i int, r [4]float32, live bool) {
+	k := sh.env.K
+	c, th := k.Context(), k.Theme()
+	target := float32(0)
+	if live && sh.panes.Focus() == paneChat && !k.Inactive() {
+		target = 1
 	}
-	return paneID(int(numPanes) + i)
+	s := theme.Surface{
+		Key: ui.KeyN(splitSurfaceKey, uint64(i)), Slot: splitSlot + i, Rect: r,
+		Focus: c.AnimateValue(ui.KeyN(paneFocusKey, 100+uint64(i)), target, 14), Opacity: 1, Top: true,
+	}
+	th.Chrome.SurfaceShadow(c, th, s)
+	kg := th.Chrome.BeginSurface(c, th, s)
+	th.Chrome.EndSurface(c, th, s, kg)
 }
 
-// splitLayout lays out the split view in the chat pane of panes: its
+// splitUse puts in use the chat of the split pane a press lands in, before
+// anything builds, so that the press acts on its own chat (the workspace
+// has already made the conversation's pane the one in use).
+func (sh *Shell) splitUse(a *state.Account) {
+	sp := &sh.split
+	in := sh.env.C().Input()
+	if !in.Pressed[ui.ButtonLeft] {
+		return
+	}
+	for i, r := range sp.rects {
+		if !shown(r) || sp.chats[i] == 0 || sp.chats[i] == a.Open {
+			continue
+		}
+		if in.MouseX >= r[0] && in.MouseX < r[2] && in.MouseY >= r[1] && in.MouseY < r[3] {
+			a.UsePane(sp.chats[i])
+			return
+		}
+	}
+}
+
+// shown reports whether rect r has room.
+func shown(r [4]float32) bool { return r[2] > r[0] && r[3] > r[1] }
+
+// splitLayout lays out the split view in the conversation's pane cp: its
 // chats, or, while a tab or a pane's grip is held over it, where they go
-// then. It reports whether there is more than one pane to build; the
-// first's rect becomes the chat pane's.
-func (sh *Shell) splitLayout(a *state.Account, panes *paneRects, gut float32) bool {
+// then. It reports whether there is more than one pane to build.
+func (sh *Shell) splitLayout(a *state.Account, cp [4]float32, gut float32) bool {
 	e := &sh.env
 	c := e.C()
 	r := e.K.Theme()
 	sp := &sh.split
-	cp := panes[paneChat]
 	if !shown(cp) {
 		return false
 	}
@@ -184,7 +222,6 @@ func (sh *Shell) splitLayout(a *state.Account, panes *paneRects, gut float32) bo
 	if moving {
 		c.RequestFrame()
 	}
-	panes[paneChat] = sp.rects[0]
 	return true
 }
 
@@ -257,9 +294,7 @@ func (sh *Shell) splitPanes(a *state.Account, gut, tbH, bottom float32) {
 		if !shown(r) {
 			continue
 		}
-		if i > 0 {
-			sh.surface(splitID(i), r)
-		}
+		sh.splitSurface(i, r, ref != 0 && ref == a.Open)
 		if ref == 0 {
 			sh.waiting(a, r)
 			continue

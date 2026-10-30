@@ -12,20 +12,19 @@ import (
 	"gonativeui/app/selfupdate"
 
 	"zapfast/core"
+	"zapfast/internal/buildinfo"
 	"zapfast/state"
 	"zapfast/sys"
 	"zapfast/ui/shell"
 )
 
 type options struct {
-	core string
 	args []string
 }
 
 func parseOptions(args []string) (options, error) {
 	var o options
 	fs := flag.NewFlagSet("zapfast", flag.ContinueOnError)
-	fs.StringVar(&o.core, "core", "", "the libzapfast_core.dylib to load (unbundled runs only)")
 	fs.Bool("start-hidden", false, "start without a window (the login item)")
 	err := fs.Parse(args)
 	o.args = fs.Args()
@@ -50,17 +49,12 @@ func main() {
 			fmt.Fprintln(os.Stderr, "zapfast:", err)
 			os.Exit(1)
 		}
-		lg, err = sys.StartLog(p.Data, func() (sys.CoreLog, error) {
-			path, err := core.ResolveLibrary(o.core)
-			if err != nil {
-				return nil, err
-			}
-			return core.Load(path)
-		})
+		lg, err = sys.StartLog(p.Data)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "zapfast: the log:", err)
 		}
 		defer lg.Close()
+		buildinfo.Log(lg.File(), state.Version) // the revisions this run was built from
 		loading = state.LoadSettings(p)
 	}
 	s := startState(loading, false, showSettingsStartup)
@@ -77,9 +71,8 @@ func main() {
 	s.Wake = h.Wake
 	s.Shell = opener{}
 	h.Terminate = terminate(s, lg)
-	s.OpenCore = func(id string) (*core.Pending, core.Conn) {
-		return core.OpenAsync(core.Config{Library: o.core, Account: id, Wake: h.Wake}), nil
-	}
+	cores := &coreOpener{wake: h.Wake}
+	s.OpenCore = cores.open
 	s.ArchiveKeys = secret.Open(core.KeyringService) // a removed account's key goes with its archive
 	roster := s.Roster()
 	for i, id := range roster.Order {

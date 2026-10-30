@@ -6,9 +6,10 @@ import (
 	"zapfast/core"
 )
 
-// Version is ZapFast's version: upstream's (Cargo.toml's package.version),
-// which About, Settings → Updates and the updater show and compare.
-const Version = "0.19.0"
+// Version is Zap's version (gnui.json's version; it began as upstream
+// ZapFast's, whose numbering it continues), which About, Settings → Updates
+// and the updater show and compare.
+const Version = "0.20.0"
 
 // AppID is the app's identity (core.AppID): its data, cache and Keychain
 // items are its own, never upstream ZapFast's.

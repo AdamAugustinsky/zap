@@ -33,7 +33,7 @@ import (
 // and the number-lookup failure (ui/dialogs/newchat.go, a value of the
 // dialog's state).
 
-const poDir = "../../assets/i18n"
+const poDir = "po"
 
 var languages = []string{"de", "es", "fr", "id", "it", "pt-BR", "ru", "tr", "zh-Hans", "zh-Hant"}
 

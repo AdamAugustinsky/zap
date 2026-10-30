@@ -227,10 +227,11 @@ func TestCompactsUnderChurn(t *testing.T) {
 	}
 }
 
-// zfcore's fixtures hold every event variant: the store takes them all.
+// The ABI fixtures (abi/testdata, from zfcore's Rust encoder) hold every
+// event variant: the store takes them all.
 func TestTakesEveryFixtureEvent(t *testing.T) {
 	f := fake.New(nil)
-	if err := f.ReplayFile("../../zfcore/abi/fixtures/events.bin"); err != nil {
+	if err := f.ReplayFile("../abi/testdata/events.bin"); err != nil {
 		t.Skip(err)
 	}
 	s := model.New()

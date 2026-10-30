@@ -186,7 +186,7 @@ type icons struct {
 	info, check, archive, open        icon.ID
 	folder, photo, edit, eraser, plus icon.ID
 	back, pinSmall, smile             icon.ID
-	tick, tickWait, tickFail          icon.ID // the delivery marks (footer.go)
+	ticks                             tickIcons // the footer's delivery marks
 	ok                                bool
 }
 
@@ -263,10 +263,8 @@ func (s *Screen) addIcons(e *screen.Env) {
 		*it.dst = k.AddIcon(ztheme.ToolIcon(it.sym, it.fb)) // the bars' items, as the header's
 	}
 	ic.pinSmall = k.AddIcon(icon.Spec{Symbol: "pin.fill", Fallback: '⚲', Pt: footMarkPt})
-	ic.tick = k.AddIcon(ztheme.TickIcon("checkmark", '✓'))
-	ic.tickWait = k.AddIcon(ztheme.TickIcon("clock", '◷'))
-	ic.tickFail = k.AddIcon(ztheme.TickIcon("exclamationmark.circle.fill", '!'))
 	ic.smile = k.AddIcon(icon.Spec{Symbol: "face.smiling", Fallback: '☺', Pt: 16})
+	ic.ticks = addTickIcons(k)
 	ic.ok = true
 }
 
@@ -287,7 +285,7 @@ func (s *Screen) styles(e *screen.Env) {
 	// Rex's metadata: the UI face with tabular figures (ztheme.Meta); a
 	// bubble's time a step under the list's, on its last line's baseline
 	meta := func(size float32) text.FontKey {
-		return ts.Font(text.FontDesc{SizePt: size, Tabular: true, Scale: sc})
+		return ts.Font(text.FontDesc{SizePt: size, TabularDigits: true, Scale: sc})
 	}
 	f := markup.Fonts{
 		Regular: r.Styles[theme.StyleBody].Font, Bold: font(700, false, false, 13), Italic: font(400, true, false, 13),

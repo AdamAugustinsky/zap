@@ -334,7 +334,7 @@ func (s *Screen) affordances(e *screen.Env, a *state.Account, ch model.Chat, m m
 	if x < (b[0]+b[2])/2 {
 		step = -step
 	}
-	canReply := !ch.ReadOnly() && !ch.Left() && m.Kind() != abi.ContentTagPhoneOnly && !s.revoking(e, m)
+	canReply := !ch.ReadOnly() && !ch.Left() && m.Kind() != abi.ContentTagPhoneOnly && m.Kind() != abi.ContentTagWaiting && !s.revoking(e, m)
 	rx := x + step
 	canReply = canReply && fits(rx)
 	// shown while the pointer is on the bubble or the controls
@@ -398,15 +398,15 @@ func (s *Screen) circle(e *screen.Env, key ui.Key, ic icon.ID, name string, x, y
 
 // ---- a call entry's menu (CV-033) ----
 
-// callMenu is the menu of a call in the transcript: calling back, or in a
-// group "Group calls happen on the phone"; it reports a choice.
+// callMenu is the menu of a call in the transcript: calling the chat back,
+// a person or a group; a group call in a person's chat has no way back from
+// there. It reports a choice.
 func (s *Screen) callMenu(e *screen.Env, a *state.Account, ch model.Chat, m model.Message) bool {
 	k := e.K.Kit
-	group := ch.Kind() != abi.ChatKindDirect
-	if !group && m.Decode(&s.dec) == nil {
-		group = s.dec.Content.Call.Group
+	if !canCall(a, ch) {
+		return false
 	}
-	if group {
+	if ch.Kind() == abi.ChatKindDirect && m.Decode(&s.dec) == nil && s.dec.Content.Call.Group {
 		itemOff(k, s.icons.call, i18n.T("Group calls happen on the phone"), false)
 		return false
 	}

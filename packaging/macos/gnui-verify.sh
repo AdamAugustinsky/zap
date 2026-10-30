@@ -1,13 +1,15 @@
 #!/bin/bash
-# Check the Go UI's Zap.app as users receive it (gnui-package.sh runs it):
+# Check Zap.app as users receive it (gnui-package.sh runs it):
 #
 #   packaging/macos/gnui-verify.sh dist/Zap.app
 #
 # The Info.plist keys upstream's bundle has (usage strings, version,
 # category, copyright, minimum macOS) plus the URL types; the login agent;
-# the core in Frameworks, signed by the app's signer; the icon; no stray
-# files; arm64 only; the hardened runtime and the entitlements; codesign's
-# strict verification. Prints the sizes and Gatekeeper's verdict, which
+# the two bundled C libraries (libsqlcipher.dylib, libzfwebp.dylib) in
+# Frameworks, each signed by the app's signer, hardened, named
+# @rpath/<file> and linking only system libraries; the licences; the icon; no
+# stray files; arm64 only; the hardened runtime and the entitlements;
+# codesign's strict verification. Prints the sizes and Gatekeeper's verdict, which
 # rejects anything but a notarized Developer ID build (reported, not failed).
 set -euo pipefail
 
@@ -20,8 +22,13 @@ trap 'rm -rf "$temporary"' EXIT
 
 codesign --verify --deep --strict --verbose=2 "$app"
 exe="$app/Contents/MacOS/zapfast"
-lib="$app/Contents/Frameworks/libzapfast_core.dylib"
-for binary in "$exe" "$lib"; do
+# The bundled C libraries, loaded with purego (docs/go-backend/PLAN.md).
+go_libs=(libsqlcipher.dylib libzfwebp.dylib)
+frameworks=()
+for name in "${go_libs[@]}"; do
+    frameworks+=("$app/Contents/Frameworks/$name")
+done
+for binary in "$exe" "${frameworks[@]}"; do
     archs="$(lipo -archs "$binary")"
     if [ "$archs" != arm64 ]; then
         echo "$binary: architectures $archs, want arm64 only" >&2
@@ -31,7 +38,11 @@ for binary in "$exe" "$lib"; do
     codesign --display --verbose=4 "$binary" > "$temporary/$(basename "$binary").sig" 2>&1
 done
 codesign --display --entitlements - --xml "$app" > "$temporary/entitlements.plist" 2>/dev/null
-otool -D "$lib" | sed -n 2p > "$temporary/install-name"
+for binary in "${frameworks[@]}"; do
+    name="$(basename "$binary")"
+    otool -D "$binary" | sed -n 2p > "$temporary/$name.install-name"
+    otool -L "$binary" | tail -n +2 | awk '{print $1}' > "$temporary/$name.links"
+done
 
 python3 - "$app" "$config" "$temporary" <<'PY'
 import json
@@ -102,21 +113,37 @@ check(os.path.isfile(icon) and os.path.getsize(icon) > 0, f"no icon at {icon}")
 allowed = {
     "Info.plist",
     "MacOS/zapfast",
-    "Frameworks/libzapfast_core.dylib",
+    "Frameworks/libsqlcipher.dylib",
+    "Frameworks/libzfwebp.dylib",
     f"Library/LaunchAgents/{label}.plist",
     "Resources/" + os.path.basename(icon),
-    "Resources/LICENSE",  # MIT: upstream's notice travels with the app
+    "Resources/COPYING",  # GPL-3.0: the app's licence
+    "Resources/LICENSE",  # the notice of the licence, and upstream's MIT notice
     "Resources/THIRD-PARTY-NOTICES.md",
+    "Resources/build-manifest.json",  # the build's identity (scripts/gnui/release_identity.py)
     "_CodeSignature/CodeResources",
 }
 found = set()
 for directory, dirs, files in os.walk(contents):
     for name in files + [d for d in dirs if os.path.islink(os.path.join(directory, d))]:
         found.add(os.path.relpath(os.path.join(directory, name), contents))
+# A notarized bundle carries its stapled ticket at Contents/CodeResources.
+found.discard("CodeResources")
 check(found == allowed, f"bundle files: stray {sorted(found - allowed)}, missing {sorted(allowed - found)}")
 check(sorted(os.listdir(app)) == ["Contents"], f"stray entries beside Contents: {sorted(os.listdir(app))}")
 
-# The core: signed by the app's signer, hardened, loaded through its rpath name.
+# The build manifest names the bundle's libraries.
+manifest_path = os.path.join(contents, "Resources", "build-manifest.json")
+if os.path.isfile(manifest_path):
+    with open(manifest_path, encoding="utf-8") as source:
+        manifest = json.load(source)
+    check(manifest.get("schema") == "zap.build/v1", f"build-manifest.json: schema {manifest.get('schema')!r}")
+    named = sorted(lib.get("name", "") for lib in manifest.get("nativeLibs", []))
+    shipped = sorted(os.listdir(os.path.join(contents, "Frameworks")))
+    check(named == shipped, f"build-manifest.json names libraries {named}, the bundle has {shipped}")
+
+# The libraries: signed by the app's signer, hardened, loaded through their
+# rpath names.
 def signature(name):
     fields = {}
     with open(os.path.join(tmp, name + ".sig"), encoding="utf-8") as f:
@@ -126,21 +153,31 @@ def signature(name):
                 fields.setdefault(key, value)
     return fields
 
-exe_sig, lib_sig = signature("zapfast"), signature("libzapfast_core.dylib")
+exe_sig = signature("zapfast")
+libs = {name: signature(name) for name in ("libsqlcipher.dylib", "libzfwebp.dylib")}
 # Only a signer without a Team ID (gnui-dev) needs library validation off to
-# load the core under the hardened runtime; a Developer ID build must not
+# load the libraries under the hardened runtime; a Developer ID build must not
 # carry the exception.
 wanted = dict(config["entitlements"])
 if exe_sig.get("TeamIdentifier", "not set") == "not set":
     wanted["com.apple.security.cs.disable-library-validation"] = True
 check(entitlements == wanted, f"entitlements {entitlements}, want {wanted}")
-check(exe_sig.get("Authority") == lib_sig.get("Authority"), f"core signed by {lib_sig.get('Authority')!r}, app by {exe_sig.get('Authority')!r}")
-check(exe_sig.get("TeamIdentifier") == lib_sig.get("TeamIdentifier"), "core and app have different Team IDs")
-for name, sig in (("app", exe_sig), ("core", lib_sig)):
+for name, sig in libs.items():
+    check(exe_sig.get("Authority") == sig.get("Authority"), f"{name} signed by {sig.get('Authority')!r}, app by {exe_sig.get('Authority')!r}")
+    check(exe_sig.get("TeamIdentifier") == sig.get("TeamIdentifier"), f"{name} and the app have different Team IDs")
+for name, sig in [("app", exe_sig)] + list(libs.items()):
     check("runtime" in sig.get("CodeDirectory v", ""), f"the {name} is not signed with the hardened runtime")
     check(sig.get("Signature") != "adhoc", f"the {name} is signed ad-hoc")
-with open(os.path.join(tmp, "install-name"), encoding="utf-8") as f:
-    check(f.read().strip() == "@rpath/libzapfast_core.dylib", "the core's install name is not @rpath/libzapfast_core.dylib")
+for name in libs:
+    with open(os.path.join(tmp, name + ".install-name"), encoding="utf-8") as f:
+        check(f.read().strip() == f"@rpath/{name}", f"{name}'s install name is not @rpath/{name}")
+# The libraries see every key and message: they link only the system's
+# libraries (and name themselves).
+for name in ("libsqlcipher.dylib", "libzfwebp.dylib"):
+    with open(os.path.join(tmp, name + ".links"), encoding="utf-8") as f:
+        links = [line.strip() for line in f if line.strip()]
+    stray = [l for l in links if l != f"@rpath/{name}" and not l.startswith(("/usr/lib/", "/System/Library/"))]
+    check(not stray, f"{name} links {stray}: only system libraries are allowed")
 
 if failures:
     sys.exit("\n".join(["The bundle fails its checks:"] + failures))
@@ -149,11 +186,14 @@ PY
 
 # Sizes: the plan's budget is a Go executable under 10 MB.
 exe_bytes="$(stat -f %z "$exe")"
-lib_bytes="$(stat -f %z "$lib")"
+go_lib_bytes=0
+for name in "${go_libs[@]}"; do
+    go_lib_bytes=$((go_lib_bytes + $(stat -f %z "$app/Contents/Frameworks/$name")))
+done
 bundle_kib="$(du -sk "$app" | cut -f1)"
-printf 'sizes: executable %s B (%.1f MiB), core %s B (%.1f MiB), bundle %s KiB on disk (%.1f MiB)\n' \
+printf 'sizes: executable %s B (%.1f MiB), libraries %s B (%.1f MiB), bundle %s KiB on disk (%.1f MiB)\n' \
     "$exe_bytes" "$(echo "$exe_bytes / 1048576" | bc -l)" \
-    "$lib_bytes" "$(echo "$lib_bytes / 1048576" | bc -l)" \
+    "$go_lib_bytes" "$(echo "$go_lib_bytes / 1048576" | bc -l)" \
     "$bundle_kib" "$(echo "$bundle_kib / 1024" | bc -l)"
 if [ "$exe_bytes" -ge 10000000 ]; then
     echo "note: the executable is over the 10 MB budget"

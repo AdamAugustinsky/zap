@@ -47,47 +47,91 @@ type footerMarks struct {
 	read                            bool
 }
 
-// tickMark is our message's delivery mark, drawn as icons (the list's,
-// rows.go): a clock while it is sent, one check, two overlapping checks
-// once delivered (in the read colour once read), a red mark if it failed.
+// tickMark is our message's delivery mark in its footer.
 type tickMark uint8
 
 const (
 	tickNone tickMark = iota
-	tickWait
-	tickFail
-	tickOne
-	tickTwo
+	tickPending
+	tickFailed
+	tickSent
+	tickBoth // delivered, read or played: two checks
 )
 
 func tickOf(d abi.Delivery) tickMark {
 	switch d {
 	case abi.DeliveryPending:
-		return tickWait
+		return tickPending
 	case abi.DeliveryFailed:
-		return tickFail
+		return tickFailed
 	case abi.DeliveryDelivered, abi.DeliveryRead, abi.DeliveryPlayed:
-		return tickTwo
+		return tickBoth
 	}
-	return tickOne
+	return tickSent
 }
 
-// tickSize is mark t's width and height in pixels.
-func (s *Screen) tickSize(e *screen.Env, t tickMark) (float32, float32) {
+// tickStep is how far right of the first check the second of a pair sits,
+// iw being a check's width: TickStep of it (ztheme).
+func tickStep(iw float32) float32 { return theme.Snap(iw * ztheme.TickStep) }
+
+// tickIcons are a kit's icons for the delivery marks, the chat list's look
+// (chatlist/rows.go, ztheme.TickIcon): a check, a pair of them one
+// overlapping the other, a clock while sending, a red mark when it failed.
+type tickIcons struct{ tick, wait, fail icon.ID }
+
+func addTickIcons(k interface{ AddIcon(icon.Spec) icon.ID }) tickIcons {
+	return tickIcons{
+		tick: k.AddIcon(ztheme.TickIcon("checkmark", '✓')),
+		wait: k.AddIcon(ztheme.TickIcon("clock", '◷')),
+		fail: k.AddIcon(ztheme.TickIcon("exclamationmark.circle.fill", '!')),
+	}
+}
+
+// width is the width of mark t as drawn.
+func (ic tickIcons) width(e *screen.Env, font text.FontKey, t tickMark) float32 {
 	k := e.K.Kit
 	switch t {
 	case tickNone:
-		return 0, 0
-	case tickWait:
-		return k.IconSize(s.icons.tickWait)
-	case tickFail:
-		return k.IconSize(s.icons.tickFail)
+		return 0
+	case tickFailed:
+		w, _ := k.IconSize(ic.fail)
+		return w
+	case tickPending:
+		w, _ := k.IconSize(ic.wait)
+		return w
 	}
-	w, h := k.IconSize(s.icons.tick)
-	if t == tickTwo {
-		w += theme.Snap(w * ztheme.TickStep)
+	w, _ := k.IconSize(ic.tick)
+	if t == tickBoth {
+		w += tickStep(w)
 	}
-	return w, h
+	return w
+}
+
+// draw draws mark t in the row being built: icons rather than text checks,
+// whose pair the font sets apart.
+func (ic tickIcons) draw(e *screen.Env, font text.FontKey, t tickMark, ink uint32, key ui.Key) {
+	c, k := e.C(), e.K.Kit
+	id := ic.tick
+	switch t {
+	case tickPending:
+		id = ic.wait
+	case tickFailed:
+		id = ic.fail
+	}
+	iw, ih := k.IconSize(id)
+	c.NextSize(ui.Px(ic.width(e, font, t)), ui.Px(ih))
+	c.Push(c.BoxKeyed(0, ui.KeyN(key, 21), nil))
+	one := func(n uint64, x float32) {
+		theme.At(c, x, 0, iw, ih)
+		c.Push(c.BoxKeyed(base.Floating, ui.KeyN(key, 22+n), nil))
+		k.Icon(id, ink)
+		c.Pop()
+	}
+	one(0, 0)
+	if t == tickBoth {
+		one(1, tickStep(iw))
+	}
+	c.Pop()
 }
 
 func (s *Screen) marks(e *screen.Env, a *state.Account, ch model.Chat, m model.Message, out bool) footerMarks {
@@ -126,8 +170,7 @@ func (s *Screen) footWidth(e *screen.Env, f *footerMarks, over bool) float32 {
 		w += k.TextWidthBytes(s.look.smallMed, base.StrBytes(notSentText())) + gap
 	}
 	if f.tick != tickNone {
-		tw, _ := s.tickSize(e, f.tick)
-		w += tw + gap
+		w += s.icons.ticks.width(e, font, f.tick) + gap
 	}
 	return theme.Snap(w) + 1
 }
@@ -248,10 +291,10 @@ func (s *Screen) footRow(e *screen.Env, m model.Message, f *footerMarks, out boo
 		switch {
 		case f.read:
 			ink = ztheme.OnBubble(out).Read
-		case f.tick == tickFail:
+		case f.tick == tickFailed:
 			ink = rexui.DangerText.RGBA(k.Theme())
 		}
-		s.tickMarks(e, f.tick, ink, key)
+		s.icons.ticks.draw(e, font, f.tick, ink, key)
 	}
 	c.Pop()
 	if info && c.Signal(row).Clicked && !e.S.Panes.Selecting {
@@ -261,32 +304,3 @@ func (s *Screen) footRow(e *screen.Env, m model.Message, f *footerMarks, out boo
 
 // footerStar is FOOTER_STAR, the star's gold.
 const footerStar = uint32(0xF5B400FF)
-
-// tickMarks draws mark t in ink: in a box as wide as it is, its glyphs on
-// the line the time sits on.
-func (s *Screen) tickMarks(e *screen.Env, t tickMark, ink uint32, key ui.Key) {
-	c, k := e.C(), e.K
-	w, h := s.tickSize(e, t)
-	c.NextSize(ui.Px(w), ui.Px(h))
-	c.Push(c.BoxKeyed(0, ui.KeyN(key, 20), nil))
-	one := func(n uint64, x float32, ic icon.ID) {
-		iw, ih := k.IconSize(ic)
-		theme.At(c, x, 0, iw, ih)
-		c.Push(c.BoxKeyed(theme.Floating, ui.KeyN(key, 21+n), nil))
-		k.Icon(ic, ink)
-		c.Pop()
-	}
-	switch t {
-	case tickWait:
-		one(0, 0, s.icons.tickWait)
-	case tickFail:
-		one(0, 0, s.icons.tickFail)
-	case tickOne:
-		one(0, 0, s.icons.tick)
-	case tickTwo:
-		iw, _ := k.IconSize(s.icons.tick)
-		one(0, 0, s.icons.tick)
-		one(1, theme.Snap(iw*ztheme.TickStep), s.icons.tick)
-	}
-	c.Pop()
-}

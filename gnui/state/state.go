@@ -118,6 +118,9 @@ type Account struct {
 	Pending *core.Pending
 	Err     string
 	Started bool // zf_core_start sent, after the first frame
+	// startOnOpen: the core was opened again (Reopen) after the cores
+	// started, so it gets its permit as soon as it is open.
+	startOnOpen bool
 	// Removed: the core said the account is gone (AccountRemoved); the
 	// state drops it after the drain (State.Pump).
 	Removed bool
@@ -214,6 +217,10 @@ func (a *Account) Cmd(tag abi.CommandTag) *abi.Command {
 // failed) it reports ErrNoCore. A refusal is logged and returned.
 func (a *Account) Send(cmd *abi.Command) error {
 	if a.Conn == nil {
+		// Try again on a core that failed to open opens it again.
+		if cmd.Tag == abi.CommandTagReconnect && a.st != nil && a.st.Reopen(a) {
+			return nil
+		}
 		return ErrNoCore
 	}
 	err := a.Conn.Send(cmd)
@@ -721,6 +728,7 @@ type State struct {
 	settingsGen  uint64
 	persist      *persist
 	beforeAdding string                 // the account shown before AddNewAccount
+	coresStarted bool                   // StartCores ran
 	quitting     bool                   // Quit ran
 	removeFailed atomic.Pointer[string] // why a removed account's folders stayed (the first error)
 	// toastMu guards Toasts and toastSeq: Toast may be called from any
@@ -957,14 +965,16 @@ func (s *State) Pump(budget time.Duration) bool {
 	applied := false
 	for _, a := range s.Accounts {
 		if a.Conn == nil && a.Pending != nil && a.Pending.Done() {
-			c, err := a.Pending.Result()
+			c, err := a.Pending.Conn()
 			a.Pending = nil
-			if err != nil {
+			switch {
+			case err != nil:
 				a.Err = err.Error()
 				slog.Error("zapfast: opening the core", "account", a.ID, "err", err)
-			} else {
+			case c != nil:
 				a.Conn = c
 				a.opened()
+				a.startReopened()
 			}
 			s.gen++
 		}
@@ -995,6 +1005,7 @@ func (s *State) Pump(budget time.Duration) bool {
 // StartCores gives every open core its startup permit (after the first
 // frame).
 func (s *State) StartCores() {
+	s.coresStarted = true
 	for _, a := range s.Accounts {
 		if a.Conn != nil && !a.Started {
 			a.Started = true
@@ -1002,6 +1013,37 @@ func (s *State) StartCores() {
 				slog.Warn("zapfast: starting the core", "account", a.ID, "err", err)
 			}
 		}
+	}
+}
+
+// Reopen opens the core of account a again after it failed to open (Err
+// is set, and there is no core nor one opening): the login screen's Try
+// again. A core that could not take its account over from the Rust core
+// (cmd/zapfast) gets its next chance this way. It reports whether it did.
+func (s *State) Reopen(a *Account) bool {
+	if s.OpenCore == nil || a.Conn != nil || a.Pending != nil || a.Err == "" || a.Removed {
+		return false
+	}
+	pending, conn := s.OpenCore(a.ID)
+	a.Err = ""
+	a.Pending, a.Conn = pending, conn
+	a.Started, a.startOnOpen = false, s.coresStarted
+	if conn != nil {
+		a.opened()
+		a.startReopened()
+	}
+	s.gen++
+	return true
+}
+
+// startReopened gives a reopened core its permit once it is open.
+func (a *Account) startReopened() {
+	if !a.startOnOpen || a.Started || a.Conn == nil {
+		return
+	}
+	a.startOnOpen, a.Started = false, true
+	if err := a.Conn.Start(); err != nil {
+		slog.Warn("zapfast: starting the core", "account", a.ID, "err", err)
 	}
 }
 

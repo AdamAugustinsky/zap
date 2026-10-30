@@ -337,7 +337,7 @@ func (s *Screen) bubble(e *screen.Env, a *state.Account, ch model.Chat, m model.
 		st := &r.Styles[rexui.TextStyles[rexui.TextSemibold]]
 		c.NextFont(st.Font)
 		c.NextTextColor(ztheme.Sender(hueOf(m.Sender())))
-		c.NextSize(ui.Px(min(theme.Snap(k.TextWidthBytes(st.Font, name))+base.LabelSlack, s.maxW)), ui.Px(st.Line))
+		c.NextSize(ui.Px(min(ui.CeilText(k.TextWidthBytes(st.Font, name)), s.maxW)), ui.Px(st.Line))
 		c.NextRole(ui.RoleLabel)
 		c.NextSemNameBytes(name)
 		c.BoxKeyed(ui.DrawText|ui.FadeOverflowX, ui.KeyN(key, 15), name)
@@ -810,7 +810,7 @@ func (s *Screen) textAndFooter(e *screen.Env, a *state.Account, ch model.Chat, m
 func quoteLine(c *ui.Context, k *base.Kit, key ui.Key, st *theme.StyleFont, col uint32, b []byte, w float32) {
 	c.NextFont(st.Font)
 	c.NextTextColor(col)
-	c.NextSize(ui.Px(max(min(theme.Snap(k.TextWidthBytes(st.Font, b))+base.LabelSlack, w), 0)), ui.Px(st.Line))
+	c.NextSize(ui.Px(max(min(ui.CeilText(k.TextWidthBytes(st.Font, b)), w), 0)), ui.Px(st.Line))
 	c.NextRole(ui.RoleLabel)
 	c.NextSemNameBytes(b)
 	c.BoxKeyed(ui.DrawText|ui.FadeOverflowX, key, b)
@@ -899,19 +899,6 @@ func (s *Screen) messageInfo(e *screen.Env, m model.Message) {
 	p.MessageInfo.Add(m.ID())
 	p.Pane = state.PaneMessageInfo
 	e.S.Touch()
-}
-
-// ticks are the delivery marks of our message.
-func ticks(d abi.Delivery) string {
-	switch d {
-	case abi.DeliveryPending:
-		return "🕓"
-	case abi.DeliveryFailed:
-		return "!"
-	case abi.DeliveryDelivered, abi.DeliveryRead, abi.DeliveryPlayed:
-		return "✓✓"
-	}
-	return "✓"
 }
 
 // reactions is the row of reaction pills under the bubble: a click on one

@@ -630,7 +630,7 @@ func TestSteadyFramesAllocateNothing(t *testing.T) {
 		steady(t, r)
 	})
 	t.Run("update", func(t *testing.T) {
-		f, pub := makeFeed(t, "0.20.0", []byte("update"))
+		f, pub := makeFeed(t, "0.21.0", []byte("update"))
 		r := updRig(t, f, pub, nil)
 		filled(r)
 		r.click(ui.RoleButton, "Check now")

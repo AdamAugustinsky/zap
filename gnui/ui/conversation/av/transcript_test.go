@@ -117,7 +117,7 @@ func TestBareMediaInTheTranscript(t *testing.T) {
 			r.Frames(3)
 			a.OpenChat(a.Model.Chats.Find([]byte(chatID)))
 			m := text("bare", 1_791_990_000)
-			path, err := filepath.Abs("../../../../assets/demo/stickers/astronaut.webp")
+			path, err := filepath.Abs("../../../gocore/demo/assets/stickers/astronaut.webp")
 			if err != nil {
 				t.Fatal(err)
 			}

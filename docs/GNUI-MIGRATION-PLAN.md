@@ -1,5 +1,15 @@
 # ZapFast on go-native-ui: the migration plan (phase 7)
 
+> **Status (2026-10-28, WP9).** The core is no longer Rust. This plan kept
+> ZapFast's Rust core behind a C ABI; the backend has since been rewritten in
+> Go (`gnui/gocore`, [docs/go-backend/PLAN.md](go-backend/PLAN.md)) and the
+> Rust core, upstream's egui app and their tooling (`zfcore/`, `src/`,
+> Cargo, the `scripts/gnui` gates) are gone from the repository. The ABI it
+> describes lives on as `gnui/abi/zf.schema`, spoken by gocore. What follows
+> is the plan as it was written; read "the core" as gocore today, and its
+> Rust-specific gates (cargo, the headless tree, the GPL-sounds check, the
+> crate licence audit) as retired.
+
 Drafted 2026-10-18, for your approval. It carries out D33 (the framework's DECISIONS.md):
 - ZapFast keeps its Rust core, built as a library inside the app bundle behind a small C ABI;
 - the whole UI is rewritten in Go on go-native-ui, with the Rex design system (`rexui`), and it should feel native on macOS. Other OSes come afterwards.
@@ -230,6 +240,18 @@ This refines `research:zapfast.md` §3 ("C ABI sketch") as follows.
   - **completion** (`@` mentions, `:emoji:` shortcodes): `logic/` decides from `Changed` and the byte `Selection` when a trigger is active, and the conversation screen draws the popup at `CaretRect`, above the composer (or below it when there is no room), never overlapping it (D41). While it is open the app holds `SetCompletionActive(true)`, so Up, Down, Tab, Enter and Esc reach it as host commands through `doCommandBySelector:`, not the text. Accepting calls `Replace` on the trigger range, which is one undo step, and adds the mention span;
   - **marked text** (an IME composition) closes the popup and blocks `Replace`; the send key commits the composition rather than sending;
   - Enter policy, drafts (`SaveDraft`) and `Composing` follow upstream (`zf:src/ui/conversation.rs:1729-1733`).
+
+### Recovery: what any core behind `core.Conn` must keep
+
+Pinned by `gnui/state/recovery_test.go` and `gnui/ui/shell/panes_test.go` over fake cores, and by `gnui/gocore/wa/outbox_test.go` over the Go backend with a temporary archive and in-memory keys. The Go backend (`gnui/gocore`) is the core main runs on now; any later backend plugs in only if these still hold.
+
+- **The UI keeps no command queue.** `Account.Send` hands a command to `Conn.Send` at once. Without a core it returns `ErrNoCore` and the command is dropped, not held. A reconnect resends nothing (no `LoadChat`, `SaveDraft`, `SendText` or `MarkRead`). Holding, ordering and retrying commands across a dropped link is the core's job.
+- **Sends are never retried by the UI.** A send the core refuses comes back as `SendRefused`, and its text goes to the chat's empty draft (`state/events.go` `sendRefused`). A send whose acknowledgement is unknown after a crash keeps its original message id: the next open fails it (`Archive.RecoverOutbox`, `gocore/store/archive.go:1171`, called from `gocore/wa/engine.go:335`), and the chat shows it as `Delivery` `Failed`. The engine never sends it again, on the open, when the link comes up, or on a later start, nor under a new id (`TestACrashedSendFailsUnderItsIDAndIsNeverResent`). Main has no command to retry a failed send yet. One added later must be explicit and reuse the original id.
+- **Drafts live in the core's archive.** `SaveDraft` stores the exact bytes, and the next start's `Drafts` event gives them back. A `Drafts` event never overwrites text the UI already holds for a chat (`model/store.go`).
+- **Chat refs stay stable through a reload.** A `Chats` batch may arrive in chunks after a reconnect. Rows are removed only at the batch's `Last`, so the open chat and its ref survive. Pins and their order come from the core's chat rows (`Pinned`, `PinnedAt`).
+- **The last chat reopens once per run.** It reopens at the first `Chats` `Last`. It is not marked read while the window is unfocused. A hidden account parks its chat and loads it when shown.
+- **One core per account.** A JID is unique only within its account. A core whose `Drain` fails marks only its own account (`Account.Err`), and the others keep draining, with or without a window. A new account gets a new `Serial`, and nothing a removed account's core still had queued reaches it.
+- **Replacing a core.** Try again (`Reconnect` on an account whose core failed to open) reopens it through `State.Reopen` (`gnui/state/state.go:951`), which clears `Err` and gives the new core its start permit once open (`startReopened`, `:968`). A failed attempt's core is never started nor drained. The account keeps its settings, so its last chat reopens once the new core's list is in, and the other accounts are untouched (`TestTryAgainReplacesOnlyTheCore`). Otherwise a core changes only when a `Pending` open finishes, or when an account is removed and another added. `Reopen` does not replace a core that opened and later stopped: a Go core that panics is poisoned (it refuses commands and emits `Fatal`), and nothing in the UI reopens it until the app restarts.
 
 ## Work
 

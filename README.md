@@ -11,10 +11,11 @@
 
 Zap is a WhatsApp app for macOS. Its interface is written in Go on
 [go-native-ui](https://github.com/AdamAugustinsky/go-native-ui), the native UI
-framework, in its Rex look. Underneath is a Rust core that links to your
-phone as a companion device through
-[whatsapp-rust](https://github.com/oxidezap/whatsapp-rust). There is no
-browser engine and no server in between.
+framework, in its Rex look, and so is everything underneath: the backend
+links to your phone as a companion device through
+[whatsmeow](https://github.com/tulir/whatsmeow), keeps the archive in
+SQLCipher, and runs calls on its own Go call engine. There is no browser
+engine and no server in between.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="site/public/assets/chat-dark.jpg">
@@ -22,7 +23,9 @@ browser engine and no server in between.
 </picture>
 
 Measured against upstream ZapFast's egui app on the same core, on an Apple M4
-([method and raw data](docs/measurements/zap-vs-zapfast-2026-10-27.md)):
+([method and raw data](docs/measurements/zap-vs-zapfast-2026-10-27.md)).
+These runs were of the earlier build whose backend was ZapFast's Rust core;
+the Go backend has not been measured this way yet:
 
 | | Zap | ZapFast (egui) |
 |---|---:|---:|
@@ -43,29 +46,34 @@ Linked devices, Link a device, and scan it.
 ## What is in this repository
 
 Zap began as a fork of [ZapFast](https://github.com/crmne/zapfast) by Carmine
-Paolino. That fork keeps upstream's egui app beside the Go one:
+Paolino, an egui app over a Rust core. Both are gone from this repository:
+the app and its backend are Go.
 
 | Path | What |
 |---|---|
-| `gnui/` | Zap: the Go app on go-native-ui ([gnui/README.md](gnui/README.md)) |
-| `zfcore/` | the Rust core as a C library, over upstream's backend ([zfcore/README.md](zfcore/README.md)) |
-| `src/`, `assets/`, `tests/` | upstream ZapFast's egui app and backend, merged from upstream |
-| `packaging/macos/` | the macOS bundle: `gnui-package.sh`, the checks, the icon |
-| `docs/` | the migration plan, parity tables, hand tests and measurements (`docs/GNUI-MIGRATION-PLAN.md`, `docs/PARITY.md`) |
+| `gnui/` | Zap: the Go app on go-native-ui and its backend, `gocore` ([gnui/README.md](gnui/README.md)) |
+| `packaging/macos/` | the macOS bundle: `gnui-package.sh`, the checks, the two C libraries' build scripts, the icon |
+| `docs/` | the backend plan (`docs/go-backend/`), parity tables, hand tests and measurements (`docs/GNUI-MIGRATION-PLAN.md`, `docs/PARITY.md`) |
 | `site/` | zap.a3lab.ai: the static site (`site/public/`), a Cloudflare Worker |
+| `scripts/render-demo.py` | captions a recorded demo tour (`-demo-tour-events`) |
 
 ## Building
 
-You need Go 1.27, the Rust toolchain in `rust-toolchain.toml`, and the Xcode
-Command Line Tools. Check out go-native-ui beside this repository
-(`gnui/go.mod` resolves it at `../go-native-ui`):
+You need Go 1.27 and the Xcode Command Line Tools, which build the two C
+libraries the app bundles: SQLCipher (the archive and the session store)
+and libwebp (stickers). Nothing else is native; the Go code builds with
+`CGO_ENABLED=0` and loads those libraries at run time. Check out
+go-native-ui beside this repository (`gnui/go.mod` resolves it at
+`../go-native-ui`):
 
 ```sh
 git clone https://github.com/AdamAugustinsky/go-native-ui
 git clone https://github.com/AdamAugustinsky/zap
 cd zap
-cargo build -p zapfast_core --profile core-release   # the core
-cd gnui && CGO_ENABLED=0 go run ./cmd/zapfast -demo  # the app on the demo's sample chats
+packaging/macos/sqlcipher/build.sh                    # target/sqlcipher/libsqlcipher.dylib
+packaging/macos/libwebp/build.sh                      # target/libwebp/libzfwebp.dylib
+cd gnui && CGO_ENABLED=0 go run ./cmd/zapfast -demo   # the app on the demo's sample chats
+CGO_ENABLED=0 go test ./...                           # the tests, on the demo and fakes
 ```
 
 `packaging/macos/gnui-package.sh` builds the signed `Zap.app`, the disk image
@@ -73,7 +81,11 @@ and the update archive ([docs/HANDTEST-BUILD.md](docs/HANDTEST-BUILD.md)).
 
 ## Licence and notices
 
-MIT ([LICENSE](LICENSE)). Third-party notices: [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+Zap is distributed under the GNU General Public License, version 3
+([COPYING](COPYING), [LICENSE](LICENSE)): it links go.mau.fi/libsignal,
+which is GPL-3.0. It contains code from ZapFast (MIT, © Carmine Paolino) and
+other MIT, MPL-2.0 and BSD components, whose notices are in
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 Zap is an unofficial client and is not affiliated with WhatsApp or Meta.
 Using an unofficial client may be against WhatsApp's terms of service and

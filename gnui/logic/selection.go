@@ -15,7 +15,7 @@ import (
 func CanSelect(kind abi.ContentTag) bool {
 	switch kind {
 	case abi.ContentTagRevoked, abi.ContentTagPhoneOnly, abi.ContentTagUnsupported, abi.ContentTagPoll,
-		abi.ContentTagInteractive, abi.ContentTagCall:
+		abi.ContentTagInteractive, abi.ContentTagCall, abi.ContentTagWaiting:
 		return false
 	}
 	return true

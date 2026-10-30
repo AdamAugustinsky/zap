@@ -9,14 +9,14 @@ import (
 	"gonativeui/widget/widgettest"
 
 	"zapfast/core"
+	"zapfast/gocore/demo"
 	"zapfast/state"
 	"zapfast/ui/info"
 	"zapfast/ui/screen"
 	"zapfast/ui/shell"
 )
 
-// The panel against the real demo core (the library: $ZAPFAST_CORE or a
-// cargo build; skipped without one, and with -short): Ada's shared photos,
+// The panel against the demo core (skipped with -short): Ada's shared photos,
 // clip, documents and links, and the two groups with their members and
 // descriptions. The demo refuses the commands that change a group (name,
 // photo, leave), so those stay with the fake core; here the panel offers them
@@ -32,10 +32,7 @@ func newDemoRig(t *testing.T) *rig {
 	if testing.Short() {
 		t.Skip("the demo core takes seconds")
 	}
-	if _, err := core.FindLibrary(); err != nil {
-		t.Skipf("no core library: %v", err)
-	}
-	c, err := core.Open(core.Config{Demo: true, Wake: func() {}})
+	c, err := demo.Open(core.Config{Wake: func() {}})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -14,7 +14,7 @@ import (
 // run leaves no panic.log.
 func TestTerminateLeavesNoEmptyPanicLog(t *testing.T) {
 	dir := t.TempDir()
-	lg, err := sys.StartLog(dir, nil)
+	lg, err := sys.StartLog(dir)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -131,6 +131,11 @@ func Launch(o LaunchOptions) (code int, done bool) {
 	return 0, false
 }
 
+// HoldsInstance reports whether this process holds the single-instance lock
+// (Launch took it): what taking an account over from the Rust core needs, so
+// that no other copy runs on the same files.
+func HoldsInstance() bool { return launched.primary != nil }
+
 // sendToRunning hands the arguments to the running copy.
 func sendToRunning(sec *instance.Secondary, o LaunchOptions, cmd command) int {
 	if login.StartHidden() && cmd == cmdShow {

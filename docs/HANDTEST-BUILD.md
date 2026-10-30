@@ -1,8 +1,8 @@
 # Hand-test build (macOS, Apple silicon)
 
-How to build ZapFast's Go UI as an app bundle on the Mac mini and run it on
+How to build Zap as an app bundle on the Mac mini and run it on
 the MacBook. The bundle is `Zap.app` (gnui.json's bundleName; the app shows
-as Zap), id `ai.a3lab.zap`, version 0.19.0, arm64 only, macOS 14 or
+as Zap), id `ai.a3lab.zap`, version 0.20.0, arm64 only, macOS 14 or
 later.
 
 **Delivery status (2026-10-23).** Certified ZapFast source `b8789025` with shared
@@ -22,40 +22,55 @@ delivery report for every sample, environment and limits. The Developer ID
 now exists on the MacBook only (2026-10-27; see [Before distribution](#before-distribution)),
 but no Zap build has been signed with it or notarized yet;
 the final bundle ID and update-feed/key decisions remain pending. Do not change
-them as part of hand-test preparation. These Go-bundle instructions are separate
-from the upstream Rust release workflow in [PACKAGING.md](../PACKAGING.md).
+them as part of hand-test preparation.
+
+**Since WP9 (2026-10-28)** the bundle has no Rust core: the app and its
+backend are Go, and the only native code is the two C libraries in
+`Contents/Frameworks` (SQLCipher and libwebp). The delivery above was of the
+earlier build with the Rust core (`libzapfast_core.dylib`).
 
 ## 1. Build (Mac mini)
 
 ```sh
-export PATH=$HOME/sdk/go1.27.1/bin:$HOME/.rustup/toolchains/1.98.0-aarch64-apple-darwin/bin:$PATH
+export PATH=$HOME/sdk/go1.27.1/bin:$PATH
 export CGO_ENABLED=0
-export CARGO_TARGET_DIR=/Volumes/SSD/dev-toolchains/build/zf-integ-package-target   # this worktree's SSD build directory
 packaging/macos/gnui-package.sh --dev --dmg   # the hand-test bundle, in dist/dev/
 packaging/macos/gnui-package.sh --dmg         # the release bundle, for the hand test's last group, in dist/
 ```
 
+**The framework must be the pinned one.** Each command first checks what
+`gnui/` resolves `gonativeui` to against `gnui/release-deps.json` and stops
+on any other commit, on uncommitted changes, or on an export whose tree does
+not match. A Mac mini worktree needs an ignored `gnui/go.work` pointing at the
+pinned framework ([gnui/README.md](../gnui/README.md#the-framework)).
+`ZAP_FRAMEWORK_DIR=<dir>`, or a prebuilt `GNUI=<cli>`, builds anyway, with a
+warning and an `override` recorded in `Contents/Resources/build-manifest.json`.
+`packaging/macos/gnui-package.sh --check` (with `--dev` for `dist/dev/`) runs
+only that check and writes `build-manifest.json`, without building the
+libraries or the app and without signing anything.
+
 **The hand test uses a development build.** Upstream compiles its demo and
 measurement flags out of release builds, as this release build does, and the
 hand test needs them. `--dev` makes the same bundle (id, signature,
-entitlements, core) without `gnui_release`: it differs only by those
+entitlements, libraries) without `gnui_release`: it differs only by those
 diagnostics and the framework's Debug menu, and `TestReleaseOptions` covers
 the release entrypoint.
 
-Each command builds the release core (`cargo build --locked -p zapfast_core --profile
-core-release`), copies it to `target/core-release/` (where `gnui/gnui.json`
-expects it), builds the framework's `gnui` CLI, runs `gnui package` (the Go
-binary with `-trimpath -ldflags "-s -w" -tags gnui_release`, the tag left out
-with `--dev`; the core in `Contents/Frameworks`, signed inside out with the
-hardened runtime) and then `packaging/macos/gnui-verify.sh`. Output, in
+Each command builds SQLCipher and libwebp into `target/sqlcipher/` and
+`target/libwebp/` (where `gnui/gnui.json` expects them) unless they are newer
+than their scripts, builds the framework's `gnui` CLI, runs `gnui package`
+(the Go binary with `-trimpath -ldflags "-s -w" -tags gnui_release`, the tag
+left out with `--dev`; the two libraries in `Contents/Frameworks`, signed
+inside out with the hardened runtime) and then
+`packaging/macos/gnui-verify.sh`. Output, in
 `dist/dev/` with `--dev` and in `dist/` without:
 
 - `Zap.app`
-- `ZapFast-0.19.0.zip`: the update archive (its name is the one installed
+- `ZapFast-0.20.0.zip`: the update archive (its name is the one installed
   updaters accept, so it keeps ZapFast's); the pinned framework supports
   `-zip`, which the wrapper enables automatically. A local/dev ZIP is not a
   distribution-ready update or proof of an operational update feed.
-- `ZapFast-0.19.0.dmg`: the app and an Applications link, as upstream's
+- `ZapFast-0.20.0.dmg`: the app and an Applications link, as upstream's
   DMG. Unsigned: only a Developer ID can sign it.
 
 `dist/` and `target/` are ignored by git.
@@ -63,11 +78,12 @@ hardened runtime) and then `packaging/macos/gnui-verify.sh`. Output, in
 **Signing.** Without `CODESIGN_IDENTITY` the build is signed with the
 framework's development identity, `gnui-dev`, a self-signed certificate on
 the Mac mini only. Because a self-signed certificate has no Team ID, the
-hardened runtime's library validation would refuse the core ("different Team
-IDs"), so this build adds `com.apple.security.cs.disable-library-validation`
-to the app's entitlements. The hardened runtime stays on, and the app loads
-only `Contents/Frameworks/libzapfast_core.dylib` (`core.ResolveLibrary`). A
-Developer ID build signs both binaries with one Team ID and does not get that
+hardened runtime's library validation would refuse the libraries
+("different Team IDs"), so this build adds
+`com.apple.security.cs.disable-library-validation` to the app's entitlements.
+The hardened runtime stays on, and a bundled app loads only its own
+`Contents/Frameworks` copies (`sqlite.FindLibrary`, av's WebP loader). A
+Developer ID build signs every binary with one Team ID and does not get that
 entitlement; `gnui-verify.sh` fails a Developer ID bundle that carries it.
 
 Do not copy the `gnui-dev` keychain or key to the MacBook. Copy the bundle
@@ -100,7 +116,7 @@ for that task; do not overwrite Applications during measurement preparation.
 rsync -a --delete dist/dev/Zap.app/ macbook:"/Applications/Zap.app/"
 ```
 
-**Or by AirDrop, Messages or a download** of `dist/dev/ZapFast-0.19.0.dmg`. Open
+**Or by AirDrop, Messages or a download** of `dist/dev/ZapFast-0.20.0.dmg`. Open
 the DMG on the MacBook and drag Zap to Applications. Files that arrive this way are quarantined, so see
 step 3.
 
@@ -175,20 +191,20 @@ scope. Never reset Adam's personal account.
   until 2027-11-26. Its private key is in the MacBook's login keychain and
   nowhere else: it is not on the Mac mini or in CI, and exporting it needs
   Adam's agreement first. So a release is signed on the MacBook. The MacBook
-  has the Command Line Tools (notarytool, stapler) but no Go or Rust.
+  has the Command Line Tools (notarytool, stapler) but no Go.
   `gnui package` builds and signs in one step and cannot sign a bundle built
   elsewhere, so a release goes like this:
-  1. On the Mac mini, build the core
-     (`target/core-release/libzapfast_core.dylib`) and run the usual checks.
+  1. On the Mac mini, build the two libraries (`target/sqlcipher/`,
+     `target/libwebp/`) and run the usual checks.
   2. On the MacBook, Adam stores the notary credentials once (this asks for
      an app-specific password from account.apple.com, and only the MacBook's
      keychain keeps it):
      `xcrun notarytool store-credentials zapfast-notary --apple-id <Apple ID> --team-id JPXN94NG33`.
   3. Install Go on the MacBook (Adam approves this first). Copy over the
      checkout at the release commit, the framework checkout it resolves to,
-     and the core. Then run
-     `CODESIGN_IDENTITY="Developer ID Application: A3 Direct Solutions LLP (JPXN94NG33)" GNUI_NOTARY_PROFILE=zapfast-notary packaging/macos/gnui-package.sh --dmg --notarize --skip-core`.
-     A Developer ID build signs the core and the app with one Team ID and
+     and the two libraries. Then run
+     `CODESIGN_IDENTITY="Developer ID Application: A3 Direct Solutions LLP (JPXN94NG33)" GNUI_NOTARY_PROFILE=zapfast-notary packaging/macos/gnui-package.sh --dmg --notarize`.
+     A Developer ID build signs the libraries and the app with one Team ID and
      does not get the `disable-library-validation` exception.
      `gnui-verify.sh` fails the build if it has that exception.
   4. Check: `xcrun stapler validate dist/Zap.app`;
@@ -213,12 +229,13 @@ scope. Never reset Adam's personal account.
 
   Before public distribution, also settle the bundle id (it names the data
   folder, the Keychain service and the login item, so change it before
-  anyone installs, never after) and the OpenH264 patent question in
-  `docs/GNUI-MIGRATION-PLAN.md` (Packaging). `NSHumanReadableCopyright`
-  names upstream's author. The MIT licence requires keeping that notice; the
-  publisher's name can be added beside it.
+  anyone installs, never after). The OpenH264 patent question in
+  `docs/GNUI-MIGRATION-PLAN.md` (Packaging) went with the Rust core: the Go
+  call engine uses VideoToolbox. The app is GPL-3.0 (`COPYING`, `LICENSE`);
+  `NSHumanReadableCopyright` names upstream's author, whose MIT notice the
+  bundle keeps in `Resources/LICENSE`.
 - **Windows signing.** There is no Authenticode certificate yet. The Go UI
-  is macOS-only for now (upstream's egui build is the Windows client), so
+  is macOS-only for now, so
   nothing is blocked today. A Windows Go build must not be published until
   a certificate exists (an OV/EV certificate or Azure Trusted Signing):
   without one, SmartScreen blocks the installer.

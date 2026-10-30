@@ -326,6 +326,7 @@ const (
 	icMap
 	icVoteDone
 	icPause
+	icClock
 )
 
 func iconSpecs() []icon.Spec {
@@ -356,6 +357,7 @@ func iconSpecs() []icon.Spec {
 		s("map", '▦', 18, 0),
 		s("checkmark", '✓', 10, 0.56),
 		s("pause.fill", '⏸', 14, 0),
+		s("clock", '◷', 18, 0),
 	}
 }
 

@@ -453,7 +453,7 @@ func (p *Page) historyRow(e *screen.Env, a *state.Account, ac *acct, lst *base.L
 	c.NextTextColor(nameC)
 	c.BoxKeyed(ui.DrawText|ui.EllipsisOverflowX, ui.KeyN(rs.Key, 1), name)
 	cs := &th.Styles[theme.StyleCaption1]
-	c.NextSize(ui.TextSize(base.LabelSlack), ui.Px(cs.Line))
+	c.NextSize(ui.TextSize(0), ui.Px(cs.Line))
 	c.NextFont(ztheme.Meta(k, ztheme.T.MetaPt)) // Rex's metadata, as the chat list's times
 	c.NextTextColor(fg2)
 	c.BoxKeyed(ui.DrawText, ui.KeyN(rs.Key, 2), rw.stamp.of(p.rb))

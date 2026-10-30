@@ -113,7 +113,7 @@ type Snapshot struct {
 	Checked      bool   // a check has finished
 	Failed       string // why the last check failed
 	Release      Release
-	Line         string // "0.19.0 → 0.20.0"
+	Line         string // "0.20.0 → 0.21.0"
 	State        DownloadState
 	Received     int64
 	Total        int64

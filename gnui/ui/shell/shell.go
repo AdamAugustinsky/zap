@@ -25,6 +25,7 @@ import (
 	"gonativeui/theme"
 	"gonativeui/ui"
 	"gonativeui/widget/base"
+	"gonativeui/widget/workspace"
 
 	"zapfast/abi"
 	"zapfast/i18n"
@@ -45,6 +46,10 @@ const (
 	minListPt      = 260 // the narrowest list, and the widest (zf:src/ui/chats.rs:21)
 	maxListPt      = 520
 	narrowPt       = 720 // a window narrower than this hides the rail and the list beside an open chat
+	sideMinPt      = 240 // the narrowest side pane: without room for it beside the chat it does not show
+	sideMaxPt      = 640 // the widest (ui/info's drag)
+	searchMinPt    = 300 // the in-chat search's narrowest and widest (zf:src/ui/pane.rs:22-23)
+	searchMaxPt    = 520
 )
 
 // ToolbarStyle is the main window's toolbar: Rex's band.
@@ -106,22 +111,21 @@ type Shell struct {
 	chatTB     []rexui.Toolbar // each chat pane slot's title row (the split view's others)
 	chatLabel  []string        // and its name
 	sideTB     rexui.Toolbar
-	focus      paneID        // the pane in use, opaque (noteFocus)
-	focusChat  model.ChatRef // the open chat noteFocus last saw
-	phone      []byte        // our number, formatted for the account block
-	tabs       chatTabs      // the titlebar's tabs of open chats
+	panes      workspace.Layout // where the panes lie and the one in use (panes.go)
+	listDiv    uint32           // the list's divider in panes
+	focusChat  model.ChatRef    // the open chat syncPanes last saw
+	phone      []byte           // our number, formatted for the account block
+	tabs       chatTabs         // the titlebar's tabs of open chats
 	railScroll base.ScrollState
 	slide      narrowSlide
-	sideFullW  float32       // the side pane's width while open, which it folds from
+	split      splitUI       // the split view's (split.go)
+	chatPane   [4]float32    // the conversation's pane this frame, for a tab dropped on it
 	kb         keyboard      // the single keys' layer (keyboard.go)
 	spaces     []state.Space // the spaces, as last listed (spaces.go)
 	sp         spaceUI
 	tint       tintUI                 // the space colour on screen (spaceTint)
 	bannerH    float32                // the open chat's banner, last frame, which the transcript runs under
 	front      [state.NumWindows]bool // opened alone: to bring forward once open
-	listDrag   float32                // the list's width as a drag of its edge goes
-	split      splitUI                // the split view's (split.go)
-	chatPane   [4]float32             // the chat pane this frame, for a tab dragged onto it
 	placed     bool                   // the main window was put back where it was
 	seenW      float32                // the window's size last frame (points)
 	seenH      float32
@@ -482,7 +486,7 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 	e.SetNarrow(narrow)
 	// A locked chat outside the open locked folder is not shown, whatever
 	// left it open: no header, transcript, composer or side pane.
-	_, open := a.OpenChatView()
+	ch, open := a.OpenChatView()
 	if !open {
 		sh.noChatDrop(W, H)
 	}
@@ -494,106 +498,70 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 			b.BuildBand(e, screen.Rect{X: 0, Y: H, W: W, H: bh})
 		}
 	}
-	railW, fullW := e.Pt(railPt), e.Pt(min(max(s.Settings.SidebarWidth, minListPt), maxListPt))
-	// Hiding the list (⌘B) slides it away under the rail and the chat
-	// widens into its place, over Motion.Standard (at once under Reduce
-	// Motion); its share shownList eases, so dragging its edge follows the
-	// pointer. A narrow window has no hidden list: with no chat open the list
-	// is the page, and its rail stays to leave it by.
-	hide := float32(1)
-	if s.Panes.ListHidden && !narrow {
-		hide = 0
+	if !sh.panes.Has(paneList) {
+		sh.panes, sh.listDiv = newPanes()
 	}
-	shownList := hide
-	if sh.Slides {
-		shownList = c.AnimateValue(ui.HashString(0, "shell list shown"), hide, ztheme.Toward(r, ztheme.T.DurStandard, hide > 0))
+	l := &sh.panes
+	// A drag of the list's divider moves the list's width, which the
+	// settings keep.
+	// A press anywhere in a pane makes it the one in use (Rex focuses a pane
+	// on a click), its content's boxes included.
+	if l.Update(c, workspace.Keys{PressAnywhere: true}).Moved {
+		if w := l.Fixed(paneList); w > 0 && w != s.Settings.SidebarWidth {
+			s.Settings.SidebarWidth = w
+			s.Touch()
+		}
 	}
-	listW := theme.Snap(fullW * shownList)
-	if narrow && open {
-		railW, listW = 0, 0
+	was := l.Focus()
+	ref := model.ChatRef(0)
+	if open {
+		ref = ch.Ref()
 	}
-	if narrow && !open {
-		listW = W - railW
-	}
-	sideW := float32(0)
+	sh.syncPanes(ref, open, narrow)
 	side := sh.sideSlot(s.Panes.Pane)
 	// A narrow window gives an open side pane the whole window: it shows
 	// Back (Panes.Covering), and closing it shows the chat again.
-	covering := narrow && open && s.Panes.Pane != state.PaneNone
+	covering := l.Solo() == paneSide
 	if covering != s.Panes.Covering {
 		s.Panes.Covering = covering
 		s.Touch()
 	}
-	switch {
-	case covering:
-		railW, listW, sideW = 0, 0, W
-	case s.Panes.Pane != state.PaneNone && open:
-		sideW = e.Pt(s.Settings.InfoPaneWidth)
-		if side != nil {
-			sideW = side.Width(e)
-		}
-		sideW = min(sideW, W-railW-listW-e.Pt(320))
-		if sideW < e.Pt(240) {
-			sideW = 0
-		}
-	}
-	// Beside the chat, the side pane slides in from the window's edge and
-	// folds away when it closes, the chat giving and taking back its room,
-	// over Motion.Standard (at once under Reduce Motion). Covering a narrow
-	// window, it comes and goes at once.
-	shownSide := float32(1)
-	if !covering && sh.Slides {
-		on := float32(0)
-		if sideW > 0 {
-			on, sh.sideFullW = 1, sideW
-		}
-		shownSide = c.AnimateValue(ui.HashString(0, "shell side shown"), on, ztheme.Toward(r, ztheme.T.DurStandard, on > 0))
-		if shownSide > 0 && shownSide < 1 {
-			sideW = theme.Snap(sh.sideFullW * shownSide)
-		}
+	// The rail goes with the list beside what a narrow window shows alone.
+	railW := e.Pt(railPt)
+	if solo := l.Solo(); solo == paneChat || solo == paneSide {
+		railW = 0
 	}
 	// The panes float on the field (panes.go): Inset from the window's
 	// edges, Gutter between them, under the titlebar band.
-	in, gut := r.Px.Inset, r.Px.Gutter
-	bottom := H - in
-	var panes paneRects
-	left := max(railW, in)
-	if listW > 0 {
-		x1 := left + listW
-		if narrow && !open {
-			x1 = W - in
-		}
-		panes[paneList] = [4]float32{left, tbH, x1, bottom}
-		left = x1 + theme.Snap(gut*shownList)
+	prof := r.Surface(theme.SurfacePane, k.Inactive())
+	in, gut := prof.Inset, prof.Gutter
+	l.Arrange([4]float32{theme.Snap(max(railW, in)), tbH, theme.Snap(W - in), H - in},
+		workspace.Metrics{Scale: k.Scale(), Gutter: [2]float32{gut, gut}, Min: [2]float32{e.Pt(120), e.Pt(120)}})
+	sh.keepFocus(was)
+
+	// The split view lays its chats out in the conversation's pane (split.go),
+	// and a tab dropped on the pane joins them.
+	sh.chatPane = [4]float32{}
+	if l.Shown(paneChat) {
+		sh.chatPane = l.Rect(paneChat)
 	}
-	right := W - in
-	if sideW > 0 {
-		x0 := max(right-sideW, left)
-		if covering {
-			x0 = in
-		}
-		panes[paneSide] = [4]float32{x0, tbH, right, bottom}
-		right = x0 - gut
-	}
-	if !covering && right-left > e.Pt(120) {
-		panes[paneChat] = [4]float32{left, tbH, right, bottom}
-	}
-	sh.chatPane = panes[paneChat]
 	if ref := s.Req.UsePane; ref != 0 {
 		s.Req.UsePane = 0
 		a.UsePane(ref)
 	}
 	sh.followGrip(a)
 	split := false
-	if open && !narrow && !covering {
-		split = sh.splitLayout(a, &panes, gut)
+	if open && !narrow && !covering && l.Shown(paneChat) {
+		split = sh.splitLayout(a, sh.chatPane, gut)
+		if split {
+			sh.splitUse(a)
+		}
 	}
-	sh.noteFocus(a, &panes, split)
 	// whether the tabs are up, for the chat's header, which builds before
 	// them (it leaves the name to the tab)
 	tabX0 := e.Pt(trafficPt+accountChipPt+16) + sh.sidebarW()
-	if cp := panes[paneChat]; shown(cp) {
-		tabX0 = max(tabX0, cp[0])
+	if l.Shown(paneChat) {
+		tabX0 = max(tabX0, sh.chatPane[0])
 	}
 	e.SetTabbed(sh.tabsUp(a, tabX0, W-in))
 
@@ -622,19 +590,20 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 			c.Box(base.Floating|ui.DrawBackground, "slide backdrop")
 			dx = -(1 - p) * W
 		}
-		for i := range panes {
-			if shown(panes[i]) {
-				panes[i][0] += dx
-				panes[i][2] += dx
-			}
-		}
 	}
+	// where pane id is drawn this frame, the slide's distance on
+	rect := func(id workspace.PaneID) [4]float32 {
+		pr := l.Rect(id)
+		pr[0], pr[2] = pr[0]+dx, pr[2]+dx
+		return pr
+	}
+	panes := [...]workspace.PaneID{paneList, paneChat, paneSide}
 	if railW > 0 {
 		sh.rail(a, dx, railW, H, tbH)
 	}
-	for i := range panes {
-		if shown(panes[i]) {
-			sh.surface(paneID(i), panes[i])
+	for _, id := range panes {
+		if l.Shown(id) && !(split && id == paneChat) {
+			sh.surface(id, rect(id))
 		}
 	}
 	// A pane that puts none of its controls in the Tab order (a screen not
@@ -646,32 +615,22 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 	}
 	// The slots build in the window's root, over their panes, so that their
 	// Rects are window coordinates; each pane's title row after its content.
-	// The list and the side pane take presses while they move (a sidebar on
-	// macOS does): what is under the pointer is still where it is drawn.
-	if shownList > 0 && shownList < 1 || shownSide > 0 && shownSide < 1 {
-		c.RequestFrame()
-	}
-	if lp := panes[paneList]; shown(lp) {
+	if l.Shown(paneList) {
 		n := e.TabStops()
-		sh.listIn(lp, fullW, shownList, W, H, !narrow && shownList < 1)
+		sh.listIn(rect(paneList), W, H)
 		if e.TabStops() == n {
 			e.TabInBuildOrder()
 		}
 	}
 	switch {
 	case split:
-		sh.splitPanes(a, gut, tbH, bottom)
-	case shown(panes[paneChat]):
-		sh.chat(a, panes[paneChat], open)
+		cp := sh.chatPane
+		sh.splitPanes(a, gut, cp[1], cp[3])
+	case l.Shown(paneChat):
+		sh.chat(a, rect(paneChat), open)
 	}
-	if sp := panes[paneSide]; shown(sp) && shownSide < 1 && (side == nil || s.Panes.Pane == state.PaneNone) {
-		// folding away, the slot closed: the glass alone
-	} else if sp := panes[paneSide]; shown(sp) {
-		// sliding in, its content rides in at its full width from the
-		// pane's moving edge, past the window's, as it lands
-		if shownSide < 1 {
-			sp[2] = sp[0] + sh.sideFullW
-		}
+	if l.Shown(paneSide) {
+		sp := rect(paneSide)
 		sr := sh.body(sp)
 		if side != nil {
 			n := e.TabStops()
@@ -695,9 +654,7 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 	sh.titlebar(a)
 	// the tabs start over the conversation, after the account block
 	sh.chatTabs(a, tabX0, W-in, tbH)
-	if lp, cp := panes[paneList], panes[paneChat]; shown(lp) && shown(cp) && shownList == 1 {
-		sh.listHandle(lp[2]+gut/2, tbH, bottom-tbH)
-	}
+	sh.divider()
 	if sliding {
 		// A slide moves what is drawn, so the window takes no press, hover
 		// or scroll until it ends (zf:src/ui/mod.rs slide_shield).
@@ -714,19 +671,13 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 
 // listIn builds the list in its pane r inside the one box it always has,
 // at the window's corner so that its Rects stay window coordinates and its
-// boxes keep their identities from frame to frame. While the list slides
-// in or out (⌘B) the box clips it at the pane's moving edge: the list keeps
-// its full width fullW where it is, the edge sweeps over it, and it fades
-// with the share shown. At rest the box clips nothing, so what the list
-// opens past its edge (a menu, a popover) is whole.
-func (sh *Shell) listIn(r [4]float32, fullW, shown, W, H float32, sliding bool) {
+// boxes keep their identities from frame to frame. A space's list comes in
+// from the side of the one it left (spaces.go): the box then clips it at
+// the pane's edges. At rest it clips nothing, so what the list opens past
+// its edge (a menu, a popover) is whole.
+func (sh *Shell) listIn(r [4]float32, W, H float32) {
 	c := sh.env.C()
 	w, fl := W, ui.Flags(0)
-	if sliding {
-		w, fl = r[2], ui.Clip
-		r[2] = r[0] + fullW
-	}
-	// a space's list comes in from the side of the one it left (spaces.go)
 	dx, fade := sh.spaceShift()
 	if dx != 0 {
 		w, fl = r[2], ui.Clip
@@ -734,7 +685,7 @@ func (sh *Shell) listIn(r [4]float32, fullW, shown, W, H float32, sliding bool) 
 	}
 	sh.swipeSpaces(r)
 	theme.At(c, 0, 0, w, H)
-	c.NextOpacity(shown * fade)
+	c.NextOpacity(fade)
 	c.Push(c.Box(base.Floating|fl, "list pane"))
 	sh.list(r)
 	c.Pop()
@@ -1246,35 +1197,6 @@ func (sh *Shell) keepFrame(x, y float64) {
 	st := &sh.S.Settings
 	if !st.HasWindowPos || float32(x) != st.WindowX || float32(y) != st.WindowY {
 		st.WindowX, st.WindowY, st.HasWindowPos = float32(x), float32(y), true
-	}
-}
-
-// listHandle is the chat list's right edge at x, from y down h: dragging it
-// resizes the list within 260–520 points, and the width is saved
-// (Settings.SidebarWidth, zf:src/ui/chats.rs:18-36).
-func (sh *Shell) listHandle(x, y, h float32) {
-	s, e := sh.S, &sh.env
-	c := e.C()
-	w := e.Pt(6)
-	theme.At(c, x-w/2, y, w, h)
-	c.NextCursor(ui.CursorResizeEW)
-	c.NextAuditExempt(ui.AuditOverflow.Mask() | ui.AuditCovered.Mask())
-	c.NextRole(ui.RoleSplitter)
-	c.NextSemName(i18n.T("Resize"))
-	sig := c.Signal(c.BoxKeyed(ui.Clickable|base.Floating, ui.HashString(0, "zapfast/list-edge"), nil))
-	switch {
-	case sig.Dragging:
-		// DragDelta runs from the press: the width the drag began at, and
-		// as far again as the pointer has gone
-		if sh.listDrag == 0 {
-			sh.listDrag = s.Settings.SidebarWidth
-		}
-		if wd := min(max(sh.listDrag+sig.DragDelta[0]/e.K.Scale(), minListPt), maxListPt); wd != s.Settings.SidebarWidth {
-			s.Settings.SidebarWidth = wd
-			s.Touch()
-		}
-	case !sig.Dragging:
-		sh.listDrag = 0
 	}
 }
 

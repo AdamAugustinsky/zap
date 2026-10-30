@@ -777,7 +777,7 @@ func TestUnavailableMenuItemsAreDisabled(t *testing.T) {
 	r.Frames(2)
 	r.open(group, groupCall)
 	menu("Engines", base0)
-	if !disabled(ui.RoleButton, "Group calls happen on the phone") {
-		t.Error("a group call entry offers a call")
+	if disabled(ui.RoleButton, "Voice call") {
+		t.Error("a group call entry does not call the group back")
 	}
 }

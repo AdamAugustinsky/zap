@@ -14,7 +14,6 @@ import (
 	"gonativeui/ui"
 	"gonativeui/widget/widgettest"
 
-	"zapfast/core"
 	"zapfast/i18n"
 	"zapfast/state"
 	"zapfast/ui/screen"
@@ -149,14 +148,11 @@ func allowedOn(page string) []widgettest.Allow {
 // pages heavy on buttons) and in English, at the default window size and at
 // the smallest: the framework's layout audit finds no text past its box, no
 // controls on top of each other, no clipped buttons (the settings window
-// has its own, ui/settings). It needs the demo core (ZAPFAST_CORE);
-// ZAPFAST_SWEEP_SHOTS=dir saves each page's picture there.
+// has its own, ui/settings), on the demo core. ZAPFAST_SWEEP_SHOTS=dir
+// saves each page's picture there.
 func TestEveryScreenFitsInTheLongestLanguages(t *testing.T) {
 	if testing.Short() {
 		t.Skip("the layout sweep renders some 250 pages")
-	}
-	if _, err := core.ResolveLibrary(""); err != nil && os.Getenv("ZAPFAST_CORE") == "" {
-		t.Skip("no core library:", err)
 	}
 	only := os.Getenv("ZAPFAST_SWEEP_ONLY")
 	for _, p := range sweepPages {

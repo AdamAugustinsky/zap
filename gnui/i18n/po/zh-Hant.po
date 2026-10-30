@@ -1,0 +1,5021 @@
+# Traditional Chinese translation of ZapFast.
+# Distributed under the same MIT license as ZapFast.
+msgid ""
+msgstr ""
+"Project-Id-Version: Zap\n"
+"Report-Msgid-Bugs-To: https://github.com/crmne/zapfast/issues/new?"
+"template=translation.yml\n"
+"POT-Creation-Date: 2026-10-15 12:26+0200\n"
+"PO-Revision-Date: 2026-10-02 18:51+0800\n"
+"Last-Translator: Alang Hsu <alang.hsu@gmail.com>\n"
+"Language-Team: Chinese (Traditional)\n"
+"Language: zh-Hant\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#. Translators: one word, no spaces. The word after @ that mentions everyone.
+#: src/mentions.rs:80
+msgctxt "mention"
+msgid "all"
+msgstr "所有人"
+
+#: src/model.rs:196 src/model.rs:233
+msgid "All"
+msgstr "全部"
+
+#: src/model.rs:197
+msgid "Unread"
+msgstr "未讀"
+
+#: src/model.rs:198
+msgid "Private"
+msgstr "私聊"
+
+#: src/model.rs:199 src/ui/picker.rs:1190
+msgid "Favorites"
+msgstr "最愛"
+
+#: src/model.rs:200 src/settings.rs:382
+msgid "Groups"
+msgstr "群組"
+
+#: src/model.rs:201
+msgid "Channels"
+msgstr "頻道"
+
+#: src/model.rs:234
+msgid "Missed"
+msgstr "未接"
+
+#: src/util.rs:245 src/util.rs:365
+msgid "Yesterday"
+msgstr "昨天"
+
+#: src/util.rs:282
+#, rust-format
+msgid "Yesterday at {time}"
+msgstr "昨天 {time}"
+
+#: src/util.rs:283
+#, rust-format
+msgid "{weekday} at {time}"
+msgstr "{weekday} {time}"
+
+#: src/util.rs:286
+#, rust-format
+msgid "{date} at {time}"
+msgstr "{date} {time}"
+
+#: src/util.rs:305 src/settings.rs:380
+msgid "Off"
+msgstr "關閉"
+
+#: src/util.rs:306
+msgid "24 hours"
+msgstr "24 小時"
+
+#: src/util.rs:307
+msgid "7 days"
+msgstr "7 天"
+
+#: src/util.rs:308
+msgid "90 days"
+msgstr "90 天"
+
+#: src/util.rs:311
+msgid "Disappearing messages"
+msgstr "限時訊息"
+
+#: src/util.rs:335
+#, rust-format
+msgid "last seen today at {time}"
+msgstr "今天 {time} 上線"
+
+#: src/util.rs:336
+#, rust-format
+msgid "last seen yesterday at {time}"
+msgstr "昨天 {time} 上線"
+
+#: src/util.rs:344
+#, rust-format
+msgid "last seen {weekday} at {time}"
+msgstr "{weekday} {time} 上線"
+
+#: src/util.rs:348
+#, rust-format
+msgid "last seen {date}"
+msgstr "{date} 上線"
+
+#: src/util.rs:364
+msgid "Today"
+msgstr "今天"
+
+#: src/util.rs:400
+msgid "Monday"
+msgstr "週一"
+
+#: src/util.rs:401
+msgid "Tuesday"
+msgstr "週二"
+
+#: src/util.rs:402
+msgid "Wednesday"
+msgstr "週三"
+
+#: src/util.rs:403
+msgid "Thursday"
+msgstr "週四"
+
+#: src/util.rs:404
+msgid "Friday"
+msgstr "週五"
+
+#: src/util.rs:405
+msgid "Saturday"
+msgstr "週六"
+
+#: src/util.rs:406
+msgid "Sunday"
+msgstr "週日"
+
+#: src/util.rs:414
+msgid "January"
+msgstr "1月"
+
+#: src/util.rs:415
+msgid "February"
+msgstr "2月"
+
+#: src/util.rs:416
+msgid "March"
+msgstr "3月"
+
+#: src/util.rs:417
+msgid "April"
+msgstr "4月"
+
+#: src/util.rs:418
+msgid "May"
+msgstr "5月"
+
+#: src/util.rs:419
+msgid "June"
+msgstr "6月"
+
+#: src/util.rs:420
+msgid "July"
+msgstr "7月"
+
+#: src/util.rs:421
+msgid "August"
+msgstr "8月"
+
+#: src/util.rs:422
+msgid "September"
+msgstr "9月"
+
+#: src/util.rs:423
+msgid "October"
+msgstr "10月"
+
+#: src/util.rs:424
+msgid "November"
+msgstr "11月"
+
+#: src/util.rs:425
+msgid "December"
+msgstr "12月"
+
+#: src/util.rs:581
+#, rust-format
+msgid "{seconds} s"
+msgstr "{seconds} 秒"
+
+#: src/util.rs:582
+#, rust-format
+msgid "{minutes} min"
+msgstr "{minutes} 分鐘"
+
+#: src/util.rs:583
+#, rust-format
+msgid "{minutes} min {seconds} s"
+msgstr "{minutes} 分 {seconds} 秒"
+
+#: src/util.rs:584
+#, rust-format
+msgid "{hours} h"
+msgstr "{hours} 小時"
+
+#: src/util.rs:585
+#, rust-format
+msgid "{hours} h {minutes} min"
+msgstr "{hours} 小時 {minutes} 分鐘"
+
+#: src/ui/chats.rs:185 src/ui/chats.rs:517 src/app.rs:3166
+msgid "Starred"
+msgstr "已加星號"
+
+#: src/ui/chats.rs:262 src/ui/conversation.rs:829
+msgid "Back to the calls"
+msgstr "返回通話"
+
+#: src/ui/chats.rs:271 src/ui/chats.rs:404
+msgid "New call"
+msgstr "新通話"
+
+#: src/ui/chats.rs:285
+msgid "Search name or number"
+msgstr "搜尋名稱或號碼"
+
+#: src/ui/chats.rs:318 src/ui/pane.rs:260
+msgid "Search"
+msgstr "搜尋"
+
+#: src/ui/chats.rs:686
+msgid "No starred messages"
+msgstr "沒有已加星號的訊息"
+
+#: src/ui/chats.rs:689
+msgid "Right-click a message and choose Star to keep it here."
+msgstr "在訊息上按右鍵並選擇「加上星號」，即可保留在這裡。"
+
+#: src/ui/chats.rs:936
+msgid "No favorites yet"
+msgstr "尚無最愛"
+
+#: src/ui/chats.rs:1359 src/app.rs:2546
+msgid "Message yourself"
+msgstr "傳訊息給自己"
+
+#: src/ui/chats.rs:1548
+msgid "Draft:"
+msgstr "草稿："
+
+#: src/ui/chats.rs:1635 src/ui/chats.rs:1996 src/ui/picker.rs:1621
+msgid "Remove from favorites"
+msgstr "從最愛中移除"
+
+#: src/ui/chats.rs:1637 src/ui/chats.rs:1998 src/ui/conversation.rs:5925
+#: src/ui/dialogs.rs:1234 src/ui/picker.rs:1622
+msgid "Add to favorites"
+msgstr "加入最愛"
+
+#: src/ui/chats.rs:1647 src/ui/chats.rs:2022 src/ui/conversation.rs:606
+#: src/ui/dialogs.rs:1483 src/ui/info.rs:551
+msgid "Leave group"
+msgstr "離開群組"
+
+#: src/ui/chats.rs:1648 src/ui/chats.rs:2020 src/ui/conversation.rs:604
+#: src/ui/dialogs.rs:1481 src/ui/info.rs:549
+msgid "Leave channel"
+msgstr "離開頻道"
+
+#: src/ui/chats.rs:1663 src/ui/labels.rs:178 src/ui/labels.rs:223
+msgid "Labels"
+msgstr "標籤"
+
+#: src/ui/conversation.rs:252
+#, rust-format
+msgid "Pinned message {index} of {count}: {text}"
+msgstr "置頂訊息 {index}/{count}：{text}"
+
+#: src/ui/conversation.rs:308
+msgid "Ctrl+K to search · ? for keyboard shortcuts"
+msgstr "Ctrl+K 搜尋 · ? 開啟鍵盤快捷鍵"
+
+#: src/ui/conversation.rs:608
+msgid "Select messages"
+msgstr "選取訊息"
+
+#: src/ui/conversation.rs:728 src/ui/call.rs:129 src/ui/call.rs:577
+msgid "Hang up"
+msgstr "掛斷"
+
+#: src/ui/conversation.rs:735 src/ui/conversation.rs:4196 src/ui/calls.rs:98
+#: src/ui/calls.rs:378
+msgid "Voice call"
+msgstr "語音通話"
+
+#: src/ui/conversation.rs:763 src/ui/conversation.rs:4204 src/ui/calls.rs:99
+#: src/ui/calls.rs:376
+msgid "Video call"
+msgstr "視訊通話"
+
+#: src/ui/conversation.rs:788 src/ui/pane.rs:224
+msgid "Search messages"
+msgstr "搜尋訊息"
+
+#: src/ui/conversation.rs:1354
+msgid "You left this channel"
+msgstr "您已離開這個頻道"
+
+#: src/ui/conversation.rs:1358
+msgid "Channels are read-only in Zap"
+msgstr "在 Zap 中，頻道僅供閱讀"
+
+#: src/ui/conversation.rs:1387
+msgid "You left this group"
+msgstr "您已離開這個群組"
+
+#: src/ui/conversation.rs:1438
+msgid "Original group message unavailable"
+msgstr "無法取得原始群組訊息"
+
+#: src/ui/conversation.rs:1561
+msgid "Attach"
+msgstr "附加"
+
+#: src/ui/conversation.rs:1657
+msgid "Type a message"
+msgstr "輸入訊息"
+
+#: src/ui/conversation.rs:1660
+msgid "Add a caption"
+msgstr "新增圖說"
+
+#: src/ui/conversation.rs:1862
+msgid ""
+"Enter sends · Shift+Enter for a new line · *bold* _italic_ ~strike~ · Ctrl+V "
+"pastes a picture"
+msgstr ""
+"Enter 送出 · Shift+Enter 換行 · *粗體* _斜體_ ~刪除線~ · Ctrl+V 貼上圖片"
+
+#: src/ui/conversation.rs:1864
+msgid "Ctrl+Enter sends · *bold* _italic_ ~strike~ · Ctrl+V pastes a picture"
+msgstr "Ctrl+Enter 送出 · *粗體* _斜體_ ~刪除線~ · Ctrl+V 貼上圖片"
+
+#: src/ui/conversation.rs:1875
+msgid "Hide shortcut hints (bring them back from Keyboard shortcuts)"
+msgstr "隱藏快捷鍵提示（可在「鍵盤快捷鍵」中取回）"
+
+#: src/ui/conversation.rs:1890
+#, rust-format
+msgid "All shortcuts ({})"
+msgstr "全部快捷鍵（{}）"
+
+#: src/ui/conversation.rs:2028
+msgid "Send files"
+msgstr "傳送檔案"
+
+#: src/ui/conversation.rs:2034
+msgid "Send as document"
+msgstr "以文件傳送"
+
+#: src/ui/conversation.rs:2038 src/ui/locations.rs:16
+msgid "Send location"
+msgstr "傳送位置"
+
+#: src/ui/conversation.rs:2043
+msgid "Create poll"
+msgstr "建立投票"
+
+#: src/ui/conversation.rs:2105
+#, rust-format
+msgid "Voice message ({duration}) not sent"
+msgstr "語音訊息（{duration}）未送出"
+
+#: src/ui/conversation.rs:2107
+msgid "Discard voice message"
+msgstr "丟棄語音訊息"
+
+#: src/ui/conversation.rs:2365
+msgid "You pinned a message"
+msgstr "您釘選了一則訊息"
+
+#: src/ui/conversation.rs:2368
+msgid "A message was pinned"
+msgstr "有一則訊息被釘選"
+
+#: src/ui/conversation.rs:2370
+#, rust-format
+msgid "{} pinned a message"
+msgstr "{} 釘選了一則訊息"
+
+#: src/ui/conversation.rs:2886 src/notify/badge_windows.rs:255
+#, rust-format
+msgid "{} unread message"
+msgid_plural "{} unread messages"
+msgstr[0] "{} 則未讀訊息"
+
+#: src/ui/conversation.rs:3069 src/ui/call.rs:1009 src/app/calls.rs:135
+#: src/app.rs:2528 src/app.rs:2547
+msgid "You"
+msgstr "您"
+
+#: src/ui/conversation.rs:3080
+#, rust-format
+msgid "Select message from {sender}, {time}: {summary}"
+msgstr "選取{sender}在{time}傳送的訊息：{summary}"
+
+#: src/ui/conversation.rs:4187
+msgid "Group calls happen on the phone"
+msgstr "群組通話請在手機上進行"
+
+#: src/ui/conversation.rs:5254 src/ui/conversation.rs:5502
+#: src/ui/conversation.rs:5999 src/ui/message_info.rs:17
+msgid "Message info"
+msgstr "訊息資訊"
+
+#: src/ui/conversation.rs:5501 src/ui/conversation.rs:5934
+msgid "Open in system player"
+msgstr "在系統播放器中開啟"
+
+#: src/ui/conversation.rs:5503 src/ui/conversation.rs:6011
+msgid "Reload earlier messages"
+msgstr "重新載入較早的訊息"
+
+#: src/ui/conversation.rs:5504 src/ui/conversation.rs:5799
+msgid "Unstar"
+msgstr "移除星號"
+
+#: src/ui/conversation.rs:5505 src/ui/conversation.rs:5801
+msgid "Star"
+msgstr "加上星號"
+
+#: src/ui/conversation.rs:5789
+msgid "Reply privately"
+msgstr "私下回覆"
+
+#: src/ui/conversation.rs:5815
+msgid "Unpin message"
+msgstr "取消釘選訊息"
+
+#: src/ui/conversation.rs:5817
+msgid "Pin message"
+msgstr "釘選訊息"
+
+#: src/ui/conversation.rs:5844
+msgid "Open in the viewer"
+msgstr "在檢視器中開啟"
+
+#: src/ui/conversation.rs:5946 src/ui/image_preview.rs:266
+#: src/ui/image_preview.rs:591
+msgid "Copy image"
+msgstr "複製圖片"
+
+#: src/ui/conversation.rs:6392
+msgid "Location"
+msgstr "位置"
+
+#: src/ui/conversation.rs:6437
+msgid "Live location ended"
+msgstr "即時位置已結束"
+
+#: src/ui/conversation.rs:6439 src/ui/conversation.rs:6698
+msgid "Live location"
+msgstr "即時位置"
+
+#: src/ui/conversation.rs:6449
+#, rust-format
+msgid "Updated {time}"
+msgstr "更新於 {time}"
+
+#: src/ui/conversation.rs:6464 src/ui/conversation.rs:6706
+msgid "Open WhatsApp on your phone to follow it."
+msgstr "請在手機上開啟 WhatsApp 以追蹤。"
+
+#: src/ui/conversation.rs:6508
+msgid "Chat"
+msgstr "對話"
+
+#: src/ui/conversation.rs:6523
+msgid "Add"
+msgstr "新增"
+
+#: src/ui/conversation.rs:6571
+#, rust-format
+msgid "{} sticker"
+msgid_plural "{} stickers"
+msgstr[0] "{} 個貼圖"
+
+#: src/ui/conversation.rs:6584
+msgid "View stickers"
+msgstr "檢視貼圖"
+
+#: src/ui/conversation.rs:6724
+msgid "View once photo. For your privacy, it opens only on your phone."
+msgstr "檢視一次的相片。為了保護您的隱私，只會在您的手機上開啟。"
+
+#: src/ui/conversation.rs:6728
+msgid "View once video. For your privacy, it opens only on your phone."
+msgstr "檢視一次的影片。為了保護您的隱私，只會在您的手機上開啟。"
+
+#: src/ui/conversation.rs:6732
+msgid "View once voice message. For your privacy, it opens only on your phone."
+msgstr "檢視一次的語音訊息。為了保護您的隱私，只會在您的手機上開啟。"
+
+#: src/ui/conversation.rs:6736
+msgid "View once audio. For your privacy, it opens only on your phone."
+msgstr "檢視一次的音訊。為了保護您的隱私，只會在您的手機上開啟。"
+
+#: src/ui/conversation.rs:6740
+msgid "View once message. For your privacy, it opens only on your phone."
+msgstr "檢視一次的訊息。為了保護您的隱私，只會在您的手機上開啟。"
+
+#: src/ui/conversation.rs:6742
+msgid "This message can only be seen on your phone."
+msgstr "此訊息只能在您的手機上查看。"
+
+#: src/ui/conversation.rs:7079
+msgid "Save all…"
+msgstr "全部儲存⋯"
+
+#: src/ui/conversation.rs:7785
+msgid "Message"
+msgstr "傳訊息"
+
+#: src/ui/conversation.rs:7786
+msgid "Copy number"
+msgstr "複製號碼"
+
+#: src/ui/conversation.rs:8022 src/ui/locations.rs:45
+msgid "Open in a map"
+msgstr "在地圖中開啟"
+
+#: src/ui/conversation.rs:8726
+msgid "Pause"
+msgstr "暫停"
+
+#: src/ui/conversation.rs:8728 src/ui/settings.rs:1972
+msgid "Play"
+msgstr "播放"
+
+#: src/ui/conversation.rs:8755
+msgid "Back to the message (Esc)"
+msgstr "回到訊息（Esc）"
+
+#: src/ui/conversation.rs:8757
+msgid "Fill the window"
+msgstr "填滿視窗"
+
+#: src/ui/conversation.rs:8787 src/ui/call.rs:522
+msgid "Unmute"
+msgstr "取消靜音"
+
+#: src/ui/conversation.rs:8789 src/ui/call.rs:529
+msgid "Mute"
+msgstr "靜音"
+
+#: src/ui/conversation.rs:9381
+msgid "Audio"
+msgstr "音訊"
+
+#: src/ui/dialogs.rs:483
+msgid "Forward message"
+msgstr "轉寄訊息"
+
+#: src/ui/dialogs.rs:487
+#, rust-format
+msgid "Forward {count} message"
+msgid_plural "Forward {count} messages"
+msgstr[0] "轉寄 {count} 則訊息"
+
+#: src/ui/dialogs.rs:497
+msgid "Forward to these chats?"
+msgstr "轉寄到這些對話？"
+
+#: src/ui/dialogs.rs:516 src/ui/info.rs:252 src/ui/info.rs:897
+msgid "Back"
+msgstr "返回"
+
+#: src/ui/dialogs.rs:526 src/ui/dialogs.rs:729 src/ui/image_preview.rs:382
+msgid "Forward"
+msgstr "轉寄"
+
+#: src/ui/dialogs.rs:679
+msgid "Messages forwarded many times can be sent to one chat at a time"
+msgstr "多次轉寄的訊息一次只能傳送到一個對話"
+
+#: src/ui/dialogs.rs:687
+#, rust-format
+msgid "You can forward to up to {count} chat"
+msgid_plural "You can forward to up to {count} chats"
+msgstr[0] "最多可轉寄到 {count} 個對話"
+
+#: src/ui/dialogs.rs:713
+#, rust-format
+msgid "{count} recipient selected"
+msgid_plural "{count} recipients selected"
+msgstr[0] "已選取 {count} 位收件人"
+
+#: src/ui/dialogs.rs:724
+msgid "Review recipients"
+msgstr "確認收件人"
+
+#: src/ui/dialogs.rs:861
+msgid "Show shortcut hints under the message box"
+msgstr "在訊息方塊下方顯示快捷鍵提示"
+
+#: src/ui/dialogs.rs:922
+#, rust-format
+msgid "{count} selected message"
+msgid_plural "{count} selected messages"
+msgstr[0] "已選取 {count} 則訊息"
+
+#: src/ui/dialogs.rs:932 src/ui/dialogs.rs:953
+msgid "this chat"
+msgstr "對方"
+
+#: src/ui/dialogs.rs:937
+#, rust-format
+msgid ""
+"This deletes your chat with {name}, including all messages, on this computer "
+"and on your phone. It cannot be undone."
+msgstr ""
+"這會在這部電腦和您的手機上刪除您與 {name} 的對話及其所有訊息。此動作無法復"
+"原。"
+
+#: src/ui/dialogs.rs:943
+msgid "Delete chat?"
+msgstr "要刪除對話嗎？"
+
+#: src/ui/dialogs.rs:945 src/ui/dialogs.rs:1335
+msgid "Delete"
+msgstr "刪除"
+
+#: src/ui/dialogs.rs:958
+#, rust-format
+msgid ""
+"This clears every message in your chat with {name}, including downloaded "
+"media, on this computer and on your phone. The chat itself stays. It cannot "
+"be undone."
+msgstr ""
+"這會在這部電腦和您的手機上清除您與 {name} 的對話中的所有訊息，包括已下載的媒"
+"體。對話本身會保留。此動作無法復原。"
+
+#: src/ui/dialogs.rs:964
+msgid "Clear chat?"
+msgstr "要清除對話內容嗎？"
+
+#: src/ui/dialogs.rs:966
+msgid "Clear chat"
+msgstr "清除對話內容"
+
+#: src/ui/dialogs.rs:1060
+msgid "Sticker pack"
+msgstr "貼圖集"
+
+#: src/ui/dialogs.rs:1065
+msgid "Downloading the pack…"
+msgstr "正在下載貼圖集⋯"
+
+#: src/ui/dialogs.rs:1089
+msgid "Add to my stickers"
+msgstr "加入我的貼圖"
+
+#: src/ui/dialogs.rs:1096 src/ui/message_info.rs:28 src/ui/labels.rs:234
+#: src/ui/info.rs:254 src/ui/mod.rs:868
+msgid "Close"
+msgstr "關閉"
+
+#: src/ui/dialogs.rs:1113
+msgid "Make a sticker"
+msgstr "製作貼圖"
+
+#: src/ui/dialogs.rs:1177
+msgid "Size"
+msgstr "尺寸"
+
+#: src/ui/dialogs.rs:1192
+msgid "Keep the transparent background"
+msgstr "保留透明背景"
+
+#: src/ui/dialogs.rs:1209
+msgid "Emojis that describe it, like 😂 or ❤️"
+msgstr "用來描述它的表情符號，例如 😂 或 ❤️"
+
+#: src/ui/dialogs.rs:1226 src/ui/locations.rs:80
+msgid "Send"
+msgstr "傳送"
+
+#: src/ui/dialogs.rs:1241 src/ui/dialogs.rs:1444 src/ui/dialogs.rs:1511
+#: src/ui/locations.rs:75 src/ui/settings.rs:1047 src/ui/settings.rs:1742
+#: src/ui/lock.rs:142
+msgid "Cancel"
+msgstr "取消"
+
+#: src/ui/dialogs.rs:1255
+msgid "Start over?"
+msgstr "要重新開始嗎？"
+
+#: src/ui/dialogs.rs:1259
+msgid ""
+"Zap keeps your unreadable archive as a separate file, creates a new one, "
+"and asks you to link again. Linking again brings back recent history from "
+"your phone. Afterwards, remove the old ZapFast entry under Linked devices on "
+"your phone."
+msgstr ""
+"Zap 會將無法讀取的存檔另存為獨立檔案、建立新的存檔，並請您重新連結。重新"
+"連結後，最近的記錄會從手機取回。之後，請在手機的「已連結的裝置」中移除舊的 "
+"ZapFast 項目。"
+
+#: src/ui/dialogs.rs:1263
+msgid ""
+"If you can restore the original keyring instead, choose Cancel and Try "
+"again: nothing is lost that way."
+msgstr ""
+"如果您能改為還原原本的金鑰圈，請選擇「取消」，再選擇「Try again」：這樣不會遺"
+"失任何內容。"
+
+#: src/ui/dialogs.rs:1266
+msgid "Start over"
+msgstr "重新開始"
+
+#: src/ui/dialogs.rs:1274
+msgid ""
+"This removes the message from your phone and linked devices. Other people "
+"keep their copy. Connect to WhatsApp to delete it. This cannot be undone."
+msgstr ""
+"這會從你的手機及連結裝置中刪除此訊息。其他人仍保留自己的副本。請連線至 "
+"WhatsApp 以刪除此訊息。此操作無法復原。"
+
+#: src/ui/dialogs.rs:1275
+msgid ""
+"Everyone in this chat will see \"This message was deleted\" instead. It "
+"cannot be undone."
+msgstr "此對話中的所有人都會看到「此訊息已刪除」，取代原訊息。此操作無法復原。"
+
+#: src/ui/dialogs.rs:1276
+msgid ""
+"This removes these messages from your phone and linked devices. Other people "
+"keep their copy. Connect to WhatsApp to delete them. This cannot be undone."
+msgstr ""
+"這會從您的手機和連結裝置中刪除選取的訊息。其他人仍保留自己的副本。連線至 "
+"WhatsApp 後才能刪除。此操作無法復原。"
+
+#: src/ui/dialogs.rs:1277
+#, rust-format
+msgid ""
+"Everyone in this chat will see \"This message was deleted\" in place of the "
+"selected message. This cannot be undone."
+msgid_plural ""
+"Everyone in this chat will see \"This message was deleted\" in place of the "
+"selected messages. This cannot be undone."
+msgstr[0] ""
+"此對話中的所有人都會看到「此訊息已刪除」，取代所選的訊息。此操作無法復原。"
+
+#: src/ui/dialogs.rs:1305
+msgid "Delete for everyone?"
+msgstr "為所有人刪除？"
+
+#: src/ui/dialogs.rs:1307
+msgid "Delete for me?"
+msgstr "為我刪除？"
+
+#: src/ui/dialogs.rs:1349
+#, rust-format
+msgid ""
+"This deletes \"{name}\" and its stickers from this computer. To use it "
+"again, import it again."
+msgstr "這會從這部電腦刪除「{name}」及其貼圖。若要再次使用，請重新匯入。"
+
+#: src/ui/dialogs.rs:1355
+msgid "Remove sticker pack?"
+msgstr "要移除貼圖集嗎？"
+
+#: src/ui/dialogs.rs:1357 src/ui/dialogs.rs:1415
+msgid "Remove"
+msgstr "移除"
+
+#: src/ui/dialogs.rs:1367 src/ui/lock.rs:123
+msgid "Unlink this computer?"
+msgstr "要取消連結這部電腦嗎？"
+
+#: src/ui/dialogs.rs:1370
+msgid ""
+"This removes the device from WhatsApp and deletes the chats stored here. You "
+"can link again with a new code."
+msgstr ""
+"這會將此裝置從 WhatsApp 移除，並刪除儲存在此處的對話。之後可以用新代碼重新連"
+"結。"
+
+#: src/ui/dialogs.rs:1372 src/ui/lock.rs:139
+msgid "Unlink"
+msgstr "取消連結"
+
+#: src/ui/dialogs.rs:1388
+msgid "Clear the media cache?"
+msgstr "清除媒體快取？"
+
+#: src/ui/dialogs.rs:1392
+#, rust-format
+msgid ""
+"This deletes the photos, videos, stickers and files {account} downloaded to "
+"this computer. Messages stay, and attachments download again when you open "
+"them, while WhatsApp still has them."
+msgstr ""
+"這會刪除 {account} 下載到這部電腦的相片、影片、貼圖和檔案。訊息會保留；只要 "
+"WhatsApp 仍保存著附件，開啟時會重新下載。"
+
+#: src/ui/dialogs.rs:1397
+msgid "Files in a download folder you chose are kept."
+msgstr "你選擇的下載資料夾中的檔案會保留。"
+
+#: src/ui/dialogs.rs:1400 src/ui/settings.rs:509
+msgid "Clear"
+msgstr "清除"
+
+#: src/ui/dialogs.rs:1410
+msgid "Remove this account?"
+msgstr "要移除這個帳號嗎？"
+
+#: src/ui/dialogs.rs:1413
+msgid ""
+"This unlinks the number on this computer and deletes its local chats. Other "
+"accounts stay."
+msgstr ""
+"這會在這部電腦上取消連結此號碼，並刪除它在本機的對話。其他帳號不受影響。"
+
+#: src/ui/dialogs.rs:1465
+msgid "Leave this channel?"
+msgstr "要離開這個頻道嗎？"
+
+#: src/ui/dialogs.rs:1467
+msgid "Leave this group?"
+msgstr "要離開這個群組嗎？"
+
+#: src/ui/dialogs.rs:1474
+msgid ""
+"You will not receive new messages. The local history stays on this computer."
+msgstr "您將不再收到新訊息。本機的對話紀錄會保留在這部電腦上。"
+
+#: src/ui/dialogs.rs:1494
+msgid "Leave channel and archive"
+msgstr "離開頻道並封存"
+
+#: src/ui/dialogs.rs:1496
+msgid "Leave group and archive"
+msgstr "離開群組並封存"
+
+#: src/ui/dialogs.rs:1716
+msgid "Also save to your phone's contacts"
+msgstr "同時儲存到您手機的聯絡人"
+
+#: src/ui/locations.rs:29
+msgid "Paste a map link or coordinates"
+msgstr "貼上地圖連結或座標"
+
+#: src/ui/locations.rs:58
+msgid ""
+"Short links only open online. Paste the full map link or the coordinates."
+msgstr "短網址只能在線上開啟。請貼上完整的地圖連結或座標。"
+
+#: src/ui/locations.rs:67
+msgid "That is not a location."
+msgstr "這不是位置。"
+
+#: src/ui/settings.rs:273
+msgid "Settings"
+msgstr "設定"
+
+#: src/ui/settings.rs:290
+#, rust-format
+msgid "No settings match “{query}”."
+msgstr "沒有符合「{query}」的設定。"
+
+#: src/ui/settings.rs:326
+msgid "Search settings"
+msgstr "搜尋設定"
+
+#: src/ui/settings.rs:344
+msgid "Appearance"
+msgstr "外觀"
+
+#: src/ui/settings.rs:351
+msgid "Follow system uses your Omarchy colours."
+msgstr "「跟隨系統」會使用您的 Omarchy 配色。"
+
+#: src/ui/settings.rs:355
+msgid "Theme"
+msgstr "主題"
+
+#: src/ui/settings.rs:357
+msgid "Font"
+msgstr "字型"
+
+#: src/ui/settings.rs:360
+msgid ""
+"System is your desktop's interface font. Inter looks the same on every "
+"computer."
+msgstr "「系統」是您桌面的介面字型。Inter 在每台電腦上呈現的效果都相同。"
+
+#: src/ui/settings.rs:365
+msgid "Wallpaper"
+msgstr "桌布"
+
+#: src/ui/settings.rs:369 src/app.rs:3022 src/ui/image_preview.rs:212
+msgid "Image"
+msgstr "圖片"
+
+#: src/ui/settings.rs:379
+msgid "Zoom"
+msgstr "縮放"
+
+#: src/ui/settings.rs:382
+msgid "Ctrl+Plus and Ctrl+Minus work anywhere, and Ctrl+0 resets it."
+msgstr "Ctrl+Plus 與 Ctrl+Minus 在任何畫面都有效，Ctrl+0 可重設。"
+
+#: src/ui/settings.rs:391
+msgid "Larger"
+msgstr "放大"
+
+#: src/ui/settings.rs:409
+msgid "Smaller"
+msgstr "縮小"
+
+#: src/ui/settings.rs:417
+msgid "Language"
+msgstr "語言"
+
+#: src/ui/settings.rs:421 src/ui/settings.rs:1862
+msgid "Custom title bar"
+msgstr "自訂標題列"
+
+#: src/ui/settings.rs:424
+msgid ""
+"Draw Zap's own title bar and window buttons instead of the desktop's."
+msgstr "使用 Zap 自己的標題列和視窗按鈕，而不是桌面環境提供的。"
+
+#: src/ui/settings.rs:430 src/ui/rail.rs:272
+msgid "Chats"
+msgstr "對話"
+
+#: src/ui/settings.rs:432
+msgid "Enter sends"
+msgstr "以 Enter 送出"
+
+#: src/ui/settings.rs:433
+msgid "When off, Ctrl+Enter sends."
+msgstr "關閉後改以 Ctrl+Enter 送出。"
+
+#: src/ui/settings.rs:437
+msgid "Download files automatically"
+msgstr "自動下載檔案"
+
+#: src/ui/settings.rs:440
+msgid "Files up to 64 MiB download as they come into view."
+msgstr "64 MiB 以下的檔案會在捲動到時自動下載。"
+
+#: src/ui/settings.rs:445
+msgid "Fetch older history"
+msgstr "取得較早的歷史記錄"
+
+#: src/ui/settings.rs:448
+msgid ""
+"Asks your phone in the background for older messages in the open, pinned and "
+"ten most recent chats."
+msgstr "在背景向手機要求目前開啟的對話、釘選的對話和最近十個對話中較舊的訊息。"
+
+#: src/ui/settings.rs:455
+msgid "Pause other media while recording or playing"
+msgstr "錄音或播放時暫停其他媒體"
+
+#: src/ui/settings.rs:456
+msgid "Music and videos in other apps resume afterwards."
+msgstr "其他應用程式的音樂與影片會在之後繼續播放。"
+
+#: src/ui/settings.rs:461 src/ui/settings.rs:470
+msgid "Keep chats archived"
+msgstr "保持對話封存"
+
+#: src/ui/settings.rs:464
+msgid "When off, a new message brings an archived chat back to the list."
+msgstr "關閉時，新訊息會把已封存的對話移回清單。"
+
+#: src/ui/settings.rs:485
+msgid "Locked chats code"
+msgstr "鎖定對話密碼"
+
+#: src/ui/settings.rs:488
+msgid ""
+"Opens the Locked tab on this computer. It hides chats, it does not encrypt "
+"them."
+msgstr "開啟這部電腦上的「已鎖定」分頁。它會隱藏對話，並不會加密。"
+
+#: src/ui/settings.rs:500
+msgid "Secret code"
+msgstr "請輸入密碼"
+
+#: src/ui/settings.rs:519 src/ui/settings.rs:2100
+msgid "Notifications"
+msgstr "通知"
+
+#: src/ui/settings.rs:521
+msgid "Desktop notifications"
+msgstr "桌面通知"
+
+#: src/ui/settings.rs:524
+msgid "For chats you are not looking at. Muted chats stay quiet."
+msgstr "用於您未正在查看的對話。已靜音的對話不會發出通知。"
+
+#: src/ui/settings.rs:531
+msgid "Show message content in notifications"
+msgstr "在通知中顯示訊息內容"
+
+#: src/ui/settings.rs:532
+msgid "When off, they say only “New message”."
+msgstr "關閉後，通知只顯示「新訊息」。"
+
+#: src/ui/settings.rs:537
+msgid "Limit repeat notifications"
+msgstr "限制重複通知"
+
+#: src/ui/settings.rs:540
+msgid ""
+"After one notification, a chat stays quiet for 10 minutes. Opening the chat "
+"resets this. In groups, mentions and replies to you still notify."
+msgstr ""
+"通知一次後，該對話會保持安靜 10 分鐘。開啟該對話會重新計時。在群組中，提及您"
+"和回覆您的訊息仍會通知。"
+
+#: src/ui/settings.rs:566 src/ui/settings.rs:2107
+msgid "Play sounds for group messages"
+msgstr "群組訊息播放提示音"
+
+#: src/ui/settings.rs:569
+msgid "When off, only mentions and replies to you make a sound."
+msgstr "關閉後，只有提及您或回覆您的訊息才會發出聲音。"
+
+#: src/ui/settings.rs:577
+msgid "Privacy"
+msgstr "隱私"
+
+#: src/ui/settings.rs:579
+msgid "Off for your account, so only groups get them."
+msgstr "您的帳號已關閉，因此只有群組會收到。"
+
+#: src/ui/settings.rs:581
+msgid "Let people see when you read their messages."
+msgstr "讓他人看到您讀取其訊息的時間。"
+
+#: src/ui/settings.rs:584
+msgid "Send read receipts"
+msgstr "傳送已讀回執"
+
+#: src/ui/settings.rs:589
+msgid "Show when you are typing"
+msgstr "顯示正在輸入"
+
+#: src/ui/settings.rs:600
+msgid ""
+"Could not load your account privacy. Trying again when Zap reconnects."
+msgstr "無法載入您的帳號隱私設定，將在 Zap 重新連線後再試一次。"
+
+#: src/ui/settings.rs:605
+msgid "Connect to WhatsApp to change your account privacy."
+msgstr "請連線至 WhatsApp 以變更您的帳號隱私設定。"
+
+#: src/ui/settings.rs:610
+msgid "Loading your account privacy…"
+msgstr "正在載入您的帳號隱私設定⋯"
+
+#: src/ui/settings.rs:635
+msgid "Change who is excluded on your phone."
+msgstr "請在手機上變更被排除的人員。"
+
+#: src/ui/settings.rs:653
+msgid "System"
+msgstr "系統"
+
+#: src/ui/settings.rs:655
+msgid "Keep running when the window closes"
+msgstr "關閉視窗後繼續在背景執行"
+
+#: src/ui/settings.rs:656
+msgid "Quit from the tray or with Ctrl+Q."
+msgstr "請從系統匣選單退出，或按 Ctrl+Q。"
+
+#: src/ui/settings.rs:661 src/ui/settings.rs:669
+msgid "Start at login"
+msgstr "登入時啟動"
+
+#: src/ui/settings.rs:662
+msgid "Starts in the tray, without a window."
+msgstr "啟動時會在系統匣中執行，不顯示視窗。"
+
+#: src/ui/settings.rs:685
+msgid "Check for updates"
+msgstr "檢查更新"
+
+#: src/ui/settings.rs:688
+msgid "Asks GitHub once a day, sending only the Zap version."
+msgstr "每天向 GitHub 詢問一次，只傳送 Zap 的版本資訊。"
+
+#: src/ui/settings.rs:693
+msgid "Download updates automatically"
+msgstr "自動下載更新"
+
+#: src/ui/settings.rs:696
+msgid ""
+"You still choose when to restart. Package managers and Flatpak update "
+"Zap themselves."
+msgstr ""
+"您仍可自行選擇重新啟動的時間。套件管理員與 Flatpak 會自行更新 Zap。"
+
+#: src/ui/settings.rs:709
+#, rust-format
+msgid "Using {proxy} from the environment."
+msgstr "正在使用環境變數中的 {proxy}。"
+
+#: src/ui/settings.rs:717
+msgid "For WhatsApp, media, and updates. Empty uses ALL_PROXY or HTTPS_PROXY."
+msgstr "用於 WhatsApp、媒體與更新。留空時會使用 ALL_PROXY 或 HTTPS_PROXY。"
+
+#: src/ui/settings.rs:720
+msgid "Proxy"
+msgstr "Proxy 伺服器"
+
+#: src/ui/settings.rs:740
+msgid "GIPHY API key"
+msgstr "GIPHY API 金鑰"
+
+#: src/ui/settings.rs:744
+msgid "For GIF search. Replaces the key this build includes."
+msgstr "用於 GIF 搜尋。會取代這個版本內建的金鑰。"
+
+#: src/ui/settings.rs:749
+msgid "For GIF search. Get a free key at developers.giphy.com."
+msgstr "用於 GIF 搜尋。可至 developers.giphy.com 免費取得金鑰。"
+
+#: src/ui/settings.rs:765 src/ui/settings.rs:2154 src/ui/settings.rs:2160
+msgid "Account"
+msgstr "帳號"
+
+#: src/ui/settings.rs:768 src/ui/settings.rs:1641
+msgid "Your name"
+msgstr "您的姓名"
+
+#: src/ui/settings.rs:770 src/ui/settings.rs:1649
+msgctxt "profile"
+msgid "About"
+msgstr "個人簡介"
+
+#: src/ui/settings.rs:773 src/ui/settings.rs:1618
+msgid "Change profile picture"
+msgstr "變更個人照片"
+
+#: src/ui/settings.rs:774 src/ui/settings.rs:1701 src/ui/settings.rs:2156
+msgid "Unlink this computer"
+msgstr "取消連結這部電腦"
+
+#: src/ui/settings.rs:775 src/ui/settings.rs:1712 src/ui/accounts.rs:123
+msgid "Add account"
+msgstr "新增帳號"
+
+#: src/ui/settings.rs:776 src/ui/settings.rs:1688
+msgid "Remove this account"
+msgstr "移除這個帳號"
+
+#: src/ui/settings.rs:781
+msgid "Files"
+msgstr "檔案"
+
+#: src/ui/settings.rs:784
+msgid "Open folder"
+msgstr "開啟資料夾"
+
+#: src/ui/settings.rs:786
+msgid "Message archive"
+msgstr "訊息存檔"
+
+#: src/ui/settings.rs:804
+msgid "Downloads"
+msgstr "下載項目"
+
+#: src/ui/settings.rs:817
+msgid "Change…"
+msgstr "變更⋯"
+
+#: src/ui/settings.rs:829
+msgid "Use default"
+msgstr "使用預設值"
+
+#: src/ui/settings.rs:840 src/ui/settings.rs:1454
+msgid "Storage used"
+msgstr "已用空間"
+
+#: src/ui/settings.rs:841
+msgid "Media cache"
+msgstr "媒體快取"
+
+#: src/ui/settings.rs:842 src/ui/settings.rs:1508
+msgid "Images"
+msgstr "圖片"
+
+#: src/ui/settings.rs:843 src/ui/settings.rs:1514
+msgid "Videos and GIFs"
+msgstr "影片和 GIF"
+
+#: src/ui/settings.rs:844 src/ui/settings.rs:1520
+msgid "Stickers"
+msgstr "貼圖"
+
+#: src/ui/settings.rs:845 src/ui/settings.rs:1526
+msgid "Other"
+msgstr "其他"
+
+#: src/ui/settings.rs:846 src/ui/settings.rs:1460
+msgid "Clear…"
+msgstr "清除⋯"
+
+#: src/ui/settings.rs:852
+msgid "Log"
+msgstr "日誌"
+
+#: src/ui/settings.rs:859
+msgid "Open"
+msgstr "開啟"
+
+#: src/ui/settings.rs:869 src/ui/settings.rs:1831
+msgid "About"
+msgstr "關於"
+
+#: src/ui/settings.rs:873 src/ui/settings.rs:1820
+msgid "Keyboard shortcuts"
+msgstr "鍵盤快捷鍵"
+
+#: src/ui/settings.rs:874 src/ui/settings.rs:1842
+msgid "Source code"
+msgstr "原始碼"
+
+#: src/ui/settings.rs:899 src/ui/settings.rs:926
+msgid "App lock"
+msgstr "應用程式鎖"
+
+#: src/ui/settings.rs:902
+msgid ""
+"Asks for a password at start and after a while unused. It keeps people using "
+"this computer out of your chats and encrypts nothing more. A forgotten "
+"password means unlinking."
+msgstr ""
+"啟動時及一段時間未使用後會要求輸入密碼。它能防止使用這部電腦的人看到您的對"
+"話，此外不會加密任何內容。忘記密碼就只能取消連結。"
+
+#: src/ui/settings.rs:909
+msgid "Turn off…"
+msgstr "關閉⋯"
+
+#: src/ui/settings.rs:910
+msgid "Change password…"
+msgstr "變更密碼⋯"
+
+#: src/ui/settings.rs:913
+msgid "Set password…"
+msgstr "設定密碼⋯"
+
+#: src/ui/settings.rs:927 src/ui/settings.rs:934
+msgid "Lock after"
+msgstr "自動鎖定"
+
+#: src/ui/settings.rs:937
+msgid ""
+"Time without using Zap, also counted while it is in the tray. "
+"Ctrl+Shift+L locks it at once."
+msgstr ""
+"未使用 Zap 經過的時間，在系統匣中也會計算。Ctrl+Shift+L 可立即鎖定。"
+
+#: src/ui/settings.rs:979
+msgid "Set an app lock password"
+msgstr "設定應用程式鎖密碼"
+
+#: src/ui/settings.rs:980
+msgid "Change the app lock password"
+msgstr "變更應用程式鎖密碼"
+
+#: src/ui/settings.rs:981
+msgid "Turn off the app lock"
+msgstr "關閉應用程式鎖"
+
+#: src/ui/settings.rs:991
+msgid "Current password"
+msgstr "目前的密碼"
+
+#: src/ui/settings.rs:998
+#, rust-format
+msgid "New password, at least {count} characters"
+msgstr "新密碼，至少 {count} 個字元"
+
+#: src/ui/settings.rs:1003
+msgid "Type the new password again"
+msgstr "再次輸入新密碼"
+
+#: src/ui/settings.rs:1027
+#, rust-format
+msgid "The password needs at least {count} characters."
+msgstr "密碼至少需要 {count} 個字元。"
+
+#: src/ui/settings.rs:1029
+msgid "The two new passwords are different."
+msgstr "兩次輸入的新密碼不相同。"
+
+#: src/ui/settings.rs:1030 src/ui/lock.rs:85
+msgid "Wrong password. Try again."
+msgstr "密碼錯誤，請再試一次。"
+
+#: src/ui/settings.rs:1037
+msgid "Turn on"
+msgstr "開啟"
+
+#: src/ui/settings.rs:1038
+msgid "Change password"
+msgstr "變更密碼"
+
+#: src/ui/settings.rs:1039
+msgid "Turn off"
+msgstr "關閉"
+
+#: src/ui/settings.rs:1142
+msgid "How to make a theme"
+msgstr "如何製作主題"
+
+#: src/ui/settings.rs:1183 src/ui/settings.rs:1192
+msgid "Auto"
+msgstr "自動"
+
+#: src/ui/settings.rs:1279
+msgid "Add doodles"
+msgstr "加入塗鴉"
+
+#: src/ui/settings.rs:1283
+msgid "Show the default doodles over the selected colour."
+msgstr "在所選的顏色上顯示預設塗鴉。"
+
+#: src/ui/settings.rs:1367
+msgid "Choose image…"
+msgstr "選擇圖片⋯"
+
+#: src/ui/settings.rs:1368
+msgid "Remove image"
+msgstr "移除圖片"
+
+#: src/ui/settings.rs:1396
+msgctxt "wallpaper colour"
+msgid "Theme"
+msgstr "桌布主題"
+
+#: src/ui/settings.rs:1489
+#, rust-format
+msgid ""
+"Photos, videos, stickers and files {account} downloaded to this computer. "
+"Clearing them keeps your messages; attachments download again when you open "
+"them."
+msgstr ""
+"{account} 下載到這部電腦的相片、影片、貼圖和檔案。清除後訊息仍會保留；開啟附"
+"件時會重新下載。"
+
+#: src/ui/settings.rs:1657
+msgid "Linked device"
+msgstr "已連結的裝置"
+
+#: src/ui/settings.rs:1668
+msgid "Edit your name and About"
+msgstr "編輯您的姓名與關於"
+
+#: src/ui/settings.rs:1732
+msgid "Save"
+msgstr "儲存"
+
+#: src/ui/settings.rs:1799
+msgid "A native WhatsApp client built with Rust, egui, and whatsapp-rust."
+msgstr "以 Rust、egui 與 whatsapp-rust 打造的原生 WhatsApp 使用者端。"
+
+#: src/ui/settings.rs:1810
+#, rust-format
+msgid "Update to {version}"
+msgstr "更新至 {version}"
+
+#: src/ui/settings.rs:1928
+msgid "Mention sound"
+msgstr "提及提示音"
+
+#: src/ui/settings.rs:1929
+msgid "When a group mentions you or replies to you."
+msgstr "群組提及您或回覆您時播放。"
+
+#: src/ui/settings.rs:1932
+msgid "Message sound"
+msgstr "訊息提示音"
+
+#: src/ui/settings.rs:1949
+msgid "Pidgin alert"
+msgstr "Pidgin 提示音"
+
+#: src/ui/settings.rs:1950 src/ui/call.rs:597
+msgid "System default"
+msgstr "系統預設"
+
+#. Translators: no notification sound.
+#: src/ui/settings.rs:1952
+msgctxt "sound"
+msgid "None"
+msgstr "無"
+
+#: src/ui/settings.rs:1989
+msgid "Choose a file…"
+msgstr "選擇檔案⋯"
+
+#: src/ui/call.rs:142
+msgid "Return to the call"
+msgstr "返回通話"
+
+#: src/ui/call.rs:218
+msgid "Wants to switch to video: turn on your camera to answer"
+msgstr "想切換為視訊：開啟你的相機來接聽"
+
+#: src/ui/call.rs:228
+msgid "Their camera is off"
+msgstr "對方的相機已關閉"
+
+#: src/ui/call.rs:311
+msgid "Hide the call screen"
+msgstr "隱藏通話畫面"
+
+#: src/ui/call.rs:320
+msgid "Exit full screen"
+msgstr "結束全螢幕"
+
+#: src/ui/call.rs:322
+msgid "Full screen"
+msgstr "全螢幕"
+
+#: src/ui/call.rs:377 src/ui/call.rs:383 src/ui/call.rs:388
+msgid "Connecting…"
+msgstr "正在連線⋯"
+
+#: src/ui/call.rs:379
+msgid "Calling…"
+msgstr "正在撥打⋯"
+
+#: src/ui/call.rs:381
+msgid "Ringing…"
+msgstr "正在響鈴⋯"
+
+#: src/ui/call.rs:392 src/ui/call.rs:400
+msgid "Call ended"
+msgstr "通話已結束"
+
+#: src/ui/call.rs:401
+msgid "Missed call"
+msgstr "未接來電"
+
+#: src/ui/call.rs:402 src/ui/calls.rs:115
+msgid "Declined"
+msgstr "已拒絕"
+
+#: src/ui/call.rs:403 src/ui/calls.rs:117
+msgid "Busy"
+msgstr "忙線中"
+
+#: src/ui/call.rs:404 src/ui/call.rs:409 src/ui/calls.rs:118
+msgid "Could not connect"
+msgstr "無法連線"
+
+#: src/ui/call.rs:405 src/ui/calls.rs:119
+msgid "No answer"
+msgstr "無人接聽"
+
+#: src/ui/call.rs:407 src/ui/calls.rs:120 src/app.rs:4081
+msgid "Connection lost"
+msgstr "連線中斷"
+
+#: src/ui/call.rs:411 src/ui/calls.rs:114
+msgid "Answered on another device"
+msgstr "已在其他裝置上接聽"
+
+#: src/ui/call.rs:414 src/ui/calls.rs:116
+msgid "Declined on another device"
+msgstr "已在其他裝置上拒絕"
+
+#: src/ui/call.rs:435
+#, rust-format
+msgid "Microphone “{name}” is not available; using the system default"
+msgstr "麥克風「{name}」無法使用；正在使用系統預設值"
+
+#: src/ui/call.rs:439
+#, rust-format
+msgid "Speaker “{name}” is not available; using the system default"
+msgstr "喇叭「{name}」無法使用；正在使用系統預設值"
+
+#: src/ui/call.rs:441
+#, rust-format
+msgid "Camera “{name}” is not available"
+msgstr "相機「{name}」無法使用"
+
+#: src/ui/call.rs:464
+msgid "No audio is arriving from this call"
+msgstr "這通電話沒有傳來任何聲音"
+
+#: src/ui/call.rs:466
+msgid "This call's audio cannot be decoded"
+msgstr "無法解碼這通電話的音訊"
+
+#: src/ui/call.rs:474
+msgid "The other side's audio is not getting through"
+msgstr "對方的聲音傳不過來"
+
+#: src/ui/call.rs:543
+msgid "Start video"
+msgstr "開啟視訊"
+
+#: src/ui/call.rs:550
+msgid "Turn the camera off"
+msgstr "關閉相機"
+
+#: src/ui/call.rs:557
+msgid "Turn the camera on"
+msgstr "開啟相機"
+
+#: src/ui/call.rs:567
+msgid "Devices"
+msgstr "裝置"
+
+#: src/ui/call.rs:624
+msgid "Microphone"
+msgstr "麥克風"
+
+#: src/ui/call.rs:635
+msgid "Speaker"
+msgstr "喇叭"
+
+#: src/ui/call.rs:647
+msgid "Camera"
+msgstr "相機"
+
+#: src/ui/call.rs:648
+msgid "First camera"
+msgstr "第一台相機"
+
+#: src/ui/call.rs:737
+msgid "Incoming voice call"
+msgstr "語音來電"
+
+#: src/ui/call.rs:738
+msgid "Incoming video call"
+msgstr "視訊來電"
+
+#: src/ui/call.rs:740
+#, rust-format
+msgid "Group voice call from {name}"
+msgstr "來自 {name} 的群組語音通話"
+
+#: src/ui/call.rs:743
+#, rust-format
+msgid "Group video call from {name}"
+msgstr "來自 {name} 的群組視訊通話"
+
+#: src/ui/call.rs:745
+msgid "Incoming group voice call"
+msgstr "群組語音來電"
+
+#: src/ui/call.rs:746
+msgid "Incoming group video call"
+msgstr "群組視訊來電"
+
+#: src/ui/call.rs:785
+msgid "Decline"
+msgstr "拒絕"
+
+#: src/ui/call.rs:798
+msgid "Accept"
+msgstr "接聽"
+
+#: src/ui/call.rs:1218
+msgid "Invited"
+msgstr "已邀請"
+
+#: src/ui/calls.rs:94
+msgid "Missed voice call"
+msgstr "未接語音通話"
+
+#: src/ui/calls.rs:95
+msgid "Missed video call"
+msgstr "未接視訊通話"
+
+#: src/ui/calls.rs:96
+msgid "Missed group voice call"
+msgstr "未接群組語音通話"
+
+#: src/ui/calls.rs:97
+msgid "Missed group video call"
+msgstr "未接群組視訊通話"
+
+#: src/ui/calls.rs:100
+msgid "Group voice call"
+msgstr "群組語音通話"
+
+#: src/ui/calls.rs:101
+msgid "Group video call"
+msgstr "群組視訊通話"
+
+#: src/ui/calls.rs:169 src/app/calls.rs:112
+msgid "Call link"
+msgstr "通話連結"
+
+#: src/ui/calls.rs:199
+msgid "No calls yet"
+msgstr "尚無通話"
+
+#: src/ui/calls.rs:202
+msgid ""
+"Calls from your phone's call log and the ones you make here appear here."
+msgstr "手機通話紀錄中的通話以及你在這裡撥打的通話會顯示在這裡。"
+
+#: src/ui/calls.rs:207 src/ui/message_info.rs:93
+msgid "Loading…"
+msgstr "載入中⋯"
+
+#: src/ui/calls.rs:208
+msgid "Reading this account's calls."
+msgstr "正在讀取此帳號的通話。"
+
+#: src/ui/calls.rs:232
+msgid "No missed calls"
+msgstr "沒有未接來電"
+
+#: src/ui/calls.rs:233
+msgid "Choose All to see every call."
+msgstr "選擇「全部」即可查看所有通話。"
+
+#: src/ui/calls.rs:255
+msgid "No matching calls"
+msgstr "沒有相符的通話"
+
+#: src/ui/calls.rs:531
+msgid "Frequently contacted"
+msgstr "常用聯絡人"
+
+#: src/ui/calls.rs:543
+msgid "No matching contacts"
+msgstr "沒有相符的聯絡人"
+
+#: src/ui/calls.rs:549
+msgid "All contacts"
+msgstr "所有聯絡人"
+
+#: src/ui/calls.rs:613
+#, rust-format
+msgid "Video call {name}"
+msgstr "與 {name} 視訊通話"
+
+#: src/ui/calls.rs:627
+#, rust-format
+msgid "Voice call {name}"
+msgstr "與 {name} 語音通話"
+
+#: src/ui/calls.rs:657
+msgid "Start call"
+msgstr "開始通話"
+
+#: src/ui/calls.rs:678
+msgid ""
+"Call one person by voice or video, or choose a call in the list to see it."
+msgstr "透過語音或視訊撥打給一個人，或在清單中選擇通話以查看。"
+
+#: src/app/calls.rs:116
+msgid "Locked chat"
+msgstr "已鎖定的對話"
+
+#: src/app/calls.rs:392 src/app/calls.rs:589
+msgid "Hang up the current call first"
+msgstr "請先掛斷目前的通話"
+
+#: src/app/calls.rs:497
+msgid "Incoming call"
+msgstr "來電"
+
+#. Translators: {name} is replaced by the author's name, shown as a link.
+#: src/ui/widgets.rs:886
+#, rust-format
+msgid "Built with love by {name}"
+msgstr "由 {name} 精心打造"
+
+#: src/ui/message_info.rs:44
+msgid "This message is no longer available."
+msgstr "此訊息已無法使用。"
+
+#: src/ui/message_info.rs:186
+msgid "Played"
+msgstr "已播放"
+
+#: src/ui/message_info.rs:188
+msgid "Read"
+msgstr "已讀"
+
+#: src/ui/message_info.rs:202
+msgid "Delivered"
+msgstr "已送達"
+
+#: src/ui/message_info.rs:218
+msgid "Time not recorded"
+msgstr "未記錄時間"
+
+#: src/ui/message_info.rs:240
+msgid ""
+"No receipts were recorded for this message. Details are available for "
+"messages sent from now on."
+msgstr "此訊息沒有記錄任何回執。從現在起送出的訊息才會有詳細資料。"
+
+#: src/ui/message_info.rs:252
+msgid ""
+"Some receipts for this message were not recorded. Details are complete for "
+"messages sent from now on."
+msgstr "此訊息有部分回執未記錄。從現在起送出的訊息才會有完整資料。"
+
+#: src/ui/message_info.rs:262
+msgid "Played by"
+msgstr "播放者"
+
+#: src/ui/message_info.rs:271
+msgid "Read by"
+msgstr "讀取者"
+
+#: src/ui/message_info.rs:279
+msgid "Delivered to"
+msgstr "送達對象"
+
+#: src/ui/message_info.rs:289
+#, rust-format
+msgid "{} remaining"
+msgid_plural "{} remaining"
+msgstr[0] "還有 {} 個"
+
+#: src/ui/message_info.rs:316
+msgid "No one yet"
+msgstr "尚無對象"
+
+#: src/app.rs:874
+msgid "Could not check the number. Please try again."
+msgstr "無法檢查此號碼。請再試一次。"
+
+#: src/app.rs:878
+msgid "This number is not on WhatsApp"
+msgstr "此號碼未使用 WhatsApp"
+
+#: src/app.rs:881
+msgid "Not connected to WhatsApp"
+msgstr "未連線至 WhatsApp"
+
+#: src/app.rs:884 src/app.rs:7639
+msgid "Enter a valid international phone number"
+msgstr "請輸入有效的國際電話號碼"
+
+#: src/app.rs:1805
+msgid "Could not delete the removed account's files"
+msgstr "無法刪除已移除帳號的檔案"
+
+#: src/app.rs:2438
+#, rust-format
+msgid "A label named “{name}” already exists."
+msgstr "已有名為「{name}」的標籤。"
+
+#: src/app.rs:2527
+#, rust-format
+msgid "{name} (You)"
+msgstr "{name}（您）"
+
+#: src/app.rs:3089
+msgid "Media cache cleared"
+msgstr "媒體快取已清除"
+
+#: src/app.rs:3168
+msgid "Star removed"
+msgstr "已移除星號"
+
+#: src/app.rs:3204
+msgid "Pinned for 7 days"
+msgstr "已釘選 7 天"
+
+#: src/app.rs:3206
+msgid "Pin removed"
+msgstr "已取消釘選"
+
+#: src/app.rs:3705
+msgid "Loading chat history"
+msgstr "正在載入對話記錄"
+
+#: src/app.rs:3799
+msgid "Could not use this image"
+msgstr "無法使用這張圖片"
+
+#: src/app.rs:4021 src/app.rs:7542
+msgid "This chat already has three pinned messages"
+msgstr "這個對話已有三則釘選訊息"
+
+#: src/app.rs:4091
+msgid "Connecting"
+msgstr "正在連線"
+
+#: src/app.rs:4722
+msgid "Not sent: Zap is not connected to WhatsApp."
+msgstr "未送出：Zap 尚未連線至 WhatsApp。"
+
+#: src/app.rs:4726
+msgid ""
+"Not sent: the message you’re replying to isn’t available on this computer. "
+"Cancel the reply to send without a quote."
+msgstr ""
+"未送出：您要回覆的訊息在這部電腦上無法使用。取消回覆即可不附帶引用內容送出。"
+
+#: src/app.rs:6767
+msgid "A selected chat is no longer writable"
+msgstr "所選的對話已無法傳送訊息"
+
+#: src/app.rs:7300
+msgid "Added to favorites"
+msgstr "已加入最愛"
+
+#: src/app.rs:7377
+msgid "Sending the sticker pack…"
+msgstr "正在傳送貼圖集⋯"
+
+#: src/app.rs:7759 src/ui/labels.rs:257
+#, rust-format
+msgid "You have {limit} labels, the most Zap keeps."
+msgstr "您已有 {limit} 個標籤，已達 Zap 的上限。"
+
+#. Translators: an announcement from an account that is not on screen:
+#. the account's name, then what it announced.
+#: src/app.rs:8304
+#, rust-format
+msgid "{}: {}"
+msgstr "{}：{}"
+
+#: src/app.rs:8663
+msgid "App lock password saved"
+msgstr "已儲存應用程式鎖密碼"
+
+#: src/app.rs:8671
+msgid "App lock turned off"
+msgstr "已關閉應用程式鎖"
+
+#: src/app.rs:8805
+msgid "This video opens in your system player"
+msgstr "此影片會在您的系統播放器中開啟"
+
+#: src/app.rs:9384
+msgid "Copied image"
+msgstr "已複製圖片"
+
+#: src/app.rs:9387 src/app.rs:9392
+msgid "Failed to copy image"
+msgstr "複製圖片失敗"
+
+#: src/ui/labels.rs:68
+msgctxt "label colour"
+msgid "Blue"
+msgstr "藍色"
+
+#: src/ui/labels.rs:69
+msgctxt "label colour"
+msgid "Green"
+msgstr "綠色"
+
+#: src/ui/labels.rs:70
+msgctxt "label colour"
+msgid "Yellow"
+msgstr "黃色"
+
+#: src/ui/labels.rs:71
+msgctxt "label colour"
+msgid "Orange"
+msgstr "橘色"
+
+#: src/ui/labels.rs:72
+msgctxt "label colour"
+msgid "Red"
+msgstr "紅色"
+
+#: src/ui/labels.rs:73
+msgctxt "label colour"
+msgid "Pink"
+msgstr "粉紅色"
+
+#: src/ui/labels.rs:74
+msgctxt "label colour"
+msgid "Purple"
+msgstr "紫色"
+
+#: src/ui/labels.rs:75
+msgctxt "label colour"
+msgid "Teal"
+msgstr "藍綠色"
+
+#: src/ui/labels.rs:76
+msgctxt "label colour"
+msgid "Grey"
+msgstr "灰色"
+
+#: src/ui/labels.rs:77
+msgctxt "label colour"
+msgid "Sky blue"
+msgstr "天藍色"
+
+#: src/ui/labels.rs:78
+msgctxt "label colour"
+msgid "Colour"
+msgstr "顏色"
+
+#: src/ui/labels.rs:151
+msgid "Manage labels"
+msgstr "管理標籤"
+
+#: src/ui/labels.rs:166
+msgid "Manage labels…"
+msgstr "管理標籤⋯"
+
+#: src/ui/labels.rs:246
+msgid ""
+"Labels stay on this computer. They do not reach your phone or anyone you "
+"chat with."
+msgstr "標籤只儲存在這部電腦上，不會同步到您的手機或對話對象。"
+
+#: src/ui/labels.rs:267
+msgid "New label"
+msgstr "新標籤"
+
+#: src/ui/labels.rs:281
+msgid "Create"
+msgstr "建立"
+
+#: src/ui/labels.rs:311
+msgid ""
+"No labels yet. Create one above, then add chats to it from their right-click "
+"menu."
+msgstr "尚無標籤。請先在上方建立一個，再從對話的右鍵選單將對話加入。"
+
+#: src/ui/labels.rs:346
+msgid "Next colour"
+msgstr "下一個顏色"
+
+#: src/ui/labels.rs:395
+#, rust-format
+msgid "{} chat"
+msgid_plural "{} chats"
+msgstr[0] "{} 個對話"
+
+#: src/ui/labels.rs:416
+msgid "Rename or recolour"
+msgstr "重新命名或變更顏色"
+
+#: src/ui/labels.rs:441
+msgid "Delete this label. Its chats keep their messages."
+msgstr "刪除此標籤，其中的對話與訊息都會保留。"
+
+#: src/ui/picker.rs:1189
+msgid "Recent"
+msgstr "最近"
+
+#: src/ui/picker.rs:1191
+msgid "Received"
+msgstr "收到的"
+
+#: src/ui/picker.rs:1192
+msgid "Add stickers"
+msgstr "新增貼圖"
+
+#: src/ui/picker.rs:1227
+msgid "Search by emoji, word, or pack"
+msgstr "以表情符號、字詞或貼圖集搜尋"
+
+#: src/ui/picker.rs:1266
+msgid "No stickers match your search."
+msgstr "沒有符合搜尋條件的貼圖。"
+
+#: src/ui/picker.rs:1280
+msgid "Loading your stickers…"
+msgstr "正在載入您的貼圖⋯"
+
+#: src/ui/picker.rs:1282
+msgid "Stickers you send appear here."
+msgstr "您傳送的貼圖會顯示在這裡。"
+
+#: src/ui/picker.rs:1291
+msgid ""
+"Right-click any sticker to add it to your favorites. They stay in sync with "
+"your phone."
+msgstr "在任一貼圖上按右鍵即可加入最愛，並會與您的手機保持同步。"
+
+#: src/ui/picker.rs:1297
+msgid "Stickers people send you appear here."
+msgstr "別人傳送給您的貼圖會顯示在這裡。"
+
+#: src/ui/picker.rs:1312
+msgid "Remove this pack"
+msgstr "移除此貼圖集"
+
+#: src/ui/picker.rs:1326
+msgid "Send this pack to the chat"
+msgstr "將此貼圖集傳送到該對話"
+
+#: src/ui/picker.rs:1340
+msgid "Nothing here yet. Right-click any sticker to add it to this pack."
+msgstr "這裡還沒有內容。在任一貼圖上按右鍵即可加入此貼圖集。"
+
+#: src/ui/picker.rs:1417
+msgid "Import a pack"
+msgstr "匯入貼圖集"
+
+#: src/ui/picker.rs:1425
+msgid ""
+"Paste a signal.art link from signalstickers.org, or open a .wastickers file."
+msgstr "貼上 signalstickers.org 的 signal.art 連結，或開啟 .wastickers 檔案。"
+
+#: src/ui/picker.rs:1435
+msgid "Make your own"
+msgstr "自製"
+
+#: src/ui/picker.rs:1443
+msgid ""
+"Start a pack, then right-click any sticker to add it. Or turn a picture into "
+"a sticker."
+msgstr "先建立貼圖集，再在任一貼圖上按右鍵加入；也可以把圖片轉成貼圖。"
+
+#: src/ui/picker.rs:1455
+msgid "Make a sticker from a picture…"
+msgstr "從圖片製作貼圖⋯"
+
+#: src/ui/picker.rs:1470
+msgid "Create pack"
+msgstr "建立貼圖集"
+
+#: src/ui/picker.rs:1481
+msgid "New pack…"
+msgstr "新貼圖集⋯"
+
+#: src/ui/picker.rs:1514
+msgid "Find packs"
+msgstr "尋找貼圖集"
+
+#: src/ui/picker.rs:1515
+msgid "Open file"
+msgstr "開啟檔案"
+
+#: src/ui/picker.rs:1530
+msgid "Paste a signal.art link"
+msgstr "貼上 signal.art 連結"
+
+#: src/ui/picker.rs:1558
+msgid "Browse signalstickers.org"
+msgstr "瀏覽 signalstickers.org"
+
+#: src/ui/picker.rs:1574
+msgid "Importing the pack…"
+msgstr "正在匯入貼圖集⋯"
+
+#: src/ui/picker.rs:1623
+msgid "Remove from recents"
+msgstr "從最近使用中移除"
+
+#: src/ui/pane.rs:214
+msgid "Close search"
+msgstr "關閉搜尋"
+
+#: src/ui/pane.rs:242 src/ui/pane.rs:420
+msgid "Filter by date"
+msgstr "依日期篩選"
+
+#: src/ui/pane.rs:295
+#, rust-format
+msgid "Search messages with {}"
+msgstr "在 {} 中搜尋訊息"
+
+#: src/ui/pane.rs:318
+msgid "No messages found"
+msgstr "找不到訊息"
+
+#: src/ui/pane.rs:319
+msgid "Try another word or pick a different day."
+msgstr "請換個字詞或選擇其他日期。"
+
+#: src/ui/pane.rs:346
+#, rust-format
+msgid "Only the newest {} matches are listed. Narrow the search or pick a day."
+msgstr "僅列出最新的 {} 筆符合結果，請縮小搜尋範圍或選擇某一天。"
+
+#: src/ui/pane.rs:435
+msgid "Clear the day filter"
+msgstr "清除日期篩選"
+
+#: src/ui/pane.rs:502
+msgid "Next month"
+msgstr "下個月"
+
+#: src/ui/pane.rs:514
+msgid "Previous month"
+msgstr "上個月"
+
+#: src/privacy.rs:42
+msgctxt "privacy"
+msgid "Last seen"
+msgstr "最後上線時間"
+
+#: src/privacy.rs:43
+msgctxt "privacy"
+msgid "Online"
+msgstr "上線"
+
+#: src/privacy.rs:44
+msgctxt "privacy"
+msgid "Profile photo"
+msgstr "個人照片"
+
+#: src/privacy.rs:45
+msgctxt "privacy"
+msgid "About"
+msgstr "個人簡介"
+
+#: src/privacy.rs:46
+msgctxt "privacy"
+msgid "Groups"
+msgstr "群組"
+
+#: src/privacy.rs:47
+msgctxt "privacy"
+msgid "Read receipts"
+msgstr "已讀回執"
+
+#: src/privacy.rs:48
+msgctxt "privacy"
+msgid "Calls"
+msgstr "通話"
+
+#: src/privacy.rs:58
+msgid "Who can add you to groups."
+msgstr "誰可以將您加入群組。"
+
+#: src/privacy.rs:60
+msgid "For your whole account. Groups always send them."
+msgstr "適用於整個帳號。群組一律會傳送。"
+
+#: src/privacy.rs:139
+msgctxt "privacy"
+msgid "Everyone"
+msgstr "所有人"
+
+#: src/privacy.rs:140
+msgctxt "privacy"
+msgid "My contacts"
+msgstr "我的聯絡人"
+
+#: src/privacy.rs:141
+msgctxt "privacy"
+msgid "My contacts except…"
+msgstr "我的聯絡人（不含⋯）"
+
+#: src/privacy.rs:142
+msgctxt "privacy"
+msgid "Nobody"
+msgstr "沒有人"
+
+#: src/privacy.rs:143
+msgctxt "privacy"
+msgid "Same as last seen"
+msgstr "與最後上線時間相同"
+
+#: src/privacy.rs:144
+msgctxt "privacy"
+msgid "Silence unknown callers"
+msgstr "陌生來電靜音"
+
+#: src/ui/image_editor.rs:106
+msgid "Cancel (Esc)"
+msgstr "取消 (Esc)"
+
+#: src/ui/image_editor.rs:119
+msgid "Keep this crop"
+msgstr "保留此裁切"
+
+#: src/ui/image_editor.rs:140
+msgid "Reset"
+msgstr "重設"
+
+#: src/ui/image_editor.rs:144
+msgid "Turn right"
+msgstr "向右旋轉"
+
+#: src/ui/image_editor.rs:157
+msgid "Turn left"
+msgstr "向左旋轉"
+
+#: src/ui/image_preview.rs:245
+msgid "Close preview (Esc)"
+msgstr "關閉預覽 (Esc)"
+
+#: src/ui/image_preview.rs:258 src/ui/image_preview.rs:594
+msgid "Open in another app"
+msgstr "在其他應用程式中開啟"
+
+#: src/ui/image_preview.rs:300
+msgid "Zoom in"
+msgstr "放大"
+
+#: src/ui/image_preview.rs:310
+msgid "Fit"
+msgstr "符合視窗"
+
+#: src/ui/image_preview.rs:311
+msgid "Show at original size"
+msgstr "以原始大小顯示"
+
+#: src/ui/image_preview.rs:317
+msgid "Fit to the window (0)"
+msgstr "符合視窗大小 (0)"
+
+#: src/ui/image_preview.rs:333
+msgid "Zoom out"
+msgstr "縮小"
+
+#: src/ui/image_preview.rs:350
+msgid "Reply"
+msgstr "回覆"
+
+#: src/ui/image_preview.rs:363
+msgid "React"
+msgstr "回應"
+
+#: src/ui/image_preview.rs:407 src/ui/image_preview.rs:592
+msgid "Save as…"
+msgstr "另存為⋯"
+
+#: src/ui/image_preview.rs:423 src/ui/image_preview.rs:778
+#: src/ui/image_preview.rs:786 src/ui/image_preview.rs:868
+msgid "Download"
+msgstr "下載"
+
+#: src/ui/image_preview.rs:444
+msgid "Show in the chat"
+msgstr "在對話中顯示"
+
+#: src/ui/image_preview.rs:499
+msgid "Show the photo"
+msgstr "顯示照片"
+
+#: src/ui/image_preview.rs:503
+msgid "Play motion photo"
+msgstr "播放動態照片"
+
+#: src/ui/image_preview.rs:701
+msgid "This image could not be displayed in Zap."
+msgstr "Zap 無法顯示這張圖片。"
+
+#: src/ui/image_preview.rs:704
+msgid "Open externally"
+msgstr "以外部應用程式開啟"
+
+#: src/ui/image_preview.rs:866
+msgid "Play or pause the video"
+msgstr "播放或暫停影片"
+
+#: src/ui/image_preview.rs:1022 src/ui/info.rs:1063
+msgid "Video"
+msgstr "影片"
+
+#: src/ui/image_preview.rs:1024 src/ui/info.rs:1065
+msgid "Photo"
+msgstr "相片"
+
+#: src/ui/lock.rs:17
+msgid "Zap is locked"
+msgstr "Zap 已鎖定"
+
+#: src/ui/lock.rs:23
+msgid "Unlinking this computer…"
+msgstr "正在取消連結這部電腦⋯"
+
+#: src/ui/lock.rs:52
+msgid "Enter your password to unlock."
+msgstr "請輸入密碼以解鎖。"
+
+#: src/ui/lock.rs:66
+msgid "Password"
+msgstr "密碼"
+
+#: src/ui/lock.rs:76
+#, rust-format
+msgid "Too many wrong passwords. Try again in {seconds} s."
+msgstr "密碼錯誤次數過多，請在 {seconds} 秒後再試一次。"
+
+#: src/ui/lock.rs:97
+msgid "Unlock"
+msgstr "解鎖"
+
+#: src/ui/lock.rs:108
+msgid "Forgot password? Unlink this computer"
+msgstr "忘記密碼？取消連結這部電腦"
+
+#: src/ui/lock.rs:131
+msgid ""
+"Without the password, the only way back in is to unlink. This removes the "
+"device from WhatsApp, deletes the chats stored here, and turns the app lock "
+"off. You can link again with a new code."
+msgstr ""
+"沒有密碼，唯一能再次使用的方式就是取消連結。這會將此裝置從 WhatsApp 移除、刪"
+"除儲存在此處的對話，並關閉應用程式鎖。之後可以用新代碼重新連結。"
+
+#. Translators: the body of a notification that hides who wrote and
+#. what: a message has arrived.
+#: src/notify.rs:397
+msgctxt "notification"
+msgid "New message"
+msgstr "新訊息"
+
+#: src/settings.rs:347
+msgid "After 1 minute"
+msgstr "1 分鐘後"
+
+#: src/settings.rs:348
+msgid "After 15 minutes"
+msgstr "15 分鐘後"
+
+#: src/settings.rs:349
+msgid "After 1 hour"
+msgstr "1 小時後"
+
+#: src/settings.rs:381
+msgid "Direct messages"
+msgstr "個人對話"
+
+#: src/settings.rs:383
+msgid "Direct messages and groups"
+msgstr "個人對話和群組"
+
+#: src/account.rs:295
+#, rust-format
+msgid "Account {id}"
+msgstr "帳號 {id}"
+
+#: src/ui/accounts.rs:33
+msgid "Switch account"
+msgstr "切換帳號"
+
+#: src/ui/accounts.rs:84
+msgid "Not linked"
+msgstr "未連結"
+
+#: src/ui/accounts.rs:232
+#, rust-format
+msgid "{count} unread chats"
+msgstr "{count} 個未讀對話"
+
+#: src/ui/info.rs:39
+msgid "Media, links and docs"
+msgstr "媒體、連結和文件"
+
+#: src/ui/info.rs:244
+msgid "Group info"
+msgstr "群組資訊"
+
+#: src/ui/info.rs:246
+msgid "Channel info"
+msgstr "頻道資訊"
+
+#: src/ui/info.rs:248
+msgid "Contact info"
+msgstr "聯絡人資訊"
+
+#: src/ui/info.rs:316
+msgid "Edit group name"
+msgstr "編輯群組名稱"
+
+#: src/ui/info.rs:443
+msgid "Saving…"
+msgstr "儲存中⋯"
+
+#: src/ui/info.rs:451
+#, rust-format
+msgid "{} member"
+msgid_plural "{} members"
+msgstr[0] "{} 位成員"
+
+#: src/ui/info.rs:521
+msgid "Description"
+msgstr "說明"
+
+#: src/ui/info.rs:822
+#, rust-format
+msgid "{}+"
+msgstr "{}+"
+
+#: src/ui/info.rs:875
+msgid "Could not list the media."
+msgstr "無法列出媒體。"
+
+#: src/ui/info.rs:883 src/ui/login.rs:114
+msgid "Try again"
+msgstr "再試一次"
+
+#: src/ui/info.rs:995
+msgid "No media"
+msgstr "沒有媒體"
+
+#: src/ui/info.rs:998
+msgid "Photos and videos shared in this chat will show here."
+msgstr "此聊天中分享的相片和影片會顯示在這裡。"
+
+#: src/ui/info.rs:1172
+msgid "No documents"
+msgstr "沒有文件"
+
+#: src/ui/info.rs:1173
+msgid "Files shared in this chat will show here."
+msgstr "此聊天中分享的檔案會顯示在這裡。"
+
+#: src/ui/info.rs:1196
+#, rust-format
+msgid "{} page"
+msgid_plural "{} pages"
+msgstr[0] "{} 頁"
+
+#: src/ui/info.rs:1218
+msgid "No links"
+msgstr "沒有連結"
+
+#: src/ui/info.rs:1219
+msgid "Links shared in this chat will show here."
+msgstr "此聊天中分享的連結會顯示在這裡。"
+
+#: src/ui/info.rs:1292
+msgid "Only the newest items are listed."
+msgstr "只列出最新的項目。"
+
+#: src/ui/info.rs:1308
+msgctxt "info tab"
+msgid "Media"
+msgstr "媒體"
+
+#: src/ui/info.rs:1309
+msgctxt "info tab"
+msgid "Docs"
+msgstr "文件"
+
+#: src/ui/info.rs:1310
+msgctxt "info tab"
+msgid "Links"
+msgstr "連結"
+
+#: src/ui/info.rs:1347
+msgid "Change group photo"
+msgstr "變更群組照片"
+
+#: src/ui/info.rs:1354
+msgid "Change photo"
+msgstr "變更照片"
+
+#: src/ui/info.rs:1355
+msgid "Remove photo"
+msgstr "移除照片"
+
+#: src/ui/info.rs:1393
+msgid "Group name"
+msgstr "群組名稱"
+
+#: src/ui/info.rs:1436
+msgid "Save name (Enter)"
+msgstr "儲存名稱（Enter）"
+
+#: src/ui/info.rs:1448
+msgid "Cancel (Escape)"
+msgstr "取消（Escape）"
+
+#: src/ui/login.rs:125
+msgid "Start over…"
+msgstr "重新開始⋯"
+
+#: src/ui/rail.rs:281
+msgid "Calls"
+msgstr "通話"
+
+#: src/ui/rail.rs:288
+msgid "Starred messages"
+msgstr "已加星號的訊息"
+
+#: src/ui/rail.rs:296
+msgid "Archived"
+msgstr "封存"
+
+#: src/ui/rail.rs:302
+msgid "Locked"
+msgstr "已鎖定"
+
+#: src/ui/mod.rs:865
+msgid "Minimize"
+msgstr "最小化"
+
+#: src/ui/mod.rs:866
+msgid "Maximize"
+msgstr "最大化"
+
+#: src/ui/mod.rs:867
+msgid "Restore"
+msgstr "還原"
+
+#~ msgid "Back to the chats"
+#~ msgstr "返回對話"
+
+#~ msgid "Show in chat"
+#~ msgstr "在對話中顯示"
+
+#, rust-format
+#~ msgid "Open the chat with {name}"
+#~ msgstr "開啟與 {name} 的對話"
+
+#~ msgid "Channel"
+#~ msgstr "頻道"
+
+#~ msgid "Contact"
+#~ msgstr "聯絡人"
+
+#~ msgid "Group"
+#~ msgstr "群組"
+
+#~ msgid "New message"
+#~ msgstr "新訊息"
+
+#, fuzzy, rust-format
+#~ msgid "Pinned message: {}"
+#~ msgstr "{} 則未讀訊息"
+
+#, fuzzy
+#~ msgid "Next pinned message"
+#~ msgstr "{} 則未讀訊息"
+
+# ---------------------------------------------------------------------------
+# Strings added by the Go port (gnui), after the ones extracted from the
+# Rust source. Upstream's catalogs have no entry for them. Source references
+# point at gnui/. Kept in one block, sorted by msgid, so a later extraction
+# from the Rust source can be merged around it.
+# ---------------------------------------------------------------------------
+
+#. Translators: shown when exactly one message is selected.
+#: gnui/ui/conversation/selectmode.go:65
+msgid "1 selected"
+msgstr "已選取 1 則"
+
+#: gnui/ui/settings/strs.go:55
+msgid "A native WhatsApp client built with Go and gonativeui."
+msgstr "以 Go 和 gonativeui 打造的原生 WhatsApp 用戶端。"
+
+#: gnui/ui/login/login.go:75
+msgid "A native WhatsApp client."
+msgstr "原生 WhatsApp 用戶端。"
+
+#: gnui/ui/accounts/accounts.go:117
+msgid "Accounts"
+msgstr "帳號"
+
+#: gnui/ui/dialogs/polls.go:69
+msgid "Add 2–12 answers, each with 1–100 characters."
+msgstr "新增 2–12 個答案，每個 1–100 個字元。"
+
+#: gnui/ui/dialogs/polls.go:122
+msgid "Add answer"
+msgstr "新增答案"
+
+#: gnui/ui/dialogs/newchat.go:145
+msgid "Add contact"
+msgstr "新增聯絡人"
+
+#: gnui/ui/info/overview.go:448 gnui/ui/info/overview.go:503
+msgid "Add to contacts"
+msgstr "加入聯絡人"
+
+#: gnui/ui/settings/texts.go:110
+msgid "Allow Zap in System Settings, under Login Items."
+msgstr "請在「系統設定」的「登入項目」中允許 Zap。"
+
+#: gnui/ui/dialogs/polls.go:125
+msgid "Allow multiple answers"
+msgstr "允許多個答案"
+
+#: gnui/ui/dialogs/invite.go:75
+msgid "An admin must approve your request before you join."
+msgstr "管理員必須先核准您的申請，您才能加入。"
+
+#. Translators: {} is the answer's number.
+#: gnui/ui/dialogs/polls.go:109
+msgid "Answer {}"
+msgstr "答案 {}"
+
+#: gnui/ui/dialogs/polls.go:99
+msgid "Answers"
+msgstr "答案"
+
+#: gnui/ui/chatlist/menu.go:348 gnui/ui/conversation/menu.go:396 gnui/ui/info/overview.go:468 gnui/ui/info/overview.go:533 gnui/ui/info/overview.go:534
+msgid "Archive"
+msgstr "封存"
+
+#: gnui/ui/shell/menu.go:126
+msgid "Archive or unarchive the open chat"
+msgstr "封存或取消封存目前開啟的對話"
+
+#: gnui/ui/chatlist/body.go:104
+msgid "Archived chats appear here."
+msgstr "已封存的對話會顯示在這裡。"
+
+#: gnui/ui/dialogs/polls.go:95
+msgid "Ask a question"
+msgstr "提出問題"
+
+#: gnui/ui/chatlist/chatlist.go:632 gnui/ui/conversation/header.go:47
+msgid "Back to chats"
+msgstr "返回對話"
+
+#: gnui/ui/settings/settings.go:258
+msgid "Back to settings"
+msgstr "返回設定"
+
+#: gnui/ui/cropper/cropper.go:623
+msgid "Bottom edge"
+msgstr "下緣"
+
+#: gnui/ui/cropper/cropper.go:624
+msgid "Bottom left corner"
+msgstr "左下角"
+
+#: gnui/ui/cropper/cropper.go:622
+msgid "Bottom right corner"
+msgstr "右下角"
+
+#: gnui/ui/composer/strips.go:89
+msgid "Cancel reply (Esc)"
+msgstr "取消回覆 (Esc)"
+
+#: gnui/ui/conversation/selectmode.go:62
+msgid "Cancel selection"
+msgstr "取消選取"
+
+#: gnui/ui/settings/install.go:131 gnui/ui/settings/install.go:196
+msgid "Cannot inspect this installation: {reason}"
+msgstr "無法檢查此安裝：{reason}"
+
+#: gnui/ui/chatlist/menu.go:171
+msgid "Chat menu"
+msgstr "對話選單"
+
+#: gnui/ui/settings/strs.go:40
+msgid "Check now"
+msgstr "立即檢查"
+
+#: gnui/ui/settings/strs.go:60
+msgid "Checking download…"
+msgstr "正在檢查下載⋯"
+
+#: gnui/ui/settings/strs.go:66
+msgid "Checking for updates…"
+msgstr "正在檢查更新⋯"
+
+#: gnui/ui/dialogs/newchat.go:274
+msgid "Checking the number…"
+msgstr "正在檢查號碼⋯"
+
+#: gnui/ui/chatlist/body.go:118
+msgid "Choose All to see every chat."
+msgstr "選擇「全部」即可查看所有對話。"
+
+#: gnui/ui/dialogs/newchat.go:417
+msgid ""
+"Choose a local code to open the Locked tab. It is separate from your "
+"phone's code. This hides chats in Zap, it does not add another "
+"encryption layer."
+msgstr "請選擇一組本機密碼來開啟「已鎖定」標籤頁。它與您手機上的密碼無關。這只是在 Zap 中隱藏對話，並不會增加額外的加密層。"
+
+#: gnui/ui/dialogs/dialogs.go:256
+msgid "Choose an option"
+msgstr "選擇一個選項"
+
+#: gnui/ui/conversation/menu.go:426
+msgid "Close chat"
+msgstr "關閉對話"
+
+#: gnui/ui/picker/picker.go:390
+msgid "Close reactions"
+msgstr "關閉回應"
+
+#: gnui/ui/screen/keys.go:42
+msgid "Close the window (Zap remains in the tray)"
+msgstr "關閉視窗（Zap 會留在系統匣中）"
+
+#: gnui/ui/screen/keys.go:32
+msgid "Collapse or expand the chat list"
+msgstr "收合或展開對話列表"
+
+#: gnui/ui/dialogs/newchat.go:427
+msgid "Confirm code"
+msgstr "確認密碼"
+
+#: gnui/ui/conversation/kinds/interactive.go:160 gnui/ui/dialogs/interactive.go:49
+msgid "Connect to WhatsApp to reply"
+msgstr "連線到 WhatsApp 後才能回覆"
+
+#: gnui/ui/login/login.go:95 gnui/ui/login/login.go:105
+msgid "Connecting to WhatsApp…"
+msgstr "正在連線到 WhatsApp⋯"
+
+#: gnui/ui/chatlist/format.go:256
+msgid "Contact"
+msgstr "聯絡人"
+
+#. Translators: the heading of the contact results in the chat search.
+#: gnui/ui/chatlist/body.go:223
+msgid "Contacts"
+msgstr "聯絡人"
+
+#: gnui/ui/conversation/kinds/interactive.go:188 gnui/ui/info/overview.go:514 gnui/ui/login/login.go:249
+msgid "Copied"
+msgstr "已複製"
+
+#: gnui/ui/conversation/selectmode.go:73
+msgid "Copy"
+msgstr "複製"
+
+#: gnui/ui/conversation/kinds/interactive.go:183 gnui/ui/login/login.go:245
+msgid "Copy code"
+msgstr "複製代碼"
+
+#: gnui/ui/conversation/menu.go:241
+msgid "Copy message ID"
+msgstr "複製訊息 ID"
+
+#: gnui/ui/conversation/menu.go:151
+msgid "Copy text"
+msgstr "複製文字"
+
+#: gnui/ui/screen/keys.go:31
+msgid "Copy the selected messages"
+msgstr "複製所選訊息"
+
+#: gnui/ui/settings/controls2.go:75
+msgid "Could not change the login item: {error}"
+msgstr "無法變更登入項目：{error}"
+
+#: gnui/ui/settings/update.go:21
+msgid "Could not check for updates: {error}"
+msgstr "無法檢查更新：{error}"
+
+#: gnui/ui/conversation/av/decode.go:76
+msgid "Could not decode the audio: {error}"
+msgstr "無法解碼音訊：{error}"
+
+#: gnui/ui/conversation/kinds/picture.go:178
+msgid "Could not display this picture. Click to open it."
+msgstr "無法顯示此圖片。按一下即可開啟。"
+
+#: gnui/ui/conversation/av/clip.go:704 gnui/ui/conversation/kinds/media.go:243
+msgid "Could not open the attachment: {error}"
+msgstr "無法開啟附件：{error}"
+
+#: gnui/ui/settings/controls2.go:306
+msgid "Could not open the folder: {error}"
+msgstr "無法開啟資料夾：{error}"
+
+#: gnui/ui/conversation/kinds/media.go:381
+msgid "Could not open the link: {error}"
+msgstr "無法開啟連結：{error}"
+
+#: gnui/ui/settings/install.go:217
+msgid "Could not prepare the update: {reason}"
+msgstr "無法準備更新：{reason}"
+
+#: gnui/ui/conversation/av/decode.go:73 gnui/ui/conversation/av/playback.go:393
+msgid "Could not read the audio: {error}"
+msgstr "無法讀取音訊：{error}"
+
+#: gnui/ui/composer/voice.go:423 gnui/ui/composer/voice.go:429
+msgid "Could not record: {}"
+msgstr "無法錄音：{}"
+
+#: gnui/ui/settings/install.go:267
+msgid "Could not start the update: {reason}"
+msgstr "無法開始更新：{reason}"
+
+#: gnui/ui/cropper/cropper.go:635
+msgid "Crop"
+msgstr "裁切"
+
+#: gnui/ui/cropper/cropper.go:433
+msgid "Crop picture"
+msgstr "裁切圖片"
+
+#: gnui/ui/chatlist/menu.go:557
+msgid "Custom"
+msgstr "自訂"
+
+#: gnui/theme/catalog.go:364
+msgid ""
+"Custom themes could not be loaded. Run zapfast reload-themes to try again."
+msgstr "無法載入自訂佈景主題。請執行 zapfast reload-themes 再試一次。"
+
+#: gnui/ui/chatlist/menu.go:532
+msgid "Default"
+msgstr "預設"
+
+#: gnui/ui/chatlist/menu.go:377
+msgid "Delete chat"
+msgstr "刪除對話"
+
+#: gnui/ui/conversation/menu.go:164 gnui/ui/conversation/selectmode.go:98
+msgid "Delete for everyone"
+msgstr "為所有人刪除"
+
+#: gnui/ui/conversation/menu.go:170 gnui/ui/conversation/selectmode.go:104
+msgid "Delete for me"
+msgstr "為我刪除"
+
+#: gnui/ui/conversation/selectmode.go:79 gnui/ui/conversation/selectmode.go:96
+msgid "Delete…"
+msgstr "刪除⋯"
+
+#: gnui/ui/composer/voice.go:477
+msgid "Discard"
+msgstr "丟棄"
+
+#: gnui/ui/screen/keys.go:26
+msgid ""
+"Dismiss the current action, return from search, Calls or Starred, or close "
+"the chat"
+msgstr "取消目前的動作、從搜尋、通話或已加星號返回，或關閉對話"
+
+#: gnui/ui/chatlist/format.go:240 gnui/ui/conversation/kinds/card.go:79 gnui/ui/conversation/kinds/card.go:108
+msgid "Document"
+msgstr "文件"
+
+#. Translators: the button that closes the labels dialog.
+#: gnui/ui/chatlist/labelmgr.go:109
+msgid "Done"
+msgstr "完成"
+
+#: gnui/ui/conversation/album.go:172
+msgid "Download all"
+msgstr "全部下載"
+
+#: gnui/ui/conversation/kinds/picture.go:108
+msgid "Download card image"
+msgstr "下載卡片圖片"
+
+#: gnui/ui/conversation/kinds/picture.go:263
+msgid "Download failed. Click to retry."
+msgstr "下載失敗。按一下即可重試。"
+
+#: gnui/ui/settings/strs.go:64
+msgid "Download from GitHub"
+msgstr "從 GitHub 下載"
+
+#: gnui/ui/conversation/kinds/picture.go:120
+msgid "Download photo"
+msgstr "下載相片"
+
+#: gnui/ui/settings/strs.go:60
+msgid "Download progress"
+msgstr "下載進度"
+
+#: gnui/ui/conversation/kinds/picture.go:118
+msgid "Download sticker"
+msgstr "下載貼圖"
+
+#: gnui/ui/settings/strs.go:65
+msgid "Download update"
+msgstr "下載更新"
+
+#: gnui/ui/conversation/av/clip.go:302 gnui/ui/conversation/av/clip.go:601 gnui/ui/conversation/av/clip.go:644 gnui/ui/conversation/av/voice.go:93 gnui/ui/conversation/kinds/picture.go:116 gnui/ui/viewer/stage.go:264 gnui/ui/viewer/video.go:532
+msgid "Downloading"
+msgstr "正在下載"
+
+#: gnui/ui/conversation/kinds/picture.go:106
+msgid "Downloading card image"
+msgstr "正在下載卡片圖片"
+
+#: gnui/ui/conversation/kinds/picture.go:301
+msgid "Downloading motion photo"
+msgstr "正在下載動態相片"
+
+#: gnui/ui/settings/strs.go:60
+msgid "Downloading update…"
+msgstr "正在下載更新⋯"
+
+#: gnui/ui/conversation/album.go:174 gnui/ui/conversation/menu.go:212
+msgid "Downloading…"
+msgstr "正在下載⋯"
+
+#: gnui/ui/composer/attach.go:323
+msgid "Drop to send to {name}"
+msgstr "放開即可傳送給 {name}"
+
+#: gnui/ui/dialogs/polls.go:74
+msgid "Each answer must be different."
+msgstr "每個答案都必須不同。"
+
+#: gnui/ui/conversation/kinds/poll.go:145
+msgid "Earlier votes have not been loaded yet"
+msgstr "尚未載入先前的投票"
+
+#: gnui/ui/dialogs/polls.go:176
+msgid "Earlier votes may still be missing. Results update as they arrive."
+msgstr "先前的投票可能仍不完整。結果會隨新投票抵達而更新。"
+
+#: gnui/ui/conversation/menu.go:156
+msgid "Edit"
+msgstr "編輯"
+
+#: gnui/ui/screen/keys.go:24
+msgid "Edit the previous message (when the input is empty)"
+msgstr "編輯上一則訊息（輸入框為空時）"
+
+#: gnui/ui/composer/strips.go:63
+msgid "Editing message"
+msgstr "正在編輯訊息"
+
+#. Translators: the name of the emoji tab in the picker.
+#: gnui/ui/picker/picker.go:116
+msgid "Emoji"
+msgstr "表情符號"
+
+#: gnui/ui/composer/composer.go:408
+msgid "Emoji, GIFs, and stickers"
+msgstr "表情符號、GIF 和貼圖"
+
+#. Translators: the standard macOS menu item. Use the wording Apple uses in your language.
+#: gnui/ui/viewer/actions.go:93
+msgid "Enter Full Screen"
+msgstr "進入全螢幕"
+
+#: gnui/ui/dialogs/newchat.go:262
+msgid ""
+"Enter a phone number with its country code, using only digits, spaces, "
+"hyphens and brackets"
+msgstr "請輸入含國碼的電話號碼，僅使用數字、空格、連字號和括號"
+
+#: gnui/ui/dialogs/newchat.go:245
+msgid ""
+"Enter a phone number with its country code. Add a name to save the contact, "
+"or leave it blank to message the number without saving it. WhatsApp uses "
+"the first name as the display name."
+msgstr "請輸入含國碼的電話號碼。加上姓名即可儲存聯絡人，留空則不儲存，直接向該號碼傳訊息。WhatsApp 會將名字當作顯示名稱。"
+
+#: gnui/ui/dialogs/polls.go:60
+msgid "Enter a question of up to 255 characters."
+msgstr "請輸入不超過 255 個字元的問題。"
+
+#: gnui/ui/dialogs/newchat.go:345 gnui/ui/login/login.go:260
+msgid ""
+"Enter the WhatsApp phone number with its country code. Do not include a "
+"plus sign or leading zero. You will get a code to enter on the phone."
+msgstr "請輸入含國碼的 WhatsApp 電話號碼。請勿加上加號或開頭的 0。您會收到一組驗證碼，請在手機上輸入。"
+
+#: gnui/ui/login/login.go:305
+msgid "Enter the phone number with its country code, using digits only"
+msgstr "請輸入含國碼的電話號碼，僅使用數字"
+
+#: gnui/ui/login/login.go:220
+msgid "Enter this code on your phone"
+msgstr "請在手機上輸入這組驗證碼"
+
+#: gnui/ui/dialogs/newchat.go:419
+msgid ""
+"Enter your local Zap code. Leaving the Locked tab or closing the window "
+"locks it again."
+msgstr "請輸入您的 Zap 本機密碼。離開「已鎖定」標籤頁或關閉視窗後，會再次鎖定。"
+
+#. Translators: the standard macOS menu item. Use the wording Apple uses in your language.
+#: gnui/ui/viewer/actions.go:90
+msgid "Exit Full Screen"
+msgstr "離開全螢幕"
+
+#: gnui/ui/settings/strs.go:63
+msgid ""
+"Finish any unsent messages or recordings before restarting. Zap will "
+"briefly disconnect, then reconnect automatically."
+msgstr "重新啟動前，請先處理尚未傳送的訊息或錄音。Zap 會短暫中斷連線，然後自動重新連線。"
+
+#: gnui/ui/dialogs/newchat.go:253 gnui/ui/info/overview.go:379
+msgid "First name"
+msgstr "名字"
+
+#: gnui/ui/shell/menu.go:118
+msgid "Focus the message input"
+msgstr "聚焦到訊息輸入框"
+
+#: gnui/ui/conversation/kinds/media.go:243
+msgid "For safety, open this file yourself from its folder"
+msgstr "基於安全考量，請自行從檔案所在的資料夾開啟此檔案"
+
+#: gnui/ui/conversation/bubble.go:330
+msgid "Forwarded"
+msgstr "已轉寄"
+
+#: gnui/ui/conversation/selectmode.go:83
+msgid "Forward…"
+msgstr "轉寄⋯"
+
+#. Translators: keep it if your language uses the word GIF.
+#: gnui/ui/chatlist/format.go:226
+msgid "GIF"
+msgstr "GIF"
+
+#: gnui/ui/picker/gifs.go:231
+msgid ""
+"GIF search needs a GIPHY API key. Create a free key at developers.giphy.com "
+"and paste it here. It is saved in your settings."
+msgstr "GIF 搜尋需要 GIPHY API 金鑰。請到 developers.giphy.com 建立免費金鑰並貼到這裡。它會儲存在您的設定中。"
+
+#: gnui/ui/dialogs/newchat.go:360 gnui/ui/login/login.go:285
+msgid "Get a code"
+msgstr "取得驗證碼"
+
+#: gnui/ui/chatlist/names.go:71 gnui/ui/conversation/header.go:153 gnui/ui/info/view.go:238
+msgid "Group"
+msgstr "群組"
+
+#: gnui/ui/dialogs/dialogs.go:244
+msgid "Group invite"
+msgstr "群組邀請"
+
+#: gnui/ui/shell/panes.go
+msgid "Hide the chat list (⌘B)"
+msgstr "隱藏對話列表 (⌘B)"
+
+#: gnui/ui/shell/panes.go
+msgid "Show the chat list (⌘B)"
+msgstr "顯示對話列表 (⌘B)"
+
+#. Translators: the verb-less menu item that opens a chat's info panel.
+#: gnui/ui/chatlist/menu.go:375 gnui/ui/conversation/menu.go:377
+msgid "Info"
+msgstr "資訊"
+
+#: gnui/ui/dialogs/invite.go:77
+msgid "Join group"
+msgstr "加入群組"
+
+#: gnui/ui/dialogs/invite.go:80
+msgid "Joining…"
+msgstr "正在加入⋯"
+
+#: gnui/ui/shell/menu.go:128
+msgid "Jump to the newest message"
+msgstr "跳到最新訊息"
+
+#: gnui/ui/screen/keys.go:40
+msgid "Keyboard shortcuts (? when not typing)"
+msgstr "鍵盤快速鍵（未輸入文字時按 ?）"
+
+#: gnui/ui/cropper/cropper.go:625
+msgid "Left edge"
+msgstr "左緣"
+
+#: gnui/ui/conversation/kinds/card.go:201
+msgid "Link preview"
+msgstr "連結預覽"
+
+#: gnui/ui/login/login.go:192 gnui/ui/login/login.go:200
+msgid "Link this computer"
+msgstr "連結這部電腦"
+
+#: gnui/ui/dialogs/dialogs.go:229 gnui/ui/login/login.go:259
+msgid "Link with a phone number"
+msgstr "使用電話號碼連結"
+
+#: gnui/ui/login/login.go:210
+msgid "Link with phone number instead"
+msgstr "改用電話號碼連結"
+
+#: gnui/ui/login/login.go:107
+msgid "Linked. Waiting for your chats…"
+msgstr "已連結。正在等待您的對話⋯"
+
+#. Translators: a screen reader name for a spinner, no ellipsis.
+#: gnui/ui/viewer/stage.go:214 gnui/ui/viewer/video.go:216
+msgid "Loading"
+msgstr "載入中"
+
+#: gnui/ui/conversation/kinds/poll.go:143
+msgid "Loading earlier votes from your phone…"
+msgstr "正在從手機載入先前的投票⋯"
+
+#: gnui/theme/theme.go:364
+msgid "Loading local themes…"
+msgstr "正在載入本機佈景主題⋯"
+
+#: gnui/ui/conversation/conversation.go:512 gnui/ui/conversation/conversation.go:513
+msgid "Loading messages from your phone…"
+msgstr "正在從手機載入訊息⋯"
+
+#: gnui/ui/conversation/bubble.go:207 gnui/ui/conversation/bubble.go:208
+msgid "Loading older messages from your phone…"
+msgstr "正在從手機載入較早的訊息⋯"
+
+#: gnui/cmd/zapfast/budgets.go:292 gnui/ui/chatlist/body.go:60 gnui/ui/chatlist/body.go:72 gnui/ui/chatlist/body.go:121
+msgid "Loading your chats"
+msgstr "正在載入您的對話"
+
+#: gnui/ui/dialogs/newchat.go:421
+msgid "Local code"
+msgstr "本機密碼"
+
+#: gnui/sys/tray.go:34 gnui/ui/shell/menu.go:129
+msgid "Lock Zap"
+msgstr "鎖定 Zap"
+
+#: gnui/ui/screen/keys.go:41
+msgid "Lock Zap (with an app lock password)"
+msgstr "鎖定 Zap（使用 App 鎖定密碼）"
+
+#: gnui/ui/chatlist/body.go:100
+msgid "Lock a chat from its context menu to hide it here."
+msgstr "從對話的內容選單鎖定對話，即可在這裡將其隱藏。"
+
+#: gnui/ui/chatlist/menu.go:369 gnui/ui/dialogs/confirm.go:51
+msgid "Lock chat"
+msgstr "鎖定對話"
+
+#: gnui/ui/dialogs/confirm.go:49
+msgid "Lock this chat?"
+msgstr "要鎖定此對話嗎？"
+
+#: gnui/ui/chatlist/chatlist.go:629 gnui/ui/dialogs/newchat.go:403
+msgid "Locked chats"
+msgstr "已鎖定的對話"
+
+#: gnui/ui/composer/strips.go:215
+msgid "Locked chats are read-only in Zap"
+msgstr "已鎖定的對話在 Zap 中為唯讀"
+
+#: gnui/ui/dialogs/invite.go:56
+msgid "Looking up the group…"
+msgstr "正在尋找群組⋯"
+
+#: gnui/ui/chatlist/menu.go:329
+msgid "Mark as read"
+msgstr "標示為已讀"
+
+#: gnui/ui/chatlist/menu.go:331
+msgid "Mark as unread"
+msgstr "標示為未讀"
+
+#. Translators: the heading above a group's member list; a count in brackets follows.
+#: gnui/ui/info/media.go:229
+msgid "Members"
+msgstr "成員"
+
+#. Translators: the preview of a chat in which someone mentioned you.
+#: gnui/ui/chatlist/rows.go:262
+msgid "Mentioned you"
+msgstr "提到了您"
+
+#: gnui/ui/chatlist/format.go:262
+msgid "Message on your phone"
+msgstr "手機上的訊息"
+
+#. Translators: the heading of the message results in the chat search.
+#: gnui/ui/chatlist/body.go:221
+msgid "Messages"
+msgstr "訊息"
+
+#: gnui/ui/conversation/header.go:123 gnui/ui/conversation/menu.go:374
+msgid "More"
+msgstr "更多"
+
+#: gnui/ui/conversation/kinds/interactive.go:107
+msgid "More content in WhatsApp Web or on your phone"
+msgstr "更多內容請在 WhatsApp 網頁版或手機上查看"
+
+#: gnui/ui/settings/install.go:121
+msgid "Move the app to Applications, then open it to update."
+msgstr "請先將 App 移到「應用程式」資料夾，再開啟它進行更新。"
+
+#: gnui/ui/chatlist/menu.go:100
+msgid "Mute all channels"
+msgstr "將所有頻道靜音"
+
+#: gnui/ui/chatlist/menu.go:360
+msgid "Mute for 8 hours"
+msgstr "靜音 8 小時"
+
+#: gnui/ui/chatlist/menu.go:361
+msgid "Mute for a week"
+msgstr "靜音一週"
+
+#: gnui/ui/chatlist/menu.go:362
+msgid "Mute indefinitely"
+msgstr "永久靜音"
+
+#: gnui/ui/info/view.go:263
+msgid "Muted"
+msgstr "已靜音"
+
+#. Translators: followed by a date or time.
+#: gnui/ui/info/view.go:265
+msgid "Muted until"
+msgstr "靜音至"
+
+#: gnui/ui/dialogs/dialogs.go:223
+msgid "New chat"
+msgstr "新增對話"
+
+#: gnui/ui/chatlist/chatlist.go:652
+msgid "New chat (⌘N)"
+msgstr "新增對話 (⌘N)"
+
+#: gnui/ui/screen/keys.go:27
+msgid "New chat or message yourself"
+msgstr "新增對話或傳訊息給自己"
+
+#: gnui/ui/dialogs/dialogs.go:226
+msgid "New contact"
+msgstr "新增聯絡人"
+
+#: gnui/ui/conversation/conversation.go:610
+msgid "Newest message"
+msgstr "最新訊息"
+
+#: gnui/ui/viewer/viewer.go:655
+msgid "Next"
+msgstr "下一個"
+
+#: gnui/ui/viewer/viewer.go:653
+msgid "Next (Right arrow)"
+msgstr "下一個（向右鍵）"
+
+#: gnui/ui/conversation/kinds/interactive.go:404
+msgid "Next card"
+msgstr "下一張卡片"
+
+#: gnui/ui/chatlist/body.go:112
+msgid "No channels"
+msgstr "沒有頻道"
+
+#: gnui/ui/chatlist/body.go:123
+msgid "No chats yet"
+msgstr "尚無對話"
+
+#: gnui/ui/chatlist/body.go:116
+msgid "No groups"
+msgstr "沒有群組"
+
+#: gnui/ui/chatlist/body.go:100
+msgid "No locked chats"
+msgstr "沒有已鎖定的對話"
+
+#: gnui/ui/conversation/conversation.go:517
+msgid "No messages here yet"
+msgstr "尚無訊息"
+
+#: gnui/ui/chatlist/body.go:110
+msgid "No private chats"
+msgstr "沒有私聊"
+
+#: gnui/ui/chatlist/body.go:102
+msgid "No results"
+msgstr "沒有結果"
+
+#: gnui/ui/chatlist/menu.go:536
+msgid "No sound"
+msgstr "無聲音"
+
+#: gnui/ui/chatlist/body.go:108
+msgid "No unread chats"
+msgstr "沒有未讀對話"
+
+#: gnui/ui/settings/strs.go:67
+msgid "No update feed is configured."
+msgstr "尚未設定更新來源。"
+
+#: gnui/ui/dialogs/forward.go:82
+msgid "No writable chats found"
+msgstr "找不到可寫入的對話"
+
+#: gnui/ui/settings/strs.go:67
+msgid "Not checked yet"
+msgstr "尚未檢查"
+
+#: gnui/ui/conversation/bubble.go:523
+msgid "Not sent"
+msgstr "未傳送"
+
+#: gnui/ui/chatlist/body.go:104
+msgid "Nothing archived"
+msgstr "沒有已封存的對話"
+
+#: gnui/ui/chatlist/menu.go:364
+msgid "Notification sound"
+msgstr "通知提示音"
+
+#: gnui/ui/settings/texts.go:135
+msgid "On"
+msgstr "開啟"
+
+#: gnui/theme/catalog.go:362
+msgid ""
+"Only 128 custom palettes can be listed. Keep fewer JSON files in the themes "
+"folder to see the rest."
+msgstr "最多只能列出 128 個自訂調色盤。請在佈景主題資料夾中保留較少的 JSON 檔案以查看其餘內容。"
+
+#: gnui/ui/login/login.go:206 gnui/ui/login/login.go:241
+msgid "Open WhatsApp on your phone"
+msgstr "在手機上開啟 WhatsApp"
+
+#: gnui/ui/shell/menu.go:132
+msgid "Open a chat by its position in the chat list"
+msgstr "依對話在列表中的位置開啟對話"
+
+#: gnui/ui/conversation/kinds/picture.go:102
+msgid "Open card image"
+msgstr "開啟卡片圖片"
+
+#: gnui/ui/dialogs/invite.go:82
+msgid "Open chat"
+msgstr "開啟對話"
+
+#: gnui/ui/dialogs/newchat.go:436
+msgid "Open locked chats"
+msgstr "開啟已鎖定的對話"
+
+#: gnui/ui/settings/strs.go:54
+msgid "Open themes folder"
+msgstr "開啟佈景主題資料夾"
+
+#: gnui/ui/conversation/kinds/interactive.go:166
+msgid "Open this option in WhatsApp Web or on your phone"
+msgstr "請在 WhatsApp 網頁版或手機上開啟此選項"
+
+#: gnui/ui/dialogs/polls.go:210
+msgid "Participant details are not available yet"
+msgstr "參與者詳細資料暫時無法使用"
+
+#: gnui/ui/screen/keys.go:30
+msgid "Paste text, or stage a picture from the clipboard"
+msgstr "貼上文字，或從剪貼簿加入圖片"
+
+#: gnui/ui/dialogs/newchat.go:246 gnui/ui/dialogs/newchat.go:346 gnui/ui/login/login.go:263
+msgid "Phone number"
+msgstr "電話號碼"
+
+#: gnui/ui/viewer/viewer.go:533
+msgid "Photos and videos"
+msgstr "相片和影片"
+
+#. Translators: the name of a notification sound. Keep it.
+#: gnui/ui/chatlist/menu.go:533
+msgid "Pidgin"
+msgstr "Pidgin"
+
+#. Translators: the verb on a button, to pin a chat.
+#: gnui/ui/info/overview.go:463 gnui/ui/info/overview.go:523 gnui/ui/info/overview.go:531
+msgid "Pin"
+msgstr "釘選"
+
+#: gnui/ui/chatlist/menu.go:336 gnui/ui/conversation/menu.go:386
+msgid "Pin to top"
+msgstr "釘選到最上方"
+
+#: gnui/ui/conversation/av/clip.go:529 gnui/ui/conversation/menu.go:268
+msgid "Playback speed {label}"
+msgstr "播放速度 {label}"
+
+#: gnui/ui/conversation/av/voice.go:301
+msgid "Playback speed. Right-click for every speed."
+msgstr "播放速度。按右鍵可查看所有速度。"
+
+#: gnui/ui/chatlist/format.go:258
+msgid "Poll"
+msgstr "投票"
+
+#: gnui/ui/dialogs/dialogs.go:254
+msgid "Poll results"
+msgstr "投票結果"
+
+#: gnui/ui/settings/strs.go:64
+msgid "Preparing to restart…"
+msgstr "正在準備重新啟動⋯"
+
+#: gnui/ui/viewer/viewer.go:655
+msgid "Previous"
+msgstr "上一個"
+
+#: gnui/ui/viewer/viewer.go:653
+msgid "Previous (Left arrow)"
+msgstr "上一個（向左鍵）"
+
+#: gnui/ui/screen/keys.go:19
+msgid "Previous / next chat"
+msgstr "上一個 / 下一個對話"
+
+#: gnui/ui/screen/keys.go:20
+msgid "Previous / next chat, as in WhatsApp"
+msgstr "上一個 / 下一個對話，與 WhatsApp 相同"
+
+#: gnui/ui/screen/keys.go:39
+msgid "Previous / next item in the media viewer"
+msgstr "媒體檢視器中的上一項 / 下一項"
+
+#: gnui/ui/conversation/kinds/interactive.go:401
+msgid "Previous card"
+msgstr "上一張卡片"
+
+#: gnui/ui/dialogs/polls.go:93
+msgid "Question"
+msgstr "問題"
+
+#. Translators: the tray menu item that quits the app.
+#: gnui/sys/tray.go:35
+msgid "Quit"
+msgstr "結束"
+
+#: gnui/ui/picker/picker.go:389
+msgid "React to message"
+msgstr "對訊息做出回應"
+
+#: gnui/ui/conversation/menu.go:90
+msgid "React with any emoji"
+msgstr "以任何表情符號回應"
+
+#: gnui/ui/settings/strs.go:62
+msgid "Ready to install"
+msgstr "可以安裝"
+
+#: gnui/ui/chatlist/body.go:121
+msgid "Receiving history from your phone."
+msgstr "正在從手機接收記錄。"
+
+#: gnui/ui/conversation/kinds/poll.go:175
+msgid "Reconnect to vote"
+msgstr "請重新連線後再投票"
+
+#: gnui/ui/composer/composer.go:443
+msgid "Record a voice message"
+msgstr "錄製語音訊息"
+
+#: gnui/ui/composer/voice.go:475 gnui/ui/composer/voice.go:509
+msgid "Recording"
+msgstr "正在錄音"
+
+#: gnui/ui/settings/strs.go:59
+msgid "Release notes"
+msgstr "版本資訊"
+
+#: gnui/ui/dialogs/polls.go:113
+msgid "Remove answer"
+msgstr "移除答案"
+
+#: gnui/ui/info/overview.go:446 gnui/ui/info/overview.go:503
+msgid "Rename"
+msgstr "重新命名"
+
+#: gnui/ui/conversation/kinds/interactive.go:164
+msgid "Reply options are for the recipient"
+msgstr "回覆選項僅供收件者使用"
+
+#: gnui/ui/composer/strips.go:163
+msgid "Replying to {who}"
+msgstr "正在回覆 {who}"
+
+#: gnui/ui/dialogs/listener.go:61
+msgid "Request sent. An admin must approve it before you join."
+msgstr "申請已送出。管理員必須先核准，您才能加入。"
+
+#: gnui/ui/dialogs/invite.go:84
+msgid "Request to join"
+msgstr "申請加入"
+
+#: gnui/ui/login/login.go:112
+msgid "Requesting a new code…"
+msgstr "正在要求新的驗證碼⋯"
+
+#: gnui/ui/screen/keys.go:38
+msgid "Reset zoom"
+msgstr "重設縮放"
+
+#: gnui/ui/settings/strs.go:64
+msgid "Restart to update"
+msgstr "重新啟動以更新"
+
+#: gnui/ui/conversation/kinds/picture.go:104
+msgid "Retry card image download"
+msgstr "重試下載卡片圖片"
+
+#: gnui/ui/conversation/kinds/picture.go:114 gnui/ui/settings/strs.go:65
+msgid "Retry download"
+msgstr "重試下載"
+
+#: gnui/ui/cropper/cropper.go:621
+msgid "Right edge"
+msgstr "右緣"
+
+#: gnui/ui/dialogs/newchat.go:282
+msgid "Save contact"
+msgstr "儲存聯絡人"
+
+#: gnui/ui/screen/keys.go:34
+msgid "Scroll the open chat by a page"
+msgstr "將目前的對話捲動一頁"
+
+#: gnui/ui/picker/gifs.go:128
+msgid "Search GIFs via GIPHY"
+msgstr "透過 GIPHY 搜尋 GIF"
+
+#: gnui/ui/dialogs/forward.go:72 gnui/ui/shell/menu.go:117
+msgid "Search chats"
+msgstr "搜尋對話"
+
+#: gnui/ui/dialogs/newchat.go:146
+msgid "Search contacts"
+msgstr "搜尋聯絡人"
+
+#: gnui/ui/picker/emojitab.go:131
+msgid "Search emoji"
+msgstr "搜尋表情符號"
+
+#: gnui/ui/picker/gifs.go:185
+msgid "Search for a GIF or browse trending results."
+msgstr "搜尋 GIF，或瀏覽熱門結果。"
+
+#: gnui/ui/screen/keys.go:16
+msgid "Search the open chat or the settings"
+msgstr "在目前的對話或設定中搜尋"
+
+#: gnui/ui/picker/gifs.go:148
+msgid "Searching…"
+msgstr "正在搜尋⋯"
+
+#. Translators: a screen reader name for the video position slider.
+#: gnui/ui/viewer/video.go:325
+msgid "Seek"
+msgstr "播放位置"
+
+#. Translators: the verb in a message's menu, to start selecting messages.
+#: gnui/ui/conversation/menu.go:147
+msgid "Select"
+msgstr "選取"
+
+#: gnui/ui/conversation/kinds/poll.go:231
+msgid "Select answers"
+msgstr "選取答案"
+
+#: gnui/ui/conversation/kinds/poll.go:233
+msgid "Select one answer"
+msgstr "選取一個答案"
+
+#: gnui/ui/screen/keys.go:25
+msgid "Send (Shift+Enter for a new line)"
+msgstr "傳送（Shift+Enter 換行）"
+
+#: gnui/ui/dialogs/polls.go:134
+msgid "Send poll"
+msgstr "傳送投票"
+
+#: gnui/ui/conversation/kinds/interactive.go:178
+msgid "Send reply: {label}"
+msgstr "傳送回覆：{label}"
+
+#: gnui/ui/picker/gifs.go:104
+msgid "Sending GIF…"
+msgstr "正在傳送 GIF⋯"
+
+#: gnui/ui/conversation/kinds/interactive.go:158 gnui/ui/dialogs/interactive.go:54
+msgid "Sending reply…"
+msgstr "正在傳送回覆⋯"
+
+#: gnui/ui/conversation/kinds/poll.go:139
+msgid "Sending vote…"
+msgstr "正在傳送投票⋯"
+
+#: gnui/ui/composer/send.go:156
+msgid "Sending {} file…"
+msgid_plural "Sending {} files…"
+msgstr[0] "正在傳送 {} 個檔案⋯"
+
+#: gnui/ui/dialogs/polls.go:136
+msgid "Sending…"
+msgstr "正在傳送⋯"
+
+#: gnui/ui/settings/settings.go:252
+msgid "Set chat wallpaper"
+msgstr "設定對話背景"
+
+#: gnui/ui/dialogs/newchat.go:438
+msgid "Set code and open"
+msgstr "設定密碼並開啟"
+
+#: gnui/ui/dialogs/newchat.go:401
+msgid "Set up locked chats"
+msgstr "設定已鎖定的對話"
+
+#: gnui/ui/conversation/menu.go:204
+msgid "Show in folder"
+msgstr "在資料夾中顯示"
+
+#: gnui/sys/tray.go:33
+msgid "Show or hide Zap"
+msgstr "顯示或隱藏 Zap"
+
+#: gnui/ui/conversation/kinds/poll.go:354 gnui/ui/conversation/kinds/poll.go:363
+msgid "Show votes"
+msgstr "顯示投票"
+
+#. Translators: the label of the row that shows the update status.
+#: gnui/ui/settings/rows.go:181
+msgid "Status"
+msgstr "狀態"
+
+#: gnui/ui/chatlist/format.go:242 gnui/ui/conversation/kinds/picture.go:110 gnui/ui/picker/stickers.go:414 gnui/ui/stickermaker/stickermaker.go:263 gnui/ui/viewer/sticker.go:226 gnui/ui/viewer/sticker.go:255 gnui/ui/viewer/sticker.go:276
+msgid "Sticker"
+msgstr "貼圖"
+
+#: gnui/ui/composer/strips.go:65
+msgid "Stop editing (Esc)"
+msgstr "停止編輯 (Esc)"
+
+#: gnui/ui/dialogs/newchat.go:255 gnui/ui/info/overview.go:385
+msgid "Surname"
+msgstr "姓氏"
+
+#: gnui/ui/shell/menu.go:127
+msgid "Switch to the next linked number"
+msgstr "切換到下一個已連結的號碼"
+
+#: gnui/ui/chatlist/menu.go:535
+msgid "System sound"
+msgstr "系統聲音"
+
+#: gnui/ui/login/login.go:208
+msgid "Tap Link a device and point the phone at this code"
+msgstr "點一下「連結裝置」，然後將手機對準此 QR 碼"
+
+#: gnui/ui/login/login.go:243
+msgid "Tap Link a device, then Link with phone number instead"
+msgstr "點一下「連結裝置」，然後點一下「改用電話號碼連結」"
+
+#: gnui/ui/login/login.go:207 gnui/ui/login/login.go:242
+msgid "Tap Menu or Settings, then Linked devices"
+msgstr "點一下「選單」或「設定」，然後點一下「已連結的裝置」"
+
+#: gnui/ui/dialogs/newchat.go:430
+msgid "That code did not match. Try again."
+msgstr "密碼不一致。請再試一次。"
+
+#: gnui/ui/conversation/av/decode.go:58
+msgid "The clip is empty"
+msgstr "片段是空的"
+
+#: gnui/ui/settings/controls2.go:302
+msgid "The folder is unavailable"
+msgstr "資料夾無法使用"
+
+#: gnui/theme/theme.go:366
+msgid ""
+"The selected theme is unavailable. Keeping the last usable appearance. See "
+"the log for details."
+msgstr "所選的佈景主題無法使用。已保留上一個可用的外觀。詳細資料請查看記錄檔。"
+
+#: gnui/theme/catalog.go:358
+msgid "The themes folder could not be read. See the log for details."
+msgstr "無法讀取佈景主題資料夾。詳細資料請查看記錄檔。"
+
+#: gnui/theme/catalog.go:360
+msgid ""
+"The themes folder has more than 512 entries. Keep fewer files there to list "
+"the custom palettes."
+msgstr "佈景主題資料夾中的項目超過 512 個。請減少其中的檔案，以便列出自訂調色盤。"
+
+#: gnui/ui/settings/install.go:330 gnui/ui/settings/install.go:332
+msgid "The update could not be installed: {reason}"
+msgstr "無法安裝更新：{reason}"
+
+#: gnui/ui/settings/install.go:324
+msgid "The update could not start. The previous version has been restored."
+msgstr "更新無法開始。已還原為上一個版本。"
+
+#: gnui/ui/settings/install.go:212
+msgid "The update was not installed: {reason}"
+msgstr "更新未安裝：{reason}"
+
+#: gnui/ui/picker/gifs.go:233
+msgid ""
+"This GIPHY API key was rejected. Create a free key at developers.giphy.com "
+"and paste it here. It is saved in your settings."
+msgstr "此 GIPHY API 金鑰已被拒絕。請到 developers.giphy.com 建立免費金鑰並貼到這裡。它會儲存在您的設定中。"
+
+#: gnui/ui/settings/install.go:123
+msgid "This app bundle is not a release of this app."
+msgstr "此 App 套件不是本 App 的發行版本。"
+
+#: gnui/ui/login/login.go:110
+msgid "This computer was unlinked from your phone. Requesting a new code."
+msgstr "這部電腦已與您的手機取消連結。正在要求新的驗證碼。"
+
+#: gnui/ui/conversation/kinds/interactive.go:162
+msgid "This conversation is read-only"
+msgstr "此對話為唯讀"
+
+#: gnui/ui/settings/install.go:127
+msgid ""
+"This copy of Zap has no publisher signature, so an update cannot be "
+"checked against it. Use the download page."
+msgstr "此 Zap 副本沒有發行者簽章，因此無法據此檢查更新。請使用下載頁面。"
+
+#: gnui/ui/dialogs/about.go:36
+msgid ""
+"This is an unofficial client. Using it may be against WhatsApp's terms of "
+"service and could get an account suspended."
+msgstr "這是非官方的用戶端。使用它可能違反 WhatsApp 的服務條款，並可能導致帳號遭停用。"
+
+#: gnui/ui/conversation/kinds/media.go:391 gnui/ui/info/media.go:512
+msgid "This link type cannot be opened from Zap"
+msgstr "無法從 Zap 開啟此類連結"
+
+#: gnui/ui/dialogs/interactive.go:52
+msgid "This list can no longer receive replies."
+msgstr "此列表已無法接收回覆。"
+
+#: gnui/ui/dialogs/interactive.go:37
+msgid "This list is no longer available."
+msgstr "此列表已無法使用。"
+
+#: gnui/ui/chatlist/format.go:260 gnui/ui/conversation/bubble.go:323 gnui/ui/conversation/kinds/note.go:93
+msgid "This message was deleted"
+msgstr "此訊息已刪除"
+
+#: gnui/ui/dialogs/confirm.go:50
+msgid ""
+"This moves the chat to the Locked tab, hiding it from the normal chat list, "
+"search, unread badges, and notifications. The lock status also syncs to "
+"your phone. Open Locked with a separate local Zap code to read it. "
+"Sending from locked chats is not supported yet."
+msgstr ""
+"這會將對話移到「已鎖定」標籤頁，並將其從一般對話列表、搜尋、未讀標記和通知中隱藏。鎖定狀態也會與您的手機同步。若要閱讀，請使用另一組 Zap "
+"本機密碼開啟「已鎖定」。目前尚不支援從已鎖定的對話傳送訊息。"
+
+#: gnui/ui/dialogs/polls.go:167
+msgid "This poll is no longer available."
+msgstr "此投票已無法使用。"
+
+#: gnui/ui/settings/install.go:210
+msgid "This update is not newer than the version you are running."
+msgstr "此更新並不比您正在執行的版本更新。"
+
+#: gnui/ui/screen/keys.go:35
+msgid "Top / bottom of the open chat (when the input is empty)"
+msgstr "目前對話的頂端 / 底端（輸入框為空時）"
+
+#: gnui/ui/cropper/cropper.go:619
+msgid "Top edge"
+msgstr "上緣"
+
+#: gnui/ui/cropper/cropper.go:618
+msgid "Top left corner"
+msgstr "左上角"
+
+#: gnui/ui/cropper/cropper.go:620
+msgid "Top right corner"
+msgstr "右上角"
+
+#: gnui/ui/chatlist/body.go:102
+msgid "Try another name, number, or message text."
+msgstr "試試其他名字、號碼或訊息文字。"
+
+#: gnui/ui/chatlist/menu.go:346 gnui/ui/conversation/menu.go:398 gnui/ui/info/overview.go:466 gnui/ui/info/overview.go:533
+msgid "Unarchive"
+msgstr "取消封存"
+
+#: gnui/ui/chatlist/menu.go:367
+msgid "Unlock chat"
+msgstr "解鎖對話"
+
+#: gnui/ui/chatlist/menu.go:102
+msgid "Unmute all channels"
+msgstr "取消所有頻道的靜音"
+
+#: gnui/ui/login/login.go:80
+msgid "Unofficial client. Using it may be against WhatsApp's terms of service."
+msgstr "非官方的用戶端。使用它可能違反 WhatsApp 的服務條款。"
+
+#: gnui/ui/chatlist/menu.go:334 gnui/ui/conversation/menu.go:388 gnui/ui/info/overview.go:461 gnui/ui/info/overview.go:529
+msgid "Unpin"
+msgstr "取消釘選"
+
+#: gnui/ui/conversation/kinds/note.go:96
+msgid "Unsupported: {what}"
+msgstr "不支援：{what}"
+
+#: gnui/ui/settings/strs.go:59
+msgid "Update Zap"
+msgstr "更新 Zap"
+
+#: gnui/ui/settings/install.go:103 gnui/ui/settings/install.go:108
+msgid "Update this installation with Homebrew."
+msgstr "請使用 Homebrew 更新此安裝。"
+
+#: gnui/ui/settings/install.go:101
+msgid "Update this installation with Nix."
+msgstr "請使用 Nix 更新此安裝。"
+
+#: gnui/ui/settings/install.go:99
+msgid "Update this installation with cargo install."
+msgstr "請使用 cargo install 更新此安裝。"
+
+#. Translators: the title of the settings section about updates.
+#: gnui/ui/settings/rows.go:45
+msgid "Updates"
+msgstr "更新"
+
+#: gnui/ui/settings/texts.go:111
+msgid ""
+"Updates come from a local test feed until the first release feed exists."
+msgstr "在第一個發行來源出現之前，更新來自本機測試來源。"
+
+#: gnui/ui/settings/install.go:344
+msgid ""
+"Updating to {version} failed and Zap went back to the previous version."
+msgstr "更新至 {version} 失敗，Zap 已還原為上一個版本。"
+
+#: gnui/ui/settings/install.go:346
+msgid ""
+"Updating to {version} failed and Zap went back to the previous version: "
+"{reason}"
+msgstr "更新至 {version} 失敗，Zap 已還原為上一個版本：{reason}"
+
+#: gnui/ui/chatlist/body.go:123
+msgid "Use New chat to message a contact or yourself."
+msgstr "使用「新增對話」即可傳訊息給聯絡人或自己。"
+
+#: gnui/ui/login/login.go:326
+msgid "Use another account"
+msgstr "使用其他帳號"
+
+#: gnui/ui/settings/install.go:129
+msgid "Use the download page for this operating system or architecture."
+msgstr "請使用適用於此作業系統或架構的下載頁面。"
+
+#. Translators: the label of the row that shows the running version.
+#: gnui/ui/settings/rows.go:180
+msgid "Version"
+msgstr "版本"
+
+#: gnui/ui/dialogs/about.go:32
+msgid "Version {version}"
+msgstr "版本 {version}"
+
+#: gnui/ui/conversation/av/clip.go:211
+msgid "Video message"
+msgstr "影片訊息"
+
+#: gnui/ui/chatlist/format.go:232 gnui/ui/conversation/av/voice.go:145
+msgid "Voice message"
+msgstr "語音訊息"
+
+#: gnui/ui/conversation/kinds/poll.go:173
+msgid "Voting key unavailable · use your phone"
+msgstr "無法使用投票金鑰 · 請使用手機"
+
+#: gnui/ui/login/login.go:129
+msgid "Waiting for a code from WhatsApp…"
+msgstr "正在等待 WhatsApp 傳來驗證碼⋯"
+
+#: gnui/ui/conversation/kinds/poll.go:141
+msgid "Waiting for your phone · earlier votes may be missing"
+msgstr "正在等待手機 · 先前的投票可能不完整"
+
+#: gnui/ui/screen/keys.go:17
+msgid "Walk the open chat's search results and jump to one"
+msgstr "逐一瀏覽目前對話的搜尋結果並跳到其中一則"
+
+#: gnui/ui/settings/strs.go:44
+msgid "Wallpaper colours"
+msgstr "背景顏色"
+
+#: gnui/ui/settings/strs.go:45
+msgid "Wallpaper preview"
+msgstr "背景預覽"
+
+#: gnui/ui/settings/strs.go:87
+msgid "Working…"
+msgstr "處理中⋯"
+
+#: gnui/ui/chatlist/menu.go:491 gnui/ui/info/overview.go:525
+msgid "You can only pin {} chats"
+msgstr "您最多只能釘選 {} 個對話"
+
+#: gnui/sys/cli.go:51 gnui/sys/targets.go:63
+msgid "Zap cannot read a phone number from {argument}"
+msgstr "Zap 無法從 {argument} 讀取電話號碼"
+
+#: gnui/ui/settings/install.go:125
+msgid ""
+"Zap cannot replace itself here. Move it to a folder you can write to, "
+"such as Applications, or use the download page."
+msgstr "Zap 無法在此處取代自己。請將它移到您有寫入權限的資料夾，例如「應用程式」，或使用下載頁面。"
+
+#: gnui/ui/settings/strs.go:66
+msgid "Zap is up to date"
+msgstr "Zap 已是最新版本"
+
+#: gnui/ui/settings/install.go:322
+msgid "Zap was updated to {version}."
+msgstr "Zap 已更新至 {version}。"
+
+#: gnui/ui/screen/keys.go:37
+msgid "Zoom in / out"
+msgstr "放大 / 縮小"
+
+#. Translators: a small label after the time of a message that was edited. Lowercase.
+#: gnui/ui/conversation/footer.go:69 gnui/ui/conversation/footer.go:173
+msgid "edited"
+msgstr "已編輯"
+
+#. Translators: the reason in "Could not record: no microphone". Lowercase, no full stop.
+#: gnui/ui/composer/voice.go:416
+msgid "no microphone"
+msgstr "沒有麥克風"
+
+#. Translators: joins two sizes in a download progress line, as in "12 of 40 MB".
+#: gnui/ui/settings/strs.go:61
+msgid "of"
+msgstr "/"
+
+#. Translators: the status under a contact's name in the conversation header. Lowercase.
+#: gnui/ui/conversation/header.go:157
+msgid "online"
+msgstr "上線"
+
+#. Translators: lowercase status; shown alone, without a name.
+#: gnui/ui/chatlist/body.go:205 gnui/ui/conversation/extras.go:102
+msgid "typing…"
+msgstr "正在輸入⋯"
+
+#. Translators: read out by a screen reader for a chat marked unread by hand.
+#: gnui/ui/chatlist/rows.go:467
+msgid "unread"
+msgstr "未讀"
+
+#: gnui/ui/dialogs/polls.go:190
+msgid "{count} vote"
+msgid_plural "{count} votes"
+msgstr[0] "{count} 票"
+
+#: gnui/ui/conversation/av/clip.go:628 gnui/ui/conversation/av/voice.go:219 gnui/ui/conversation/kinds/card.go:112
+msgid "{error}. Click to retry."
+msgstr "{error}。按一下即可重試。"
+
+#: gnui/ui/conversation/extras.go:104
+msgid "{one} is typing…"
+msgstr "{one} 正在輸入⋯"
+
+#: gnui/ui/chatlist/body.go:203
+msgid "{} is typing…"
+msgstr "{} 正在輸入⋯"
+
+#. Translators: the number of selected messages, two or more; the count is already in the text.
+#: gnui/ui/conversation/selectmode.go:67
+msgid "{} selected"
+msgstr "已選取 {} 則"
+
+#. Translators: read out by a screen reader after a chat's name; {} is the count.
+#: gnui/ui/chatlist/rows.go:471
+msgid "{} unread messages"
+msgstr "{} 則未讀訊息"
+
+#. Translators: read out by a screen reader after a chat's name; {} is the count.
+#: gnui/ui/chatlist/rows.go:469
+msgid "{} unread messages, mentioned you"
+msgstr "{} 則未讀訊息，提到了您"
+
+# ---------------------------------------------------------------------------
+# Second batch of strings added by the Go port (gnui): English the screens
+# showed without going through gettext, now wrapped, and the About paragraph
+# reworded for Go. Source references point at gnui/. Sorted by msgid.
+# ---------------------------------------------------------------------------
+
+#. Translators: keep the shape of upstream's paragraph. Go, gonativeui and whatsapp-rust are names.
+#: gnui/ui/dialogs/about.go:35
+msgid ""
+"A native WhatsApp client written in Go with gonativeui. It connects through "
+"whatsapp-rust. Messages are end-to-end encrypted on this device."
+msgstr ""
+"以 Go 和 gonativeui 撰寫的原生 WhatsApp 用戶端。它透過 whatsapp-rust 連線。訊息在這部裝置上進行端對端加密。"
+
+#: gnui/ui/settings/controls2.go:179
+msgid "A proxy address has no path"
+msgstr "代理伺服器位址不能包含路徑"
+
+#. Translators: Unicode's name for an emoji group; use the name your platform shows.
+#: gnui/ui/picker/emoji.go:31
+msgid "Activities"
+msgstr "活動"
+
+#. Translators: Unicode's name for an emoji group; use the name your platform shows.
+#: gnui/ui/picker/emoji.go:25
+msgid "Animals & Nature"
+msgstr "動物與自然"
+
+#: gnui/state/events.go:245
+msgid "Back online"
+msgstr "已恢復上線"
+
+#: gnui/ui/calls/page.go:382
+msgid "Call history"
+msgstr "通話記錄"
+
+#: gnui/ui/info/overview.go:132
+msgid "Chat info"
+msgstr "對話資訊"
+
+#. Translators: a screen reader name for a spinner, no ellipsis.
+#: gnui/ui/lock/lock.go:166
+msgid "Checking"
+msgstr "正在檢查"
+
+#: gnui/ui/shell/shell.go:921
+msgid "Close settings"
+msgstr "關閉設定"
+
+#: gnui/ui/msginfo/msginfo.go:390
+msgid "Contact: {name}"
+msgstr "聯絡人：{name}"
+
+#: gnui/ui/shell/shell.go:1311
+msgid "Copy this message"
+msgstr "複製此訊息"
+
+#: gnui/ui/accounts/acct/acct.go:52
+msgid "Could not add an account"
+msgstr "無法新增帳號"
+
+#. Translators: an option in the Theme menu, as in macOS's Dark appearance.
+#: gnui/ui/settings/texts.go:112
+msgid "Dark"
+msgstr "深色"
+
+#: gnui/ui/info/overview.go:586
+msgid "Description text"
+msgstr "描述文字"
+
+#: gnui/ui/msginfo/msginfo.go:374
+msgid "Document: {name}"
+msgstr "文件：{name}"
+
+#: gnui/ui/info/media.go:458
+msgid "Documents"
+msgstr "文件"
+
+#: gnui/ui/picker/picker.go:161
+msgid "Emoji picker"
+msgstr "表情符號選擇器"
+
+#: gnui/ui/settings/controls2.go:168
+msgid "Enter a proxy address like socks5://127.0.0.1:1080"
+msgstr "請輸入代理伺服器位址，例如 socks5://127.0.0.1:1080"
+
+#. Translators: Unicode's name for an emoji group; use the name your platform shows.
+#: gnui/ui/picker/emoji.go:37
+msgid "Flags"
+msgstr "旗幟"
+
+#. Translators: an option in the Theme menu; use the wording of "Follow system uses your Omarchy colours.".
+#: gnui/ui/settings/texts.go:112
+msgid "Follow system"
+msgstr "跟隨系統"
+
+#. Translators: Unicode's name for an emoji group; use the name your platform shows.
+#: gnui/ui/picker/emoji.go:27
+msgid "Food & Drink"
+msgstr "食物與飲品"
+
+#. Translators: the heading of the most used emoji in the reaction picker.
+#: gnui/ui/picker/emojitab.go:122
+msgid "Frequently Used"
+msgstr "常用"
+
+#: gnui/ui/picker/picker.go:166
+msgid "GIF picker"
+msgstr "GIF 選擇器"
+
+#: gnui/state/events.go:125
+msgid "History loaded"
+msgstr "記錄已載入"
+
+#. Translators: a screen reader name for a spinner, no ellipsis.
+#: gnui/ui/picker/stickers.go:610
+msgid "Importing"
+msgstr "正在匯入"
+
+#: gnui/ui/settings/updater.go:384
+msgid "Installing updates is not built into this version yet."
+msgstr "此版本尚不支援安裝更新。"
+
+#. Translators: an option in the Theme menu, as in macOS's Light appearance.
+#: gnui/ui/settings/texts.go:112
+msgid "Light"
+msgstr "淺色"
+
+#: gnui/ui/msginfo/msginfo.go:381
+msgid "Location: {name}"
+msgstr "位置：{name}"
+
+#: gnui/ui/info/media.go:235
+msgid "Members list"
+msgstr "成員列表"
+
+#: gnui/ui/shell/shell.go:1460
+msgid "Not linked to a phone"
+msgstr "未連結到手機"
+
+#: gnui/ui/picker/emoji.go:94
+msgid "Nothing matches"
+msgstr "沒有符合的項目"
+
+#. Translators: Unicode's name for an emoji group; use the name your platform shows.
+#: gnui/ui/picker/emoji.go:33
+msgid "Objects"
+msgstr "物件"
+
+#. Translators: {reason} is why the connection is down, as the system words it.
+#: gnui/ui/shell/shell.go:1454
+msgid "Offline ({reason}). Reconnecting…"
+msgstr "已離線（{reason}）。正在重新連線⋯"
+
+#. Translators: shown in the message field's place when only admins may write. {admins} is replaced by the next entry, which is drawn in the accent colour; the text before and after it stays as it is.
+#: gnui/ui/composer/strips.go:221
+msgid "Only {admins} can send messages"
+msgstr "只有{admins}可以傳送訊息"
+
+#: gnui/ui/shell/menu.go:387 gnui/ui/shell/shell.go:1075
+msgid "Open a chat first"
+msgstr "請先開啟一個對話"
+
+#. Translators: Unicode's name for an emoji group; use the name your platform shows.
+#: gnui/ui/picker/emoji.go:23
+msgid "People & Body"
+msgstr "人物與身體"
+
+#. Translators: a screen reader name for the tabs of the emoji, GIF and sticker picker.
+#: gnui/ui/picker/picker.go:358
+msgid "Picker tab"
+msgstr "選擇器標籤頁"
+
+#: gnui/ui/info/media.go:380
+msgid "Pictures and videos"
+msgstr "相片和影片"
+
+#: gnui/ui/msginfo/msginfo.go:392
+msgid "Poll: {question}"
+msgstr "投票：{question}"
+
+#. Translators: a screen reader name for the list of delivery and read receipts in Message info.
+#: gnui/ui/msginfo/msginfo.go:574
+msgid "Receipts"
+msgstr "回執"
+
+#: gnui/ui/login/login.go:125
+msgid "Requesting a code for +{phone}…"
+msgstr "正在為 +{phone} 要求驗證碼⋯"
+
+#. Translators: a screen reader name for the draggable edge between two panes.
+#: gnui/ui/info/info.go:399 gnui/ui/shell/shell.go:1048
+msgid "Resize"
+msgstr "調整大小"
+
+#. Translators: the button of the connection banner.
+#: gnui/ui/shell/shell.go:1385
+msgid "Retry"
+msgstr "重試"
+
+#. Translators: a screen reader name for a spinner, no ellipsis.
+#: gnui/ui/picker/gifs.go:147
+msgid "Searching"
+msgstr "正在搜尋"
+
+#: gnui/ui/shell/shell.go:788
+msgid "Select a chat on the left."
+msgstr "請在左側選擇一個對話。"
+
+#. Translators: Unicode's name for an emoji group; use the name your platform shows.
+#: gnui/ui/picker/emoji.go:21
+msgid "Smileys & Emotion"
+msgstr "表情與情緒"
+
+#: gnui/ui/msginfo/msginfo.go:378
+msgid "Sticker pack: {name}"
+msgstr "貼圖集：{name}"
+
+#: gnui/ui/picker/picker.go:168
+msgid "Sticker picker"
+msgstr "貼圖選擇器"
+
+#. Translators: Unicode's name for an emoji group; use the name your platform shows.
+#: gnui/ui/picker/emoji.go:35
+msgid "Symbols"
+msgstr "符號"
+
+#: gnui/ui/settings/updater.go:360
+msgid "The download does not match its checksum, so it was not installed."
+msgstr "下載的檔案與其檢查碼不符，因此未安裝。"
+
+#: gnui/ui/settings/controls2.go:176
+msgid "The proxy address needs a host"
+msgstr "代理伺服器位址需要包含主機"
+
+#: gnui/ui/settings/updater.go:353
+msgid "The update cannot be verified: this build has no publisher key."
+msgstr "無法驗證更新：此版本沒有發行者金鑰。"
+
+#: gnui/ui/settings/updater.go:357
+msgid "The update is not signed, so it was not installed."
+msgstr "更新未簽署，因此未安裝。"
+
+#: gnui/ui/settings/updater.go:363
+msgid "The update's signature is not valid, so it was not installed."
+msgstr "更新的簽章無效，因此未安裝。"
+
+#. Translators: Unicode's name for an emoji group; use the name your platform shows.
+#: gnui/ui/picker/emoji.go:29
+msgid "Travel & Places"
+msgstr "旅行與地點"
+
+#. Translators: a screen reader name for a spinner, no ellipsis.
+#: gnui/ui/lock/lock.go:102
+msgid "Unlinking"
+msgstr "正在取消連結"
+
+#: gnui/ui/msginfo/msginfo.go:396
+msgid "Unsupported message ({what})"
+msgstr "不支援的訊息（{what}）"
+
+#. Translators: the button of the "ZapFast {version} is available" banner.
+#: gnui/ui/shell/shell.go:1387
+msgid "Update"
+msgstr "更新"
+
+#: gnui/ui/settings/controls2.go:173
+msgid "Use an http://, socks5://, or socks5h:// proxy"
+msgstr "請使用 http://、socks5:// 或 socks5h:// 代理伺服器"
+
+#: gnui/ui/msginfo/msginfo.go:403
+msgid "View once audio"
+msgstr "僅可收聽一次的音訊"
+
+#: gnui/ui/msginfo/msginfo.go:405
+msgid "View once message"
+msgstr "僅可檢視一次的訊息"
+
+#: gnui/ui/msginfo/msginfo.go:403
+msgid "View once photo"
+msgstr "僅可檢視一次的相片"
+
+#: gnui/ui/msginfo/msginfo.go:403
+msgid "View once video"
+msgstr "僅可檢視一次的影片"
+
+#: gnui/ui/msginfo/msginfo.go:403
+msgid "View once voice message"
+msgstr "僅可收聽一次的語音訊息"
+
+#: gnui/ui/shell/shell.go:790
+msgid "Your chats appear on the left as they load."
+msgstr "您的對話載入後會顯示在左側。"
+
+#: gnui/ui/shell/shell.go:1447
+msgid "Zap {version} is available"
+msgstr "Zap {version} 可供使用"
+
+#. Translators: the plural noun that replaces {admins} in "Only {admins} can send messages". It must fit that sentence.
+#: gnui/ui/composer/strips.go:225
+msgid "admins"
+msgstr "管理員"
+
+#. Translators: under "Enter this code on your phone"; {phone} is the number the code is for.
+#: gnui/ui/login/login.go:222
+msgid "for +{phone}"
+msgstr "用於 +{phone}"
+
+#. Translators: the reason in "Could not record: {}". Lowercase, no full stop. Use the names macOS shows in your language.
+#: gnui/ui/composer/voice.go:420
+msgid ""
+"microphone access is not allowed (System Settings, Privacy & Security, "
+"Microphone)"
+msgstr "不允許存取麥克風（系統設定、隱私權與安全性、麥克風）"
+
+#. Translators: the reason in "Could not record: {}". Lowercase, no full stop. Use the names macOS shows in your language.
+#: gnui/ui/composer/voice.go:430
+msgid ""
+"microphone access is off for Zap (System Settings, Privacy & Security, "
+"Microphone)"
+msgstr "Zap 的麥克風存取已關閉（系統設定、隱私權與安全性、麥克風）"
+
+#. Translators: lowercase, after "Could not check for updates: ". {status} is a number such as 404.
+#: gnui/ui/settings/updater.go:448
+msgid "the update feed answered {status}"
+msgstr "更新來源回傳了 {status}"
+
+#. Translators: the reason in "Could not record: {}". Lowercase, no full stop.
+#: gnui/ui/composer/voice.go:418
+msgid ""
+"this build cannot ask for the microphone (run Zap from its app bundle)"
+msgstr "此版本無法要求麥克風存取權限（請從 App 套件中執行 Zap）"
+
+#: gnui/ui/settings/updater.go:81
+msgid "The update is larger than Zap allows (200 MB), so it was stopped and not installed."
+msgstr "更新檔超過 Zap 允許的大小（200 MB），因此已停止，未安裝。"
+
+#: gnui/ui/settings/updater.go:417
+msgid "The update's checksum is not valid, so it was not installed."
+msgstr "更新的檢查碼無效，因此未安裝。"
+
+# ---------------------------------------------------------------------------
+# Third batch of strings added by the Go port (gnui): the conversation pane's
+# remaining English, the message field's name, and the menu bar (context
+# "menu bar", in Apple's wording for the standard items). Source references
+# point at gnui/. Sorted by context, then msgid.
+# ---------------------------------------------------------------------------
+
+#. Translators: a screen reader name for a row of cards in one message.
+#: gnui/ui/conversation/kinds/interactive.go:346
+msgid "Carousel"
+msgstr "輪播"
+
+#: gnui/ui/conversation/extras.go:435
+msgid "React to your message"
+msgstr "對您的訊息做出回應"
+
+#. Translators: a screen reader name for the reaction button on someone else's message.
+#: gnui/ui/conversation/extras.go:437
+msgid "React to {name}'s message"
+msgstr "對 {name} 的訊息做出回應"
+
+#. Translators: a screen reader name for the list of hits in the chat search.
+#: gnui/ui/conversation/search.go:579
+msgid "Search results"
+msgstr "搜尋結果"
+
+#: gnui/ui/conversation/footer.go:28
+msgid ""
+"This message could not be sent, and Zap will not retry it. Send it "
+"again yourself."
+msgstr "這則訊息無法傳送，Zap 不會重試。請自行重新傳送。"
+
+#. Translators: the header of a group chat when three or more people type. {names} is the comma-separated list of all but the last, {last} the last one.
+#: gnui/ui/conversation/extras.go:107
+msgid "{names} and {last} are typing…"
+msgstr "{names} 和 {last} 正在輸入⋯"
+
+#: gnui/ui/shell/menu.go:89
+msgctxt "menu bar"
+msgid "About Zap"
+msgstr "關於 Zap"
+
+#: gnui/ui/shell/menu.go:107
+msgctxt "menu bar"
+msgid "Actual Size"
+msgstr "實際大小"
+
+#: gnui/ui/shell/menu.go:93
+msgctxt "menu bar"
+msgid "Close Window"
+msgstr "關閉視窗"
+
+#: gnui/ui/shell/menu.go:97
+msgctxt "menu bar"
+msgid "Copy"
+msgstr "拷貝"
+
+#: gnui/ui/shell/menu.go:96
+msgctxt "menu bar"
+msgid "Cut"
+msgstr "剪下"
+
+#: gnui/ui/shell/menu.go:162
+msgctxt "menu bar"
+msgid "Edit"
+msgstr "編輯"
+
+#: gnui/ui/shell/menu.go:114
+msgctxt "menu bar"
+msgid "Enter Full Screen"
+msgstr "進入全螢幕"
+
+#: gnui/ui/shell/menu.go:161
+msgctxt "menu bar"
+msgid "File"
+msgstr "檔案"
+
+#: gnui/ui/shell/menu.go:100
+msgctxt "menu bar"
+msgid "Find…"
+msgstr "尋找⋯"
+
+#: gnui/ui/shell/menu.go:165
+msgctxt "menu bar"
+msgid "Help"
+msgstr "輔助說明"
+
+#: gnui/ui/shell/menu.go:115
+msgctxt "menu bar"
+msgid "Keyboard Shortcuts"
+msgstr "鍵盤快捷鍵"
+
+#: gnui/ui/shell/menu.go:108
+msgctxt "menu bar"
+msgid "Minimize"
+msgstr "縮到最小"
+
+#: gnui/ui/shell/menu.go:92
+msgctxt "menu bar"
+msgid "New Chat…"
+msgstr "新增對話⋯"
+
+#: gnui/ui/shell/menu.go:98
+msgctxt "menu bar"
+msgid "Paste"
+msgstr "貼上"
+
+#: gnui/ui/shell/menu.go:91
+msgctxt "menu bar"
+msgid "Quit Zap"
+msgstr "結束 Zap"
+
+#: gnui/ui/shell/menu.go:95
+msgctxt "menu bar"
+msgid "Redo"
+msgstr "重做"
+
+#: gnui/ui/shell/menu.go:99
+msgctxt "menu bar"
+msgid "Select All"
+msgstr "全選"
+
+#: gnui/ui/shell/menu.go:90
+msgctxt "menu bar"
+msgid "Settings…"
+msgstr "設定⋯"
+
+#: gnui/ui/shell/menu.go:110
+msgctxt "menu bar"
+msgid "Show Zap"
+msgstr "顯示 Zap"
+
+#: gnui/ui/shell/menu.go:101
+msgctxt "menu bar"
+msgid "Toggle Sidebar"
+msgstr "顯示/隱藏側邊欄"
+
+#: gnui/ui/shell/menu.go:94
+msgctxt "menu bar"
+msgid "Undo"
+msgstr "還原"
+
+#: gnui/ui/shell/menu.go:163
+msgctxt "menu bar"
+msgid "View"
+msgstr "顯示方式"
+
+#: gnui/ui/shell/menu.go:164
+msgctxt "menu bar"
+msgid "Window"
+msgstr "視窗"
+
+#: gnui/ui/shell/menu.go:116
+msgctxt "menu bar"
+msgid "Zap Help"
+msgstr "Zap 輔助說明"
+
+#: gnui/ui/shell/menu.go:109
+msgctxt "menu bar"
+msgid "Zoom"
+msgstr "縮放"
+
+#: gnui/ui/shell/menu.go:105
+msgctxt "menu bar"
+msgid "Zoom In"
+msgstr "放大"
+
+#: gnui/ui/shell/menu.go:106
+msgctxt "menu bar"
+msgid "Zoom Out"
+msgstr "縮小"
+
+#. Translators: a screen reader name for the field messages are typed in; a noun, not the verb.
+#: gnui/ui/composer/composer.go:552
+msgctxt "message field"
+msgid "Message"
+msgstr "訊息"
+
+# ---------------------------------------------------------------------------
+# Fourth batch of strings added by the Go port (gnui): the updater's two newest
+# refusals, the chat-history banner with its ellipsis, the product name, and
+# the application menu's titles, which the menu bar will take once the
+# framework lets it (Apple's wording). Sorted by context, then msgid.
+# ---------------------------------------------------------------------------
+
+#: gnui/ui/shell/shell.go:1472
+msgid "Loading chat history…"
+msgstr "正在載入對話記錄⋯"
+
+#. Translators: {percent} is a number, 0 to 100.
+#: gnui/ui/shell/shell.go:1470
+msgid "Loading chat history… {percent}%"
+msgstr "正在載入對話記錄⋯ {percent}%"
+
+#. Translators: {got} and {announced} are version numbers.
+#: gnui/ui/settings/install.go:272
+msgid ""
+"The update is version {got}, not the {announced} it announced, so it was "
+"not installed."
+msgstr "該更新的版本是 {got}，而不是它所宣告的 {announced}，因此未安裝。"
+
+#: gnui/ui/settings/updater.go:436
+msgid ""
+"The update's file does not belong to the version it announces, so it was "
+"not installed."
+msgstr "更新檔不屬於它所宣告的版本，因此未安裝。"
+
+#. Translators: the product name; keep it.
+#: gnui/ui/viewer/viewer.go:115
+msgid "Zap"
+msgstr "Zap"
+
+#. Translators: planned for the application menu (the framework's standard item); Apple's own wording.
+msgctxt "menu bar"
+msgid "Hide Others"
+msgstr "隱藏其他"
+
+#. Translators: planned for the application menu; Apple's wording with the app name.
+msgctxt "menu bar"
+msgid "Hide Zap"
+msgstr "隱藏 Zap"
+
+#. Translators: planned for the application menu's Services submenu; Apple's own wording.
+msgctxt "menu bar"
+msgid "Services"
+msgstr "服務"
+
+#. Translators: planned for the application menu; Apple's own wording.
+msgctxt "menu bar"
+msgid "Show All"
+msgstr "顯示全部"
+
+#. Translators: a line under the chat list for chats the app could not load because they were too large; "chats" is the app's own word for conversations.
+#: gnui/ui/chatlist/body.go:331
+msgid "Some chats could not be shown"
+msgstr "部分對話無法顯示"
+
+#. Go port (SH-020); machine translation.
+#: gnui/ui/conversation/conversation.go
+msgid "Some records could not be shown"
+msgstr "部分記錄無法顯示"
+
+#. Go port: startup settings recovery; machine translation.
+#: gnui/cmd/zapfast/startup_settings.go
+msgid "Could not read settings. Try again."
+msgstr "無法讀取設定。請重試。"
+
+#. Go port: account roster recovery; machine translation.
+#: gnui/cmd/zapfast/startup_settings.go
+msgid "Could not read the account list. Try again."
+msgstr "無法讀取帳號清單。請重試。"
+
+#. Go port: the titlebar's tabs of open chats; machine translation.
+#: gnui/ui/shell/tabs.go
+msgid "Open chats"
+msgstr "已開啟的對話"
+
+#. Go port: Settings, Appearance: the transparency switch; machine translation.
+#: gnui/ui/settings/rows.go
+msgid "Transparency"
+msgstr "透明度"
+
+#. Go port: Settings, Appearance: the transparency switch's description; machine translation.
+#: gnui/ui/settings/rows.go
+msgid "The desktop shows softly through the window's background. The system's Reduce transparency setting turns it off too."
+msgstr "桌面會柔和地透過視窗背景顯示。系統的「減少透明度」設定也會將其關閉。"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unarchived"
+msgstr "已取消封存"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Muted for 8 hours"
+msgstr "已靜音 8 小時"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unmuted"
+msgstr "已取消靜音"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Pinned"
+msgstr "已置頂"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Unpinned"
+msgstr "已取消置頂"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Marked as unread"
+msgstr "已標為未讀"
+
+#: gnui/ui/shell/keyboard.go
+msgid "Marked as read"
+msgstr "已標為已讀"
+
+#: gnui/ui/shell/keyboard.go
+msgid "{what}: {chat}. Z to undo"
+msgstr "{what}：{chat}。按 Z 復原"
+
+#: gnui
+msgid "Search everything"
+msgstr "搜尋全部"
+
+#: gnui
+msgid "Chats, people, messages, files"
+msgstr "對話、聯絡人、訊息、檔案"
+
+#: gnui
+msgid "Files and links"
+msgstr "檔案與連結"
+
+#: gnui
+msgid "Nothing found"
+msgstr "找不到結果"
+
+#: gnui
+msgid "People"
+msgstr "聯絡人"
+
+#: gnui
+msgid "Search everything: chats, people, messages, files"
+msgstr "搜尋全部：對話、聯絡人、訊息、檔案"
+
+#: gnui
+msgid "Search everything (when not typing)"
+msgstr "搜尋全部（未輸入時）"
+
+#: gnui
+msgid "Next / previous chat (when not typing)"
+msgstr "下一個 / 上一個對話（未輸入時）"
+
+#: gnui
+msgid "Archive or unarchive the open chat (when not typing)"
+msgstr "封存或取消封存目前對話（未輸入時）"
+
+#: gnui
+msgid "Mute the open chat for 8 hours, or unmute it (when not typing)"
+msgstr "將目前對話靜音 8 小時或取消靜音（未輸入時）"
+
+#: gnui
+msgid "Pin or unpin the open chat (when not typing)"
+msgstr "置頂或取消置頂目前對話（未輸入時）"
+
+#: gnui
+msgid "Mark the open chat as unread or read (when not typing)"
+msgstr "將目前對話標為未讀或已讀（未輸入時）"
+
+#: gnui
+msgid "Reply to the last message (when not typing)"
+msgstr "回覆最後一則訊息（未輸入時）"
+
+#: gnui
+msgid "Undo the last change a single key made"
+msgstr "復原單鍵所做的最後一次變更"
+
+#: gnui
+msgid "Go to the chats, Archived, Starred or Calls"
+msgstr "前往對話、已封存、星號或通話"
+
+#: gnui
+msgid "Starts a message in the open chat, or a search"
+msgstr "在目前對話中開始輸入訊息，或開始搜尋"
+
+#: gnui
+msgid "Dismiss the current action, return from search, Calls or Starred, leave the message input, or close the chat"
+msgstr "取消目前動作，退出搜尋、通話或星號，離開輸入框，或關閉對話"
+
+#: gnui
+msgid "Folder"
+msgstr "資料夾"
+
+#: gnui
+msgid "New folder"
+msgstr "新增資料夾"
+
+#: gnui
+msgid "New folder…"
+msgstr "新增資料夾…"
+
+#: gnui
+msgid "Take out of the folder"
+msgstr "移出資料夾"
+
+#: gnui
+msgid "Folder name"
+msgstr "資料夾名稱"
+
+#: gnui
+msgid "Rename…"
+msgstr "重新命名…"
+
+#: gnui
+msgid "Icon"
+msgstr "圖示"
+
+#: gnui
+msgid "Stop showing it as a space"
+msgstr "不再作為空間顯示"
+
+#: gnui
+msgid "Show it as a space (⌃1–9)"
+msgstr "作為空間顯示 (⌃1–9)"
+
+#: gnui
+msgid "Delete folder (its chats stay)"
+msgstr "刪除資料夾（對話保留）"
+
+#: gnui
+msgid "Unread chats"
+msgstr "未讀對話"
+
+#: gnui
+msgid "Spaces"
+msgstr "空間"
+
+#: gnui
+msgid "Go to the tab at this place"
+msgstr "前往此位置的分頁"
+
+#: gnui
+msgid "Go to the space at this place"
+msgstr "前往此位置的空間"
+
+#: gnui
+msgid "Next / previous space"
+msgstr "下一個 / 上一個空間"
+
+#: gnui
+msgid "Peek: {chat}"
+msgstr "速覽：{chat}"
+
+#: gnui
+msgid "Peeking: it stays unread"
+msgstr "速覽中：保持未讀"
+
+#: gnui
+msgid "Reply to {chat}"
+msgstr "回覆 {chat}"
+
+#: gnui
+msgid "Quick reply"
+msgstr "快速回覆"
+
+#: gnui
+msgid "Peek at a chat without reading it"
+msgstr "速覽對話而不標為已讀"
+
+#: gnui
+msgid "Peek"
+msgstr "速覽"
+
+#: gnui
+msgid "Peek at {chat}"
+msgstr "速覽 {chat}"
+
+#: gnui
+msgid "Peek at the newest chat"
+msgstr "速覽最新的聊天"
+
+#: gnui
+msgid "Peek at the newest unread chat"
+msgstr "速覽最新的未讀聊天"
+
+#: gnui
+msgid "Peek at the newest unread chat, from any app"
+msgstr "在任何 App 中速覽最新的未讀聊天"
+
+#: gnui
+msgid "Beside: {chat}"
+msgstr "並排：{chat}"
+
+#: gnui
+msgid "Bring back {chat}"
+msgstr "恢復 {chat}"
+
+#: gnui
+msgid "Close the split (⌃⌥U)"
+msgstr "關閉分割畫面 (⌃⌥U)"
+
+#: gnui
+msgid "Close the split"
+msgstr "關閉分割畫面"
+
+#: gnui
+msgid "Drop to split"
+msgstr "放開以分割畫面"
+
+#: gnui
+msgid "Float over other apps"
+msgstr "浮動在其他 App 上方"
+
+#: gnui
+msgid "Float the chat over other apps"
+msgstr "將聊天浮動在其他 App 上方"
+
+#: gnui
+msgid "Floating: {chat}"
+msgstr "浮動：{chat}"
+
+#: gnui
+msgid "Make it the main chat"
+msgstr "設為主要聊天"
+
+#: gnui
+msgid "Open another chat to split with"
+msgstr "開啟另一個聊天以分割畫面"
+
+#: gnui
+msgid "Open beside the open chat"
+msgstr "在已開啟的聊天旁開啟"
+
+#: gnui
+msgid "Open in Zap"
+msgstr "在 Zap 中開啟"
+
+#: gnui
+msgid "Resize the split"
+msgstr "調整分割畫面大小"
+
+#: gnui
+msgid "Shrink to the floating icon"
+msgstr "縮小為浮動圖像"
+
+#: gnui
+msgid "Split with the next tab"
+msgstr "與下一個分頁分割畫面"
+
+#: gnui
+msgid "Unread messages"
+msgstr "未讀訊息"
+
+#: gnui
+msgid "Drop to move here"
+msgstr "放開以移到這裡"
+
+#: gnui
+msgid "Drop to show it here"
+msgstr "放開以在這裡顯示"
+
+#: gnui
+msgid "Drag to move the pane"
+msgstr "拖移以移動窗格"
+
+#: gnui
+msgid "Fill the window with this chat"
+msgstr "讓此聊天填滿視窗"
+
+#: gnui
+msgid "Split pane"
+msgstr "分割窗格"
+
+#: gnui
+msgid "Double-click to hide the chat list"
+msgstr "按兩下以隱藏聊天列表"
+
+#: gnui
+msgid "Double-click to show the chat list"
+msgstr "按兩下以顯示聊天列表"
+
+#: gnui
+msgid "Take out of the split"
+msgstr "移出分割畫面"
+
+#: gnui
+msgid "Previous pane"
+msgstr "上一個窗格"
+
+#: gnui
+msgid "Next pane"
+msgstr "下一個窗格"
+
+#: gnui
+msgid "Move the pane left"
+msgstr "將窗格左移"
+
+#: gnui
+msgid "Move the pane right"
+msgstr "將窗格右移"
+
+#: gnui
+msgid "Previous pane / next pane"
+msgstr "上一個 / 下一個窗格"
+
+#: gnui
+msgid "Move the pane left / right"
+msgstr "將窗格左移 / 右移"
+
+#: gnui
+msgid "Space colour"
+msgstr "空間顏色"
+
+#: gnui
+msgid "No colour"
+msgstr "無顏色"
+
+#: gnui
+msgid "Gray"
+msgstr "灰色"
+
+#: gnui
+msgid "Colour"
+msgstr "顏色"
+
+#: gnui
+msgid "Blue"
+msgstr "藍色"
+
+#: gnui
+msgid "Purple"
+msgstr "紫色"
+
+#: gnui
+msgid "Pink"
+msgstr "粉色"
+
+#: gnui
+msgid "Red"
+msgstr "紅色"
+
+#: gnui
+msgid "Orange"
+msgstr "橙色"
+
+#: gnui
+msgid "Yellow"
+msgstr "黃色"
+
+#: gnui
+msgid "Green"
+msgstr "綠色"
+
+#: gnui
+msgid "Teal"
+msgstr "青色"
+
+#: gnui
+msgid "Neighbours"
+msgstr "相鄰色"
+
+#: gnui
+msgid "Opposite"
+msgstr "互補色"
+
+#: gnui
+msgid "Triad"
+msgstr "三色"
+
+#: gnui
+msgid "One colour"
+msgstr "單色"
+
+#: gnui
+msgid "Strength"
+msgstr "強度"
+
+#: gnui
+msgid "Opacity"
+msgstr "不透明度"
+
+#: gnui
+msgid "Colours"
+msgstr "顏色"
+
+#: gnui
+msgid "Add a colour"
+msgstr "加入顏色"
+
+#: gnui
+msgid "Remove a colour"
+msgstr "移除顏色"
+
+#: gnui
+msgid "Harmony: {name}"
+msgstr "配色：{name}"
+
+#: gnui
+msgid "Beside the opposite"
+msgstr "分裂互補"
+
+#: gnui
+msgid "Free"
+msgstr "自由"
+
+#. Translators: a message this device could not decrypt yet; the sender's phone is asked to send it again.
+#: gnui/ui/conversation/kinds/note.go
+msgid "Waiting for this message"
+msgstr "正在等待此訊息"
+
+#. Translators: the line under "Waiting for this message".
+#: gnui/ui/conversation/kinds/note.go
+msgid "This may take a while. Open WhatsApp on your phone."
+msgstr "這可能需要一些時間。請在手機上開啟 WhatsApp。"
+
+#. Translators: the File menu: closes the open chat's tab (⌘W), as Safari's.
+#: gnui/ui/shell/menu.go
+msgctxt "menu bar"
+msgid "Close Tab"
+msgstr "關閉標籤頁"

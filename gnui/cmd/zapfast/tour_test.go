@@ -14,21 +14,15 @@ import (
 	"gonativeui/ui"
 
 	"zapfast/core"
+	"zapfast/gocore/demo"
 	"zapfast/state"
 	"zapfast/ui/shell"
 )
 
-// demoCore opens the demo core, or skips without the library.
-func demoCore(t *testing.T) *core.Core {
+// demoCore opens the demo core.
+func demoCore(t *testing.T) core.Conn {
 	t.Helper()
-	path, err := core.ResolveLibrary("")
-	if err != nil {
-		if os.Getenv("ZAPFAST_CORE") != "" {
-			t.Fatal(err)
-		}
-		t.Skip("no core library:", err)
-	}
-	c, err := core.Open(core.Config{Library: path, Demo: true})
+	c, err := demo.Open(core.Config{})
 	if err != nil {
 		t.Fatal(err)
 	}
