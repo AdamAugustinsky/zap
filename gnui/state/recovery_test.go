@@ -2,6 +2,7 @@ package state_test
 
 import (
 	"bytes"
+	"errors"
 	"os"
 	"path/filepath"
 	"slices"
@@ -430,5 +431,98 @@ func TestACoreFailureOrReplacementStaysInItsAccount(t *testing.T) {
 	}
 	if slices.Contains(r.s.Accounts, c) {
 		t.Error("the removed account is still listed")
+	}
+}
+
+// RC-005: Try again (Reconnect on an account whose core failed to open,
+// State.Reopen) replaces the core and nothing else. A failed attempt's
+// half-open core, events queued, is never started nor drained; the new
+// core gets its permit (the cores having started), the error clears, and
+// the account comes back as its settings left it: its last chat reopens
+// once the new core's list is in, unread while unfocused, with the new
+// core's drafts. The other account keeps its parked chat and draft, the
+// window stays on the account it showed, and the old attempt's commands
+// went nowhere.
+func TestTryAgainReplacesOnlyTheCore(t *testing.T) {
+	r := newRig(t, 1)
+	one := r.s.Accounts[0]
+	ref := one.Model.Chats.Find([]byte(ada))
+	one.OpenChat(ref)
+	one.SaveDraft([]byte(ada), []byte("account 1's text"))
+
+	halfOpen, fresh := fake.New(nil), fake.New(nil)
+	halfOpen.Emit(linkStatus(abi.LinkStatusTagConnected), ev(abi.EventTagChats, func(e *abi.Event) {
+		e.Chats = abi.EventChats{Batch: 1, Last: true, Chats: []abi.Chat{{ID: []byte("leak@s.whatsapp.net"), Name: []byte("Leak")}}}
+	}), ev(abi.EventTagDrafts, func(e *abi.Event) {
+		e.Drafts.Drafts = []abi.Draft{{Chat: []byte(grace), Text: []byte("from the failed attempt")}}
+	}))
+	queued := halfOpen.Pending()
+	opens := 0
+	r.s.OpenCore = func(string) (*core.Pending, core.Conn) {
+		opens++
+		if opens == 1 {
+			return core.OpenAsync(nil, func(*core.Timing) (core.Conn, error) {
+				return halfOpen, errors.New("the archive is locked")
+			}), nil
+		}
+		return core.OpenAsync(nil, func(*core.Timing) (core.Conn, error) { return fresh, nil }), nil
+	}
+	p, _ := r.s.OpenCore("2")
+	two := r.s.AddAccount("2", p, nil)
+	two.Settings.LastChat = []byte(grace) // as the settings file left it
+	p.Wait(5 * time.Second)
+	r.s.StartCores()
+	r.pump()
+	if two.Conn != nil || two.Err == "" {
+		t.Fatalf("the failed open: conn %v, err %q", two.Conn, two.Err)
+	}
+
+	r.s.SwitchAccount(two.Index)
+	oneSent := len(r.cores[0].Sent())
+	if err := two.Send(two.Cmd(abi.CommandTagReconnect)); err != nil || two.Err != "" || two.Pending == nil {
+		t.Fatalf("Try again: %v, err %q, pending %v", err, two.Err, two.Pending != nil)
+	}
+	two.Pending.Wait(5 * time.Second)
+	r.pump()
+	if two.Conn != fresh || !fresh.Started() || !two.Started {
+		t.Fatalf("reopened: conn is the new core %v, started %v", two.Conn == fresh, fresh.Started())
+	}
+	fresh.Emit(linkStatus(abi.LinkStatusTagConnected),
+		ev(abi.EventTagDrafts, func(e *abi.Event) {
+			e.Drafts.Drafts = []abi.Draft{{Chat: []byte(grace), Text: []byte("from the archive")}}
+		}),
+		ev(abi.EventTagChats, func(e *abi.Event) {
+			e.Chats = abi.EventChats{Batch: 1, Last: true, Chats: []abi.Chat{
+				{ID: []byte(ada), Name: []byte("Ada"), LastActivity: 5},
+				{ID: []byte(grace), Name: []byte("Grace"), LastActivity: 4, Unread: 1},
+			}}
+		}))
+	r.pump()
+
+	if halfOpen.Started() || halfOpen.Pending() != queued || len(halfOpen.Sent()) != 0 {
+		t.Errorf("the failed attempt's core: started %v, %d of %d events left, %d commands", halfOpen.Started(), halfOpen.Pending(), queued, len(halfOpen.Sent()))
+	}
+	if two.Model.Chats.Find([]byte("leak@s.whatsapp.net")) != 0 {
+		t.Error("the failed attempt's chat list reached the account")
+	}
+	if c, ok := two.OpenChatView(); !ok || string(c.ID()) != grace {
+		t.Errorf("account 2 reopened %v, want its last chat, Grace", two.Open)
+	}
+	if got := two.Model.Draft([]byte(grace)); string(got) != "from the archive" {
+		t.Errorf("account 2's draft %q, want the new core's", got)
+	}
+	if n := countTag(fresh, abi.CommandTagMarkRead); n != 0 {
+		t.Errorf("the reopened chat was marked read %d times while unfocused", n)
+	}
+	if r.s.Acct() != two {
+		t.Errorf("on screen %v", r.s.Acct())
+	}
+	if one.Open != ref || string(one.Model.Draft([]byte(ada))) != "account 1's text" || one.Err != "" {
+		t.Error("account 1 lost its parked chat or draft")
+	}
+	for _, c := range r.cores[0].Sent()[oneSent:] {
+		if c.Tag == abi.CommandTagReconnect {
+			t.Error("Try again reached the other account's core")
+		}
 	}
 }
