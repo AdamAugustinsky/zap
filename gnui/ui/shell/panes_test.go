@@ -119,6 +119,13 @@ func TestThePanesWidths(t *testing.T) {
 	if room := float32(1100 - railPt - 300 - 320); !p.side.built || p.side.rect.W != room {
 		t.Errorf("a side pane asking 5000 is %v wide, want the room left, %v", p.side.rect.W, room)
 	}
+	// A width below the pane's least (a hand-edited or old settings file)
+	// opens it at its least, as upstream clamps it, rather than never.
+	p.side.width = 0
+	p.frames()
+	if !p.side.built || p.side.rect.W != 240 {
+		t.Errorf("a side pane asking 0 built %v at %v, want 240", p.side.built, p.side.rect.W)
+	}
 	// The side pane belongs to its chat: opening another closes it.
 	p.side.width = 380
 	p.open("2@s.whatsapp.net")
