@@ -607,6 +607,7 @@ func (s *sim) command(cmd abi.Command) bool {
 	if failed {
 		s.note("  (writes failed)")
 	}
+	s.lastSent = s.nextSent()
 	return failed
 }
 
@@ -639,7 +640,6 @@ func (s *sim) send() {
 	if s.nextSent() == before {
 		s.note("send in %s refused", c.id())
 	}
-	s.lastSent = s.nextSent()
 }
 
 // nextSent and sentSince read the fake's message ids: GenerateMessageID
@@ -1488,6 +1488,7 @@ var simRegressions = []struct {
 	{3, "lostack", 200, "a chat update whose commit held but reported a failure left the UI behind (updateChat sends the chat after a failure)", ""},
 	{3065798142414315, "default", 300, "history filing a live row again moved it among the messages of its second (save keeps a live row's order)", ""},
 	{8761426805701679, "default", 300, "likewise for a live row edited since, through save's branch for an original after its edit", ""},
+	{6307526166760411, "lostack", 300, "a send whose commit held but reported a failure left the UI showing its chat archived (store sends the chat after a failure)", ""},
 	{2, "queued", 200, "a quit with an acknowledged message queued loses it", "https://github.com/AdamAugustinsky/zap/issues/2"},
 	{1, "queued", 200, "a crash with acknowledged messages queued loses them", "https://github.com/AdamAugustinsky/zap/issues/2"},
 	{4, "ingest", 200, "an acknowledged message whose archive write fails is lost", "https://github.com/AdamAugustinsky/zap/issues/2"},

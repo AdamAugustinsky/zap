@@ -200,6 +200,9 @@ func (e *Engine) store(m store.Message) bool {
 			c.Archived = false
 		}
 	}); err != nil {
+		// A COMMIT that reported an fsync error may have held: the UI
+		// gets the chat as the archive has it (updateChat does the same).
+		e.emitChat(m.ChatID)
 		e.emitError("The message could not be saved: " + err.Error())
 		return false
 	}
