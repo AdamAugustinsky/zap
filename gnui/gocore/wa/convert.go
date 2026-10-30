@@ -30,6 +30,17 @@ type conv struct {
 	refreshing func(chat string) bool
 	// cardState is a carousel card's picture's.
 	cardState func(chat, id string, card int) abi.MediaState
+	// person is the phone-number id of a privacy id WhatsApp has mapped,
+	// else id: a mention names a contact by it.
+	person func(id string) string
+}
+
+func (cv conv) mention(m store.Mention) abi.MentionRef {
+	id := m.ID
+	if cv.person != nil {
+		id = cv.person(id)
+	}
+	return abi.MentionRef{User: b(m.User), ID: b(id)}
 }
 
 func (cv conv) motionState(chat, id string) abi.MediaState {
@@ -267,7 +278,7 @@ func (cv conv) message(r *out.Record, m store.Message) abi.Message {
 			x.Quoted.Chat, x.Quoted.HasChat = b(q.Chat), true
 		}
 		for _, mention := range q.Mentions[:min(len(q.Mentions), mentionsMax)] {
-			x.Quoted.Mentions = append(x.Quoted.Mentions, abi.MentionRef{User: b(mention.User), ID: b(mention.ID)})
+			x.Quoted.Mentions = append(x.Quoted.Mentions, cv.mention(mention))
 		}
 	}
 	// A message in a large group can hold more reactions than the bound;
@@ -276,7 +287,7 @@ func (cv conv) message(r *out.Record, m store.Message) abi.Message {
 		x.Reactions = append(x.Reactions, abi.Reaction{Sender: b(rc.Sender), FromMe: cv.isMe(rc.Sender), Emoji: b(rc.Emoji)})
 	}
 	for _, mention := range m.Mentions[:min(len(m.Mentions), mentionsMax)] {
-		x.Mentions = append(x.Mentions, abi.MentionRef{User: b(mention.User), ID: b(mention.ID)})
+		x.Mentions = append(x.Mentions, cv.mention(mention))
 	}
 	if m.Media != nil && len(m.Media.Thumbnail) > 0 && !m.Deleted {
 		x.Thumbnail, x.HasThumbnail = r.Blob(m.Media.Thumbnail), true

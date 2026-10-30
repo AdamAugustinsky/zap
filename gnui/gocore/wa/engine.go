@@ -542,6 +542,19 @@ func (e *Engine) canonical(j types.JID) string {
 	return j.String()
 }
 
+// person is the phone-number id of a mapped privacy id, else id. Unlike
+// canonical it moves no rows: it only names.
+func (e *Engine) person(id string) string {
+	j, err := types.ParseJID(id)
+	if err != nil || j.Server != types.HiddenUserServer {
+		return id
+	}
+	if pn, err := e.cli.PNForLID(e.ctx, j.ToNonAD()); err == nil && !pn.IsEmpty() {
+		return pn.ToNonAD().String()
+	}
+	return id
+}
+
 // me is the account's canonical id, empty while unlinked.
 func (e *Engine) me() string {
 	pn, lid := e.cli.OwnID()
@@ -563,7 +576,7 @@ func (e *Engine) isMe(id string) bool {
 }
 
 func (e *Engine) conv() conv {
-	return conv{isMe: e.isMe, state: e.mediaState, motion: e.motionState, cardState: e.cardState,
+	return conv{isMe: e.isMe, state: e.mediaState, motion: e.motionState, cardState: e.cardState, person: e.person,
 		refreshing: func(chat string) bool { return e.older[chat] != nil }}
 }
 

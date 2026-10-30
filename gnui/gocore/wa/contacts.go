@@ -1,6 +1,7 @@
 package wa
 
 import (
+	"cmp"
 	"context"
 	"log/slog"
 	"strings"
@@ -37,6 +38,19 @@ func contactRecord(id string, c types.ContactInfo) abi.Contact {
 	return x
 }
 
+// fillContact is c with the names it lacks taken from o. whatsmeow can keep
+// one person's names under two entries, their number's and their privacy
+// id's (the address book's name under one, the push name under the other):
+// they name one person, and the number's entry comes first.
+func fillContact(c, o types.ContactInfo) types.ContactInfo {
+	c.Found = c.Found || o.Found
+	c.FullName = cmp.Or(c.FullName, o.FullName)
+	c.FirstName = cmp.Or(c.FirstName, o.FirstName)
+	c.PushName = cmp.Or(c.PushName, o.PushName)
+	c.BusinessName = cmp.Or(c.BusinessName, o.BusinessName)
+	return c
+}
+
 // emitContacts sends every contact, once linked.
 func (e *Engine) emitContacts() {
 	if e.me() == "" {
@@ -47,13 +61,24 @@ func (e *Engine) emitContacts() {
 		slog.Warn("zapfast wa: listing contacts", "err", err)
 		return
 	}
-	seen := map[string]bool{}
-	var list []abi.Contact
+	byID := map[string]types.ContactInfo{}
 	for j, c := range all {
-		id := e.canonical(j)
-		if seen[id] || !c.Found && c.FullName == "" && c.PushName == "" {
+		if !c.Found && c.FullName == "" && c.PushName == "" {
 			continue
 		}
+		id := e.canonical(j)
+		if old, ok := byID[id]; ok {
+			if j.Server == types.HiddenUserServer {
+				c = fillContact(old, c)
+			} else {
+				c = fillContact(c, old)
+			}
+		}
+		byID[id] = c
+	}
+	seen := make(map[string]bool, len(byID))
+	list := make([]abi.Contact, 0, len(byID))
+	for id, c := range byID {
 		seen[id] = true
 		list = append(list, contactRecord(id, c))
 	}
@@ -63,13 +88,30 @@ func (e *Engine) emitContacts() {
 	})
 }
 
-// emitContact sends one contact as whatsmeow's store has it now.
+// emitContact sends one contact as whatsmeow's store has it now, its
+// number's entry and its privacy id's together.
 func (e *Engine) emitContact(j types.JID) {
+	j = j.ToNonAD()
 	c, err := e.cli.Contact(e.ctx, j)
 	if err != nil {
 		return
 	}
-	list := []abi.Contact{contactRecord(e.canonical(j), c)}
+	id := e.canonical(j)
+	switch j.Server {
+	case types.HiddenUserServer:
+		if pn, ok := jidOf(id); ok && pn != j {
+			if o, err := e.cli.Contact(e.ctx, pn); err == nil {
+				c = fillContact(o, c)
+			}
+		}
+	case types.DefaultUserServer:
+		if lid, err := e.cli.LIDForPN(e.ctx, j); err == nil && !lid.IsEmpty() {
+			if o, err := e.cli.Contact(e.ctx, lid.ToNonAD()); err == nil {
+				c = fillContact(c, o)
+			}
+		}
+	}
+	list := []abi.Contact{contactRecord(id, c)}
 	out.List(e.out, list, func(batch uint32, last bool, chunk []abi.Contact) *abi.Event {
 		return &abi.Event{Tag: abi.EventTagContacts, Contacts: abi.EventContacts{Batch: batch, Last: last, Contacts: chunk}}
 	})

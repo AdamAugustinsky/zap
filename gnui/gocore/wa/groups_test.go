@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/proto/waSyncAction"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
@@ -206,5 +207,33 @@ func TestContacts(t *testing.T) {
 	h.send(abi.Command{Tag: abi.CommandTagNewContact, NewContact: abi.CommandNewContact{Request: 9, Phone: []byte("12ab")}})
 	if f := one(t, h.take(), abi.EventTagContactFailed).ContactFailed; f.Request != 9 || string(f.Error) != "Enter a valid international phone number" {
 		t.Fatalf("invalid: %+v", f)
+	}
+}
+
+// whatsmeow files the address book's name under a privacy id and the push
+// name under the number: the contact is one, under the number, with both,
+// and a mention by privacy id names it.
+func TestContactsJoinPrivacyID(t *testing.T) {
+	h := linked(t)
+	lid := types.NewJID("88001234567", types.HiddenUserServer)
+	h.f.lids[lid] = peer2
+	x := h.f.more()
+	x.contacts[peer2] = types.ContactInfo{Found: true, PushName: "Austen"}
+	x.contacts[lid] = types.ContactInfo{Found: true, FullName: "auce", FirstName: "auce"}
+	check := func(what string, c []abi.Contact) {
+		t.Helper()
+		if len(c) != 1 || string(c[0].ID) != peer2.String() || string(c[0].FullName) != "auce" || string(c[0].PushName) != "Austen" {
+			t.Fatalf("%s: %+v", what, c)
+		}
+	}
+	h.inject(&events.Contact{JID: lid, Action: &waSyncAction.ContactAction{FullName: proto.String("auce")}})
+	check("by privacy id", one(t, h.take(), abi.EventTagContacts).Contacts.Contacts)
+	h.inject(&events.PushName{JID: peer2, NewPushName: "Austen"})
+	check("by number", one(t, h.take(), abi.EventTagContacts).Contacts.Contacts)
+
+	ctx := &waE2E.ContextInfo{MentionedJID: []string{lid.String()}}
+	h.inject(message(group, peer, "G1", t0, &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{Text: proto.String("hi @88001234567"), ContextInfo: ctx}}))
+	if m := one(t, h.take(), abi.EventTagIncoming).Incoming.Message.Mentions; len(m) != 1 || string(m[0].User) != "88001234567" || string(m[0].ID) != peer2.String() {
+		t.Fatalf("mention: %+v", m)
 	}
 }
