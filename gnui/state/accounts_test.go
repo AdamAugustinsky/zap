@@ -230,3 +230,30 @@ func TestTryAgainReopensACoreThatFailedToOpen(t *testing.T) {
 		t.Errorf("%d opens, %d reconnects", opens, countTag(c, abi.CommandTagReconnect))
 	}
 }
+
+// A core still opening when the cores start (a slow open: an account taken
+// over from the Rust core, a Keychain prompt) gets its startup permit once
+// it is open. Without it the core never connects: an Unlink then finds it
+// offline, and the new device it makes never gets a code to link with.
+func TestASlowCoreStartsOnceOpen(t *testing.T) {
+	s := state.New()
+	release := make(chan struct{})
+	var c *fake.Core
+	p := core.OpenAsync(nil, func(*core.Timing) (core.Conn, error) {
+		<-release
+		c = fake.New(nil)
+		return c, nil
+	})
+	a := s.AddAccount("1", p, nil)
+	s.Pump(0)
+	s.StartCores() // after the first frame, the core still opening
+	if a.Started {
+		t.Fatal("a core still opening was marked started")
+	}
+	close(release)
+	p.Wait(5 * time.Second)
+	s.Pump(0)
+	if a.Conn != c || c == nil || !c.Started() || !a.Started {
+		t.Fatalf("once open: conn %v, started %v", a.Conn, a.Started)
+	}
+}
