@@ -110,19 +110,12 @@ func (s *Archive) UpsertChat(c Chat) error {
 	if c.ID == "" {
 		return errors.New("chat id is required")
 	}
-	data, err := encode(c)
-	if err != nil {
-		return err
-	}
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-	if _, err = tx.Exec("INSERT INTO chats(id,activity,payload) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET activity=excluded.activity,payload=excluded.payload", c.ID, c.LastActivity, data); err != nil {
-		return err
-	}
-	if _, err = tx.Exec("INSERT INTO chat_visibility(chat,locked) VALUES(?,?) ON CONFLICT(chat) DO UPDATE SET locked=excluded.locked", c.ID, c.Locked); err != nil {
+	if err = putChat(tx, c.ID, c); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -174,19 +167,12 @@ func (s *Archive) UpdateChat(id string, update func(*Chat)) error {
 		return err
 	}
 	update(&c)
-	b, err = encode(c)
-	if err != nil {
-		return err
-	}
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-	if _, err = tx.Exec("INSERT INTO chats(id,activity,payload) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET activity=excluded.activity,payload=excluded.payload", id, c.LastActivity, b); err != nil {
-		return err
-	}
-	if _, err = tx.Exec("INSERT INTO chat_visibility(chat,locked) VALUES(?,?) ON CONFLICT(chat) DO UPDATE SET locked=excluded.locked", id, c.Locked); err != nil {
+	if err = putChat(tx, id, c); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -267,6 +253,11 @@ func save(tx *sql.Tx, m Message) error {
 			// The edit-envelope timestamp/order describes the edit operation,
 			// never the position of the message it modifies.
 			m.Timestamp, m.Order = old.Timestamp, old.Order
+		} else if old.Order == 0 && m.Timestamp == old.Timestamp {
+			// Zap: a row filed live has no order id. History's would move it
+			// among the messages of its second, where the reader has seen it
+			// already (found by the simulation, gocore/wa's sim_test.go).
+			m.Order = 0
 		}
 		if m.Order == 0 {
 			m.Order = old.Order
