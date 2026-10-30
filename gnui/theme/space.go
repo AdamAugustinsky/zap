@@ -43,8 +43,8 @@ const (
 	PaneGutter   = Space2
 	PaneRadius   = WindowRadius - PaneInset
 
-	BubbleRadius = 16
-	BubblePadX   = Space3
+	BubbleRadius = 12 // the design playground's (zap-notes/playground.json)
+	BubblePadX   = Space2
 	BubblePadY   = Space2
 	NestedRadius = BubbleRadius - BubblePadY
 	InnerRadius  = Space1

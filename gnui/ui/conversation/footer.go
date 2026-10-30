@@ -288,8 +288,11 @@ func (s *Screen) footRow(e *screen.Env, m model.Message, f *footerMarks, out boo
 	small(2, f.stamp, s.look.time, col)
 	if f.tick != tickNone {
 		ink := col
-		if f.read {
+		switch {
+		case f.read:
 			ink = ztheme.OnBubble(out).Read
+		case f.tick == tickFailed:
+			ink = rexui.DangerText.RGBA(k.Theme())
 		}
 		s.icons.ticks.draw(e, font, f.tick, ink, key)
 	}

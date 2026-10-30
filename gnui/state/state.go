@@ -141,11 +141,9 @@ type Account struct {
 	// The window's state that belongs to the account (zf:src/account.rs):
 	// the open chat, the list's mode and chip, and the label the chip names.
 	Open model.ChatRef
-	// Split is the chat beside the open one in the split view (split.go),
-	// 0 for none; never the open chat. The open chat is the pane in use;
-	// SplitFirst says the split chat is the first (left) pane.
-	Split      model.ChatRef
-	SplitFirst bool
+	// SplitPanes are the split view's chats left to right (split.go), the
+	// open chat (the pane in use) among them; empty with no split.
+	SplitPanes []model.ChatRef
 	Mode       ListMode
 	Filter     Filter
 	Label      model.IDList // one id: the label of FilterLabel
@@ -163,10 +161,15 @@ type Account struct {
 	// openID is the open chat's JID, kept for the OnChatClose hooks (the
 	// chat may be gone from the model when it closes).
 	openID []byte
-	// side is the split chat's own state while the open chat's is the
-	// live one (split.go); prevOpen the chat open before the open one.
-	side     sideState
+	// side is each other pane's own state while the open chat's is the
+	// live one (split.go), sideWas the open chat while one builds;
+	// prevOpen the chat open before the open one.
+	side     map[model.ChatRef]*sideState
+	sideWas  model.ChatRef
 	prevOpen model.ChatRef
+	// parked is the split put aside while another chat shows (split.go):
+	// its chats in their places, the one in use; zero for none.
+	parked Group
 	// unreadAt is how many messages of chat unreadRef were unread when it
 	// opened (UnreadAtOpen).
 	unreadRef model.ChatRef
@@ -232,6 +235,9 @@ func (a *Account) Send(cmd *abi.Command) error {
 // in the core (zf:src/app.rs:5261-5266, Action::OpenChat). 0 closes the
 // open chat.
 func (a *Account) OpenChat(ref model.ChatRef) {
+	if a.reopenGroup(ref) {
+		return
+	}
 	if ref != a.Open && a.Active() {
 		if c, ok := a.Model.Chats.Get(ref); ok {
 			if mention, has := c.UnreadMention(); has {
@@ -278,15 +284,21 @@ func (a *Account) openChat(ref model.ChatRef, read bool) {
 		p.Jump.Msg.Reset()
 		p.ReactTarget.Reset()
 	}
-	if a.Split != 0 && (ref == a.Split || ref == 0) {
-		// The split chat opened is the pane put in use; the open chat
-		// closed leaves the split chat alone in the window.
-		a.useSide()
-		if ref == 0 {
-			a.CloseSplit()
+	if a.SplitOn() {
+		switch {
+		case ref == 0:
+			// the chat in use closed: its pane goes, the others stay
+			a.ClosePane(a.Open)
+			st.gen++
+			return
+		case a.InSplit(ref):
+			// a chat of the split opened: its pane is put in use
+			a.UsePane(ref)
+			return
+		default:
+			// another chat shows alone; the split waits as a group, as Zen's
+			a.park()
 		}
-		st.gen++
-		return
 	}
 	a.setOpen(ref)
 	st.gen++
@@ -367,7 +379,7 @@ func (a *Account) pinConversations() {
 	if p := &a.st.Pip; p.Acct == a.ID {
 		pip = p.Ref
 	}
-	a.Model.PinMore(a.Split, pip)
+	a.Model.PinMore(a.SplitPanes, pip)
 }
 
 // load makes the open chat's conversation ready and asks for its history
@@ -575,9 +587,9 @@ type Lock struct {
 // Requests are one-shot asks from the shell's commands to the screens that
 // own what they ask for: the owner acts and clears its flag.
 type Requests struct {
-	// UseSplit: the split view's other pane took the keyboard (its composer,
-	// typed into straight): the shell puts it in use (Account.UseSplit).
-	UseSplit      bool
+	// UsePane: a split view pane not in use took the keyboard (its composer,
+	// typed into straight): the shell puts it in use (Account.UsePane).
+	UsePane       model.ChatRef
 	FocusSearch   bool // ⌘K, ⌘⇧F: ui/chatlist focuses its search field
 	ClearSearch   bool // the locked folder closed: ui/chatlist empties its search
 	FocusComposer bool // ⌘L: ui/composer takes the keyboard
@@ -651,9 +663,11 @@ type State struct {
 	FloatPeek Peek
 	// Pip is the chat kept floating over the desktop (WinPip, pip.go).
 	Pip Pip
-	// SplitShare is the first pane's share of the split view's width, 0
-	// for the default (half).
-	SplitShare float32
+	// SplitShares are the split view's panes' shares of its width, left to
+	// right (Shares); MaxPanes how many the window has room for (the shell
+	// sets it each frame, from the width).
+	SplitShares []float32
+	MaxPanes    int
 	// Side: the split pane is building, its chat's state traded in
 	// (Account.SideBegin): the one-shot requests and the keys wait for the
 	// pane in use.

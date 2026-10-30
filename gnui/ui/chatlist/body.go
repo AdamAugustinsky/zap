@@ -44,11 +44,37 @@ func (s *Screen) body(e *screen.Env, a *state.Account) {
 	c.Push(v.Outer)
 	sv := base.ScrollView{Outer: v.Outer, Inner: v.Body, State: &s.sbar, Axes: base.ScrollVertical}
 	rexui.ScrollBars(k.Kit, &sv)
+	s.emptyBelow(e, v, true)
 	c.Pop()
 	if typing {
 		c.WakeIn(int64(time.Second)) // a "typing…" lapses without an event
 	}
 	s.takeFocusComposer(e)
+}
+
+// emptyBelow is a list's room under its last row, when the rows end
+// before its pane does: a double click there hides the chat list (hide; ⌘B)
+// or, under the rail's pictures of a hidden one, shows it.
+func (s *Screen) emptyBelow(e *screen.Env, v base.VList, hide bool) {
+	c := e.C()
+	content, view := c.ScrollExtent(v.Body)
+	_, y := c.Scroll(v.Body)
+	r := c.RectOf(c.KeyOf(v.Outer))
+	top := r[1] + content[1] - float32(y)
+	if view[1] <= 0 || top >= r[3]-1 {
+		return
+	}
+	theme.At(c, 0, top-r[1], r[2]-r[0], r[3]-top) // in the list's box
+	c.NextRole(ui.RoleGroup)
+	if hide {
+		c.NextSemName(i18n.T("Double-click to hide the chat list"))
+	} else {
+		c.NextSemName(i18n.T("Double-click to show the chat list"))
+	}
+	if c.Signal(c.Box(ui.Clickable|base.Floating, "empty below")).DoubleClicked {
+		e.S.Panes.ListHidden = hide
+		e.S.Touch()
+	}
 }
 
 // skeleton is the rows' placeholders while the archive is still loading.

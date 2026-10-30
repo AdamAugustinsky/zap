@@ -195,7 +195,7 @@ func New() *Screen { return newScreen("conversation", false) }
 
 // NewPane is the conversation of the split view's second pane: its own root
 // box and its own first-page watch (the search pane's is the first pane's).
-func NewPane() *Screen { return newScreen("conversation 2", true) }
+func NewPane(name string) *Screen { return newScreen("conversation"+name, true) }
 
 func newScreen(root string, own bool) *Screen {
 	s := &Screen{root: root, selRoot: root + " selection", own: own}

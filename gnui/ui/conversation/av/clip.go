@@ -51,13 +51,28 @@ func (b *blk) videoSize(maxW float32) (w, h float32) {
 	if b.fileCard() {
 		return min(b.pt(cardWidth), maxW), b.pt(cardHeight)
 	}
-	// Without its size, a widescreen frame that fills the bubble.
+	// Without its size, a widescreen frame that fills the bubble. Playing,
+	// the bubble takes the frames' own shape (the message's size can be
+	// another's: the poster crops to it until then).
 	vw, vh := float32(b.md.Width), float32(b.md.Height)
 	if b.md.Width == 0 || b.md.Height == 0 {
 		vw, vh = 1280, 720
 	}
 	limit := min(maxW, b.pt(pictureWidth))
-	return b.fitPicture(b.pt(vw), b.pt(vh), limit, min(b.pt(pictureHeight), limit*1.3))
+	maxH := min(b.pt(pictureHeight), limit*1.3)
+	w, h = b.fitPicture(b.pt(vw), b.pt(vh), limit, maxH)
+	if vc.is(b.a, b.m.ID()) && vc.fw > 0 && vc.fh > 0 && !b.md.Gif {
+		// the frames' shape at the bubble's width (never their pixels: a
+		// small clip keeps the bubble's size)
+		fw, fh := float32(vc.fw), float32(vc.fh)
+		h = theme.Snap(w * fh / fw)
+		if h > maxH {
+			h = maxH
+			w = theme.Snap(h * fw / fh)
+		}
+		h = max(h, b.pt(90))
+	}
+	return w, h
 }
 
 // fileCard reports a video drawn as a file row: no poster and no file to
@@ -135,8 +150,9 @@ func (b *blk) frameBuild(r screen.Rect) {
 	case tex != 0 && gif:
 		b.frame(41, tex, tw, th, 0, 0, r.W, r.H, radius, ui.FitFill)
 	case tex != 0:
+		// the bubble has the frames' shape by now (videoSize); fill it
 		b.fillBox(42, 0, 0, r.W, r.H, radius, 0x000000FF)
-		b.frame(41, tex, tw, th, 0, 0, r.W, r.H, radius, ui.FitContain)
+		b.frame(41, tex, tw, th, 0, 0, r.W, r.H, radius, ui.FitFill)
 	case hasPath && !hasThumb:
 		b.fillBox(42, 0, 0, r.W, r.H, radius, 0x000000FF)
 		if vis {

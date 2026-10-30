@@ -40,10 +40,10 @@ func (ic *icons) add(k *base.Kit, tb float32) {
 		{&ic.pin, ztheme.SmallIcon("pin.fill", '⚲')},
 		{&ic.muted, ztheme.SmallIcon("bell.slash.fill", '⊘')},
 		{&ic.mention, ztheme.SmallIcon("at", '@')},
-		{&ic.clock, ztheme.SmallIcon("clock", '◷')},
-		{&ic.failed, ztheme.SmallIcon("exclamationmark.circle.fill", '!')},
+		{&ic.clock, ztheme.TickIcon("clock", '◷')},
+		{&ic.failed, ztheme.TickIcon("exclamationmark.circle.fill", '!')},
 		{&ic.timer, icon.Spec{Symbol: "timer", Fallback: '◔', Pt: 9, Weight: 0.3}}, // on the avatar's edge
-		{&ic.tick, ztheme.SmallIcon("checkmark", '✓')},
+		{&ic.tick, ztheme.TickIcon("checkmark", '✓')},
 		{&ic.newChat, ztheme.ToolIcon("square.and.pencil", '✎')},
 		{&ic.sidebar, ztheme.ToolIcon("sidebar.left", '▤')},
 		{&ic.back, ztheme.ToolIcon("chevron.left", '‹')},
@@ -341,7 +341,7 @@ func (s *Screen) tickSize(k *base.Kit, t tickKind, line float32) (w, h float32) 
 		iw, ih = k.IconSize(s.ic.tick)
 	default:
 		iw, ih = k.IconSize(s.ic.tick)
-		iw += theme.Snap(5 * sc)
+		iw += theme.Snap(iw * ztheme.TickStep)
 	}
 	return max(theme.Snap(16*sc), float32(math.Ceil(float64(iw)))), max(line, float32(math.Ceil(float64(ih))))
 }
@@ -351,7 +351,6 @@ func (s *Screen) tickSize(k *base.Kit, t tickKind, line float32) (w, h float32) 
 func (s *Screen) ticks(e *screen.Env, t tickKind, line float32, key ui.Key, on bool) {
 	k := e.K
 	c, r := k.Context(), k.Theme()
-	sc := k.Scale()
 	w, line := s.tickSize(k.Kit, t, line)
 	col := r.Colors[theme.Label2]
 	switch t {
@@ -382,8 +381,9 @@ func (s *Screen) ticks(e *screen.Env, t tickKind, line float32, key ui.Key, on b
 	case tickSent:
 		one(0, 0, s.ic.tick)
 	default:
+		iw, _ := k.IconSize(s.ic.tick)
 		one(0, 0, s.ic.tick)
-		one(1, theme.Snap(5*sc), s.ic.tick)
+		one(1, theme.Snap(iw*ztheme.TickStep), s.ic.tick)
 	}
 	c.Pop()
 }

@@ -60,8 +60,10 @@ func (l *Logic) focusFrame(s *state.State) {
 			if c, ok := a.OpenChatView(); ok && c.Unread() > 0 {
 				l.markRead(a, c.ID())
 			}
-			if c, ok := a.SplitChat(); ok && c.Unread() > 0 {
-				l.markRead(a, c.ID())
+			for _, ref := range a.Panes() { // the split view's other panes
+				if c, ok := a.Model.Chats.Get(ref); ok && ref != a.Open && c.Unread() > 0 && !(c.Locked() && a.Mode != state.ListLocked) {
+					l.markRead(a, c.ID())
+				}
 			}
 		}
 	}

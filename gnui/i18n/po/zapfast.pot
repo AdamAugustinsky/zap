@@ -4840,3 +4840,15 @@ msgstr ""
 #: gnui
 msgid "Split pane"
 msgstr ""
+
+#: gnui
+msgid "Double-click to hide the chat list"
+msgstr ""
+
+#: gnui
+msgid "Double-click to show the chat list"
+msgstr ""
+
+#: gnui
+msgid "Take out of the split"
+msgstr ""

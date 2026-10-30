@@ -5087,3 +5087,15 @@ msgstr "Remplir la fenêtre avec cette discussion"
 #: gnui
 msgid "Split pane"
 msgstr "Volet de la division"
+
+#: gnui
+msgid "Double-click to hide the chat list"
+msgstr "Double-cliquer pour masquer la liste des discussions"
+
+#: gnui
+msgid "Double-click to show the chat list"
+msgstr "Double-cliquer pour afficher la liste des discussions"
+
+#: gnui
+msgid "Take out of the split"
+msgstr "Retirer de la division"

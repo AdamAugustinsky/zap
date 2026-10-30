@@ -19,23 +19,27 @@ import (
 // Pip is the chat floating over other apps (state.Pip, WinPip), as a
 // video's picture in picture: a small window on every Space that stays
 // over the apps the person works in, with the chat's transcript and a
-// composer. Its title row moves it; its buttons shrink it to the floating
-// Zap icon, open the chat in the main window, or close it. The icon shows
-// the chat's unread count; a click brings the chat back, and the × it
-// shows under the pointer closes it. The chat is read while the window has
+// composer. Its title row moves it anywhere on the screen; its buttons
+// shrink it to the floating Zap icon, open the chat in the main window, or
+// close it. The icon shows the chat's unread count and moves anywhere
+// too; a click on it brings the chat back, and under the pointer a × at
+// its top right closes it. The chat is read while the window has
 // the focus (logic, and here when it takes the focus).
 type Pip struct {
 	v                        *View
 	mini, open, close, glyph icon.ID
-	shrunk                   bool // the window's size is the icon's
-	focused                  bool // the window had the focus last frame
+	xsmall                   icon.ID    // the close bubble's ×
+	shrunk                   bool       // the window's size is the icon's
+	drag                     bubbleDrag // a press on the icon (dragBubble)
+	focused                  bool       // the window had the focus last frame
 }
 
 // Sizes in points.
 const (
 	pipW, pipH = 360, 520
-	bubblePt   = 64 // the icon's window
-	discPt     = 52 // the icon's disc, inside it: room for its ×
+	bubblePt   = 78 // the icon's window: the disc, and room for its close bubble
+	discPt     = 52 // the icon's disc, at the window's bottom left
+	closePt    = 24 // the close bubble beside it, at the top right
 	pipMargin  = 16 // off the screen's edges
 )
 
@@ -49,6 +53,7 @@ func (p *Pip) Init(e *screen.Env) error {
 	p.open = k.AddIcon(ztheme.ToolIcon("macwindow", '□'))
 	p.close = k.AddIcon(ztheme.ToolIcon("xmark", '×'))
 	p.glyph = k.AddIcon(ztheme.LargeIcon("bubble.left.fill", '●'))
+	p.xsmall = k.AddIcon(ztheme.SmallIcon("xmark", '×'))
 	p.shrunk, p.focused = false, false
 	return p.v.Init(e)
 }
@@ -120,8 +125,24 @@ func (p *Pip) resize(e *screen.Env, mini bool) {
 		if mini {
 			nw, nh = bubblePt, bubblePt
 		}
-		win.SetFrameRect(x+w-nw, y, nw, nh)
+		nx, ny := onScreen(x+w-nw, y, nw, nh)
+		win.SetFrameRect(nx, ny, nw, nh)
 	})
+}
+
+// onScreen moves a w×h frame at x, y into the visible part of the screen
+// it is on (the chat growing back from an icon near an edge).
+func onScreen(x, y, w, h float64) (float64, float64) {
+	for _, v := range app.Screens(nil) {
+		if x+w/2 < v.X || x+w/2 >= v.X+v.W || y+h/2 < v.Y-h || y >= v.Y+v.H {
+			continue
+		}
+		m := float64(pipMargin)
+		x = min(max(x, v.VisibleX+m), v.VisibleX+v.VisibleW-w-m)
+		y = min(max(y, v.VisibleY+m), v.VisibleY+v.VisibleH-h-m)
+		return x, y
+	}
+	return x, y
 }
 
 // chat is the full window: the title row, the transcript, the composer.
@@ -182,20 +203,24 @@ func (p *Pip) chat(e *screen.Env, a *state.Account, ch model.Chat) {
 	c.Pop()
 }
 
-// bubble is the window shrunk: the Zap icon, the chat's unread count on
-// it, and a × under the pointer that closes the chat.
+// bubble is the window shrunk: the Zap icon with the chat's unread count.
+// A click on it brings the chat back; dragged, it moves the window anywhere
+// on the screen (it moves the window itself: a system drag area would keep
+// the click); under the pointer a × at its top right closes the chat.
 func (p *Pip) bubble(e *screen.Env, a *state.Account, ch model.Chat) {
 	st := e.S
 	k := e.K
 	c := k.Context()
 	r := k.Theme()
+	in := c.Input()
 	w, _ := c.Size()
 	W := float32(w)
 	disc := e.Pt(discPt)
-	off := theme.Snap((W - disc) / 2)
+	// the disc at the bottom left, clear of the close bubble's corner
+	dx, dy := e.Pt(4), W-disc-e.Pt(4)
 	ps := k.PressState("pip icon", base.HoverOn)
 	ps.Name = i18n.Format(i18n.T("Bring back {chat}"), "{chat}", model.S(Title(a, ch)))
-	theme.At(c, off, off, disc, disc)
+	theme.At(c, dx, dy, disc, disc)
 	c.NextBG(r.Colors[theme.Accent] | 0xFF)
 	c.NextRadius(disc / 2)
 	c.NextAxis(ui.AxisX)
@@ -204,25 +229,81 @@ func (p *Pip) bubble(e *screen.Env, a *state.Account, ch model.Chat) {
 	k.BeginPress(&ps, ui.RoleButton, ui.Px(disc), ui.Px(disc), ui.DrawBackground|base.Floating, nil)
 	k.Icon(p.glyph, 0xFFFFFFFF)
 	sig := k.EndPress(&ps)
-	rexui.Tooltip(k.Kit, sig.ID, model.S(Title(a, ch)))
-	if sig.Clicked {
+	p.dragBubble(e, c.Signal(sig.ID))
+	if sig.Clicked && !p.drag.moved {
 		st.SetPipMini(false)
 	}
-	if n := ch.Unread(); n > 0 {
-		theme.At(c, off+disc-e.Pt(20), off-e.Pt(2), e.Pt(24), e.Pt(18))
+	if n := ch.Unread(); n > 0 && !in.Inside {
+		theme.At(c, dx+disc-e.Pt(20), dy-e.Pt(2), e.Pt(24), e.Pt(18))
 		c.NextAxis(ui.AxisX)
 		c.NextJustify(ui.JustifyCenter)
 		c.Push(c.Box(base.Floating, "count"))
 		rexui.Badge(k.Kit, count(n), rexui.BadgeOpts{Variant: rexui.BadgeCount, Name: i18n.T("Unread messages")})
 		c.Pop()
 	}
-	if ps.Hot > 0 || c.Input().MouseX >= 0 && c.Input().MouseX < W && c.Input().MouseY >= 0 && c.Input().MouseY < W {
-		x := e.Pt(18)
-		theme.At(c, 0, 0, x, x)
-		c.NextSize(ui.Px(x), ui.Px(x))
-		if rexui.IconButton(k.Kit, p.close, i18n.T("Close"), rexui.IconButtonOpts{Variant: rexui.IconBordered}).Clicked {
+	if in.Inside && !p.drag.moved {
+		// the close bubble: a small one of its own at the top right, over
+		// nothing it could be mistaken for, while the pointer is on the window
+		x := e.Pt(closePt)
+		cs := k.PressState("pip close", base.HoverOn)
+		cs.Name = i18n.T("Close")
+		theme.At(c, W-x-e.Pt(2), e.Pt(2), x, x)
+		fill := r.Colors[theme.Raised] | 0xFF
+		if cs.Hot > 0 {
+			fill = theme.MixRGBA(fill, r.Colors[theme.Label]|0xFF, 0.12*cs.Hot)
+		}
+		c.NextBG(fill)
+		c.NextBorder(r.Colors[theme.Separator], r.Lines.Hairline)
+		c.NextRadius(x / 2)
+		c.NextShadow(ui.Shadow{OffY: e.Pt(1), Sigma: e.Pt(3), Color: 0x00000040})
+		c.NextAxis(ui.AxisX)
+		c.NextCross(ui.CrossCenter)
+		c.NextJustify(ui.JustifyCenter)
+		k.BeginPress(&cs, ui.RoleButton, ui.Px(x), ui.Px(x), ui.DrawBackground|ui.DrawBorder|base.Floating, nil)
+		k.Icon(p.xsmall, r.Colors[theme.Label])
+		if k.EndPress(&cs).Clicked {
 			st.ClosePip()
 		}
+	}
+}
+
+// bubbleDrag is a press on the icon: where the window and the pointer were
+// on the screen, and whether it has moved past a click.
+type bubbleDrag struct {
+	on, moved bool
+	frame     [4]float64 // the window's frame at the press, points
+	at        [2]float64 // the pointer on the screen at the press, points
+}
+
+// dragBubble moves the window with the pointer while the icon is dragged
+// (sig, its box's signal), from where both were at the press.
+func (p *Pip) dragBubble(e *screen.Env, sig ui.Signal) {
+	d := &p.drag
+	if e.A == nil || e.A.Win == nil {
+		return
+	}
+	win := e.A.Win
+	in := e.C().Input()
+	sc := float64(e.K.Scale())
+	x, y, w, h := win.FrameRect()
+	pointer := [2]float64{x + float64(in.MouseX)/sc, y + float64(in.MouseY)/sc}
+	switch {
+	case sig.Pressed:
+		d.on, d.moved = true, false
+		d.frame, d.at = [4]float64{x, y, w, h}, pointer
+	case sig.Dragging && d.on:
+		dx, dy := pointer[0]-d.at[0], pointer[1]-d.at[1]
+		if !d.moved && dx*dx+dy*dy < 9 {
+			return // still a click
+		}
+		d.moved = true
+		nx, ny := d.frame[0]+dx, d.frame[1]+dy
+		if nx != x || ny != y {
+			e.A.AtSafePoint(func() { win.SetFrameRect(nx, ny, w, h) })
+		}
+		e.C().RequestFrame()
+	case !sig.Dragging && !sig.Released:
+		d.on = false
 	}
 }
 

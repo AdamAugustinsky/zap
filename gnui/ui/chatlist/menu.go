@@ -363,7 +363,7 @@ func (s *Screen) chatMenu(items *[]ui.MenuItem, e *screen.Env, a *state.Account,
 	add := func(it ui.MenuItem) { *items = append(*items, it) }
 	// Zap's ways to look at it beside what is open, first, as a browser's
 	// "Open in a new tab"
-	if a.Open != 0 && a.Open != ref && a.Split != ref && !ch.Locked() {
+	if a.Open != 0 && a.Open != ref && !a.InSplit(ref) && !ch.Locked() {
 		add(ui.MenuItem{ID: miSplit, Title: i18n.T("Open beside the open chat"), Symbol: "rectangle.split.2x1"})
 	}
 	if !ch.Locked() {

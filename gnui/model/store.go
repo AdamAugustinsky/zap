@@ -55,8 +55,9 @@ type Store struct {
 	CacheDir []byte
 
 	convs        [MaxConversations]Conversation
-	open, viewer ChatRef // at most two protected conversations per account
-	split, pip   ChatRef // and the split view's and the floating chat's
+	open, viewer ChatRef   // at most two protected conversations per account
+	split        []ChatRef // and the split view's panes'
+	pip          ChatRef   // and the floating chat's
 	tick         uint64
 	typing       [maxTyping]typingRec
 	tseq         uint32
@@ -344,11 +345,24 @@ func (s *Store) PinConversations(open, viewer ChatRef) { s.open, s.viewer = open
 
 // PinMore protects the split view's conversation and the floating chat's
 // as well; zero releases one.
-func (s *Store) PinMore(split, pip ChatRef) { s.split, s.pip = split, pip }
+func (s *Store) PinMore(split []ChatRef, pip ChatRef) {
+	s.split, s.pip = append(s.split[:0], split...), pip
+}
 
 func (s *Store) pinned(v *Conversation) bool {
 	ref := s.Chats.Find(v.Chat())
-	return ref != 0 && (ref == s.open || ref == s.viewer || ref == s.split || ref == s.pip)
+	if ref == 0 {
+		return false
+	}
+	if ref == s.open || ref == s.viewer || ref == s.pip {
+		return true
+	}
+	for _, r := range s.split {
+		if r == ref {
+			return true
+		}
+	}
+	return false
 }
 
 // DisplayName is how the interface names a JID (PersonName without a

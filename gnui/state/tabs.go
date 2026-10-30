@@ -73,6 +73,9 @@ func (a *Account) CloseChatTab(i int) {
 		return
 	}
 	ref := t.refs[i]
+	if a.Group().Has(ref) {
+		a.CloseGroup() // a chat of the split group closed: the group goes
+	}
 	t.remove(i)
 	if ref != a.Open {
 		return
@@ -97,4 +100,47 @@ func (a *Account) MoveChatTab(from, to int) {
 		copy(t.refs[to+1:from+1], t.refs[to:from])
 	}
 	t.refs[to] = ref
+}
+
+// CloseGroupTabs closes the split group and both its chats' tabs (the
+// group's tab ×); the chat open next is the tab after them.
+func (a *Account) CloseGroupTabs() {
+	g := a.Group()
+	if g.Empty() {
+		return
+	}
+	g.Chats = append([]model.ChatRef(nil), g.Chats...) // CloseGroup empties the panes
+	a.CloseGroup()
+	t := &a.tabs
+	at := -1
+	for i := t.n - 1; i >= 0; i-- {
+		if g.Has(t.refs[i]) {
+			t.remove(i)
+			at = i
+		}
+	}
+	if !g.Has(a.Open) {
+		return
+	}
+	next := model.ChatRef(0)
+	if t.n > 0 && at >= 0 {
+		next = t.refs[min(at, t.n-1)]
+	}
+	a.OpenChat(next)
+}
+
+// OrderChatTabs puts the tabs in order (refs it does not hold are skipped;
+// tabs it leaves out keep their places after).
+func (a *Account) OrderChatTabs(order []model.ChatRef) {
+	t := &a.tabs
+	at := 0
+	for _, ref := range order {
+		for i := at; i < t.n; i++ {
+			if t.refs[i] == ref {
+				a.MoveChatTab(i, at)
+				at++
+				break
+			}
+		}
+	}
 }

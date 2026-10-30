@@ -278,7 +278,9 @@ func (b *blk) poster(w, h float32) img.Handle {
 }
 
 // filePoster is upstream's local-file fallback (conversation.rs:8516): the
-// first frame, decoded off-thread at 320 points wide, contained over black.
+// first frame, decoded off-thread at 320 points wide, cropped to fill the
+// bubble (the message's size may not be the video's; playing, the bubble
+// takes the video's).
 // The window cache owns pending results, failures and texture lifetimes.
 func (b *blk) filePoster(w, h, radius float32) bool {
 	ca := b.k.Images()
@@ -297,7 +299,7 @@ func (b *blk) filePoster(w, h, radius float32) bool {
 	b.c.NextPos(0, 0)
 	b.c.NextSize(ui.Px(w), ui.Px(h))
 	b.c.NextFlags(base.Floating)
-	b.k.Image(41, hd, ui.FitContain, radius, "")
+	b.k.Image(41, hd, ui.FitFill, radius, "")
 	return true
 }
 
