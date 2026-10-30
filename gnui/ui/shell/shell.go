@@ -43,6 +43,7 @@ const (
 	minListPt      = 260 // the narrowest list, and the widest (zf:src/ui/chats.rs:21)
 	maxListPt      = 520
 	narrowPt       = 720 // a window narrower than this hides the rail and the list beside an open chat
+	sideMinPt      = 240 // the narrowest side pane: without room for it beside the chat it does not show
 )
 
 // ToolbarStyle is the main window's toolbar: Rex's band.
@@ -477,8 +478,11 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 		if side != nil {
 			sideW = side.Width(e)
 		}
-		sideW = min(sideW, W-railW-listW-e.Pt(320))
-		if sideW < e.Pt(240) {
+		// A width asked below the least (an old or hand-edited file) opens
+		// at the least, as upstream clamps it (zf:src/ui/pane.rs:108-109),
+		// rather than never; the room left for the chat still decides.
+		sideW = min(max(sideW, e.Pt(sideMinPt)), W-railW-listW-e.Pt(320))
+		if sideW < e.Pt(sideMinPt) {
 			sideW = 0
 		}
 	}

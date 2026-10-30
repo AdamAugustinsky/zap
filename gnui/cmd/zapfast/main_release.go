@@ -12,6 +12,7 @@ import (
 	"gonativeui/app/selfupdate"
 
 	"zapfast/core"
+	"zapfast/internal/buildinfo"
 	"zapfast/state"
 	"zapfast/sys"
 	"zapfast/ui/shell"
@@ -53,6 +54,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, "zapfast: the log:", err)
 		}
 		defer lg.Close()
+		buildinfo.Log(lg.File(), state.Version) // the revisions this run was built from
 		loading = state.LoadSettings(p)
 	}
 	s := startState(loading, false, showSettingsStartup)

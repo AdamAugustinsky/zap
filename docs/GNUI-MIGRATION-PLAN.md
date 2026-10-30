@@ -241,6 +241,18 @@ This refines `research:zapfast.md` §3 ("C ABI sketch") as follows.
   - **marked text** (an IME composition) closes the popup and blocks `Replace`; the send key commits the composition rather than sending;
   - Enter policy, drafts (`SaveDraft`) and `Composing` follow upstream (`zf:src/ui/conversation.rs:1729-1733`).
 
+### Recovery: what any core behind `core.Conn` must keep
+
+Pinned by `gnui/state/recovery_test.go` and `gnui/ui/shell/panes_test.go` over fake cores, and by `gnui/gocore/wa/outbox_test.go` over the Go backend with a temporary archive and in-memory keys. The Go backend (`gnui/gocore`) is the core main runs on now; any later backend plugs in only if these still hold.
+
+- **The UI keeps no command queue.** `Account.Send` hands a command to `Conn.Send` at once. Without a core it returns `ErrNoCore` and the command is dropped, not held. A reconnect resends nothing (no `LoadChat`, `SaveDraft`, `SendText` or `MarkRead`). Holding, ordering and retrying commands across a dropped link is the core's job.
+- **Sends are never retried by the UI.** A send the core refuses comes back as `SendRefused`, and its text goes to the chat's empty draft (`state/events.go` `sendRefused`). A send whose acknowledgement is unknown after a crash keeps its original message id: the next open fails it (`Archive.RecoverOutbox`, `gocore/store/archive.go:1171`, called from `gocore/wa/engine.go:335`), and the chat shows it as `Delivery` `Failed`. The engine never sends it again, on the open, when the link comes up, or on a later start, nor under a new id (`TestACrashedSendFailsUnderItsIDAndIsNeverResent`). Main has no command to retry a failed send yet. One added later must be explicit and reuse the original id.
+- **Drafts live in the core's archive.** `SaveDraft` stores the exact bytes, and the next start's `Drafts` event gives them back. A `Drafts` event never overwrites text the UI already holds for a chat (`model/store.go`).
+- **Chat refs stay stable through a reload.** A `Chats` batch may arrive in chunks after a reconnect. Rows are removed only at the batch's `Last`, so the open chat and its ref survive. Pins and their order come from the core's chat rows (`Pinned`, `PinnedAt`).
+- **The last chat reopens once per run.** It reopens at the first `Chats` `Last`. It is not marked read while the window is unfocused. A hidden account parks its chat and loads it when shown.
+- **One core per account.** A JID is unique only within its account. A core whose `Drain` fails marks only its own account (`Account.Err`), and the others keep draining, with or without a window. A new account gets a new `Serial`, and nothing a removed account's core still had queued reaches it.
+- **Replacing a core.** Try again (`Reconnect` on an account whose core failed to open) reopens it through `State.Reopen` (`gnui/state/state.go:951`), which clears `Err` and gives the new core its start permit once open (`startReopened`, `:968`). A failed attempt's core is never started nor drained. The account keeps its settings, so its last chat reopens once the new core's list is in, and the other accounts are untouched (`TestTryAgainReplacesOnlyTheCore`). Otherwise a core changes only when a `Pending` open finishes, or when an account is removed and another added. `Reopen` does not replace a core that opened and later stopped: a Go core that panics is poisoned (it refuses commands and emits `Fatal`), and nothing in the UI reopens it until the app restarts.
+
 ## Work
 
 Effort and line counts come from `research:zapfast.md` §5: a Go UI of about 45–55k lines for parity, plus 3–5k new lines of Rust. Sizes are assumed elapsed weeks for each item's lead, used only for the scheduling scenario below; Z0 grew with the seam inventory.

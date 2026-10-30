@@ -9,7 +9,6 @@ import (
 	"gonativeui/rexui"
 	"gonativeui/theme"
 	"gonativeui/ui"
-	"gonativeui/widget/base"
 
 	"zapfast/abi"
 	"zapfast/format"
@@ -131,7 +130,7 @@ func (s *Screen) Toolbar(e *screen.Env, tb *rexui.Toolbar) {
 
 // shrinkingLabel is a header label's width: its text's, giving way entirely
 // when the header is narrower (the label fades at the end).
-var shrinkingLabel = ui.TextSize(base.LabelSlack).Strict(0)
+var shrinkingLabel = ui.TextSize(0).Strict(0)
 
 // presenceDot is the avatar's dot: online, from the open chat's presence.
 func (s *Screen) presenceDot(a *state.Account, ch model.Chat) rexui.AvatarPresence {

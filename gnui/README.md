@@ -45,10 +45,11 @@ launch tour) are still to be measured on a live screen.
 
 ## The framework
 
-`go.mod` replaces `gonativeui` with `../../go-native-ui`, the framework's
-checkout beside this repository's (`~/Projects/go-native-ui` next to
-`~/Projects/zap`). A worktree anywhere else uses a `go.work` here,
-which is ignored by git:
+`release-deps.json` pins the framework Zap is built against: go-native-ui at
+commit `977700e06e0a`, with that commit's tree hash. `go.mod` replaces
+`gonativeui` with `../../go-native-ui`, the framework's checkout beside this
+repository's (`~/Projects/go-native-ui` next to `~/Projects/zap`). A worktree
+anywhere else uses a `go.work` here, which is ignored by git:
 
 ```
 go 1.27.1
@@ -59,6 +60,51 @@ replace gonativeui => /Users/you/Projects/go-native-ui
 
 replace github.com/go-text/typesetting => /Users/you/Projects/go-native-ui/third_party/typesetting
 ```
+
+`go build` and `go test` take whatever that resolves to. Packaging does not.
+`packaging/macos/gnui-package.sh` (through `scripts/gnui/release_identity.py`)
+refuses a framework at another commit or with uncommitted changes, and an
+export without git unless its files hash to the pinned tree. To package
+against another framework on purpose, set `ZAP_FRAMEWORK_DIR` to it: the
+script warns, and the manifest records `"pin": "override"`. Moving the pin
+means changing `release-deps.json`'s commit and tree together
+(`git rev-parse <commit>^{tree}`).
+
+Every bundle carries `Contents/Resources/build-manifest.json`
+(`zap.build/v1`):
+
+- `framework` is the framework's identity (`module`, `revision`, `dirty`,
+  `source`), read by one adapter. When the gnui CLI has `gnui provenance
+  -json` (schema `gnui.provenance/v1`, still provisional), its framework
+  block is used (`source` `git` or `stamp`), and the whole JSON is kept
+  verbatim as `frameworkProvenance`. Otherwise the adapter reads git
+  (`source: "git"`), or the tree hash of an export that matched the pin
+  (`tree-hash`, Zap's own value). The framework's Ghostty pin stays inside
+  `frameworkProvenance`: Zap links neither libghostty-vt nor the terminal
+  widget, so it has no `ghostty` entry. `shaders` is the framework's report,
+  `{"artifact": "none"}` without one; a pinned build refuses an artifact
+  `release-deps.json` does not expect.
+- Zap's own fields: `app` (revision, dirty), `build` (variant, tags), `go`,
+  and `whatsmeow`. `whatsmeow` gives go.mod's required version, the
+  `./third_party/whatsmeow` replace (checked), and the patched copy's tree
+  in Zap's commit with a dirty flag (`third_party/whatsmeow/ZAP-PATCH.md`
+  says what the patch is). `nativeLibs` has each bundled library's
+  `builtSha256` and the source release its build script pins and verifies.
+  The hash is of the library as built: `gnui package` signs the bundle's
+  copy again, which changes its bytes.
+- `basis` names which fields are build-verified (computed from the
+  artifacts: the libraries' `builtSha256`) and which are packager-asserted
+  (read from git, go.mod, the build scripts, `go env` or the framework's
+  reader).
+
+The executable carries the same revisions, stamped with `-ldflags -X` into
+`internal/buildinfo` once they are checked. The framework's
+`gonativeui/provenance.FrameworkRevision` is stamped too wherever the
+framework has that package. The first line of each run's log names them
+(`msg=build revision=... framework=... framework_pin=...`), and About shows
+Zap's short revision. `debug.ReadBuildInfo` supplies only the go version,
+the tags and Zap's own VCS revision for an unstamped build: a replaced
+module records no framework revision.
 
 ## Building and testing
 
