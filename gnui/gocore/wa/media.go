@@ -29,6 +29,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"zapfast/abi"
+	"zapfast/gocore/av"
 	"zapfast/gocore/store"
 )
 
@@ -442,6 +443,16 @@ func thumbnail(data []byte) []byte {
 	if err != nil {
 		return nil
 	}
+	return thumbOf(m)
+}
+
+// thumbOf is a small JPEG of a decoded picture, nil when it cannot be
+// encoded: upstream's thumbnail_jpeg, for pictures and video posters alike.
+func thumbOf(m image.Image) []byte {
+	w, h := m.Bounds().Dx(), m.Bounds().Dy()
+	if w < 1 || h < 1 {
+		return nil
+	}
 	scale := float64(thumbSide) / float64(max(w, h))
 	tw, th := max(int(float64(w)*scale), 1), max(int(float64(h)*scale), 1)
 	small := image.NewRGBA(image.Rect(0, 0, tw, th))
@@ -452,4 +463,38 @@ func thumbnail(data []byte) []byte {
 		return nil
 	}
 	return buf.Bytes()
+}
+
+// posterSide bounds a video's decoded poster before it is made a thumbnail:
+// the Rust core's MAX_WIDTH (zf:src/mp4_frames.rs:11).
+const posterSide = 320
+
+// preview is what a sent video carries before it is downloaded: its size,
+// length and poster thumbnail. Each is zero when the MP4 does not say, and
+// the thumbnail when its frame does not decode
+// (zf:src/backend/worker/video_preview.rs:18). A video without a path (a
+// GIF's clip) is read from a temporary copy.
+func preview(path string, data []byte) (w, h, seconds uint32, thumb []byte) {
+	v, err := av.InspectVideo(data)
+	if err != nil {
+		return 0, 0, 0, nil
+	}
+	if path == "" {
+		f, err := os.CreateTemp("", "zap-video-*.mp4")
+		if err != nil {
+			return v.Width, v.Height, v.Seconds, nil
+		}
+		path = f.Name()
+		defer os.Remove(path)
+		_, err = f.Write(data)
+		if err = errors.Join(err, f.Close()); err != nil {
+			return v.Width, v.Height, v.Seconds, nil
+		}
+	}
+	if m, err := av.VideoPoster(path, v.Poster, posterSide); err == nil {
+		thumb = thumbOf(m)
+	} else {
+		slog.Debug("zapfast wa: a sent video's poster", "err", err)
+	}
+	return v.Width, v.Height, v.Seconds, thumb
 }

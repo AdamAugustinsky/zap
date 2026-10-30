@@ -69,4 +69,8 @@ var (
 	// ErrTooLarge: a picture over 100 megapixels or 16384 pixels a side, or
 	// a sticker that does not fit WhatsApp's limit.
 	ErrTooLarge = errors.New("av: too large")
+	// ErrVideo: the bytes are not an MP4 with a video track this package
+	// reads, or its poster frame could not be decoded. The error that
+	// matches it says why.
+	ErrVideo = errors.New("av: this video could not be read")
 )

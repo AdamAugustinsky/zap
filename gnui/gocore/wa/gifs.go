@@ -233,6 +233,9 @@ func (e *Engine) sendGif(c *abi.CommandSendGif) {
 		if err != nil {
 			return nil, err
 		}
-		return &upload{kind: whatsmeow.MediaVideo, mime: "video/mp4", data: data, width: w, height: h, gif: true}, nil
+		// The clip's poster and length; GIPHY's size stays
+		// (zf:src/backend/worker.rs:10052).
+		_, _, seconds, thumb := preview("", data)
+		return &upload{kind: whatsmeow.MediaVideo, mime: "video/mp4", data: data, width: w, height: h, seconds: seconds, thumb: thumb, gif: true}, nil
 	}, "", ctx, nil, "GIF")
 }
