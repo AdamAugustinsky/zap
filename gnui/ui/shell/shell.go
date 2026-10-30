@@ -245,7 +245,7 @@ func (sh *Shell) Init(a *app.App) error {
 	}
 	sh.imgs = screen.NewImages(a, sh.env.K, nil)
 	a.UI.Reserve(4096)
-	a.Text.ReserveRuns(text.MaxCachedRuns, text.MaxCachedGlyphs, text.MaxCachedTextBytes)
+	a.Text.ReserveRuns(text.WorkingSetRuns, text.WorkingSetGlyphs, text.WorkingSetTextBytes)
 	pt := theme.MacWindow.Capsule.Glyph + 2
 	k := sh.env.K
 	add := func(sym string, fb rune) icon.ID { return k.AddIcon(icon.Spec{Symbol: sym, Fallback: fb, Pt: pt}) }

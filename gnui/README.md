@@ -46,7 +46,7 @@ launch tour) are still to be measured on a live screen.
 ## The framework
 
 `release-deps.json` pins the framework Zap is built against: go-native-ui at
-commit `6b316c1cb51c`, with that commit's tree hash and the hash of the
+commit `99380eb9ada8`, with that commit's tree hash and the hash of the
 CI-built `shaders.metallib` it embeds. `go.mod` replaces
 `gonativeui` with `../../go-native-ui`, the framework's checkout beside this
 repository's (`~/Projects/go-native-ui` next to `~/Projects/zap`). A worktree
