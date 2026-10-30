@@ -154,6 +154,11 @@ func TestANarrowWindowShowsOnePane(t *testing.T) {
 	if !p.s.Panes.Covering || !p.side.built || p.chat.built || p.side.rect.W < 600 {
 		t.Errorf("narrow, info open: covering %v, side %v at %v, chat %v", p.s.Panes.Covering, p.side.built, p.side.rect.W, p.chat.built)
 	}
+	// The covering pane covers the chat without taking its place: the chat
+	// stays in use, so the covering pane draws translucent.
+	if f := p.sh.panes.Focus(); f != paneChat {
+		t.Errorf("narrow, info open: the pane in use is %v, want the chat", f)
+	}
 }
 
 // The pane in use follows a chat that opens and a press in another pane,

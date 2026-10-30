@@ -45,6 +45,10 @@ var paneFocusKey = ui.HashString(0, "zapfast/pane focus")
 func newPanes() (workspace.Layout, uint32) {
 	l := workspace.Layout{Key: ui.HashString(0, "zapfast/pane")}
 	l.Reset(paneList)
+	// The side pane covering a narrow window covers the chat without taking
+	// its place: the chat stays in use and the covering pane translucent, as
+	// before the workspace. Set after Reset, which clears the options.
+	l.SoloKeepsFocus = true
 	div := l.Split(paneList, paneChat, workspace.Right, 0.7)
 	l.Split(paneChat, paneSide, workspace.Right, 0.3)
 	l.SetLimits(paneList, workspace.Limits{Min: [2]float32{minListPt}, Max: [2]float32{maxListPt}})
@@ -82,9 +86,13 @@ func (sh *Shell) syncPanes(ref model.ChatRef, open, narrow bool) {
 		l.SetFixed(paneSide, max(w, lim.Min[0]))
 	}
 	l.SetLimits(paneChat, chat)
-	// A chat that opens is the pane in use; with none open the conversation
-	// (but for the Calls page's content) is empty and passes the focus by.
+	// A chat that opens is the pane in use, whichever pane a narrow window
+	// showed alone (the focus cannot move to a pane the solo one leaves out,
+	// so the solo pane is let go first and set again below, keeping the
+	// focus); with none open the conversation (but for the Calls page's
+	// content) is empty and passes the focus by.
 	if open && ref != sh.focusChat {
+		l.SetSolo(0)
 		l.SetEmpty(paneChat, false)
 		l.SetFocus(paneChat)
 	}
