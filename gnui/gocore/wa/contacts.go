@@ -57,6 +57,7 @@ func (e *Engine) emitContacts() {
 		seen[id] = true
 		list = append(list, contactRecord(id, c))
 	}
+	list = append(list, e.seenNames(seen)...)
 	out.List(e.out, list, func(batch uint32, last bool, chunk []abi.Contact) *abi.Event {
 		return &abi.Event{Tag: abi.EventTagContacts, Contacts: abi.EventContacts{Batch: batch, Last: last, Contacts: chunk}}
 	})
@@ -221,8 +222,64 @@ func (e *Engine) contactEvent(evt any) {
 	case *events.Contact:
 		e.contactChanged(v.JID, v.Action.GetFullName())
 	case *events.PushName:
-		e.contactChanged(v.JID, v.NewPushName)
+		// whatsmeow keeps the name under both ids: the phone number is the
+		// one chats are filed under (chatID), known or not to canonical.
+		j := v.JID
+		if j.Server == types.HiddenUserServer && v.JIDAlt.Server == types.DefaultUserServer {
+			j = v.JIDAlt
+		}
+		e.contactChanged(j, v.NewPushName)
 	}
+}
+
+// seenNames are contact records for the direct chats no contact names (not
+// in seen): the name the person went by in their newest message here, as
+// the phone shows "~ name" for a number that is not in the address book. A
+// name saved later comes as a contact and goes before it.
+func (e *Engine) seenNames(seen map[string]bool) []abi.Contact {
+	chats, err := e.arch.Chats()
+	if err != nil {
+		return nil
+	}
+	var list []abi.Contact
+	for _, c := range chats {
+		if seen[c.ID] || c.Name != "" || chatKind(c.Kind, c.ID) != abi.ChatKindDirect || e.isMe(c.ID) {
+			continue
+		}
+		page, _, err := e.arch.Messages(c.ID, "", 50)
+		if err != nil {
+			continue
+		}
+		for i := len(page) - 1; i >= 0; i-- { // newest last
+			if m := page[i]; !m.FromMe && strings.TrimSpace(m.SenderName) != "" {
+				list = append(list, abi.Contact{ID: b(c.ID), PushName: b(out.Clip(m.SenderName, 1024)), HasPushName: true})
+				break
+			}
+		}
+	}
+	return list
+}
+
+// emitSeenNames sends seenNames for the chats no contact names, once a
+// history sync has filed the messages they come from.
+func (e *Engine) emitSeenNames() {
+	all, err := e.cli.Contacts(e.ctx)
+	if err != nil {
+		return
+	}
+	seen := map[string]bool{}
+	for j, c := range all {
+		if c.FullName != "" || c.PushName != "" || c.BusinessName != "" {
+			seen[e.canonical(j)] = true
+		}
+	}
+	list := e.seenNames(seen)
+	if len(list) == 0 {
+		return
+	}
+	out.List(e.out, list, func(batch uint32, last bool, chunk []abi.Contact) *abi.Event {
+		return &abi.Event{Tag: abi.EventTagContacts, Contacts: abi.EventContacts{Batch: batch, Last: last, Contacts: chunk}}
+	})
 }
 
 // nameQuote gives a reply's quote the name its sender went by: the quoted

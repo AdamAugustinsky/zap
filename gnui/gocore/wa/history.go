@@ -50,6 +50,9 @@ func (e *Engine) setSyncing(syncing bool) {
 	ev := abi.Event{Tag: abi.EventTagSyncing}
 	ev.Syncing.Syncing = syncing
 	e.out.Emit(&ev)
+	if !syncing {
+		e.emitSeenNames() // the names history's messages brought
+	}
 }
 
 // history files one history chunk into the archive.
