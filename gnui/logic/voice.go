@@ -92,7 +92,7 @@ func TellPlayed(a *state.Account, msg []byte) {
 // chat the reader is still in carries on (zf:src/app.rs:8978).
 func VoiceEnded(s *state.State, a *state.Account, finished []byte) {
 	v := &s.Voice
-	if v.Chat == 0 || (v.Chat != a.Open && v.Chat != a.Split) {
+	if v.Chat == 0 || (v.Chat != a.Open && !a.InSplit(v.Chat)) {
 		return // the run's chat is in neither pane
 	}
 	c, ok := a.Model.Chats.Get(v.Chat)
@@ -155,7 +155,7 @@ func mediaArrived(s *state.State, a *state.Account, e *abi.EventMedia) {
 // voiceFrame ends a run whose chat was left (zf:src/app.rs:5230).
 func voiceFrame(s *state.State) {
 	a := s.Acct()
-	if s.Voice.Chat != 0 && (a == nil || a.Open != s.Voice.Chat && a.Split != s.Voice.Chat) {
+	if s.Voice.Chat != 0 && (a == nil || a.Open != s.Voice.Chat && !a.InSplit(s.Voice.Chat)) {
 		StopVoiceRun(s)
 	}
 }

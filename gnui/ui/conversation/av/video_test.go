@@ -735,3 +735,25 @@ func TestGallery(t *testing.T) {
 	r.Frames(3)
 	r.shot("gallery-video")
 }
+
+// A clip whose message says another shape (square here) is cropped to fill
+// its box at rest; playing, the bubble takes the frames' shape (the fake
+// player's are 16×9) at the box's width, so the whole video shows.
+func TestPlayingTakesTheVideosShape(t *testing.T) {
+	r := newRig(t)
+	m := video("sq", 10, "/m/sq.mp4", false, false)
+	m.Content.Video.Media.Width, m.Content.Video.Media.Height = 320, 320
+	r.poster(&m)
+	r.load(m)
+	before := r.must(ui.RoleButton, "Video").Bounds
+	if w, h := before[2]-before[0], before[3]-before[1]; h < w*0.9 {
+		t.Fatalf("at rest the box is the message's shape (square): %v×%v", w, h)
+	}
+	r.Click(ui.RoleButton, "Video")
+	r.Frames(4)
+	after := r.must(ui.RoleButton, "Video").Bounds
+	w, h := after[2]-after[0], after[3]-after[1]
+	if want := w * 9 / 16; h < want-2 || h > want+2 {
+		t.Fatalf("playing, the box is %v×%v, want the frames' 16:9 (%v high)", w, h, want)
+	}
+}

@@ -33,7 +33,7 @@ func sent(f *fake.Core, tag abi.CommandTag) []abi.Command {
 
 // The floating chat's window (WinPip): the chat and a composer that sends
 // to it, a button that shrinks it to the floating icon, the icon's click
-// that brings it back, and close.
+// that brings it back (a click on the icon), and close.
 func TestTheFloatingChatWindow(t *testing.T) {
 	f := fake.New(nil)
 	s := state.New()
@@ -64,6 +64,7 @@ func TestTheFloatingChatWindow(t *testing.T) {
 	if !s.Pip.Mini {
 		t.Fatal("not shrunk")
 	}
+	// a click on the icon brings the chat back
 	r.Click(ui.RoleButton, "Bring back Grace Hopper")
 	r.Frames(3)
 	if s.Pip.Mini {

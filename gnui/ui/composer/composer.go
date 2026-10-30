@@ -629,7 +629,7 @@ func (s *Screen) composer(e *screen.Env, a *state.Account, ch model.Chat) {
 	if s.focused && e.S.Side {
 		// typed into straight in its native view (no press reached the
 		// window): this pane is the one in use now
-		e.S.Req.UseSplit = true
+		e.S.Req.UsePane = a.Open // the pane's chat, traded in while it builds
 	}
 	// The Tab order: the text, then Send (or the microphone in its place),
 	// zf:src/ui/conversation.rs:1726-1823; Send is a stop only while

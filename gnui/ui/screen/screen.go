@@ -246,6 +246,12 @@ type WindowScreen interface {
 	Build(e *Env)
 }
 
+// PaneScreens are one split view pane's screens.
+type PaneScreens struct {
+	Conversation ContentPane
+	Composer     ComposerPane
+}
+
 // Theme maps upstream's themes onto Rex (package theme). Apply runs at the
 // start of every window's frame, before Kit.Begin: it must be cheap when
 // nothing changed.
@@ -321,11 +327,11 @@ type Set struct {
 	Playground WindowScreen
 	// PeekWindow is the floating peek's window (ui/peek.Window, WinPeek).
 	PeekWindow WindowScreen
-	// Conversation2 and Composer2 are the split view's second pane: the
-	// same screens as Conversation and Composer, of their own (the panes'
-	// chats trade the state that is the open chat's, Account.SideBegin).
-	Conversation2 ContentPane
-	Composer2     ComposerPane
+	// MorePanes are the split view's other panes' screens: the same as
+	// Conversation and Composer, each pair its own (the panes' chats trade
+	// the state that is the open chat's, Account.SideBegin). How many there
+	// are bounds how many chats a split shows (one more than this).
+	MorePanes []PaneScreens
 	// PipWindow is the floating chat's window (ui/chatview.Pip, WinPip).
 	PipWindow WindowScreen
 

@@ -41,6 +41,20 @@ func ToolIcon(symbol string, fallback rune) icon.Spec {
 	return rexui.ToolbarSymbol(symbol, fallback)
 }
 
+// TickIcon is symbol as a message's delivery mark: as tall as the
+// metadata it ends and as heavy (semibold, as the time's figures read).
+// A pair of checks overlaps by TickStep of a check's width.
+func TickIcon(symbol string, fallback rune) icon.Spec {
+	return icon.Spec{Symbol: symbol, Fallback: fallback, Pt: TickPt, Weight: 0.3}
+}
+
+// TickPt is the delivery marks' size; TickStep how far the second check of
+// a pair sits from the first, as a share of a check's width.
+const (
+	TickPt   = 10
+	TickStep = 0.42
+)
+
 // LargeIcon is symbol at the composer's size.
 func LargeIcon(symbol string, fallback rune) icon.Spec {
 	return icon.Spec{Symbol: symbol, Fallback: fallback, Pt: LargeIconPt}

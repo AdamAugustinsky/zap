@@ -4871,3 +4871,15 @@ msgstr "讓此聊天填滿視窗"
 #: gnui
 msgid "Split pane"
 msgstr "分割窗格"
+
+#: gnui
+msgid "Double-click to hide the chat list"
+msgstr "按兩下以隱藏聊天列表"
+
+#: gnui
+msgid "Double-click to show the chat list"
+msgstr "按兩下以顯示聊天列表"
+
+#: gnui
+msgid "Take out of the split"
+msgstr "移出分割畫面"

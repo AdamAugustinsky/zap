@@ -5036,3 +5036,15 @@ msgstr "Llenar la ventana con este chat"
 #: gnui
 msgid "Split pane"
 msgstr "Panel dividido"
+
+#: gnui
+msgid "Double-click to hide the chat list"
+msgstr "Doble clic para ocultar la lista de chats"
+
+#: gnui
+msgid "Double-click to show the chat list"
+msgstr "Doble clic para mostrar la lista de chats"
+
+#: gnui
+msgid "Take out of the split"
+msgstr "Quitar de la división"

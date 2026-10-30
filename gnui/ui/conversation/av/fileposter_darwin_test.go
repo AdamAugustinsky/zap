@@ -50,23 +50,34 @@ func firstFrame(t *testing.T) (string, *image.RGBA) {
 }
 
 // Match the first frame beneath the normal 40/255 black scrim, excluding
-// controls. A square message box must contain, rather than stretch, the clip.
-func frameMatches(r *rig, want *image.RGBA, top int) bool {
-	bright := false
-	for y := 16; y < 65; y += 12 {
-		for x := 16; x < 305; x += 24 {
-			w, g := want.RGBAAt(x, y), r.at("vid", float32(x), float32(y+top))
+// controls. A square message box crops the clip to fill it (it is drawn
+// covering the box, centred), rather than stretching or letterboxing it:
+// box point (x, y) shows the frame at ((x+offX)/scale, (y+offY)/scale). Scaling
+// smooths the pixels, so most points, not all, must match closely.
+func frameMatches(r *rig, want *image.RGBA, bw, bh float32) bool {
+	fw, fh := float32(want.Rect.Dx()), float32(want.Rect.Dy())
+	scale := max(bw/fw, bh/fh)
+	offX, offY := (fw*scale-bw)/2, (fh*scale-bh)/2
+	bright, n, ok := false, 0, 0
+	for y := float32(40); y < bh-30; y += 16 {
+		for x := float32(24); x < bw-24; x += 24 {
+			w := want.RGBAAt(int((x+offX)/scale), int((y+offY)/scale))
+			g := r.at("vid", x, y)
+			n++
+			good := true
 			for _, pair := range [][2]uint8{{w.R, g.R}, {w.G, g.G}, {w.B, g.B}} {
 				expected := int(pair[0]) * 215 / 255
 				bright = bright || expected > 30
-				d := int(pair[1]) - expected
-				if d < -3 || d > 3 {
-					return false
+				if d := int(pair[1]) - expected; d < -24 || d > 24 {
+					good = false
 				}
+			}
+			if good {
+				ok++
 			}
 		}
 	}
-	return bright
+	return bright && n > 0 && ok*10 >= n*8
 }
 
 func TestLocalVideoFilePoster(t *testing.T) {
@@ -75,9 +86,9 @@ func TestLocalVideoFilePoster(t *testing.T) {
 	m := video("vid", 10, path, false, false)
 	m.Content.Video.Media.Width, m.Content.Video.Media.Height = 320, 320
 	r.load(m)
-	r.until("first frame from local video", func() bool { return frameMatches(r, expected, 70) })
-	if c := r.at("vid", 20, 20); c.R != 0 || c.G != 0 || c.B != 0 {
-		t.Fatalf("letterbox is not black: %v", c)
+	r.until("first frame from local video", func() bool { return frameMatches(r, expected, 320, 320) })
+	if c := r.at("vid", 20, 20); c.R == 0 && c.G == 0 && c.B == 0 {
+		t.Fatalf("the poster left a black band: %v", c)
 	}
 	if len(r.videos) != 0 {
 		t.Fatal("poster created a player")
@@ -191,7 +202,7 @@ func TestFilePosterLoadingSwitchAndFailure(t *testing.T) {
 		t.Fatalf("accounts shared a poster key: %d pending", n)
 	}
 	close(h.release)
-	r.until("new account's poster", func() bool { return frameMatches(r, expected, 0) })
+	r.until("new account's poster", func() bool { return frameMatches(r, expected, 320, 180) }) // no size given: a widescreen box
 	m.Content.Video.Media.Path = []byte(filepath.Join(t.TempDir(), "missing.mp4"))
 	r.load(m)
 	r.until("failed file poster", func() bool { return cache.Stats().Failed == 2 })

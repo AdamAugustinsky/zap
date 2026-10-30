@@ -9,6 +9,7 @@ package shell
 
 import (
 	"bytes"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -100,9 +101,10 @@ type Shell struct {
 	// shown (at most 4 info and 3 errors), for its height.
 	toastBuf   []state.Toast
 	toastKeys  [8]toastKey
-	tb         rexui.Toolbar    // the titlebar band
-	listTB     rexui.Toolbar    // the panes' title rows
-	chatTB     [2]rexui.Toolbar // each chat pane's title row (the split view's second)
+	tb         rexui.Toolbar   // the titlebar band
+	listTB     rexui.Toolbar   // the panes' title rows
+	chatTB     []rexui.Toolbar // each chat pane slot's title row (the split view's others)
+	chatLabel  []string        // and its name
 	sideTB     rexui.Toolbar
 	focus      paneID        // the pane in use, opaque (noteFocus)
 	focusChat  model.ChatRef // the open chat noteFocus last saw
@@ -131,16 +133,16 @@ type Shell struct {
 	bannerAcct uint64
 	bannerOn   bool // the banner showed last frame
 
-	guard   screen.Guard        // the Lock slot's timer, when it has one
-	selBar  screen.SelectionBar // the Conversation slot's selection bar
-	selBar2 screen.SelectionBar // and the split view's second pane's (Conversation2)
-	callsTB screen.ToolbarPart  // the CallsPage slot's toolbar items
-	compact compactList         // the ChatList slot's avatars in the rail
-	updates screen.UpdateNotice // the Updates slot's newer version
-	viewerM *menu.Model         // the viewer window's menu model
-	menuLoc i18n.Locale         // the language the models are in
-	menuRev int                 // moves with every rebuild (RefreshMenus)
-	menus   int                 // the revision the main window has
+	guard   screen.Guard          // the Lock slot's timer, when it has one
+	selBar  screen.SelectionBar   // the Conversation slot's selection bar
+	selBars []screen.SelectionBar // and the split view's other panes' (MorePanes)
+	callsTB screen.ToolbarPart    // the CallsPage slot's toolbar items
+	compact compactList           // the ChatList slot's avatars in the rail
+	updates screen.UpdateNotice   // the Updates slot's newer version
+	viewerM *menu.Model           // the viewer window's menu model
+	menuLoc i18n.Locale           // the language the models are in
+	menuRev int                   // moves with every rebuild (RefreshMenus)
+	menus   int                   // the revision the main window has
 	// The side pane last built, and the chat and account it was for: when
 	// they change, the pane's PaneCloser runs.
 	lastPane state.Pane
@@ -186,7 +188,14 @@ func New(s *state.State, set *screen.Set) (*Shell, error) {
 	sh := &Shell{S: s, Set: set, model: m, viewerM: vm, menuLoc: i18n.Current()}
 	sh.guard, _ = set.Lock.(screen.Guard)
 	sh.selBar, _ = set.Conversation.(screen.SelectionBar)
-	sh.selBar2, _ = set.Conversation2.(screen.SelectionBar)
+	sh.chatTB = make([]rexui.Toolbar, 1+len(set.MorePanes))
+	sh.chatLabel = make([]string, 1+len(set.MorePanes))
+	sh.chatLabel[0] = "Chat header"
+	for i, p := range set.MorePanes {
+		bar, _ := p.Conversation.(screen.SelectionBar)
+		sh.selBars = append(sh.selBars, bar)
+		sh.chatLabel[i+1] = "Chat header " + strconv.Itoa(i+2)
+	}
 	sh.callsTB, _ = set.CallsPage.(screen.ToolbarPart)
 	sh.compact, _ = set.ChatList.(compactList)
 	sh.updates, _ = set.Updates.(screen.UpdateNotice)
@@ -277,11 +286,19 @@ func (sh *Shell) Init(a *app.App) error {
 	sh.split.init(e)
 	for _, p := range [...]screen.Initer{sh.Set.Login, sh.Set.Lock, sh.Set.Accounts, sh.Set.ChatList, sh.Set.Conversation,
 		sh.Set.Search, sh.Set.Composer, sh.Set.Info, sh.Set.MessageInfo, sh.Set.CallsPage,
-		sh.Set.Picker, sh.Set.Dialogs, sh.Set.Cropper, sh.Set.StickerMaker, sh.Set.CallsContent, sh.Set.CallBar, sh.Set.Spotlight, sh.Set.Peek,
-		sh.Set.Conversation2, sh.Set.Composer2} {
+		sh.Set.Picker, sh.Set.Dialogs, sh.Set.Cropper, sh.Set.StickerMaker, sh.Set.CallsContent, sh.Set.CallBar, sh.Set.Spotlight, sh.Set.Peek} {
 		if !nilSlot(p) {
 			if err := p.Init(e); err != nil {
 				return err
+			}
+		}
+	}
+	for _, p := range sh.Set.MorePanes {
+		for _, x := range [...]screen.Initer{p.Conversation, p.Composer} {
+			if !nilSlot(x) {
+				if err := x.Init(e); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -551,10 +568,11 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 		panes[paneChat] = [4]float32{left, tbH, right, bottom}
 	}
 	sh.chatPane = panes[paneChat]
-	if s.Req.UseSplit {
-		s.Req.UseSplit = false
-		a.UseSplit()
+	if ref := s.Req.UsePane; ref != 0 {
+		s.Req.UsePane = 0
+		a.UsePane(ref)
 	}
+	sh.followGrip(a)
 	split := false
 	if open && !narrow && !covering {
 		split = sh.splitLayout(a, &panes, gut)
@@ -631,12 +649,9 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 	}
 	switch {
 	case split:
-		sh.splitPanes(a, &panes, gut, tbH, bottom)
+		sh.splitPanes(a, gut, tbH, bottom)
 	case shown(panes[paneChat]):
 		sh.chat(a, panes[paneChat], open)
-		if sp := panes[paneSplit]; shown(sp) {
-			sh.waiting(a, sp) // a tab held over the conversation: where it would go
-		}
 	}
 	if sp := panes[paneSide]; shown(sp) && shownSide < 1 && (side == nil || s.Panes.Pane == state.PaneNone) {
 		// folding away, the slot closed: the glass alone
@@ -758,14 +773,15 @@ func (sh *Shell) chat(a *state.Account, r [4]float32, open bool) {
 	sh.chatIn(a, r, open, 0)
 }
 
-// chatIn is chat in slot i: 0 the first pane's screens (and the one pane
-// with no split), 1 the split view's second pane's (Conversation2,
-// Composer2). The account's banners show in the first.
+// chatIn is chat in slot i: 0 the first screens (and the one pane with no
+// split), others the split view's other panes' (MorePanes). The account's
+// banners show in the first.
 func (sh *Shell) chatIn(a *state.Account, r [4]float32, open bool, i int) {
 	s, e := sh.S, &sh.env
 	conv, comp, bar := sh.Set.Conversation, sh.Set.Composer, sh.selBar
-	if i == 1 {
-		conv, comp, bar = sh.Set.Conversation2, sh.Set.Composer2, sh.selBar2
+	if i > 0 && i <= len(sh.Set.MorePanes) {
+		p := sh.Set.MorePanes[i-1]
+		conv, comp, bar = p.Conversation, p.Composer, sh.selBars[i-1]
 	}
 	b := sh.body(r)
 	top := b.Y
@@ -825,8 +841,8 @@ func (sh *Shell) chatIn(a *state.Account, r [4]float32, open bool, i int) {
 	default:
 		sh.empty(screen.Rect{X: b.X, Y: top, W: b.W, H: r[3] - top})
 	}
-	tb := &sh.chatTB[i]
-	sh.header(tb, chatHeaderLabel[i], "Zap", r)
+	tb := &sh.chatTB[min(i, len(sh.chatTB)-1)]
+	sh.header(tb, sh.chatLabel[min(i, len(sh.chatLabel)-1)], "Zap", r)
 	if open && conv != nil {
 		conv.Toolbar(e, tb)
 	} else {
@@ -834,9 +850,6 @@ func (sh *Shell) chatIn(a *state.Account, r [4]float32, open bool, i int) {
 	}
 	tb.End()
 }
-
-// chatHeaderLabel names each pane's title row.
-var chatHeaderLabel = [2]string{"Chat header", "Chat header 2"}
 
 // beneath builds a narrow window's list view under the chat sliding in
 // over it, dimming as the chat comes (zf:src/ui/mod.rs slide_in).
@@ -1093,16 +1106,21 @@ func (sh *Shell) rail(a *state.Account, x, railW, H, tbH float32) {
 		bottom += cell
 	}
 	mid := H - tbH - 3*cell - bottom
+	// The rail's empty middle: a double click shows or hides the chat list
+	// (the avatars of a hidden list over it take their own presses).
 	if s.Panes.ListHidden && sh.Set.ChatList != nil && mid > e.Pt(64) {
 		c.NextSize(ui.Pct(1), ui.Px(mid))
-		c.Box(0, "compact")
+		// (the pictures' list over it has its own empty part, chatlist)
+		sh.toggleOnDoubleClick(c.Box(ui.Clickable, "compact"))
 		if sh.compact != nil {
 			// in the rail's scrolled content, under its three destinations
 			sh.compact.Compact(e, screen.Rect{X: x, Y: 3 * cell, W: railW, H: mid})
 		}
 	} else {
 		c.NextSize(ui.Pct(1), ui.Px(max(mid, 0)))
-		c.Box(0, "spacer")
+		c.NextRole(ui.RoleGroup)
+		c.NextSemName(railHint(s.Panes.ListHidden))
+		sh.toggleOnDoubleClick(c.Box(ui.Clickable, "spacer"))
 	}
 	at(false, max(mid, 0))
 	if sh.archived > 0 || a.Mode == state.ListArchived {
@@ -1122,6 +1140,23 @@ func (sh *Shell) rail(a *state.Account, x, railW, H, tbH float32) {
 	k.CloseScrollContent(&v)
 	k.CloseScroll(&v)
 	c.Pop()
+}
+
+// railHint names the rail's empty part: what a double click there does.
+func railHint(hidden bool) string {
+	if hidden {
+		return i18n.T("Double-click to show the chat list")
+	}
+	return i18n.T("Double-click to hide the chat list")
+}
+
+// toggleOnDoubleClick shows or hides the chat list (⌘B) on a double click
+// on box id, an empty part of the sidebar.
+func (sh *Shell) toggleOnDoubleClick(id ui.ID) {
+	if sh.env.C().Signal(id).DoubleClicked {
+		sh.S.Panes.ListHidden = !sh.S.Panes.ListHidden
+		sh.S.Touch()
+	}
 }
 
 // place remembers where the main window is, once, at its first frame (the
@@ -1217,12 +1252,13 @@ func (sh *Shell) listHandle(x, y, h float32) {
 	c.NextSemName(i18n.T("Resize"))
 	sig := c.Signal(c.BoxKeyed(ui.Clickable|base.Floating, ui.HashString(0, "zapfast/list-edge"), nil))
 	switch {
-	case sig.Dragging && sig.DragDelta[0] != 0:
+	case sig.Dragging:
+		// DragDelta runs from the press: the width the drag began at, and
+		// as far again as the pointer has gone
 		if sh.listDrag == 0 {
 			sh.listDrag = s.Settings.SidebarWidth
 		}
-		sh.listDrag += sig.DragDelta[0] / e.K.Scale()
-		if wd := min(max(sh.listDrag, minListPt), maxListPt); wd != s.Settings.SidebarWidth {
+		if wd := min(max(sh.listDrag+sig.DragDelta[0]/e.K.Scale(), minListPt), maxListPt); wd != s.Settings.SidebarWidth {
 			s.Settings.SidebarWidth = wd
 			s.Touch()
 		}

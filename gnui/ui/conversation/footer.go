@@ -1,6 +1,7 @@
 package conversation
 
 import (
+	"gonativeui/icon"
 	"gonativeui/rexui"
 	"gonativeui/text"
 	"gonativeui/theme"
@@ -42,8 +43,51 @@ const (
 type footerMarks struct {
 	starred, pinned, edited, failed bool
 	stamp                           []byte
-	tick                            string
+	tick                            tickMark
 	read                            bool
+}
+
+// tickMark is our message's delivery mark, drawn as icons (the list's,
+// rows.go): a clock while it is sent, one check, two overlapping checks
+// once delivered (in the read colour once read), a red mark if it failed.
+type tickMark uint8
+
+const (
+	tickNone tickMark = iota
+	tickWait
+	tickFail
+	tickOne
+	tickTwo
+)
+
+func tickOf(d abi.Delivery) tickMark {
+	switch d {
+	case abi.DeliveryPending:
+		return tickWait
+	case abi.DeliveryFailed:
+		return tickFail
+	case abi.DeliveryDelivered, abi.DeliveryRead, abi.DeliveryPlayed:
+		return tickTwo
+	}
+	return tickOne
+}
+
+// tickSize is mark t's width and height in pixels.
+func (s *Screen) tickSize(e *screen.Env, t tickMark) (float32, float32) {
+	k := e.K.Kit
+	switch t {
+	case tickNone:
+		return 0, 0
+	case tickWait:
+		return k.IconSize(s.icons.tickWait)
+	case tickFail:
+		return k.IconSize(s.icons.tickFail)
+	}
+	w, h := k.IconSize(s.icons.tick)
+	if t == tickTwo {
+		w += theme.Snap(w * ztheme.TickStep)
+	}
+	return w, h
 }
 
 func (s *Screen) marks(e *screen.Env, a *state.Account, ch model.Chat, m model.Message, out bool) footerMarks {
@@ -55,7 +99,7 @@ func (s *Screen) marks(e *screen.Env, a *state.Account, ch model.Chat, m model.M
 		stamp:   clock(e.C().Fmt(), m.Time()).Bytes(),
 	}
 	if out {
-		f.tick = ticks(m.Status())
+		f.tick = tickOf(m.Status())
 		// display_delivery: privacy masks only Read on outgoing DMs, not
 		// delivery, group reads or played receipts. The archive stays intact.
 		f.read = m.Status() == abi.DeliveryPlayed || m.Status() == abi.DeliveryRead &&
@@ -81,8 +125,9 @@ func (s *Screen) footWidth(e *screen.Env, f *footerMarks, over bool) float32 {
 	if f.failed && !over {
 		w += k.TextWidthBytes(s.look.smallMed, base.StrBytes(notSentText())) + gap
 	}
-	if f.tick != "" {
-		w += k.TextWidthBytes(font, base.StrBytes(f.tick)) + gap
+	if f.tick != tickNone {
+		tw, _ := s.tickSize(e, f.tick)
+		w += tw + gap
 	}
 	return theme.Snap(w) + 1
 }
@@ -198,12 +243,15 @@ func (s *Screen) footRow(e *screen.Env, m model.Message, f *footerMarks, out boo
 		k.Icon(s.icons.pinSmall, col)
 	}
 	small(2, f.stamp, s.look.time, col)
-	if f.tick != "" {
+	if f.tick != tickNone {
 		ink := col
-		if f.read {
+		switch {
+		case f.read:
 			ink = ztheme.OnBubble(out).Read
+		case f.tick == tickFail:
+			ink = rexui.DangerText.RGBA(k.Theme())
 		}
-		small(3, base.StrBytes(f.tick), font, ink)
+		s.tickMarks(e, f.tick, ink, key)
 	}
 	c.Pop()
 	if info && c.Signal(row).Clicked && !e.S.Panes.Selecting {
@@ -213,3 +261,32 @@ func (s *Screen) footRow(e *screen.Env, m model.Message, f *footerMarks, out boo
 
 // footerStar is FOOTER_STAR, the star's gold.
 const footerStar = uint32(0xF5B400FF)
+
+// tickMarks draws mark t in ink: in a box as wide as it is, its glyphs on
+// the line the time sits on.
+func (s *Screen) tickMarks(e *screen.Env, t tickMark, ink uint32, key ui.Key) {
+	c, k := e.C(), e.K
+	w, h := s.tickSize(e, t)
+	c.NextSize(ui.Px(w), ui.Px(h))
+	c.Push(c.BoxKeyed(0, ui.KeyN(key, 20), nil))
+	one := func(n uint64, x float32, ic icon.ID) {
+		iw, ih := k.IconSize(ic)
+		theme.At(c, x, 0, iw, ih)
+		c.Push(c.BoxKeyed(theme.Floating, ui.KeyN(key, 21+n), nil))
+		k.Icon(ic, ink)
+		c.Pop()
+	}
+	switch t {
+	case tickWait:
+		one(0, 0, s.icons.tickWait)
+	case tickFail:
+		one(0, 0, s.icons.tickFail)
+	case tickOne:
+		one(0, 0, s.icons.tick)
+	case tickTwo:
+		iw, _ := k.IconSize(s.icons.tick)
+		one(0, 0, s.icons.tick)
+		one(1, theme.Snap(iw*ztheme.TickStep), s.icons.tick)
+	}
+	c.Pop()
+}

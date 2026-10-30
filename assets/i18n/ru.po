@@ -5048,3 +5048,15 @@ msgstr "Развернуть этот чат на всё окно"
 #: gnui
 msgid "Split pane"
 msgstr "Панель разделения"
+
+#: gnui
+msgid "Double-click to hide the chat list"
+msgstr "Дважды щёлкните, чтобы скрыть список чатов"
+
+#: gnui
+msgid "Double-click to show the chat list"
+msgstr "Дважды щёлкните, чтобы показать список чатов"
+
+#: gnui
+msgid "Take out of the split"
+msgstr "Убрать из разделения"

@@ -486,15 +486,15 @@ func Frame(e *screen.Env) {
 	if v := &s.Voice; v.Next.Len() >= 2 && a != nil && a.Open != 0 {
 		// the run's chat may be the split view's other pane: it plays on
 		// there, as its own
-		side := v.Chat != 0 && v.Chat == a.Split
+		side := v.Chat != 0 && v.Chat != a.Open && a.InSplit(v.Chat)
 		if side {
-			a.SideBegin()
+			a.SideBegin(v.Chat)
 		}
 		load(s, a, v.Next.At(0), v.Next.At(1), true, 0)
 		v.Next.Reset()
 		logic.PlayVoice(s, a, pb.msg)
 		if side {
-			a.SideEnd()
+			a.SideEnd(v.Chat)
 		}
 	}
 	if pb.ph == playing && pb.p != nil {

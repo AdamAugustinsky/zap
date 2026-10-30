@@ -5019,3 +5019,15 @@ msgstr "Penuhi jendela dengan obrolan ini"
 #: gnui
 msgid "Split pane"
 msgstr "Panel terbagi"
+
+#: gnui
+msgid "Double-click to hide the chat list"
+msgstr "Klik dua kali untuk menyembunyikan daftar obrolan"
+
+#: gnui
+msgid "Double-click to show the chat list"
+msgstr "Klik dua kali untuk menampilkan daftar obrolan"
+
+#: gnui
+msgid "Take out of the split"
+msgstr "Keluarkan dari tampilan terbagi"

@@ -5014,3 +5014,15 @@ msgstr "Pencereyi bu sohbetle doldur"
 #: gnui
 msgid "Split pane"
 msgstr "Bölme paneli"
+
+#: gnui
+msgid "Double-click to hide the chat list"
+msgstr "Sohbet listesini gizlemek için çift tıkla"
+
+#: gnui
+msgid "Double-click to show the chat list"
+msgstr "Sohbet listesini göstermek için çift tıkla"
+
+#: gnui
+msgid "Take out of the split"
+msgstr "Bölmeden çıkar"

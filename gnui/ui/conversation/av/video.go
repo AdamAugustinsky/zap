@@ -76,12 +76,15 @@ const unseen = 1500 * time.Millisecond
 // clip is the one video loaded in its bubble (upstream's video::Player
 // session): its message, its Video, and whether it should play.
 type clip struct {
-	acct *state.Account
-	chat model.ChatRef
-	msg  []byte
-	path []byte
-	note bool
-	v    Video
+	// fw, fh are the frames' size once one has shown: the bubble takes
+	// the video's own shape while it plays (videoSize).
+	fw, fh int
+	acct   *state.Account
+	chat   model.ChatRef
+	msg    []byte
+	path   []byte
+	note   bool
+	v      Video
 	// want is upstream's "playing or about to" (is_active): Play was asked
 	// and nothing paused it since.
 	want bool
@@ -272,6 +275,10 @@ func (b *blk) shownFrame(vis bool) (tex gpu.TextureID, w, h int) {
 	}
 	vc.seen, vc.seenFrame = b.e.S.Now(), ticked.frame
 	tex, w, h, next := v.Frame(b.e.A.R, b.c.Input().Time)
+	if w > 0 && h > 0 && (w != vc.fw || h != vc.fh) {
+		vc.fw, vc.fh = w, h
+		b.c.RequestFrame() // the bubble takes the frame's shape
+	}
 	vc.next = next
 	if next > 0 {
 		b.c.WakeIn(next)
@@ -412,7 +419,7 @@ var viewerWas bool
 // shown reports whether chat is in one of the window's panes: the open chat
 // or the split view's other (a clip plays on in either).
 func shown(a *state.Account, chat model.ChatRef) bool {
-	return chat != 0 && (a.Open == chat || a.Split == chat)
+	return chat != 0 && (a.Open == chat || a.InSplit(chat))
 }
 
 func videoFrame(e *screen.Env, a *state.Account, now time.Time) {

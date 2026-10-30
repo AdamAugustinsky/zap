@@ -186,6 +186,7 @@ type icons struct {
 	info, check, archive, open        icon.ID
 	folder, photo, edit, eraser, plus icon.ID
 	back, pinSmall, smile             icon.ID
+	tick, tickWait, tickFail          icon.ID // the delivery marks (footer.go)
 	ok                                bool
 }
 
@@ -194,7 +195,7 @@ func New() *Screen { return newScreen("conversation", false) }
 
 // NewPane is the conversation of the split view's second pane: its own root
 // box and its own first-page watch (the search pane's is the first pane's).
-func NewPane() *Screen { return newScreen("conversation 2", true) }
+func NewPane(name string) *Screen { return newScreen("conversation"+name, true) }
 
 func newScreen(root string, own bool) *Screen {
 	s := &Screen{root: root, selRoot: root + " selection", own: own}
@@ -262,6 +263,9 @@ func (s *Screen) addIcons(e *screen.Env) {
 		*it.dst = k.AddIcon(ztheme.ToolIcon(it.sym, it.fb)) // the bars' items, as the header's
 	}
 	ic.pinSmall = k.AddIcon(icon.Spec{Symbol: "pin.fill", Fallback: '⚲', Pt: footMarkPt})
+	ic.tick = k.AddIcon(ztheme.TickIcon("checkmark", '✓'))
+	ic.tickWait = k.AddIcon(ztheme.TickIcon("clock", '◷'))
+	ic.tickFail = k.AddIcon(ztheme.TickIcon("exclamationmark.circle.fill", '!'))
 	ic.smile = k.AddIcon(icon.Spec{Symbol: "face.smiling", Fallback: '☺', Pt: 16})
 	ic.ok = true
 }

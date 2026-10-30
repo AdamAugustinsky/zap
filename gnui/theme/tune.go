@@ -62,12 +62,12 @@ var Defaults = Tunables{
 
 	BubbleRadius: BubbleRadius,
 
-	MetaPt: 11, BubbleTimePt: 10,
+	MetaPt: 11, BubbleTimePt: 8,
 
 	HitTool: HitTool, HitLarge: HitLarge,
 
 	DurMicro: 0.1, DurShort: 0.18, DurStandard: 0.25, DurLong: 0.35, ExitScale: 0.7,
-	RowHover: 0.05, RowPress: 0.04, ToolRest: 0.06, ToolLift: 0.06, ScrimDim: 0.16,
+	RowHover: 0.05, RowPress: 0.04, ToolRest: 0, ToolLift: 0, ScrimDim: 0.16,
 
 	SoftBlur: 1, SoftFade: Space6,
 

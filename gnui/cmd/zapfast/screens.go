@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strconv"
 	"zapfast/logic"
 	"zapfast/state"
 	"zapfast/sys"
@@ -61,12 +62,11 @@ func screens(demo bool) *screen.Set {
 		Spotlight:  spotlight.New(),
 		Peek:       peek.New(),
 		PeekWindow: peek.NewWindow(),
-		// the split view's second pane: the same screens, their own
-		Conversation2: conversation.NewPane(),
-		Composer2:     composer.NewPane(" 2"),
-		PipWindow:     chatview.NewPip(),
-		Cropper:       cropper.New(),
-		StickerMaker:  stickermaker.New(),
+		// the split view's other panes: the same screens, their own
+		MorePanes:    morePanes(5),
+		PipWindow:    chatview.NewPip(),
+		Cropper:      cropper.New(),
+		StickerMaker: stickermaker.New(),
 
 		Settings: st,
 		Viewer:   viewer.New(),
@@ -90,4 +90,14 @@ func (u updates) CheckIfDue(s *state.Settings) { u.u.CheckIfDue(s) }
 func (u updates) Available() (string, bool) {
 	r, ok := u.u.Available()
 	return r.Version, ok
+}
+
+// morePanes are n split view panes' screens beside the first.
+func morePanes(n int) []screen.PaneScreens {
+	p := make([]screen.PaneScreens, n)
+	for i := range p {
+		name := " " + strconv.Itoa(i+2)
+		p[i] = screen.PaneScreens{Conversation: conversation.NewPane(name), Composer: composer.NewPane(name)}
+	}
+	return p
 }

@@ -35,11 +35,10 @@ const trafficPt = 80
 type paneID int8
 
 const (
-	paneList  paneID = iota // the chat list, or the Calls page's
-	paneChat                // the conversation, or what the page shows
-	paneSide                // the side pane (info, search, starred…)
-	paneSplit               // the chat beside the open one (split.go)
-	numPanes
+	paneList paneID = iota // the chat list, or the Calls page's
+	paneChat               // the conversation, or what the page shows
+	paneSide               // the side pane (info, search, starred…)
+	numPanes               // the split view's other panes follow (splitID)
 )
 
 var (
@@ -64,36 +63,53 @@ func (sh *Shell) body(r [4]float32) screen.Rect {
 
 // noteFocus follows which pane is in use: the one pressed in, and the
 // conversation when a chat opens (Rex focuses a pane on a click). In the
-// split view (split) a press in the pane of the chat not in use puts it in
+// split view (split) a press in a pane whose chat is not in use puts it in
 // use, before anything builds, so that the press acts on its own chat.
 func (sh *Shell) noteFocus(a *state.Account, panes *paneRects, split bool) {
 	c := sh.env.C()
+	sp := &sh.split
 	ref, open := model.ChatRef(0), false
 	if ch, ok := a.OpenChatView(); ok {
 		ref, open = ch.Ref(), true
 	}
-	// the open chat's pane: the second, in a split where it is the second
+	// the open chat's pane
 	live := paneChat
-	if first, _ := a.Panes(); split && first != a.Open {
-		live = paneSplit
+	if split {
+		for i, r := range sp.chats {
+			if r == a.Open {
+				live = splitID(i)
+			}
+		}
 	}
 	if open && ref != sh.focusChat {
 		sh.focus = live
 	}
 	sh.focusChat = ref
 	if in := c.Input(); in.Pressed[ui.ButtonLeft] {
+		inside := func(r [4]float32) bool {
+			return shown(r) && in.MouseX >= r[0] && in.MouseX < r[2] && in.MouseY >= r[1] && in.MouseY < r[3]
+		}
 		for p := range panes {
-			r := panes[p]
-			if shown(r) && in.MouseX >= r[0] && in.MouseX < r[2] && in.MouseY >= r[1] && in.MouseY < r[3] {
+			if inside(panes[p]) {
 				sh.focus = paneID(p)
 			}
 		}
-		if split && (sh.focus == paneChat || sh.focus == paneSplit) && sh.focus != live {
-			a.UseSplit()
-			sh.focusChat = a.Open
+		if split {
+			for i, r := range sp.rects {
+				if inside(r) && sp.chats[i] != 0 {
+					sh.focus = splitID(i)
+					if sp.chats[i] != a.Open {
+						a.UsePane(sp.chats[i])
+						sh.focusChat = a.Open
+					}
+				}
+			}
 		}
 	}
-	if !shown(panes[sh.focus]) {
+	if sh.focus >= numPanes && split {
+		return
+	}
+	if sh.focus >= numPanes || !shown(panes[sh.focus]) {
 		sh.focus = paneList
 		if shown(panes[paneChat]) && open {
 			sh.focus = paneChat

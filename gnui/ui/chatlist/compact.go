@@ -48,6 +48,9 @@ func (s *Screen) Compact(e *screen.Env, r screen.Rect) {
 		s.compactCell(e, a, model.ChatRef(itemN(id)))
 	}
 	base.EndVList(&v)
+	c.Push(v.Outer)
+	s.emptyBelow(e, v, false) // under the pictures: a double click shows the list
+	c.Pop()
 	if a.Open != 0 && a.Open != s.cOpen {
 		s.cOpen = a.Open
 		if _, ok := s.cst.IndexOf(itemID(kChat, uint32(a.Open))); ok {
