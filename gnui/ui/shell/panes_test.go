@@ -56,7 +56,7 @@ func newPaneRig(t *testing.T, w int) *paneRig {
 		{ID: []byte("1@s.whatsapp.net"), Name: []byte("Ada Lovelace"), LastActivity: 5},
 		{ID: []byte("2@s.whatsapp.net"), Name: []byte("Grace Hopper"), LastActivity: 7, Pinned: true, PinnedAt: 9},
 	}}})
-	sh, err := New(p.s, &screen.Set{ChatList: p.list, Conversation: p.chat, Info: p.side})
+	sh, err := New(p.s, &screen.Set{ChatList: p.list, Conversation: p.chat, Info: p.side, Search: p.side})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -202,6 +202,46 @@ func TestThePaneInUse(t *testing.T) {
 	p.frames()
 	if p.a.Open != open || !p.s.Panes.ListHidden || p.sh.panes.Focus() != paneChat {
 		t.Errorf("back on account 1: open %v (want %v), list hidden %v, pane in use %v", p.a.Open, open, p.s.Panes.ListHidden, p.sh.panes.Focus())
+	}
+}
+
+// The in-chat search keeps within 300 to 520 points, as upstream's
+// (zf:src/ui/pane.rs:22-23), where info keeps its own 240 to 640.
+func TestTheSearchPaneIsClamped(t *testing.T) {
+	p := newPaneRig(t, 1440)
+	p.open("1@s.whatsapp.net")
+	p.s.Panes.Pane = state.PaneSearch
+	for _, c := range []struct{ ask, want float32 }{{100, 300}, {380, 380}, {5000, 520}} {
+		p.side.width = c.ask
+		p.frames()
+		if !p.side.built || p.side.rect.W != c.want {
+			t.Errorf("search asking %v: built %v at %v, want %v", c.ask, p.side.built, p.side.rect.W, c.want)
+		}
+	}
+	p.s.Panes.SetInfo([]byte("1@s.whatsapp.net"))
+	p.side.width = 5000
+	p.frames()
+	if !p.side.built || p.side.rect.W != 640 {
+		t.Errorf("info asking 5000: built %v at %v, want 640", p.side.built, p.side.rect.W)
+	}
+}
+
+// Closing the chat in use leaves its pane empty, and the list is the pane
+// in use; a chat opened again takes it back.
+func TestClosingTheChatFocusesTheList(t *testing.T) {
+	p := newPaneRig(t, 1100)
+	p.open("1@s.whatsapp.net")
+	if p.sh.panes.Focus() != paneChat {
+		t.Fatalf("an opened chat left the pane in use at %v", p.sh.panes.Focus())
+	}
+	p.a.OpenChat(0)
+	p.frames()
+	if p.sh.panes.Focus() != paneList {
+		t.Errorf("the chat in use closed, and the pane in use is %v, want the list", p.sh.panes.Focus())
+	}
+	p.open("1@s.whatsapp.net")
+	if p.sh.panes.Focus() != paneChat {
+		t.Errorf("the chat opened again, and the pane in use is %v, want the chat", p.sh.panes.Focus())
 	}
 }
 
