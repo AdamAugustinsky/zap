@@ -1,0 +1,456 @@
+diff --git a/zfcore/tests/migration_oracle.rs b/zfcore/tests/migration_oracle.rs
+new file mode 100644
+index 0000000..86d2190
+--- /dev/null
++++ b/zfcore/tests/migration_oracle.rs
+@@ -0,0 +1,450 @@
++//! The oracle for the Go migration's differential test
++//! (gnui/gocore/migrate/differential_test.go): what the Rust core of Zap
++//! 0.19.0 reports for a synthetic archive, read back through its own
++//! `zapfast::archive::Archive`.
++//!
++//! It writes, with ZF_WRITE_MIGRATION_ORACLE=1, into
++//! gnui/gocore/migrate/testdata/oracle:
++//!
++//! - oracle-archive.db: a seeded synthetic archive written through the
++//!   Archive API: same-second messages with and without history order,
++//!   replayed history, edits, reactions, stars, pins, deletions, a cleared
++//!   chat, labels, drafts, favorites, mutes and the other chat settings, and
++//!   media whose paths start with MEDIA_ROOT (the Go test moves them).
++//! - oracle-archive.json and fixture-archive.json: what the Rust core reports
++//!   for oracle-archive.db and for the committed testdata/archive.db: the
++//!   chat list in its order, every chat's messages in their order, stars,
++//!   pins, drafts, labels, favorites, the call log and the media paths.
++//!
++//! Every name, number and message is synthetic.
++
++use std::collections::BTreeMap;
++use std::path::{Path, PathBuf};
++use std::sync::Arc;
++
++use keyring_core::api::CredentialStoreApi;
++use serde_json::{Value, json};
++
++use zapfast::archive::{Archive, Pinner};
++use zapfast::model::{CallStatus, Chat, ChatKind, Content, Delivery, Media, Message, Quoted};
++
++const SERVICE: &str = "ai.a3lab.zap.oracle";
++
++/// The fixtures' archive key (migration_fixtures.rs).
++const ARCHIVE_KEY: [u8; 32] = [
++    0x5a, 0x61, 0x70, 0x2d, 0x6d, 0x69, 0x67, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2d, 0x66, 0x69,
++    0x78, 0x74, 0x75, 0x72, 0x65, 0x2d, 0x6b, 0x65, 0x79, 0x2d, 0x73, 0x79, 0x6e, 0x74, 0x68, 0x21,
++];
++
++/// Media paths start here; the Go test moves them under its own folder.
++const MEDIA_ROOT: &str = "/zap-oracle-media/";
++
++/// The moment pins are judged at (none of the archive's have expired).
++const NOW: i64 = 1_800_000_000;
++
++const ME: &str = "15550001001@s.whatsapp.net";
++
++fn testdata() -> PathBuf {
++    Path::new(env!("CARGO_MANIFEST_DIR")).join("../gnui/gocore/migrate/testdata")
++}
++
++fn hex(bytes: &[u8]) -> String {
++    bytes.iter().map(|b| format!("{b:02x}")).collect()
++}
++
++fn keyring(path: &Path) {
++    static KEYS: std::sync::OnceLock<Arc<keyring_core::mock::Store>> = std::sync::OnceLock::new();
++    let keys = KEYS.get_or_init(|| {
++        let keys = keyring_core::mock::Store::new().unwrap();
++        assert!(zapfast::archive::use_credential_store(keys.clone()));
++        assert!(zapfast::archive::set_keyring_service(SERVICE));
++        keys
++    });
++    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
++    let identity = zapfast::archive::archive_key_identity(path).unwrap();
++    keys.build(SERVICE, &identity, None).unwrap().set_secret(&ARCHIVE_KEY).unwrap();
++}
++
++/// xorshift64*: the archive depends on the seed and nothing else.
++struct Rng(u64);
++
++impl Rng {
++    fn next(&mut self) -> u64 {
++        self.0 ^= self.0 >> 12;
++        self.0 ^= self.0 << 25;
++        self.0 ^= self.0 >> 27;
++        self.0.wrapping_mul(0x2545_f491_4f6c_dd1d)
++    }
++    fn below(&mut self, n: u64) -> u64 {
++        self.next() % n
++    }
++    fn chance(&mut self, percent: u64) -> bool {
++        self.below(100) < percent
++    }
++    fn shuffle<T>(&mut self, items: &mut [T]) {
++        for i in (1..items.len()).rev() {
++            items.swap(i, self.below(i as u64 + 1) as usize);
++        }
++    }
++}
++
++fn media(mime: &str, size: u64, path: Option<String>) -> Media {
++    Media {
++        mime: mime.into(),
++        size,
++        width: Some(320),
++        height: Some(240),
++        album: None,
++        path: path.map(PathBuf::from),
++        state: Default::default(),
++    }
++}
++
++fn message(chat: &str, id: &str, sender: &str, from_me: bool, ts: i64, content: Content) -> Message {
++    Message {
++        id: id.into(),
++        chat: chat.into(),
++        sender: sender.into(),
++        sender_name: (!from_me).then(|| "Synthetic Sender".into()),
++        from_me,
++        timestamp: ts,
++        history_order: None,
++        content,
++        status: if from_me { Delivery::Read } else { Delivery::None },
++        delivered_at: None,
++        read_at: None,
++        quoted: None,
++        reactions: Vec::new(),
++        edited: false,
++        mentions: Vec::new(),
++        forwarded: false,
++        thumbnail: None,
++    }
++}
++
++/// One message of a random kind. Some media have a file (MEDIA_ROOT, which
++/// the Go test creates), some a path whose file is gone, some none.
++fn content(rng: &mut Rng, n: usize) -> Content {
++    let path = |rng: &mut Rng, name: &str| match rng.below(3) {
++        0 => Some(format!("{MEDIA_ROOT}{name}")),
++        1 => Some(format!("{MEDIA_ROOT}missing-{name}")),
++        _ => None,
++    };
++    match rng.below(10) {
++        0 => Content::Image {
++            caption: rng.chance(50).then(|| format!("Synthetic photo {n}")),
++            media: media("image/jpeg", 1000 + n as u64, path(rng, &format!("photo-{n}.jpg"))),
++            motion: None,
++        },
++        1 => Content::Document {
++            media: media("application/pdf", 2000 + n as u64, path(rng, &format!("doc-{n}.pdf"))),
++            file_name: format!("synthetic-{n}.pdf"),
++            caption: None,
++            pages: Some(2),
++        },
++        2 => Content::Audio {
++            media: media("audio/ogg; codecs=opus", 3000 + n as u64, path(rng, &format!("voice-{n}.ogg"))),
++            seconds: Some(5),
++            voice_note: true,
++            waveform: (0..64).collect(),
++        },
++        3 => Content::Video {
++            caption: None,
++            media: media("video/mp4", 4000 + n as u64, path(rng, &format!("video-{n}.mp4"))),
++            seconds: Some(7),
++            gif: rng.chance(30),
++            note: false,
++        },
++        4 => Content::Location {
++            latitude: -23.5,
++            longitude: -46.6,
++            name: Some(format!("Synthetic place {n}")),
++            address: None,
++        },
++        5 => Content::Call { video: rng.chance(50), status: CallStatus::Missed, duration: 0, group: false },
++        _ => Content::Text { text: format!("Synthetic message {n}"), preview: None },
++    }
++}
++
++/// The seeded archive.
++fn build(path: &Path, seed: u64) {
++    keyring(path);
++    let a = Archive::open(path).unwrap();
++    let mut rng = Rng(seed);
++    let others = ["15550002002@s.whatsapp.net", "100000000003003@lid", "15550004004@s.whatsapp.net"];
++    let mut chats: Vec<(String, ChatKind)> = vec![
++        ("15550002002@s.whatsapp.net".into(), ChatKind::Direct),
++        ("100000000003003@lid".into(), ChatKind::Direct),
++        ("15550004004@s.whatsapp.net".into(), ChatKind::Direct),
++        ("15550005005@s.whatsapp.net".into(), ChatKind::Direct),
++        ("120363000000000011@g.us".into(), ChatKind::Group),
++        ("120363000000000012@g.us".into(), ChatKind::Group),
++        ("120363000000000098@newsletter".into(), ChatKind::Broadcast),
++    ];
++    // Two chats share a last activity, so the list's tie order shows.
++    for (i, (id, kind)) in chats.iter().enumerate() {
++        let mut chat = Chat::new(id.clone(), format!("Synthetic chat {i}"));
++        chat.kind = *kind;
++        chat.last_activity = 1_760_100_000 + (i as i64 % 3) * 1000;
++        chat.group_subject_known = *kind == ChatKind::Group;
++        a.upsert_chat(&chat).unwrap();
++    }
++    let work = a.create_label("Synthetic Work", "#ff8800", 1_760_100_301).unwrap().unwrap();
++    let home = a.create_label("Synthetic Home", "#00aa55", 1_760_100_302).unwrap().unwrap();
++
++    let mut n = 0;
++    for (c, (chat, kind)) in chats.iter_mut().enumerate() {
++        // Messages: timestamps from a narrow window, so many share a second;
++        // history order on some, often equal.
++        let mut batch = Vec::new();
++        let count = 12 + rng.below(18) as usize;
++        for _ in 0..count {
++            n += 1;
++            let from_me = rng.chance(40);
++            let sender = if from_me {
++                ME.to_string()
++            } else if *kind == ChatKind::Group {
++                others[rng.below(others.len() as u64) as usize].to_string()
++            } else {
++                chat.clone()
++            };
++            let ts = 1_760_100_000 + c as i64 * 100 + rng.below(12) as i64;
++            let mut m = message(chat, &format!("3EB0{c:02}{n:06}"), &sender, from_me, ts, content(&mut rng, n));
++            m.history_order = match rng.below(10) {
++                0..=3 => None,
++                4..=7 => Some(rng.below(4) as i64),
++                8 => Some(1_000 + rng.below(1000) as i64),
++                // A large phone order id (msg_order_id is a u64).
++                _ => Some(i64::MAX / 2 + rng.below(3) as i64),
++            };
++            if rng.chance(15) {
++                m.forwarded = true;
++            }
++            batch.push(m);
++        }
++        rng.shuffle(&mut batch);
++        for m in &batch {
++            a.insert_message(m, None).unwrap();
++        }
++        // History replayed: some rows again, with a different order.
++        for m in batch.iter_mut() {
++            if rng.chance(20) {
++                m.history_order = Some(rng.below(4) as i64);
++                a.insert_message(m, None).unwrap();
++            }
++        }
++        let ids: Vec<String> = batch.iter().map(|m| m.id.clone()).collect();
++        let pick = |rng: &mut Rng| ids[rng.below(ids.len() as u64) as usize].clone();
++        // A reply, edits, reactions, stars, pins and deletions.
++        let quoted = pick(&mut rng);
++        let mut reply = message(chat, &format!("3EB0{c:02}REPLY"), ME, true, 1_760_100_000 + c as i64 * 100 + 50, Content::Text {
++            text: "Synthetic reply".into(),
++            preview: None,
++        });
++        reply.quoted = Some(Quoted {
++            chat: None,
++            id: quoted,
++            sender: ME.into(),
++            sender_name: None,
++            summary: "Synthetic quoted".into(),
++            mentions: Vec::new(),
++        });
++        a.insert_message(&reply, None).unwrap();
++        for _ in 0..2 {
++            let id = pick(&mut rng);
++            if let Some(m) = a.message(chat, &id).unwrap()
++                && let Content::Text { .. } = m.content
++            {
++                a.set_content(chat, &id, &Content::Text { text: format!("Synthetic edit of {id}"), preview: None }, true)
++                    .unwrap();
++            }
++        }
++        for _ in 0..3 {
++            let id = pick(&mut rng);
++            let sender = others[rng.below(others.len() as u64) as usize];
++            a.set_reaction(chat, &id, sender, false, ["👍", "❤️", "😂"][rng.below(3) as usize]).unwrap();
++        }
++        a.set_reaction(chat, &pick(&mut rng), ME, true, "🙏").unwrap();
++        for _ in 0..2 {
++            let id = pick(&mut rng);
++            a.star(chat, &id, 1_760_100_400 + rng.below(50) as i64).unwrap();
++            if rng.chance(30) {
++                a.unstar(chat, &id, 1_760_100_460).unwrap();
++            }
++        }
++        if rng.chance(60) {
++            a.pin(chat, &pick(&mut rng), 1_760_100_500, 1_900_000_000).unwrap();
++        }
++        if *kind == ChatKind::Group && rng.chance(70) {
++            a.pin_from(chat, &pick(&mut rng), 1_760_100_501, 1_900_000_000, &Pinner { by_me: false, sender: others[0].into() })
++                .unwrap();
++        }
++        if rng.chance(50) {
++            a.delete_message(chat, &pick(&mut rng)).unwrap();
++        }
++
++        // The chat's settings.
++        if *kind == ChatKind::Group {
++            let members: Vec<String> = std::iter::once(ME).chain(others).map(String::from).collect();
++            a.set_group_info(chat, Some(&format!("Synthetic group {c}")), &members, false).unwrap();
++            a.set_group_rights(chat, rng.chance(50), rng.chance(50)).unwrap();
++            if rng.chance(50) {
++                a.set_ephemeral(chat, 604_800, 1_760_100_600).unwrap();
++            }
++        }
++        if *kind == ChatKind::Broadcast {
++            a.set_group_info(chat, Some("Synthetic channel"), &[], true).unwrap();
++        }
++        if rng.chance(40) {
++            a.set_pinned_at(chat, true, 1_760_100_700_000 + c as i64).unwrap();
++        }
++        match rng.below(3) {
++            0 => a.set_muted_at(chat, Some(0), 1_760_100_701).unwrap(),
++            1 => a.set_muted_at(chat, Some(1_900_000_000), 1_760_100_701).unwrap(),
++            _ => {}
++        }
++        if rng.chance(30) {
++            a.set_archived_at(chat, true, 1_760_100_702).unwrap();
++        }
++        if rng.chance(20) {
++            a.set_locked_at(chat, true, 1_760_100_703).unwrap();
++        }
++        if rng.chance(30) {
++            a.set_marked_unread(chat, true).unwrap();
++        } else {
++            a.set_unread(chat, rng.below(5) as u32).unwrap();
++        }
++        if rng.chance(40) {
++            a.set_favorite(chat, true).unwrap();
++        }
++        let labels: Vec<String> = [&work.id, &home.id].into_iter().filter(|_| rng.chance(40)).cloned().collect();
++        a.set_chat_labels(chat, &labels).unwrap();
++        if rng.chance(50) {
++            a.set_draft(chat, &format!("Synthetic draft {c}"), 1_760_100_800).unwrap();
++        }
++    }
++    // One chat cleared through a moment inside its messages.
++    a.remove_chat_through(&chats[3].0, 1_760_100_306, false).unwrap();
++    drop(a);
++
++    let connection = rusqlite::Connection::open(path).unwrap();
++    connection.pragma_update(None, "key", format!("x'{}'", hex(&ARCHIVE_KEY))).unwrap();
++    connection.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |_| Ok(())).unwrap();
++    connection.execute_batch("VACUUM").unwrap();
++    drop(connection);
++    for suffix in ["-wal", "-shm"] {
++        let _ = std::fs::remove_file(format!("{}{suffix}", path.display()));
++    }
++}
++
++fn chat_json(a: &Archive, c: &Chat) -> Value {
++    json!({
++        "id": c.id,
++        "name": c.name,
++        "kind": c.kind,
++        "last_activity": c.last_activity,
++        "unread": c.unread,
++        "marked_unread": c.marked_unread,
++        "archived": c.archived,
++        "pinned": c.pinned,
++        "pinned_at": c.pinned_at,
++        "muted_until": c.muted_until,
++        "favorite": c.favorite,
++        "favorite_position": c.favorite_position,
++        "participants": c.participants,
++        "read_only": c.read_only,
++        "left": c.left,
++        "info_locked": c.info_locked,
++        "admin": c.admin,
++        "locked": c.locked,
++        "ephemeral": c.ephemeral_expiration,
++        // chats() leaves labels out; the chat list reads them here.
++        "labels": a.chat_labels(&c.id).unwrap(),
++        "history_start": a.history_start(&c.id).unwrap(),
++        "last": c.last.as_ref().map(|l| json!({"summary": l.summary, "from_me": l.from_me})),
++    })
++}
++
++/// What the Rust core reports for the archive at path.
++fn report(path: &Path) -> Value {
++    keyring(path);
++    let a = Archive::open(path).unwrap();
++    let chats = a.chats().unwrap();
++    let mut messages = BTreeMap::new();
++    let mut pins = BTreeMap::new();
++    let mut stars = BTreeMap::new();
++    for c in &chats {
++        let list = a.messages(&c.id, None, 100_000).unwrap();
++        messages.insert(c.id.clone(), serde_json::to_value(&list).unwrap());
++        let mut starred: Vec<String> = a.starred_ids(&c.id).unwrap().into_iter().collect();
++        starred.sort();
++        stars.insert(c.id.clone(), starred);
++        let p: Vec<Value> = a
++            .chat_pins(&c.id, NOW)
++            .unwrap()
++            .into_iter()
++            .map(|p| json!({"id": p.id, "pinned_at": p.pinned_at, "expires_at": p.expires_at, "by_me": p.pinner.by_me, "sender": p.pinner.sender}))
++            .collect();
++        pins.insert(c.id.clone(), p);
++    }
++    let mut drafts = a.drafts().unwrap();
++    drafts.sort();
++    let labels: Vec<Value> = a
++        .labels()
++        .unwrap()
++        .into_iter()
++        .map(|l| json!({"id": l.id, "name": l.name, "color": l.color_hex, "created_at": l.created_at}))
++        .collect();
++    let mut media: Vec<(String, String, String)> = a
++        .media_paths()
++        .unwrap()
++        .into_iter()
++        .map(|(chat, id, path)| (chat, id, path.display().to_string()))
++        .collect();
++    media.sort();
++    let favorites: Vec<String> = a.favorites().unwrap().into_iter().map(|f| f.chat).collect();
++    let calls: Vec<String> = a.call_log(1000).unwrap().into_iter().map(|m| m.id).collect();
++    json!({
++        "generator": "zfcore/tests/migration_oracle.rs at 5a57d37 (the Rust core of Zap 0.19.0)",
++        "synthetic": true,
++        "now": NOW,
++        "chats": chats.iter().map(|c| chat_json(&a, c)).collect::<Vec<_>>(),
++        "messages": messages,
++        "stars": stars,
++        "pins": pins,
++        "drafts": drafts,
++        "labels": labels,
++        "favorites": favorites,
++        "call_log": calls,
++        "media_paths": media,
++    })
++}
++
++/// A copy of the archive at source in a scratch folder, so reading it
++/// changes nothing committed.
++fn scratch_copy(source: &Path, scratch: &Path) -> PathBuf {
++    let path = scratch.join("accounts/1/archive.db");
++    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
++    std::fs::copy(source, &path).unwrap();
++    path
++}
++
++#[test]
++fn migration_oracle() {
++    let out = testdata().join("oracle");
++    if std::env::var_os("ZF_WRITE_MIGRATION_ORACLE").is_none() {
++        return;
++    }
++    std::fs::create_dir_all(&out).unwrap();
++    let work = tempfile::tempdir().unwrap();
++    let built = work.path().join("build/archive.db");
++    build(&built, 0x5eed_0190);
++    std::fs::copy(&built, out.join("oracle-archive.db")).unwrap();
++    for (name, source) in [("oracle-archive", out.join("oracle-archive.db")), ("fixture-archive", testdata().join("archive.db"))] {
++        let scratch = tempfile::tempdir().unwrap();
++        let value = report(&scratch_copy(&source, scratch.path()));
++        let mut text = serde_json::to_string_pretty(&value).unwrap();
++        text.push('\n');
++        std::fs::write(out.join(format!("{name}.json")), text).unwrap();
++    }
++}

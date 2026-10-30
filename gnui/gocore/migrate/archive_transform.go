@@ -139,7 +139,11 @@ func (imp *importer) chat(row map[string]any) store.Chat {
 }
 
 func (imp *importer) message(row map[string]any) (store.Message, bool) {
-	m := store.Message{ID: stringValue(row, "id"), ChatID: stringValue(row, "chat"), Sender: stringValue(row, "sender"), SenderName: stringValue(row, "sender_name"), FromMe: boolValue(row, "from_me"), Timestamp: intValue(row, "timestamp"), Order: intValue(row, "history_order"), Status: delivery(intValue(row, "status")), Edited: boolValue(row, "edited"), Forwarded: boolValue(row, "forwarded"), Raw: bytesValue(row, "raw")}
+	m := store.Message{ID: stringValue(row, "id"), ChatID: stringValue(row, "chat"), Sender: stringValue(row, "sender"), SenderName: stringValue(row, "sender_name"), FromMe: boolValue(row, "from_me"), Timestamp: intValue(row, "timestamp"), Order: min(intValue(row, "history_order"), math.MaxInt64/2-1), Status: delivery(intValue(row, "status")), Edited: boolValue(row, "edited"), Forwarded: boolValue(row, "forwarded"), Raw: bytesValue(row, "raw")}
+	// Rust sorted a second's messages by COALESCE(history_order, MAX), then
+	// rowid: a row without history order comes after every row with one,
+	// whatever the phone's order (a u64), so those are kept under the
+	// rowid range.
 	if row["history_order"] == nil {
 		m.Order = math.MaxInt64/2 + min(intValue(row, "__rowid"), math.MaxInt64/2)
 	}

@@ -506,7 +506,15 @@ scan:
 	case hasPrefixFold(token, "www."):
 		return end, LinkWeb, true
 	case hasPrefixFold(token, "mailto:"):
-		return end, LinkMail, true
+		// The scheme alone, or with no address after it, is no link.
+		addr := token[len("mailto:"):]
+		if q := indexByte(addr, '?'); q >= 0 {
+			addr = addr[:q]
+		}
+		if k := indexByte(addr, '@'); k > 0 && isDomain(addr[k+1:]) {
+			return end, LinkMail, true
+		}
+		return 0, 0, false
 	}
 	if k := indexByte(token, '@'); k >= 0 {
 		user, host := token[:k], token[k+1:]
