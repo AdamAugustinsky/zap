@@ -241,6 +241,18 @@ This refines `research:zapfast.md` §3 ("C ABI sketch") as follows.
   - **marked text** (an IME composition) closes the popup and blocks `Replace`; the send key commits the composition rather than sending;
   - Enter policy, drafts (`SaveDraft`) and `Composing` follow upstream (`zf:src/ui/conversation.rs:1729-1733`).
 
+### Recovery: what any core behind `core.Conn` must keep
+
+Pinned by `gnui/state/recovery_test.go` and `gnui/ui/shell/panes_test.go` over fake cores. A different backend (the Go backend under way on another branch, not shipped) plugs in only if these still hold.
+
+- **The UI keeps no command queue.** `Account.Send` hands a command to `Conn.Send` at once. Without a core it returns `ErrNoCore` and the command is dropped, not held. A reconnect resends nothing (no `LoadChat`, `SaveDraft`, `SendText` or `MarkRead`). Holding, ordering and retrying commands across a dropped link is the core's job.
+- **Sends are never retried by the UI.** A send the core refuses comes back as `SendRefused`, and its text goes to the chat's empty draft (`state/events.go` `sendRefused`). A send whose acknowledgement is unknown after a crash must keep its original message id in the archive and show as failed (`Delivery` `Failed`) until the user retries it. It must not be resent silently on reconnect, nor under a new id. Current main has no retry command in the ABI. A backend that adds one adds it as an explicit command.
+- **Drafts live in the core's archive.** `SaveDraft` stores the exact bytes, and the next start's `Drafts` event gives them back. A `Drafts` event never overwrites text the UI already holds for a chat (`model/store.go`).
+- **Chat refs stay stable through a reload.** A `Chats` batch may arrive in chunks after a reconnect. Rows are removed only at the batch's `Last`, so the open chat and its ref survive. Pins and their order come from the core's chat rows (`Pinned`, `PinnedAt`).
+- **The last chat reopens once per run.** It reopens at the first `Chats` `Last`. It is not marked read while the window is unfocused. A hidden account parks its chat and loads it when shown.
+- **One core per account.** A JID is unique only within its account. A core whose `Drain` fails marks only its own account (`Account.Err`), and the others keep draining, with or without a window. A new account gets a new `Serial`, and nothing a removed account's core still had queued reaches it.
+- **Replacing a core.** Current main replaces a core only when a `Pending` open finishes, or when an account is removed and another added. A backend that reopens a core for the same account must clear `Err`, give the new core its start permit (`Started` false, then `Start`), and never drain the old one again.
+
 ## Work
 
 Effort and line counts come from `research:zapfast.md` §5: a Go UI of about 45–55k lines for parity, plus 3–5k new lines of Rust. Sizes are assumed elapsed weeks for each item's lead, used only for the scheduling scenario below; Z0 grew with the seam inventory.
