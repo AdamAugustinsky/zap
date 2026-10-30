@@ -5046,3 +5046,123 @@ msgstr "Clique duas vezes para mostrar a lista de conversas"
 #: gnui
 msgid "Take out of the split"
 msgstr "Tirar da divisão"
+
+#: gnui
+msgid "Previous pane"
+msgstr "Painel anterior"
+
+#: gnui
+msgid "Next pane"
+msgstr "Próximo painel"
+
+#: gnui
+msgid "Move the pane left"
+msgstr "Mover o painel para a esquerda"
+
+#: gnui
+msgid "Move the pane right"
+msgstr "Mover o painel para a direita"
+
+#: gnui
+msgid "Previous pane / next pane"
+msgstr "Painel anterior / próximo"
+
+#: gnui
+msgid "Move the pane left / right"
+msgstr "Mover o painel para a esquerda / direita"
+
+#: gnui
+msgid "Space colour"
+msgstr "Cor do espaço"
+
+#: gnui
+msgid "No colour"
+msgstr "Sem cor"
+
+#: gnui
+msgid "Gray"
+msgstr "Cinza"
+
+#: gnui
+msgid "Colour"
+msgstr "Cor"
+
+#: gnui
+msgid "Blue"
+msgstr "Azul"
+
+#: gnui
+msgid "Purple"
+msgstr "Roxo"
+
+#: gnui
+msgid "Pink"
+msgstr "Rosa"
+
+#: gnui
+msgid "Red"
+msgstr "Vermelho"
+
+#: gnui
+msgid "Orange"
+msgstr "Laranja"
+
+#: gnui
+msgid "Yellow"
+msgstr "Amarelo"
+
+#: gnui
+msgid "Green"
+msgstr "Verde"
+
+#: gnui
+msgid "Teal"
+msgstr "Verde-azulado"
+
+#: gnui
+msgid "Neighbours"
+msgstr "Vizinhas"
+
+#: gnui
+msgid "Opposite"
+msgstr "Oposta"
+
+#: gnui
+msgid "Triad"
+msgstr "Tríade"
+
+#: gnui
+msgid "One colour"
+msgstr "Uma cor"
+
+#: gnui
+msgid "Strength"
+msgstr "Intensidade"
+
+#: gnui
+msgid "Opacity"
+msgstr "Opacidade"
+
+#: gnui
+msgid "Colours"
+msgstr "Cores"
+
+#: gnui
+msgid "Add a colour"
+msgstr "Adicionar uma cor"
+
+#: gnui
+msgid "Remove a colour"
+msgstr "Remover uma cor"
+
+#: gnui
+msgid "Harmony: {name}"
+msgstr "Harmonia: {name}"
+
+#: gnui
+msgid "Beside the opposite"
+msgstr "Ao lado da oposta"
+
+#: gnui
+msgid "Free"
+msgstr "Livre"

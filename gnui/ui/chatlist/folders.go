@@ -172,6 +172,17 @@ func (s *Screen) folderMenu(items *[]ui.MenuItem, a *state.Account, fi int) {
 		icons = append(icons, it)
 	}
 	add(ui.MenuItem{Title: i18n.T("Icon"), Symbol: fd.Icon, Sub: icons})
+	// its space's colour, as Arc's (state.SpaceTints)
+	tints := []ui.MenuItem{{ID: miFolderTint, Title: i18n.T("No colour")}}
+	for i, name := range state.SpaceTints {
+		tints = append(tints, ui.MenuItem{ID: miFolderTint + 1 + i, Title: tintLabel(name), Symbol: "circle.fill"})
+	}
+	for i := range tints {
+		if name := tintAt(tints[i].ID - miFolderTint); name == fd.Tint && fd.TintDots[0] == 0 {
+			tints[i].Mark = ui.MarkOn
+		}
+	}
+	add(ui.MenuItem{Title: i18n.T("Colour"), Symbol: "paintpalette", Sub: tints})
 	if fd.Space {
 		add(ui.MenuItem{ID: miFolderSpace, Title: i18n.T("Stop showing it as a space"), Symbol: "square.stack"})
 	} else {
@@ -196,6 +207,9 @@ func (s *Screen) folderAct(e *screen.Env, a *state.Account, fi, item int) {
 		}
 	case item == miFolderDelete:
 		a.DeleteFolder(fi)
+	case item >= miFolderTint && item <= miFolderTint+len(state.SpaceTints):
+		name := tintAt(item - miFolderTint)
+		a.EditFolder(fi, func(x *state.Folder) { x.Tint, x.TintDots = name, [3]uint32{} })
 	case item >= miFolderIcon && item < miFolderIcon+len(state.FolderIcons):
 		sym := state.FolderIcons[item-miFolderIcon]
 		a.EditFolder(fi, func(x *state.Folder) { x.Icon = sym })
@@ -239,6 +253,39 @@ func (s *Screen) chatFolderAct(a *state.Account, ch model.Chat, item int) bool {
 		return false
 	}
 	return true
+}
+
+// tintAt is the colour at place i of the Colour submenu ("" none first).
+func tintAt(i int) string {
+	if i <= 0 || i > len(state.SpaceTints) {
+		return ""
+	}
+	return state.SpaceTints[i-1]
+}
+
+// tintLabel is a space colour's name as the person reads it.
+func tintLabel(name string) string {
+	switch name {
+	case "blue":
+		return i18n.T("Blue")
+	case "purple":
+		return i18n.T("Purple")
+	case "pink":
+		return i18n.T("Pink")
+	case "red":
+		return i18n.T("Red")
+	case "orange":
+		return i18n.T("Orange")
+	case "yellow":
+		return i18n.T("Yellow")
+	case "green":
+		return i18n.T("Green")
+	case "teal":
+		return i18n.T("Teal")
+	case "gray":
+		return i18n.T("Gray")
+	}
+	return i18n.T("No colour")
 }
 
 // badgeCount is a count as a badge shows it: 99+ past 99.

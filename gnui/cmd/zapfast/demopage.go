@@ -50,7 +50,7 @@ type demoPage struct {
 // demoParts are the parts this port knows, for -demo-page help and tests.
 var demoParts = []string{
 	"chat", "empty", "light", "dark", "short-chat", "wide", "nosidebar", "rail",
-	"search", "spotlight", "folders", "space", "peek", "float-peek", "split", "split3", "pip", "pip-mini", "info", "info-media", "info-docs", "info-links", "group-info", "select", "select-delete", "delete-selection",
+	"search", "spotlight", "folders", "space", "space-theme", "peek", "float-peek", "split", "split3", "tabs", "pip", "pip-mini", "info", "info-media", "info-docs", "info-links", "group-info", "select", "select-delete", "delete-selection",
 	"settings", "themes", "app-lock-settings", "shortcuts", "about", "new-chat", "new-contact",
 	"poll", "poll-create", "location", "unlink", "clear-media", "delete-chat", "clear-chat", "leave-group",
 	"delete-message", "forward", "reply", "private-reply", "edit", "message-info", "unread-divider",
@@ -191,12 +191,27 @@ func (p *demoPage) apply(s *state.State, a *state.Account) {
 			s.Panes.ListHidden = true
 		case "search":
 			s.Req.FocusSearch = true
+		case "tabs":
+			// three chats opened in turn: the titlebar's tabs, the last chosen
+			for _, id := range []string{demoAda, demoFamily, demoMargaret} {
+				if ref := a.Model.Chats.Find([]byte(id)); ref != 0 {
+					a.OpenChat(ref)
+				}
+			}
 		case "folders":
 			seedDemoFolders(a)
 		case "space":
 			seedDemoFolders(a)
 			if i := a.FolderByID("f1"); i >= 0 {
 				s.GoToSpace(state.Space{Acct: a.Index, Folder: "f1"})
+			}
+		case "space-theme":
+			// the Work space in three colours (a space theme's mix), stronger
+			seedDemoFolders(a)
+			if i := a.FolderByID("f1"); i >= 0 {
+				sp := state.Space{Acct: a.Index, Folder: "f1"}
+				a.SetTheme(sp, state.SpaceTheme{Tint: "purple", Mix: "triadic", Level: 0.8})
+				s.GoToSpace(sp)
 			}
 		case "peek":
 			s.PeekChat(a, a.Model.Chats.Find([]byte(demoGroup)), [4]float32{116, 436, 692, 526})
@@ -523,7 +538,7 @@ func seedDemoFolders(a *state.Account) {
 	work := a.FolderByID(a.NewFolder("Work", "briefcase"))
 	a.MoveToFolder([]byte(demoGroup), work)
 	a.MoveToFolder([]byte(demoGrace), work)
-	a.EditFolder(work, func(f *state.Folder) { f.Space = true })
+	a.EditFolder(work, func(f *state.Folder) { f.Space, f.Tint = true, "teal" })
 	family := a.FolderByID(a.NewFolder("Family", "house"))
 	a.MoveToFolder([]byte(demoFamily), family)
 }

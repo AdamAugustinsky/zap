@@ -27,7 +27,9 @@ func init() {
 	t.Capsule = [2]rexui.Pair{rexui.Solid(0xD6E6DC, 0x27342F), rexui.Solid(0xD2E0D7, 0x24302C)}
 	t.CapsuleBackdrop = [2]rexui.Pair{rexui.PairA(0xD6E6DC, 0x27342F, 0.5, 0.55), rexui.PairA(0xD2E0D7, 0x24302C, 0.5, 0.55)}
 	t.Pill = [2]rexui.Pair{rexui.Solid(0xFBFEFC, 0x35443E), rexui.Solid(0xF7FCF9, 0x313F39)}
-	t.PillRim = rexui.Solid(0xB4C5BB, 0x607269)
+	// a quiet hairline all round the chosen tab: Rex's rim on the end caps
+	// alone read as a border that broke off along the top and bottom
+	t.PillRim, t.PillRimAround = rexui.PairA(0x1E3A2E, 0xFFFFFF, 0.12, 0.07), true
 	t.PillShadow = [2]rexui.Pair{rexui.PairA(0x1E3A2E, 0x000000, 0.13, 0.40), rexui.PairA(0x1E3A2E, 0x000000, 0.14, 0.45)}
 	t.Sep = rexui.PairA(0x7F9188, 0xB2C2BA, 1, 0.6)
 	t.Press = rexui.PairA(0x1E3A2E, 0xFFFFFF, 0.09, 0.08)
@@ -102,6 +104,15 @@ func Rex() *gtheme.Theme {
 // The accent is WhatsApp's green: its web app's #008069 in light (white
 // reads on it at 4.9:1, on #00A884 at 3:1) and #00A884 in dark.
 const accentLight, accentDark = 0x008069FF, 0x00A884FF
+
+// Accent is Zap's own accent, in dark or in light: what a space without a
+// colour of its own shows (the spaces' crossfade goes through it).
+func Accent(dark bool) uint32 {
+	if dark {
+		return accentDark
+	}
+	return accentLight
+}
 
 // The fields' base colours (the Field role: rings and backdrops drawn on
 // it), and the dark panes'.

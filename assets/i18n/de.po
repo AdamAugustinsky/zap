@@ -5075,3 +5075,123 @@ msgstr "Doppelklicken, um die Chatliste einzublenden"
 #: gnui
 msgid "Take out of the split"
 msgstr "Aus der Teilung nehmen"
+
+#: gnui
+msgid "Previous pane"
+msgstr "Vorheriger Bereich"
+
+#: gnui
+msgid "Next pane"
+msgstr "Nächster Bereich"
+
+#: gnui
+msgid "Move the pane left"
+msgstr "Bereich nach links"
+
+#: gnui
+msgid "Move the pane right"
+msgstr "Bereich nach rechts"
+
+#: gnui
+msgid "Previous pane / next pane"
+msgstr "Vorheriger / nächster Bereich"
+
+#: gnui
+msgid "Move the pane left / right"
+msgstr "Bereich nach links / rechts"
+
+#: gnui
+msgid "Space colour"
+msgstr "Farbe des Bereichs"
+
+#: gnui
+msgid "No colour"
+msgstr "Keine Farbe"
+
+#: gnui
+msgid "Gray"
+msgstr "Grau"
+
+#: gnui
+msgid "Colour"
+msgstr "Farbe"
+
+#: gnui
+msgid "Blue"
+msgstr "Blau"
+
+#: gnui
+msgid "Purple"
+msgstr "Lila"
+
+#: gnui
+msgid "Pink"
+msgstr "Rosa"
+
+#: gnui
+msgid "Red"
+msgstr "Rot"
+
+#: gnui
+msgid "Orange"
+msgstr "Orange"
+
+#: gnui
+msgid "Yellow"
+msgstr "Gelb"
+
+#: gnui
+msgid "Green"
+msgstr "Grün"
+
+#: gnui
+msgid "Teal"
+msgstr "Petrol"
+
+#: gnui
+msgid "Neighbours"
+msgstr "Nachbarn"
+
+#: gnui
+msgid "Opposite"
+msgstr "Gegenüber"
+
+#: gnui
+msgid "Triad"
+msgstr "Triade"
+
+#: gnui
+msgid "One colour"
+msgstr "Eine Farbe"
+
+#: gnui
+msgid "Strength"
+msgstr "Stärke"
+
+#: gnui
+msgid "Opacity"
+msgstr "Deckkraft"
+
+#: gnui
+msgid "Colours"
+msgstr "Farben"
+
+#: gnui
+msgid "Add a colour"
+msgstr "Farbe hinzufügen"
+
+#: gnui
+msgid "Remove a colour"
+msgstr "Farbe entfernen"
+
+#: gnui
+msgid "Harmony: {name}"
+msgstr "Harmonie: {name}"
+
+#: gnui
+msgid "Beside the opposite"
+msgstr "Neben dem Gegenüber"
+
+#: gnui
+msgid "Free"
+msgstr "Frei"

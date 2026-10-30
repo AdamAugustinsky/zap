@@ -4882,3 +4882,123 @@ msgstr "双击以显示聊天列表"
 #: gnui
 msgid "Take out of the split"
 msgstr "移出分屏"
+
+#: gnui
+msgid "Previous pane"
+msgstr "上一个窗格"
+
+#: gnui
+msgid "Next pane"
+msgstr "下一个窗格"
+
+#: gnui
+msgid "Move the pane left"
+msgstr "将窗格左移"
+
+#: gnui
+msgid "Move the pane right"
+msgstr "将窗格右移"
+
+#: gnui
+msgid "Previous pane / next pane"
+msgstr "上一个 / 下一个窗格"
+
+#: gnui
+msgid "Move the pane left / right"
+msgstr "将窗格左移 / 右移"
+
+#: gnui
+msgid "Space colour"
+msgstr "空间颜色"
+
+#: gnui
+msgid "No colour"
+msgstr "无颜色"
+
+#: gnui
+msgid "Gray"
+msgstr "灰色"
+
+#: gnui
+msgid "Colour"
+msgstr "颜色"
+
+#: gnui
+msgid "Blue"
+msgstr "蓝色"
+
+#: gnui
+msgid "Purple"
+msgstr "紫色"
+
+#: gnui
+msgid "Pink"
+msgstr "粉色"
+
+#: gnui
+msgid "Red"
+msgstr "红色"
+
+#: gnui
+msgid "Orange"
+msgstr "橙色"
+
+#: gnui
+msgid "Yellow"
+msgstr "黄色"
+
+#: gnui
+msgid "Green"
+msgstr "绿色"
+
+#: gnui
+msgid "Teal"
+msgstr "青色"
+
+#: gnui
+msgid "Neighbours"
+msgstr "相邻色"
+
+#: gnui
+msgid "Opposite"
+msgstr "互补色"
+
+#: gnui
+msgid "Triad"
+msgstr "三色"
+
+#: gnui
+msgid "One colour"
+msgstr "单色"
+
+#: gnui
+msgid "Strength"
+msgstr "强度"
+
+#: gnui
+msgid "Opacity"
+msgstr "不透明度"
+
+#: gnui
+msgid "Colours"
+msgstr "颜色"
+
+#: gnui
+msgid "Add a colour"
+msgstr "添加颜色"
+
+#: gnui
+msgid "Remove a colour"
+msgstr "移除颜色"
+
+#: gnui
+msgid "Harmony: {name}"
+msgstr "配色：{name}"
+
+#: gnui
+msgid "Beside the opposite"
+msgstr "分裂互补"
+
+#: gnui
+msgid "Free"
+msgstr "自由"

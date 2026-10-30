@@ -106,7 +106,7 @@ var vc = clip{drag: -1}
 
 // is reports whether the loaded clip is message id of the open chat of a.
 func (p *clip) is(a *state.Account, id []byte) bool {
-	return p.v != nil && p.acct != nil && p.acct == a && a.Open == p.chat && bytes.Equal(p.msg, id)
+	return p.v != nil && p.acct != nil && p.acct == a && mkey.OpenOf(a) == p.chat && bytes.Equal(p.msg, id)
 }
 
 // stopVideo closes the loaded clip (Player::stop): its player, frames and
@@ -196,7 +196,7 @@ func startVideo(s *state.State, a *state.Account, id, path []byte, note bool) {
 	v.SetRate(s.Video.Speed())
 	vc.muted = s.Video.Muted
 	v.Play()
-	vc.acct, vc.chat, vc.note, vc.v, vc.want = a, a.Open, note, v, true
+	vc.acct, vc.chat, vc.note, vc.v, vc.want = a, mkey.OpenOf(a), note, v, true
 	vc.msg = append(vc.msg[:0], id...)
 	vc.path = append(vc.path[:0], path...)
 	vc.seen, vc.seenFrame = s.Now(), ticked.frame
@@ -327,7 +327,7 @@ func (w *wanted) reset() { *w = wanted{msg: w.msg[:0]} }
 // lands; a voice run stops waiting for its next note.
 func playWhenDownloaded(s *state.State, a *state.Account, id []byte) {
 	logic.StopVoiceRun(s)
-	waiting.acct, waiting.chat = a, a.Open
+	waiting.acct, waiting.chat = a, mkey.OpenOf(a)
 	waiting.msg = append(waiting.msg[:0], id...)
 }
 
@@ -419,11 +419,23 @@ var viewerWas bool
 // shown reports whether chat is in one of the window's panes: the open chat
 // or the split view's other (a clip plays on in either).
 func shown(a *state.Account, chat model.ChatRef) bool {
-	return chat != 0 && (a.Open == chat || a.InSplit(chat))
+	if chat == 0 {
+		return false
+	}
+	if a.Open == chat || a.InSplit(chat) {
+		return true
+	}
+	p := floating
+	return p != nil && p.Acct == a.ID && p.Ref == chat && !p.Mini
 }
+
+// floating is the state's floating chat (state.Pip), whose media play in
+// its own window: Frame keeps it.
+var floating *state.Pip
 
 func videoFrame(e *screen.Env, a *state.Account, now time.Time) {
 	s, c := e.S, e.C()
+	floating = &s.Pip
 	frame := ticked.frame
 	hidden := c.Input().Hidden
 	viewer := s.Win.Want[state.WinViewer]

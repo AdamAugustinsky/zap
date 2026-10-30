@@ -5026,3 +5026,123 @@ msgstr "Sohbet listesini göstermek için çift tıkla"
 #: gnui
 msgid "Take out of the split"
 msgstr "Bölmeden çıkar"
+
+#: gnui
+msgid "Previous pane"
+msgstr "Önceki bölme"
+
+#: gnui
+msgid "Next pane"
+msgstr "Sonraki bölme"
+
+#: gnui
+msgid "Move the pane left"
+msgstr "Bölmeyi sola taşı"
+
+#: gnui
+msgid "Move the pane right"
+msgstr "Bölmeyi sağa taşı"
+
+#: gnui
+msgid "Previous pane / next pane"
+msgstr "Önceki / sonraki bölme"
+
+#: gnui
+msgid "Move the pane left / right"
+msgstr "Bölmeyi sola / sağa taşı"
+
+#: gnui
+msgid "Space colour"
+msgstr "Alan rengi"
+
+#: gnui
+msgid "No colour"
+msgstr "Renk yok"
+
+#: gnui
+msgid "Gray"
+msgstr "Gri"
+
+#: gnui
+msgid "Colour"
+msgstr "Renk"
+
+#: gnui
+msgid "Blue"
+msgstr "Mavi"
+
+#: gnui
+msgid "Purple"
+msgstr "Mor"
+
+#: gnui
+msgid "Pink"
+msgstr "Pembe"
+
+#: gnui
+msgid "Red"
+msgstr "Kırmızı"
+
+#: gnui
+msgid "Orange"
+msgstr "Turuncu"
+
+#: gnui
+msgid "Yellow"
+msgstr "Sarı"
+
+#: gnui
+msgid "Green"
+msgstr "Yeşil"
+
+#: gnui
+msgid "Teal"
+msgstr "Deniz mavisi"
+
+#: gnui
+msgid "Neighbours"
+msgstr "Komşular"
+
+#: gnui
+msgid "Opposite"
+msgstr "Karşıt"
+
+#: gnui
+msgid "Triad"
+msgstr "Üçlü"
+
+#: gnui
+msgid "One colour"
+msgstr "Tek renk"
+
+#: gnui
+msgid "Strength"
+msgstr "Yoğunluk"
+
+#: gnui
+msgid "Opacity"
+msgstr "Opaklık"
+
+#: gnui
+msgid "Colours"
+msgstr "Renkler"
+
+#: gnui
+msgid "Add a colour"
+msgstr "Renk ekle"
+
+#: gnui
+msgid "Remove a colour"
+msgstr "Renk kaldır"
+
+#: gnui
+msgid "Harmony: {name}"
+msgstr "Uyum: {name}"
+
+#: gnui
+msgid "Beside the opposite"
+msgstr "Karşıtın yanında"
+
+#: gnui
+msgid "Free"
+msgstr "Serbest"

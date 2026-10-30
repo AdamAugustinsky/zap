@@ -13,6 +13,7 @@ import (
 	"zapfast/abi"
 	"zapfast/model"
 	"zapfast/state"
+	"zapfast/ui/conversation/mkey"
 	"zapfast/ui/screen"
 )
 
@@ -55,7 +56,7 @@ type motionPlay struct {
 var mp motionPlay
 
 func (p *motionPlay) is(a *state.Account, id []byte) bool {
-	return p.acct != nil && p.acct == a && a.Open == p.chat && bytes.Equal(p.msg, id)
+	return p.acct != nil && p.acct == a && mkey.OpenOf(a) == p.chat && bytes.Equal(p.msg, id)
 }
 
 // stopMotion goes back to the photo.
@@ -90,7 +91,7 @@ func ToggleMotion(e *screen.Env, m model.Message) {
 	if d.Content.Tag != abi.ContentTagImage || !d.Content.Image.HasMotion {
 		return
 	}
-	mp.acct, mp.chat = a, a.Open
+	mp.acct, mp.chat = a, mkey.OpenOf(a)
 	mp.msg = append(mp.msg[:0], m.ID()...)
 	mp.seen, mp.seenFrame = e.S.Now(), ticked.frame
 	if mo := &d.Content.Image.Motion; !hasMotionFile(mo) && mo.State.Tag != abi.MediaStateTagDownloading {

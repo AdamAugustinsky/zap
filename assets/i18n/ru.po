@@ -5060,3 +5060,123 @@ msgstr "Дважды щёлкните, чтобы показать список 
 #: gnui
 msgid "Take out of the split"
 msgstr "Убрать из разделения"
+
+#: gnui
+msgid "Previous pane"
+msgstr "Предыдущая панель"
+
+#: gnui
+msgid "Next pane"
+msgstr "Следующая панель"
+
+#: gnui
+msgid "Move the pane left"
+msgstr "Сдвинуть панель влево"
+
+#: gnui
+msgid "Move the pane right"
+msgstr "Сдвинуть панель вправо"
+
+#: gnui
+msgid "Previous pane / next pane"
+msgstr "Предыдущая / следующая панель"
+
+#: gnui
+msgid "Move the pane left / right"
+msgstr "Сдвинуть панель влево / вправо"
+
+#: gnui
+msgid "Space colour"
+msgstr "Цвет пространства"
+
+#: gnui
+msgid "No colour"
+msgstr "Без цвета"
+
+#: gnui
+msgid "Gray"
+msgstr "Серый"
+
+#: gnui
+msgid "Colour"
+msgstr "Цвет"
+
+#: gnui
+msgid "Blue"
+msgstr "Синий"
+
+#: gnui
+msgid "Purple"
+msgstr "Фиолетовый"
+
+#: gnui
+msgid "Pink"
+msgstr "Розовый"
+
+#: gnui
+msgid "Red"
+msgstr "Красный"
+
+#: gnui
+msgid "Orange"
+msgstr "Оранжевый"
+
+#: gnui
+msgid "Yellow"
+msgstr "Жёлтый"
+
+#: gnui
+msgid "Green"
+msgstr "Зелёный"
+
+#: gnui
+msgid "Teal"
+msgstr "Бирюзовый"
+
+#: gnui
+msgid "Neighbours"
+msgstr "Соседние"
+
+#: gnui
+msgid "Opposite"
+msgstr "Противоположный"
+
+#: gnui
+msgid "Triad"
+msgstr "Триада"
+
+#: gnui
+msgid "One colour"
+msgstr "Один цвет"
+
+#: gnui
+msgid "Strength"
+msgstr "Насыщенность"
+
+#: gnui
+msgid "Opacity"
+msgstr "Непрозрачность"
+
+#: gnui
+msgid "Colours"
+msgstr "Цвета"
+
+#: gnui
+msgid "Add a colour"
+msgstr "Добавить цвет"
+
+#: gnui
+msgid "Remove a colour"
+msgstr "Убрать цвет"
+
+#: gnui
+msgid "Harmony: {name}"
+msgstr "Гармония: {name}"
+
+#: gnui
+msgid "Beside the opposite"
+msgstr "Рядом с противоположным"
+
+#: gnui
+msgid "Free"
+msgstr "Свободно"

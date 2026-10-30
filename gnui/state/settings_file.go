@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
+	"strings"
 )
 
 // The settings files keep upstream's format (zf:src/settings.rs): the same
@@ -88,16 +90,24 @@ type accountFile struct {
 	ListFilter          *string      `json:"list_filter"`
 	CallFilter          *string      `json:"call_filter"`
 	Folders             []folderFile `json:"folders,omitempty"`
+	SpaceTint           string       `json:"space_tint,omitempty"`
+	SpaceTintMix        string       `json:"space_tint_mix,omitempty"`
+	SpaceTintLevel      float32      `json:"space_tint_level,omitempty"`
+	SpaceTintColors     []string     `json:"space_tint_colors,omitempty"`
 }
 
 // folderFile is a Folder in the account's settings file.
 type folderFile struct {
-	ID        string   `json:"id"`
-	Name      string   `json:"name"`
-	Icon      string   `json:"icon,omitempty"`
-	Chats     []string `json:"chats,omitempty"`
-	Collapsed bool     `json:"collapsed,omitempty"`
-	Space     bool     `json:"space,omitempty"`
+	ID         string   `json:"id"`
+	Name       string   `json:"name"`
+	Icon       string   `json:"icon,omitempty"`
+	Chats      []string `json:"chats,omitempty"`
+	Collapsed  bool     `json:"collapsed,omitempty"`
+	Space      bool     `json:"space,omitempty"`
+	Tint       string   `json:"tint,omitempty"`
+	TintMix    string   `json:"tint_mix,omitempty"`
+	TintLevel  float32  `json:"tint_level,omitempty"`
+	TintColors []string `json:"tint_colors,omitempty"`
 }
 
 func foldersToFile(fs []Folder) []folderFile {
@@ -106,12 +116,40 @@ func foldersToFile(fs []Folder) []folderFile {
 	}
 	out := make([]folderFile, len(fs))
 	for i, f := range fs {
-		out[i] = folderFile{ID: f.ID, Name: f.Name, Icon: f.Icon, Collapsed: f.Collapsed, Space: f.Space}
+		out[i] = folderFile{ID: f.ID, Name: f.Name, Icon: f.Icon, Collapsed: f.Collapsed, Space: f.Space, Tint: f.Tint, TintMix: f.TintMix, TintLevel: f.TintLevel, TintColors: dotsToFile(f.TintDots)}
 		for _, c := range f.Chats {
 			out[i].Chats = append(out[i].Chats, string(c))
 		}
 	}
 	return out
+}
+
+// dotsToFile are a space theme's own colours as the file keeps them,
+// "#rrggbb" each; nil for none.
+func dotsToFile(d [3]uint32) []string {
+	var out []string
+	for _, c := range d {
+		if c != 0 {
+			out = append(out, fmt.Sprintf("#%06x", c>>8))
+		}
+	}
+	return out
+}
+
+// dotsFromFile reads dotsToFile's colours back; what does not read is left
+// out.
+func dotsFromFile(cs []string) [3]uint32 {
+	var d [3]uint32
+	n := 0
+	for _, s := range cs {
+		v, err := strconv.ParseUint(strings.TrimPrefix(s, "#"), 16, 32)
+		if err != nil || len(s) != 7 || n == len(d) {
+			continue
+		}
+		d[n] = uint32(v)<<8 | 0xFF
+		n++
+	}
+	return d
 }
 
 func foldersFromFile(fs []folderFile) []Folder {
@@ -120,7 +158,7 @@ func foldersFromFile(fs []folderFile) []Folder {
 	}
 	out := make([]Folder, len(fs))
 	for i, f := range fs {
-		out[i] = Folder{ID: f.ID, Name: f.Name, Icon: f.Icon, Collapsed: f.Collapsed, Space: f.Space}
+		out[i] = Folder{ID: f.ID, Name: f.Name, Icon: f.Icon, Collapsed: f.Collapsed, Space: f.Space, Tint: f.Tint, TintMix: f.TintMix, TintLevel: f.TintLevel, TintDots: dotsFromFile(f.TintColors)}
 		for _, c := range f.Chats {
 			out[i].Chats = append(out[i].Chats, []byte(c))
 		}
@@ -544,7 +582,8 @@ func (a *AccountSettings) toFile() accountFile {
 		LimitNotifications: nameOf(limitNames[:], a.LimitNotifications), SaveContactsToPhone: a.SaveContactsToPhone,
 		WallpaperImage: optString(nonEmpty(a.WallpaperImage)), HistoryPrefetch: a.HistoryPrefetch,
 		ListFilter: optString(nonEmpty(a.ListFilter)), CallFilter: optString(nonEmpty(a.CallFilter)),
-		Folders: foldersToFile(a.Folders),
+		Folders: foldersToFile(a.Folders), SpaceTint: a.SpaceTint,
+		SpaceTintMix: a.SpaceTintMix, SpaceTintLevel: a.SpaceTintLevel, SpaceTintColors: dotsToFile(a.SpaceTintDots),
 	}
 }
 
@@ -555,7 +594,8 @@ func (f *accountFile) settings() AccountSettings {
 		LimitNotifications: parseName(limitNames[:], f.LimitNotifications, LimitOff), SaveContactsToPhone: f.SaveContactsToPhone,
 		WallpaperImage: fromOpt(f.WallpaperImage), HistoryPrefetch: f.HistoryPrefetch,
 		ListFilter: fromOpt(f.ListFilter), CallFilter: fromOpt(f.CallFilter),
-		Folders: foldersFromFile(f.Folders),
+		Folders: foldersFromFile(f.Folders), SpaceTint: f.SpaceTint,
+		SpaceTintMix: f.SpaceTintMix, SpaceTintLevel: f.SpaceTintLevel, SpaceTintDots: dotsFromFile(f.SpaceTintColors),
 	}
 	if f.AutoDownloadImages != nil {
 		a.AutoDownload = *f.AutoDownloadImages

@@ -7,6 +7,8 @@
 package peek
 
 import (
+	"math"
+
 	"gonativeui/icon"
 	"gonativeui/rexui"
 	"gonativeui/theme"
@@ -24,13 +26,27 @@ import (
 
 // Sizes in points.
 const (
-	panelW   = 420
-	panelMax = 560
-	shown    = 40 // the messages it shows, the newest
+	panelW    = 420 // the panel's least width; it takes more of a wide window
+	panelWMax = 640
+	panelMax  = 560 // the floating window's height (window.go)
+	sideD     = 32  // the round buttons beside the panel
+	shown     = 40  // the messages it shows, the newest
+)
+
+// How the overlay looks and moves, from Zen's glance (zap-notes/ZEN-REFERENCE.md).
+const (
+	recede  = 0.6  // the window under it fades this far toward its field
+	share   = 0.55 // of the window's width the panel takes
+	backC1  = 0.6  // easeOutBack's overshoot as it lands (about 1 %)
+	arcMax  = 30   // points: the bow of its path at the most
+	askSecs = 3    // a first Escape over a draft asks this long
 )
 
 // Screen is the overlay in the main window (State.Peek).
-type Screen struct{ v view }
+type Screen struct {
+	v   view
+	out bool // flying back to its row; it closes when it is there
+}
 
 // view is a peek's panel: the head, the messages, the line to answer in.
 // The overlay and the floating window (Window) each have one.
@@ -40,7 +56,9 @@ type view struct {
 	age    int // frames since it opened: the field's focus, the scroll to the end
 	count  int // the messages the chat had at the last frame: a new one scrolls to it
 	key    state.Peek
+	asked  float32 // seconds left of a first Escape's question (a draft would go)
 	close  icon.ID
+	open   icon.ID
 	split  icon.ID
 	float  icon.ID
 }
@@ -67,16 +85,21 @@ func (s *Screen) Init(e *screen.Env) error {
 
 func (v *view) icons(e *screen.Env) {
 	v.close = e.K.AddIcon(ztheme.ToolIcon("xmark", '×'))
+	v.open = e.K.AddIcon(ztheme.ToolIcon("arrow.up.left.and.arrow.down.right", '⤢'))
 	v.split = e.K.AddIcon(ztheme.ToolIcon("rectangle.split.2x1", '◫'))
 	v.float = e.K.AddIcon(ztheme.ToolIcon("pip", '▣'))
 }
 
-// Build builds the panel while a peek is open.
+// Build builds the panel while a peek is open, as Zen's glance: the window
+// recedes under it, the panel flies out of the row on a shallow arc and
+// lands with a little overshoot, and its buttons come out beside it. Closing
+// flies it back.
 func (s *Screen) Build(e *screen.Env) {
 	st := e.S
 	p := st.Peek
 	a, ch, ok := s.v.start(st, p)
 	if !ok {
+		s.out = false
 		if p.Open() {
 			st.ClosePeek()
 		}
@@ -87,54 +110,81 @@ func (s *Screen) Build(e *screen.Env) {
 	w, h := c.Size()
 	W, H := float32(w), float32(h)
 
-	// A modal over the whole window: the window under it is inert, and the
-	// composer's native text view, which lies above everything drawn, hides
-	// under it (ui.HostRegions). A click outside, or Escape, closes it.
-	t := c.AnimateValueFrom(ui.HashString(0, "peek in"), 0, 1, ztheme.Enter(r, ztheme.T.DurShort))
-	c.NextSize(ui.Pct(1), ui.Pct(1))
-	c.NextRole(ui.RoleGroup)
-	if c.BeginOverlay(ui.HashString(0, "peek"), ui.OverlayModal, [4]float32{0, 0, W, H}, ui.PlaceCenter).Dismissed {
-		c.EndOverlay()
-		st.ClosePeek()
-		return
+	// t is how far it is out: toward 1 arriving, toward 0 flying back
+	goal, rate := float32(1), ztheme.Enter(r, ztheme.T.DurLong)
+	if s.out {
+		goal, rate = 0, ztheme.Exit(r, ztheme.T.DurLong)
 	}
-	defer c.EndOverlay()
-	theme.At(c, 0, 0, W, H)
-	c.NextBG(theme.WithAlpha(0x000000FF, ztheme.T.ScrimDim*t))
-	if c.Signal(c.Box(base.Floating|ui.Clickable|ui.DrawBackground, "peek scrim")).Clicked {
+	t := c.AnimateValueFrom(ui.HashString(0, "peek in"), 0, goal, rate)
+	if s.out && t < 0.02 {
+		s.out = false
 		st.ClosePeek()
 		return
 	}
 
-	// beside what it came from, inside the window; it comes from there
-	// (motion.go: Short, from its place)
-	pw := min(e.Pt(panelW), W-e.Pt(ztheme.Space8))
-	ph := min(e.Pt(panelMax), H-e.Pt(2*ztheme.Space8))
-	x := p.From[2] + e.Pt(ztheme.Space2)
-	if x+pw > W-e.Pt(ztheme.Space4) {
-		x = max(p.From[0]-pw-e.Pt(ztheme.Space2), e.Pt(ztheme.Space4))
+	// A modal over the whole window: the window under it is inert, and the
+	// composer's native text view, which lies above everything drawn, hides
+	// under it (ui.HostRegions). The window fades back toward its field, with
+	// no dim and no blur; a click outside, or Escape, closes it.
+	c.NextSize(ui.Pct(1), ui.Pct(1))
+	c.NextRole(ui.RoleGroup)
+	ask := c.BeginOverlay(ui.HashString(0, "peek"), ui.OverlayModal, [4]float32{0, 0, W, H}, ui.PlaceCenter).Dismissed
+	defer c.EndOverlay()
+	theme.At(c, 0, 0, W, H)
+	c.NextBG(theme.WithAlpha(r.Colors[theme.Field]|0xFF, recede*min(t, 1)))
+	if c.Signal(c.Box(base.Floating|ui.Clickable|ui.DrawBackground, "peek scrim")).Clicked {
+		ask = true
 	}
-	y := min(max(p.From[1]-e.Pt(ztheme.Space6), e.Pt(ztheme.Space8)), H-ph-e.Pt(ztheme.Space4))
-	x -= (1 - t) * e.Pt(ztheme.Space2)
-	c.NextOpacity(t)
-	theme.At(c, x, y, pw, ph)
-	c.NextAxis(ui.AxisY)
+
+	// where it lands: centred with its buttons, the window's height
+	d, gap := e.Pt(sideD), e.Pt(ztheme.Space3)
+	pw := min(max(W*share, e.Pt(panelW)), e.Pt(panelWMax), W-2*e.Pt(ztheme.Space6)-gap-d)
+	ph := H - 2*e.Pt(ztheme.Space6)
+	x, y := (W-pw-gap-d)/2, (H-ph)/2
+	fx, fy, fw, fh := s.flight(e, p.From, x, y, pw, ph, t, H)
+
+	c.NextOpacity(min(t*4, 1))
+	theme.At(c, fx, fy, fw, fh)
 	c.NextBG(r.Colors[theme.Raised] | 0xFF)
 	c.NextRadius(e.Pt(ztheme.WindowRadius))
 	c.NextBorder(r.Colors[theme.Separator], r.Lines.Hairline)
-	c.NextShadow(ui.Shadow{OffY: e.Pt(12), Sigma: e.Pt(24), Color: 0x00000040})
+	c.NextShadow(ui.Shadow{OffY: e.Pt(16), Sigma: e.Pt(32), Color: 0x00000048})
 	c.NextRole(ui.RoleDialog)
 	c.NextSemName(i18n.Format(i18n.T("Peek: {chat}"), "{chat}", model.S(chatview.Title(a, ch))))
-	c.Push(c.Box(base.Floating|ui.DrawBackground|ui.DrawBorder|ui.Clickable, "peek"))
-
+	c.Push(c.Box(base.Floating|ui.DrawBackground|ui.DrawBorder|ui.Clickable|ui.Clip, "peek"))
+	// the content keeps the landed size while the panel grows round it (the
+	// motion rules' rule 4: never animate what reflows text), and shows as
+	// it nears its place
+	c.NextCenter()
+	c.NextSize(ui.Px(pw), ui.Px(ph))
+	c.NextAxis(ui.AxisY)
+	c.NextOpacity(min(max((t-0.4)/0.5, 0), 1))
+	c.Push(c.Box(0, "peek content"))
 	did := s.v.build(e, a, ch, pw, false)
 	c.Pop()
-	if c.TakeKey(ui.KeyEscape, 0) {
-		did = actClose
+	c.Pop()
+
+	if s.v.asked > 0 {
+		s.v.asked -= c.DT()
+		if s.v.asked > 0 {
+			c.WakeIn(int64(s.v.asked * 1e9))
+		}
+	}
+	if b := s.v.side(e, fx+fw+gap, fy+e.Pt(ztheme.Space4), d, t); b != actNone {
+		did = b
+	}
+	if c.TakeKey(ui.KeyEscape, 0) || did == actClose {
+		ask, did = true, actNone
+	}
+	if s.out {
+		return // flying back: nothing more it does
+	}
+	if ask && s.v.mayClose() {
+		s.out = true
+		c.RequestFrame()
+		return
 	}
 	switch did {
-	case actClose:
-		st.ClosePeek()
 	case actOpen:
 		st.ClosePeek()
 		openChat(st, a, ch)
@@ -145,6 +195,114 @@ func (s *Screen) Build(e *screen.Env) {
 		st.ClosePeek()
 		st.FloatChat(a, ch.Ref())
 	}
+}
+
+// flight is the panel's rectangle t of the way out of from (a window
+// rectangle, x0 y0 x1 y1) to its place x y w h: easeOutBack on a path that
+// bows toward the side with more room, as Zen's glance. From nowhere (a
+// shortcut, a notification) it grows a little where it lands.
+func (s *Screen) flight(e *screen.Env, from [4]float32, x, y, w, h, t, H float32) (float32, float32, float32, float32) {
+	if from[2] <= from[0] || from[3] <= from[1] {
+		k := 0.96 + 0.04*t
+		return x + w*(1-k)/2, y + h*(1-k)/2, w * k, h * k
+	}
+	b := t
+	if !s.out {
+		b = back(t)
+	}
+	fx := from[0] + (x-from[0])*b
+	fy := from[1] + (y-from[1])*b
+	fw := (from[2] - from[0]) + (w-(from[2]-from[0]))*b
+	fh := (from[3] - from[1]) + (h-(from[3]-from[1]))*b
+	// the bow: the most at the middle of the path, toward the roomier side
+	dx, dy := x+w/2-(from[0]+from[2])/2, y+h/2-(from[1]+from[3])/2
+	bow := min(float32(math.Hypot(float64(dx), float64(dy)))*0.4, e.Pt(arcMax))
+	if (from[1]+from[3])/2 < H/2 {
+		bow = -bow // more room below: it rises over the path, then comes down
+	}
+	fy += bow * float32(math.Sin(math.Pi*float64(min(max(b, 0), 1))))
+	return fx, fy, fw, fh
+}
+
+// back is easeOutBack (c1 = backC1): it passes 1 by about 1 % and settles.
+func back(t float32) float32 {
+	u := t - 1
+	return 1 + (backC1+1)*u*u*u + backC1*u*u
+}
+
+// mayClose reports whether a close may go ahead: at once with nothing typed,
+// and with a draft only once asked, as Zen's glance asks before Escape closes
+// a page (the close button turns red and says Close for askSecs).
+func (v *view) mayClose() bool {
+	if v.reply.Len() == 0 || v.asked > 0 {
+		return true
+	}
+	v.asked = askSecs
+	return false
+}
+
+// side is the column of round buttons beside the panel's right edge, at x
+// y, each d across: close, open, open beside, float. They come out of the
+// panel once it is nearly in place.
+func (v *view) side(e *screen.Env, x, y, d, t float32) act {
+	k := e.K
+	c := k.Context()
+	r := k.Theme()
+	in := c.AnimateValueFrom(ui.HashString(0, "peek side"), 0, b2f(t > 0.85), ztheme.Enter(r, ztheme.T.DurStandard))
+	if in <= 0 {
+		return actNone
+	}
+	c.NextOpacity(in)
+	c.NextPos(x-(1-in)*e.Pt(20), y)
+	c.NextSize(ui.Children(1), ui.Children(1))
+	c.NextAxis(ui.AxisY)
+	c.NextGap(e.Pt(ztheme.Space3))
+	c.Push(c.Box(base.Floating, "peek side"))
+	did := actNone
+	if v.asked > 0 {
+		// asked: the close button is the question, red, with its word
+		k.NextHeight(ui.Px(d))
+		if rexui.Button(k.Kit, i18n.T("Close")+"###peek close", rexui.ButtonOpts{Variant: rexui.ButtonDestructive, Size: theme.SizeSmall}).Clicked {
+			did = actClose
+		}
+	} else if v.round(e, v.close, i18n.T("Close"), d) {
+		did = actClose
+	}
+	if v.round(e, v.open, i18n.T("Open"), d) {
+		did = actOpen
+	}
+	if v.round(e, v.split, i18n.T("Open beside the open chat"), d) {
+		did = actSplit
+	}
+	if v.round(e, v.float, i18n.T("Float over other apps"), d) {
+		did = actFloat
+	}
+	c.Pop()
+	return did
+}
+
+// round is one of the side buttons: a raised circle d across with a symbol.
+func (v *view) round(e *screen.Env, id icon.ID, label string, d float32) bool {
+	k := e.K
+	c := k.Context()
+	r := k.Theme()
+	c.NextSize(ui.Px(d), ui.Px(d))
+	c.NextBG(r.Colors[theme.Raised] | 0xFF)
+	c.NextRadius(d / 2)
+	c.NextBorder(r.Colors[theme.Separator], r.Lines.Hairline)
+	c.NextShadow(ui.Shadow{OffY: e.Pt(2), Sigma: e.Pt(6), Color: 0x00000026})
+	c.Push(c.Box(ui.DrawBackground|ui.DrawBorder, c.Fmt().Str("peek side ").Str(label).String()))
+	k.NextSize(ui.Px(d), ui.Px(d))
+	hit := rexui.IconButton(k.Kit, id, label, rexui.IconButtonOpts{Variant: rexui.IconBorderless}).Clicked
+	c.Pop()
+	return hit
+}
+
+func b2f(b bool) float32 {
+	if b {
+		return 1
+	}
+	return 0
 }
 
 // splitChat opens ch beside the open chat in the main window (or opens it,
@@ -230,6 +388,12 @@ func (v *view) header(e *screen.Env, a *state.Account, ch model.Chat, drag bool)
 	rexui.Label(k.Kit, i18n.T("Peeking: it stays unread"), rexui.LabelOpts{Style: rexui.TextCaption, Color: rexui.Of(theme.Label2)})
 	c.Pop()
 	did := actNone
+	if !drag {
+		// the overlay's buttons are beside the panel (side)
+		c.Pop()
+		v.headLine(e)
+		return did
+	}
 	hit := ui.Px(e.Pt(ztheme.T.HitTool))
 	k.NextSize(hit, hit)
 	if rexui.IconButton(k.Kit, v.split, i18n.T("Open beside the open chat"), rexui.IconButtonOpts{Variant: rexui.IconBorderless}).Clicked {
@@ -247,11 +411,16 @@ func (v *view) header(e *screen.Env, a *state.Account, ch model.Chat, drag bool)
 		did = actClose
 	}
 	c.Pop()
-	// the line under the head
-	c.NextSize(ui.Pct(1), ui.Px(k.Theme().Lines.Hairline))
-	c.NextBG(k.Theme().Colors[theme.Separator])
-	c.Box(ui.DrawBackground, "head line")
+	v.headLine(e)
 	return did
+}
+
+// headLine is the line under the head.
+func (v *view) headLine(e *screen.Env) {
+	c := e.C()
+	c.NextSize(ui.Pct(1), ui.Px(e.K.Theme().Lines.Hairline))
+	c.NextBG(e.K.Theme().Colors[theme.Separator])
+	c.Box(ui.DrawBackground, "head line")
 }
 
 // messages are the newest messages, quiet bubbles, the newest at the foot.
@@ -342,6 +511,6 @@ func canSend(ch model.Chat) bool { return !ch.ReadOnly() }
 func (v *view) reset() {
 	v.reply.SetString("")
 	v.scroll = base.ScrollState{}
-	v.age, v.count = 0, 0
+	v.age, v.count, v.asked = 0, 0, 0
 	v.key = state.Peek{}
 }

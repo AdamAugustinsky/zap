@@ -19,8 +19,35 @@ func Bubble(mine bool) uint32 {
 
 // OnBubble is the palette for a bubble's contents (text, secondary and dim
 // text, links, read ticks, accent): adapted so they stay readable on the
-// bubble. It copies the palette (a few hundred bytes, no allocation).
-func OnBubble(mine bool) Palette { return cur.mixed.OnBubble(mine) }
+// bubble. It copies the palette (a few hundred bytes, no allocation). The
+// adapted colours are a contrast search (Palette.OnBubble, a power per
+// step): they are kept for the colours they come from, and searched again
+// only when one of those changes, not for each bubble of each frame.
+func OnBubble(mine bool) Palette {
+	p := &cur.mixed
+	m := &onBubbleMemo[0]
+	fill := p.BubbleIn
+	if mine {
+		m, fill = &onBubbleMemo[1], p.BubbleOut
+	}
+	from := [5]uint32{fill, p.Secondary, p.Dim, p.Read, p.Text}
+	if !m.ok || m.from != from {
+		q := p.OnBubble(mine)
+		m.from, m.to, m.ok = from, [3]uint32{q.Secondary, q.Dim, q.Read}, true
+	}
+	q := *p
+	q.Secondary, q.Dim, q.Read = m.to[0], m.to[1], m.to[2]
+	return q
+}
+
+// onBubbleMemo is OnBubble's for others' bubbles and yours: the colours the
+// adapted ones came from (fill, secondary, dim, read, text) and the adapted
+// secondary, dim and read.
+var onBubbleMemo [2]struct {
+	from [5]uint32
+	to   [3]uint32
+	ok   bool
+}
 
 // Chat is the palette's colour behind the bubbles (upstream's wallpaper
 // "Theme" colour).

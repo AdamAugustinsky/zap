@@ -66,6 +66,7 @@ const (
 	miLabel      = 1000 // + the label's index
 	miFolder     = 2000 // + the folder's index
 	miFolderIcon = 3000 // + the symbol's index in state.FolderIcons
+	miFolderTint = 4000 // + 1 + the colour's index in state.SpaceTints (0: none)
 )
 
 // ctxMenu is the drawn fallback: the open menu, at the pointer, with the
