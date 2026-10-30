@@ -127,6 +127,8 @@ found = set()
 for directory, dirs, files in os.walk(contents):
     for name in files + [d for d in dirs if os.path.islink(os.path.join(directory, d))]:
         found.add(os.path.relpath(os.path.join(directory, name), contents))
+# A notarized bundle carries its stapled ticket at Contents/CodeResources.
+found.discard("CodeResources")
 check(found == allowed, f"bundle files: stray {sorted(found - allowed)}, missing {sorted(allowed - found)}")
 check(sorted(os.listdir(app)) == ["Contents"], f"stray entries beside Contents: {sorted(os.listdir(app))}")
 
