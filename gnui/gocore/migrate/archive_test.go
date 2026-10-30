@@ -106,7 +106,7 @@ func TestImportArchiveRowForRow(t *testing.T) {
 		"3EB0GIF001": "video", "3EB0VOICE1": "voice", "3EB0AUDIO1": "audio", "3EB0DOC001": "document",
 		"3EB0STICK1": "sticker", "3EB0PACK01": "unsupported", "3EB0LOC001": "location",
 		"3EB0LIVE01": "live-location", "3EB0VCARD1": "unsupported", "3EB0REVOK1": "text",
-		"3EB0UNSUP1": "unsupported", "3EB0ONCE01": "phone-only", "zapfast-call-0001": "call",
+		"3EB0UNSUP1": "unsupported", "3EB0ONCE01": "view-once", "zapfast-call-0001": "call",
 		"3EB0CALL02": "call", "3EB0INTER1": "text", "3EB0GROUP1": "text", "3EB0POLL01": "poll",
 		"3EB0GROUP2": "text", "3EB0NEWS01": "text", "3EB0LEFT01": "text", "3EB0GONE02": "text",
 		"3EB0DELME2": "text",
@@ -255,6 +255,29 @@ func TestImportArchiveRowForRow(t *testing.T) {
 	}
 	if r.PreservedRows != total {
 		t.Fatalf("preserved %d of %d rows", r.PreservedRows, total)
+	}
+}
+
+// Rust's PhoneOnly told view-once media and live locations apart by flag;
+// the Go engine has a kind for each (zf:src/model.rs:746).
+func TestPhoneOnlyKeepsWhatItWas(t *testing.T) {
+	imp := &importer{polls: map[string][]string{}}
+	for _, c := range []struct {
+		content, kind, text string
+		live                bool
+	}{
+		{`{"kind":"phoneonly","view_once":true,"once":"voice"}`, "view-once", "voice", false},
+		{`{"kind":"phoneonly","view_once":true}`, "view-once", "", false},
+		{`{"kind":"phoneonly","view_once":false,"live_location":true}`, "live-location", "", true},
+		{`{"kind":"phoneonly","view_once":false}`, "phone-only", "Open this message on your phone", false},
+	} {
+		m, _ := imp.message(map[string]any{"id": "m", "chat": bea, "timestamp": int64(100), "content": c.content})
+		if m.Kind != c.kind || m.Text != c.text || (m.LiveLocation != nil) != c.live {
+			t.Fatalf("%s: %+v", c.content, m)
+		}
+		if c.live && (m.LiveLocation.Available || m.LiveLocation.UpdatedAt != 100) {
+			t.Fatalf("live location %+v", m.LiveLocation)
+		}
 	}
 }
 
