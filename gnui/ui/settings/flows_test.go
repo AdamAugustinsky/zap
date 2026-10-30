@@ -162,7 +162,7 @@ func TestUpdateFlow(t *testing.T) {
 	}
 	r.click(ui.RoleButton, "Check now")
 	r.wait("the release", func() bool { return r.text("Update to 0.21.0") && r.has(ui.RoleButton, "Download update") })
-	if !r.text("0.20.0 → 0.21.0") || !r.has(ui.RoleLink, "Release notes") {
+	if !r.text(state.Version + " → 0.21.0") || !r.has(ui.RoleLink, "Release notes") {
 		t.Error("the update block lacks the versions or the notes")
 	}
 	// the banner of the main window reads the same
