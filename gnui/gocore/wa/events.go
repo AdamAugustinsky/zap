@@ -151,18 +151,18 @@ func eventName(evt any) string {
 	return "app state"
 }
 
-// updateChat changes a chat's row and sends it.
+// updateChat changes a chat's row and sends it: after a failed write too,
+// as the archive holds it, since a COMMIT that reported a failure (an fsync
+// error) may have held.
 func (e *Engine) updateChat(id string, update func(*store.Chat)) error {
-	if err := e.arch.UpdateChat(id, func(c *store.Chat) {
+	err := e.arch.UpdateChat(id, func(c *store.Chat) {
 		if c.Kind == "" {
 			c.Kind = archiveKind(id)
 		}
 		update(c)
-	}); err != nil {
-		return err
-	}
+	})
 	e.emitChat(id)
-	return nil
+	return err
 }
 
 func (e *Engine) messageDeleted(chat, id string) {
