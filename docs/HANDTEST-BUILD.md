@@ -38,6 +38,17 @@ packaging/macos/gnui-package.sh --dev --dmg   # the hand-test bundle, in dist/de
 packaging/macos/gnui-package.sh --dmg         # the release bundle, for the hand test's last group, in dist/
 ```
 
+**The framework must be the pinned one.** Each command first checks what
+`gnui/` resolves `gonativeui` to against `gnui/release-deps.json` and stops
+on any other commit, on uncommitted changes, or on an export whose tree does
+not match. A Mac mini worktree needs an ignored `gnui/go.work` pointing at the
+pinned framework ([gnui/README.md](../gnui/README.md#the-framework)).
+`ZAP_FRAMEWORK_DIR=<dir>`, or a prebuilt `GNUI=<cli>`, builds anyway, with a
+warning and an `override` recorded in `Contents/Resources/build-manifest.json`.
+`packaging/macos/gnui-package.sh --check` (with `--dev` for `dist/dev/`) runs
+only that check and writes `build-manifest.json`, without building the
+libraries or the app and without signing anything.
+
 **The hand test uses a development build.** Upstream compiles its demo and
 measurement flags out of release builds, as this release build does, and the
 hand test needs them. `--dev` makes the same bundle (id, signature,
