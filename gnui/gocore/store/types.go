@@ -203,7 +203,9 @@ type Message struct {
 	Call *Call `json:"call,omitempty"`
 	// Zap: a motion photo's clip, on the photo's row.
 	Motion *Motion `json:"motion,omitempty"`
-	Raw    []byte  `json:"-"`
+	// Zap: a waiting message the phone was asked for; it is asked once.
+	Asked bool   `json:"asked,omitempty"`
+	Raw   []byte `json:"-"`
 }
 
 // Motion is the video half of a motion photo (Zap): the clip's message as

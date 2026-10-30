@@ -627,6 +627,9 @@ func TestSignallingFiledAsUnsupportedIsMended(t *testing.T) {
 	if r := h.f.peer[0].GetProtocolMessage().GetPeerDataOperationRequestMessage().GetPlaceholderMessageResendRequest(); len(r) != 2 || r[0].GetMessageKey().GetID() != "U1" || r[0].GetMessageKey().GetParticipant() != peer.String() || r[1].GetMessageKey().GetParticipant() != peerLID.String() {
 		t.Fatalf("request: %+v", r)
 	}
+	if m, err := h.e.arch.Message(group.String(), "U1"); err != nil || !m.Asked {
+		t.Fatalf("not marked asked: %+v %v", m, err)
+	}
 	// Its answer fills the row, quietly: the message is old news.
 	resent := message(group, peer, "U1", time.Unix(base, 0), text("found it"))
 	resent.UnavailableRequestID = "R1"

@@ -16,7 +16,7 @@ import (
 )
 
 // askBack is how far back, and askMost how many, messages still waiting
-// are asked of the phone again each session.
+// are asked of the phone, once each.
 const (
 	askBack = 30 * 24 * time.Hour
 	askMost = 200
@@ -28,8 +28,9 @@ const (
 // Status updates and broadcast lists made chats of their own: they go. A
 // row that held a group's sender key stood in for the message it came
 // with, so it waits for that message; any other signalling row goes, and
-// a row the parser now names better is renamed. Then every recent message
-// still waiting is asked of the phone, quietly: it is old news by now.
+// a row the parser now names better is renamed. Then each recent message
+// still waiting is asked of the phone, once and quietly: it is old news by
+// now, and a phone that did not answer will not answer the next session.
 func (e *Engine) mend() {
 	if e.mended {
 		return
@@ -54,7 +55,10 @@ func (e *Engine) mend() {
 	var requests []*waE2E.Message
 	for _, m := range waiting {
 		j, ok := jidOf(m.ChatID)
-		if !ok {
+		if !ok || m.Asked {
+			continue
+		}
+		if err := e.arch.UpdateMessage(m.ChatID, m.ID, func(old *store.Message) { old.Asked = true }); err != nil {
 			continue
 		}
 		e.asked[[2]string{m.ChatID, m.ID}] = true
