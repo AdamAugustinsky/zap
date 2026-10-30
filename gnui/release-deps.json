@@ -3,11 +3,11 @@
 	"framework": {
 		"module": "gonativeui",
 		"repository": "https://github.com/AdamAugustinsky/go-native-ui",
-		"commit": "977700e06e0a7ca7609fba7745dc806ef2e4589a",
-		"tree": "9dcd5e9f2fd5907779b93c451dabc1131e553d55"
+		"commit": "6b316c1cb51c31c2f092834d03c7603c345ca93f",
+		"tree": "5601574cfdbc26b9c152467de4014379a453d460"
 	},
 	"ghostty": {"status": "absent"},
-	"shaders": {"artifact": "none"},
+	"shaders": {"artifact": "metallib", "metallib_sha256": "079d0273715c915a7348cce0947dc2730549ba677bd95c7efc2c7515af69339f"},
 	"whatsmeow": {
 		"module": "go.mau.fi/whatsmeow",
 		"replace": "./third_party/whatsmeow",

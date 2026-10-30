@@ -46,7 +46,8 @@ launch tour) are still to be measured on a live screen.
 ## The framework
 
 `release-deps.json` pins the framework Zap is built against: go-native-ui at
-commit `977700e06e0a`, with that commit's tree hash. `go.mod` replaces
+commit `6b316c1cb51c`, with that commit's tree hash and the hash of the
+CI-built `shaders.metallib` it embeds. `go.mod` replaces
 `gonativeui` with `../../go-native-ui`, the framework's checkout beside this
 repository's (`~/Projects/go-native-ui` next to `~/Projects/zap`). A worktree
 anywhere else uses a `go.work` here, which is ignored by git:
@@ -79,10 +80,13 @@ Every bundle carries `Contents/Resources/build-manifest.json`
   block is used (`source` `git` or `stamp`), and the whole JSON is kept
   verbatim as `frameworkProvenance`. Otherwise the adapter reads git
   (`source: "git"`), or the tree hash of an export that matched the pin
-  (`tree-hash`, Zap's own value). The framework's Ghostty pin stays inside
+  (`tree-hash`, Zap's own value; the framework's reader refuses an export
+  without a `.gnui-revision` stamp, so an unstamped one takes this path). The framework's Ghostty pin stays inside
   `frameworkProvenance`: Zap links neither libghostty-vt nor the terminal
   widget, so it has no `ghostty` entry. `shaders` is the framework's report,
-  `{"artifact": "none"}` without one; a pinned build refuses an artifact
+  or without one the embedded `internal/metallib/lib/shaders.metallib`'s
+  hash (`{"artifact": "none"}` when there is none); the file must match the
+  report, and a pinned build refuses any artifact or hash
   `release-deps.json` does not expect.
 - Zap's own fields: `app` (revision, dirty), `build` (variant, tags), `go`,
   and `whatsmeow`. `whatsmeow` gives go.mod's required version, the

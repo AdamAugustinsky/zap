@@ -181,14 +181,20 @@ def resolve(args: argparse.Namespace) -> None:
 
 
 def provenance_json(cli: Path, directory: Path) -> dict | None:
-    """The framework's own provenance (`gnui provenance -json`), or None from a CLI without it."""
+    """The framework's own provenance (`gnui provenance -json`), or None.
+
+    None from a CLI without the command, and from an export without a
+    .gnui-revision stamp, which the reader refuses: its files identify it
+    (framework_identity's tree hash).
+    """
     done = subprocess.run(
         [str(cli), "provenance", "-json", "-dir", str(directory)],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
     )
-    if done.returncode != 0 and 'unknown command "provenance"' in done.stderr:
+    if done.returncode != 0 and ('unknown command "provenance"' in done.stderr
+                                 or "nor stamped with .gnui-revision" in done.stderr):
         return None
     if done.returncode != 0:
         raise Refused(f"gnui provenance failed:\n{done.stderr.strip()}")
@@ -313,14 +319,19 @@ def check_expectations(deps: dict, config: dict) -> None:
     """What release-deps.json says Zap does not ship, it does not ship.
 
     libghostty-vt would be one of gnui.json's nativeLibs; Zap links neither it
-    nor the terminal widget. No metallib exists until the framework's CI makes one.
+    nor the terminal widget. The shaders are none (compiled at run time) or the
+    framework's CI-built metallib, named by its hash.
     """
     if deps["ghostty"] != {"status": "absent"}:
         raise Refused("gnui/release-deps.json expects libghostty-vt, which this script cannot identify yet")
     if config.get("nativeLibs"):
         raise Refused("gnui.json now ships nativeLibs: record libghostty-vt's identity in gnui/release-deps.json")
-    if deps["shaders"] != {"artifact": "none"}:
-        raise Refused("gnui/release-deps.json expects a shader artifact this script cannot identify yet")
+    shaders = deps["shaders"]
+    if shaders != {"artifact": "none"} and not (
+        shaders.get("artifact") == "metallib" and set(shaders) == {"artifact", "metallib_sha256"}
+        and re.fullmatch(r"[0-9a-f]{64}", shaders["metallib_sha256"] or "")
+    ):
+        raise Refused(f"gnui/release-deps.json expects shaders {shaders}, which this script cannot identify")
 
 
 def app_entry(config: dict) -> dict:
@@ -388,10 +399,20 @@ def manifest(args: argparse.Namespace) -> None:
     # there is no metallib. Its ghostty block is the framework's pin, which
     # stays in frameworkProvenance: Zap links no libghostty-vt
     # (check_expectations), so it has no ghostty entry of its own.
-    out["shaders"] = (provenance or {}).get("shaders", {"artifact": "none"})
-    if not override and out["shaders"].get("artifact") != deps["shaders"]["artifact"]:
-        raise Refused(f"the framework reports a {out['shaders'].get('artifact')} shader artifact, which"
-                      " gnui/release-deps.json does not expect")
+    # The metallib the framework embeds, hashed here too: the reader's word
+    # and the file the build takes must agree, and without the reader the
+    # file is the identity.
+    embedded = args.framework / "internal" / "metallib" / "lib" / "shaders.metallib"
+    fallback = {"artifact": "metallib", "metallib_sha256": sha256(embedded)} if embedded.is_file() else {"artifact": "none"}
+    out["shaders"] = (provenance or {}).get("shaders", fallback)
+    if embedded.is_file() and out["shaders"].get("metallib_sha256") not in (None, sha256(embedded)):
+        raise Refused(f"the framework reports metallib {out['shaders'].get('metallib_sha256')}, but {embedded}"
+                      f" is {sha256(embedded)}")
+    wanted = deps["shaders"]
+    if not override and (out["shaders"].get("artifact") != wanted["artifact"]
+                         or out["shaders"].get("metallib_sha256") != wanted.get("metallib_sha256")):
+        raise Refused(f"the framework reports shaders {out['shaders']}, which gnui/release-deps.json does not"
+                      f" expect ({wanted})")
     out["go"] = {"version": go, "goos": "darwin", "goarch": "arm64"}
     out["whatsmeow"] = whatsmeow_entry(deps["whatsmeow"])
     out["nativeLibs"] = native
