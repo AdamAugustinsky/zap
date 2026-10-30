@@ -13,6 +13,7 @@ import (
 	"go.mau.fi/whatsmeow/appstate"
 	wastore "go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/types"
+	"go.mau.fi/whatsmeow/types/events"
 	waLog "go.mau.fi/whatsmeow/util/log"
 
 	"zapfast/abi"
@@ -364,7 +365,28 @@ func (e *Engine) newClient(device *wastore.Device) {
 			slog.Warn("zapfast wa: the proxy setting was not applied", "err", err)
 		}
 	}
+	ctx := e.ctx
 	e.cli.AddEventHandler(func(evt any) {
+		if _, ok := evt.(*events.HistorySync); ok {
+			// whatsmeow deletes a history chunk from the server, and
+			// downloads the next, as soon as this returns, and the phone
+			// does not send the first sync again: so the chunk is filed
+			// before it returns, rather than waiting in the inbox (where a
+			// quit would lose it, and every chunk of a long sync would sit
+			// in memory at once)
+			done := make(chan struct{})
+			e.post(func() {
+				defer close(done)
+				if gen == e.gen && !e.dead {
+					e.handle(evt)
+				}
+			})
+			select {
+			case <-done:
+			case <-ctx.Done():
+			}
+			return
+		}
 		e.post(func() {
 			if gen == e.gen && !e.dead {
 				e.handle(evt)

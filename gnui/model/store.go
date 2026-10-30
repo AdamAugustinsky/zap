@@ -336,7 +336,40 @@ func (s *Store) Open(chat []byte) *Conversation {
 		s.gen++
 	}
 	v.used = s.tick
+	s.trim(v)
 	return v
+}
+
+// backBudget is the memory the loaded chats off screen may keep together:
+// a chat scrolled far back holds every page it loaded, and 24 of them added
+// up over a day (a 100,000-message chat alone is about 60 MB).
+const backBudget = 32 << 20
+
+// trim releases the least recently used big conversations off screen
+// (neither keep nor pinned) until those left keep at most backBudget; a
+// released one loads again from the archive when it opens. A small one (a
+// page or so, as a peek's) is kept whatever the total.
+func (s *Store) trim(keep *Conversation) {
+	for {
+		var total uintptr
+		var lru *Conversation
+		for i := range s.convs {
+			c := &s.convs[i]
+			if !c.inUse || c == keep || s.pinned(c) {
+				continue
+			}
+			n := c.retainedBytes()
+			total += n
+			if n > 1<<20 && (lru == nil || c.used < lru.used) {
+				lru = c
+			}
+		}
+		if total <= backBudget || lru == nil {
+			return
+		}
+		*lru = Conversation{gen: lru.gen + 1, orderGen: lru.orderGen + 1}
+		s.gen++
+	}
 }
 
 // PinConversations protects the account's open transcript and media viewer.

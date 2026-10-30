@@ -100,7 +100,10 @@ type Screen struct {
 	lm   labelManager
 
 	sentQuery string
-	px        int32 // avatar decode size
+	// ⌘K was open: it asks the same archive for its own text, in the same
+	// answer slot, so the list asks again for its text once it closes
+	spotlit bool
+	px      int32 // avatar decode size
 
 	dec                  abi.Chat      // decode scratch
 	spans                []markup.Span // appendPlain's scratch
@@ -239,6 +242,15 @@ func (s *Screen) sync(e *screen.Env, a *state.Account) {
 	if rev := s.search.Rev(); rev != s.searchRev {
 		s.searchRev = rev
 		s.setQuery(e, a, string(bytes.TrimSpace(s.search.Bytes())))
+	}
+	if e.S.Spotlight {
+		s.spotlit = true
+	} else if s.spotlit {
+		s.spotlit = false
+		if s.query != "" {
+			s.sentQuery = "" // ⌘K's text took the answer: ask again
+			s.setQuery(e, a, s.query)
+		}
 	}
 	mir := s.mirror(a)
 	s.refreshMirror(a, mir)

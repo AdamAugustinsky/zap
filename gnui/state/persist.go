@@ -451,6 +451,18 @@ func hashValue(h *maphash.Hash, v reflect.Value) {
 		for i := range v.NumField() {
 			hashValue(h, v.Field(i))
 		}
+	case reflect.Map:
+		// a sum of the entries' own hashes, so that the map's order does not count
+		put(uint64(v.Len()))
+		var sum uint64
+		for it := v.MapRange(); it.Next(); {
+			var e maphash.Hash
+			e.SetSeed(hashSeed)
+			hashValue(&e, it.Key())
+			hashValue(&e, it.Value())
+			sum += e.Sum64()
+		}
+		put(sum)
 	}
 }
 

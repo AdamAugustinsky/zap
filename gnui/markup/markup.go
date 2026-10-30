@@ -197,6 +197,16 @@ func (p *parser) inline(start, end int, quote Style) {
 	triple := func(at int) bool {
 		return at+2 < end && line[at] == '`' && line[at+1] == '`' && line[at+2] == '`'
 	}
+	// where each marker can last close on this line: an opener has a closer
+	// after it when that is after it, found once here rather than by a scan
+	// to the line's end for each opener, which made a line of stray markers
+	// cost the square of its length
+	last := [3]int{-1, -1, -1} // *, _, ~
+	for j := start; j < end; j++ {
+		if k := markerIndex(line[j]); k >= 0 && isCloser(line, start, j) {
+			last[k] = j
+		}
+	}
 	i := start
 	for i < end {
 		c := line[i]
@@ -246,7 +256,7 @@ func (p *parser) inline(start, end int, quote Style) {
 					i++
 					continue
 				}
-			} else if isOpener(line[:end], start, i) && hasCloser(line[:end], start, i+1, c) {
+			} else if isOpener(line[:end], start, i) && last[markerIndex(c)] >= i+1 {
 				flush(i)
 				flags |= bit
 				i++
@@ -289,13 +299,17 @@ func isCloser(line []byte, start, i int) bool {
 	return !isAlnum(next)
 }
 
-func hasCloser(line []byte, start, from int, marker byte) bool {
-	for j := from; j < len(line); j++ {
-		if line[j] == marker && isCloser(line, start, j) {
-			return true
-		}
+// markerIndex is marker's place in inline's last closers: *, _, ~, or -1.
+func markerIndex(c byte) int {
+	switch c {
+	case '*':
+		return 0
+	case '_':
+		return 1
+	case '~':
+		return 2
 	}
-	return false
+	return -1
 }
 
 // plain splits a plain (not mono) span around web addresses, phone numbers
@@ -305,6 +319,7 @@ func (p *parser) plain(s, e int, st Style) {
 	keep := st & (Bold | Italic | Strike | Quote)
 	plainStart := 0
 	push := func(upto int) { p.add(s+plainStart, s+upto, st, NoLink) }
+	var ls linkScan
 	i := 0
 	for i < len(text) {
 		if !utf8.RuneStart(text[i]) {
@@ -347,7 +362,10 @@ func (p *parser) plain(s, e int, st Style) {
 			}
 			// Links start with a letter or digit. Skip punctuation runs.
 			if b := text[i]; b >= '0' && b <= '9' || b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z' {
-				if end, kind, ok := linkAt(text, i); ok {
+				if !ls.possible(text, i) {
+					// no address can start here: skip linkAt's scan of the
+					// rest of the token
+				} else if end, kind, ok := linkAt(text, i); ok {
 					push(i)
 					p.add(s+i, s+end, keep, kind)
 					plainStart, i = end, end
@@ -443,6 +461,237 @@ func mentionAt(text []byte, at int, mentions []Mention) (end, idx int, ok bool) 
 		}
 	}
 	return 0, 0, false
+}
+
+// linkScan rules out, cheaply, the places where no address can start, so
+// that plain calls linkAt, which scans to the end of the token, only where
+// it finds one (and then goes on past it). Without it a long token with no
+// spaces ("a-a-a-…", a CSV row) cost the square of its length: one scan from
+// every word inside it. Its positions only move forward along the text, so a
+// run costs one pass, and a mail address's checks are bounded.
+type linkScan struct {
+	runEnd  int // the end of the run of host bytes the last start was in
+	stopEnd int // the first '@', '/' or token end at or after the last start
+	ready   bool
+}
+
+// The longest host and mail name linkScan lets through, DNS's and SMTP's
+// limits: a longer one is no address.
+const (
+	maxHost = 253
+	maxUser = 64
+)
+
+func hostByte(c byte) bool {
+	return c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c == '.' || c == '-'
+}
+
+// trimPunct are the bytes linkAt trims from a token's end.
+func trimPunct(c byte) bool {
+	switch c {
+	case '.', ',', ';', ':', '!', '?', '*', '_', '~':
+		return true
+	}
+	return false
+}
+
+// endsAlways reports whether the rune at text[j:] ends linkAt's token
+// whatever brackets are open, and its width.
+func endsAlways(text []byte, j int) (bool, int) {
+	c := text[j]
+	if c < utf8.RuneSelf {
+		switch c {
+		case '<', '>', '"', '\'', '{', '}':
+			return true, 1
+		}
+		return unicode.IsSpace(rune(c)), 1
+	}
+	r, w := utf8.DecodeRune(text[j:])
+	return unicode.IsSpace(r), w
+}
+
+// hostAt reports whether linkAt would take the run of host bytes
+// text[j:runEnd] for a domain: it passes isDomain and is followed by a port
+// (':'), a path ('/', when path is true), a query ('?', when query is true)
+// or the token's end past any punctuation linkAt trims. parens and squares are the brackets open before
+// j, which a closing one then closes instead of ending the token.
+func hostAt(text []byte, j, runEnd int, path, query bool, parens, squares int) bool {
+	if runEnd-j > maxHost {
+		return false
+	}
+	host := text[j:runEnd]
+	k := runEnd
+	for k < len(text) && trimPunct(text[k]) {
+		k++
+	}
+	end := k >= len(text)
+	if !end {
+		end, _ = endsAlways(text, k)
+		end = end || text[k] == ')' && parens == 0 || text[k] == ']' && squares == 0
+	}
+	if end {
+		// the token ends here: linkAt trims what follows the run, and the
+		// run's own closing dots
+		for len(host) > 0 && host[len(host)-1] == '.' {
+			host = host[:len(host)-1]
+		}
+		return isDomain(host)
+	}
+	if c := text[runEnd]; c == ':' || path && c == '/' || query && c == '?' {
+		return isDomain(host)
+	}
+	return false
+}
+
+// possible reports whether linkAt(text, j) finds an address: false when it
+// cannot (or the host or mail name would be longer than maxHost or
+// maxUser).
+func (l *linkScan) possible(text []byte, j int) bool {
+	// a scheme decides alone, as in linkAt (each check reads a few bytes)
+	switch rest := text[j:]; {
+	case hasPrefixFold(rest, "http://") || hasPrefixFold(rest, "https://"):
+		return longerThan(text, j, 8)
+	case hasPrefixFold(rest, "www."):
+		return longerThan(text, j, 3)
+	case hasPrefixFold(rest, "mailto:"):
+		return mailtoAt(text, j)
+	}
+	if !l.ready || j >= l.runEnd {
+		l.runEnd = j
+		for l.runEnd < len(text) && hostByte(text[l.runEnd]) {
+			l.runEnd++
+		}
+	}
+	// a web address: the run from j is its host, with no bracket before it
+	if hostAt(text, j, l.runEnd, true, false, 0, 0) {
+		l.ready = true
+		return true
+	}
+	// a mail address: the token's first '@' comes before any '/'
+	if !l.ready || j > l.stopEnd {
+		l.stopEnd = j
+		for l.stopEnd < len(text) && text[l.stopEnd] != '@' && text[l.stopEnd] != '/' {
+			end, w := endsAlways(text, l.stopEnd)
+			if end {
+				break
+			}
+			l.stopEnd += w
+		}
+	}
+	l.ready = true
+	k := l.stopEnd
+	if k >= len(text) || text[k] != '@' || k-j > maxUser {
+		return false
+	}
+	// the brackets between: a closing one with no opener ends the token
+	// before the '@', as linkAt's scan does
+	parens, squares := 0, 0
+	for _, c := range text[j:k] {
+		switch c {
+		case '(':
+			parens++
+		case ')':
+			if parens == 0 {
+				return false
+			}
+			parens--
+		case '[':
+			squares++
+		case ']':
+			if squares == 0 {
+				return false
+			}
+			squares--
+		}
+	}
+	e := k + 1
+	for e < len(text) && hostByte(text[e]) {
+		e++
+	}
+	return hostAt(text, k+1, e, false, false, parens, squares)
+}
+
+// longerThan reports whether linkAt's token from j, trimmed of its closing
+// punctuation, is longer than n bytes: whether a byte it keeps lies at j+n
+// or later. It reads the n bytes and the punctuation after them alone.
+func longerThan(text []byte, j, n int) bool {
+	if j+n > len(text) {
+		return false
+	}
+	parens, squares := 0, 0
+	for i := j; i < j+n; i++ {
+		switch text[i] {
+		case '(':
+			parens++
+		case ')':
+			if parens == 0 {
+				return false
+			}
+			parens--
+		case '[':
+			squares++
+		case ']':
+			if squares == 0 {
+				return false
+			}
+			squares--
+		default:
+			if end, _ := endsAlways(text, i); end {
+				return false
+			}
+		}
+	}
+	k := j + n
+	for k < len(text) && trimPunct(text[k]) {
+		k++
+	}
+	if k >= len(text) {
+		return false
+	}
+	end, _ := endsAlways(text, k)
+	return !(end || text[k] == ')' && parens == 0 || text[k] == ']' && squares == 0)
+}
+
+// mailtoAt reports whether linkAt takes the "mailto:" token at j for a mail
+// link: a name of at most maxUser bytes before its first '@' (before any
+// '?'), and a host after it.
+func mailtoAt(text []byte, j int) bool {
+	from := j + len("mailto:")
+	parens, squares := 0, 0
+	k := from
+	for ; k < len(text) && text[k] != '@'; k++ {
+		if text[k] == '?' || k-from > maxUser {
+			return false
+		}
+		switch text[k] {
+		case '(':
+			parens++
+		case ')':
+			if parens == 0 {
+				return false
+			}
+			parens--
+		case '[':
+			squares++
+		case ']':
+			if squares == 0 {
+				return false
+			}
+			squares--
+		default:
+			if end, _ := endsAlways(text, k); end {
+				return false
+			}
+		}
+	}
+	if k >= len(text) || k == from {
+		return false
+	}
+	e := k + 1
+	for e < len(text) && hostByte(text[e]) {
+		e++
+	}
+	return hostAt(text, k+1, e, false, true, parens, squares)
 }
 
 // linkAt parses a web or email address at at and returns its end and kind.

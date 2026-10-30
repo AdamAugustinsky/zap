@@ -508,3 +508,48 @@ func TestFoldedFiltersPickFromMore(t *testing.T) {
 		t.Errorf("picking Groups again left filter %v, want All", r.acct().Filter)
 	}
 }
+
+// A folder's badge counts its unread chats but not a locked one, which would
+// give it away.
+func TestAFoldersBadgeLeavesOutLockedChats(t *testing.T) {
+	r := newRig(t)
+	l := chat("2", "Secret", 5)
+	l.Locked, l.Unread = true, 3
+	open := chat("1", "Ada", 6)
+	open.Unread = 1
+	r.chats(open, l)
+	a := r.acct()
+	i := a.FolderByID(a.NewFolder("Work", "briefcase"))
+	for _, ch := range []abi.Chat{open, l} {
+		a.MoveToFolder(ch.ID, i)
+	}
+	if n := folderUnread(a, &a.Settings.Folders[i]); n != 1 {
+		t.Errorf("the folder's badge counts %d unread chats, want 1 (the locked one left out)", n)
+	}
+}
+
+// ⌘K asks the archive for its own text in the answer slot the list's search
+// uses: once it closes, the list asks for its text again, so its messages
+// come back.
+func TestTheListsSearchAsksAgainAfterSpotlight(t *testing.T) {
+	r := newRig(t)
+	r.chats(chat("1", "Ada", 5))
+	searchFor(r, "lunch")
+	before := len(r.sent())
+	r.s.Spotlight = true
+	r.acct().Model.Answer(abi.EventTagSearchHits).Clear() // ⌘K's own search
+	r.s.Touch()
+	r.Frames(2)
+	r.s.Spotlight = false
+	r.s.Touch()
+	r.Frames(2)
+	var asked []string
+	for _, c := range r.sent()[before:] {
+		if c.Tag == abi.CommandTagSearchMessages {
+			asked = append(asked, string(c.SearchMessages.Query))
+		}
+	}
+	if len(asked) != 1 || asked[0] != "lunch" {
+		t.Fatalf("after ⌘K closed the list asked %q", asked)
+	}
+}

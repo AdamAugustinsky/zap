@@ -97,3 +97,20 @@ func TestChatBoosts(t *testing.T) {
 		t.Errorf("none left %v", a.Settings.Boosts)
 	}
 }
+
+// The settings saver notices a boost: its change hash covers map fields, in
+// any order, so setting one saves the account's settings.
+func TestABoostChangesTheSettingsHash(t *testing.T) {
+	var a AccountSettings
+	before := hashOf(&a)
+	a.Boosts = map[string]ChatBoost{"1@s.whatsapp.net": {Font: "serif"}}
+	if hashOf(&a) == before {
+		t.Fatal("a boost leaves the settings hash as it was, so it is never saved")
+	}
+	one := hashOf(&a)
+	a.Boosts["2@s.whatsapp.net"] = ChatBoost{Size: 1.25}
+	b := AccountSettings{Boosts: map[string]ChatBoost{"2@s.whatsapp.net": {Size: 1.25}, "1@s.whatsapp.net": {Font: "serif"}}}
+	if hashOf(&a) == one || hashOf(&a) != hashOf(&b) {
+		t.Error("the hash of two boosts depends on their order or misses the second")
+	}
+}

@@ -135,11 +135,13 @@ func (s *Screen) rule(e *screen.Env) {
 	c.Pop()
 }
 
-// folderUnread is how many of a folder's chats have unread messages.
+// folderUnread is how many of a folder's chats have unread messages; a
+// locked chat is not counted, so the badge tells nothing about it (as the
+// Dock's leaves it out).
 func folderUnread(a *state.Account, fd *state.Folder) int {
 	n := 0
 	for _, jid := range fd.Chats {
-		if ch, ok := a.Model.Chats.Get(a.Model.Chats.Find(jid)); ok && (ch.Unread() > 0 || ch.MarkedUnread()) && !ch.Archived() {
+		if ch, ok := a.Model.Chats.Get(a.Model.Chats.Find(jid)); ok && (ch.Unread() > 0 || ch.MarkedUnread()) && !ch.Archived() && !ch.Locked() {
 			n++
 		}
 	}

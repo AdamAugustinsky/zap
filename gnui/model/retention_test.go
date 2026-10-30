@@ -67,3 +67,41 @@ func TestAnArenaGrownAwayIsCollectable(t *testing.T) {
 	}
 	runtime.KeepAlive(v)
 }
+
+// The chats loaded off screen keep at most backBudget together: opening
+// another releases the least recently used of them, never the open one, so
+// a day of chats scrolled far back does not add up.
+func TestChatsOffScreenKeepABudget(t *testing.T) {
+	s := New()
+	fill := func(chat string) *Conversation {
+		ref := []byte(chat)
+		s.Chats.upsert(&abi.Chat{ID: ref})
+		s.PinConversations(s.Chats.Find(ref), 0)
+		v := s.Open(ref)
+		for i := 0; i < 40000; i++ {
+			v.upsert(&abi.Message{ID: []byte(strconv.Itoa(i)), Timestamp: int64(i), Content: abi.Content{Tag: abi.ContentTagText,
+				Text: abi.ContentText{Text: []byte("a message of an ordinary length, about this long")}}})
+		}
+		v.sort()
+		return v
+	}
+	var last *Conversation
+	for i := 0; i < 8; i++ {
+		last = fill("big" + strconv.Itoa(i) + "@demo.invalid")
+	}
+	if last.Len() != 40000 {
+		t.Fatalf("the open chat holds %d messages", last.Len())
+	}
+	var off uintptr
+	for i := range s.convs {
+		if c := &s.convs[i]; c.inUse && c != last {
+			off += c.retainedBytes()
+		}
+	}
+	if off > backBudget {
+		t.Errorf("the chats off screen keep %d MiB, over the %d MiB budget", off>>20, backBudget>>20)
+	}
+	if s.Conversation([]byte("big0@demo.invalid")) != nil {
+		t.Error("the least recently used big chat is still loaded")
+	}
+}

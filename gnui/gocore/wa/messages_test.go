@@ -753,3 +753,41 @@ func TestMetaAIRepliesReadAsText(t *testing.T) {
 		}
 	}
 }
+
+// whatsmeow deletes a history chunk from the server as soon as the handler
+// returns: the handler returns a chunk only once the engine has filed it,
+// while a live message is queued and returns at once.
+func TestAHistoryChunkIsFiledBeforeTheHandlerReturns(t *testing.T) {
+	h := newHarness(t, options{})
+	h.start()
+	hold, held := make(chan struct{}), make(chan struct{})
+	h.e.post(func() { close(held); <-hold }) // the engine is busy
+	<-held
+	returned := make(chan struct{})
+	go func() {
+		h.inject(&events.HistorySync{Data: &waHistorySync.HistorySync{
+			SyncType:      waHistorySync.HistorySync_INITIAL_BOOTSTRAP.Enum(),
+			Conversations: []*waHistorySync.Conversation{conversation(peer, "Grace", webMessage("H1", t0.Unix(), false, text("old")))},
+		}})
+		close(returned)
+	}()
+	live := make(chan struct{})
+	go func() { h.inject(message(peer, peer, "LIVE", t0.Add(time.Hour), text("live"))); close(live) }()
+	select {
+	case <-live:
+	case <-time.After(2 * time.Second):
+		t.Fatal("a live message waited for the busy engine")
+	}
+	select {
+	case <-returned:
+		t.Fatal("the history chunk's handler returned before the engine filed it")
+	case <-time.After(150 * time.Millisecond):
+	}
+	close(hold)
+	select {
+	case <-returned:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the handler never returned once the engine was free")
+	}
+	h.settle()
+}
