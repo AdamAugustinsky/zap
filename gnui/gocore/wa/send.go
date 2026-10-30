@@ -186,9 +186,23 @@ func (e *Engine) ownRow(chat string, j types.JID, id string, p *waE2E.Message) s
 	return m
 }
 
-// store keeps a row of ours and announces it; false when it could not.
+// store keeps a row of ours, with its chat's activity in the same
+// transaction, and announces it; false when it could not.
 func (e *Engine) store(m store.Message) bool {
-	if err := e.arch.SaveMessages([]store.Message{m}); err != nil {
+	if err := e.arch.SaveWithChat(m.ChatID, []store.Message{m}, func(c *store.Chat, _ []store.Message) {
+		if c.Kind == "" {
+			c.Kind = archiveKind(m.ChatID)
+		}
+		if m.Timestamp >= c.LastActivity {
+			c.LastActivity, c.Preview = m.Timestamp, summary(m)
+		}
+		if !e.keepArchived {
+			c.Archived = false
+		}
+	}); err != nil {
+		// A COMMIT that reported an fsync error may have held: the UI
+		// gets the chat as the archive has it (updateChat does the same).
+		e.emitChat(m.ChatID)
 		e.emitError("The message could not be saved: " + err.Error())
 		return false
 	}
@@ -202,19 +216,6 @@ func (e *Engine) store(m store.Message) bool {
 		if err := e.arch.SetAudience(m.ChatID, m.ID, audience); err != nil {
 			slog.Warn("zapfast wa: storing a group audience", "err", err)
 		}
-	}
-	if err := e.arch.UpdateChat(m.ChatID, func(c *store.Chat) {
-		if c.Kind == "" {
-			c.Kind = archiveKind(m.ChatID)
-		}
-		if m.Timestamp >= c.LastActivity {
-			c.LastActivity, c.Preview = m.Timestamp, summary(m)
-		}
-		if !e.keepArchived {
-			c.Archived = false
-		}
-	}); err != nil {
-		slog.Warn("zapfast wa: updating a chat", "err", err)
 	}
 	stored, err := e.arch.Message(m.ChatID, m.ID)
 	if err != nil {

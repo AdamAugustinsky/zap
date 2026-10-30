@@ -127,3 +127,30 @@ unbundled runs find them (or `$ZAPFAST_SQLCIPHER`, `$ZAPFAST_LIBWEBP`); a
 bundled app loads only its own `Contents/Frameworks` copies. Without them
 those tests skip. Without `-demo` the app opens the real account (its own
 data, `ai.a3lab.zap`); the tests use the demo core only.
+
+### The simulation
+
+`gocore/wa/sim_test.go` is a deterministic simulation of the WhatsApp
+engine, after TigerBeetle's VOPR and Turso's simulator. One seed drives a
+whole run of synthetic whatsmeow events and user commands into a real
+engine, Conn, archive and whatsmeow store over the fake client. Its clock is
+`testing/synctest`'s, so timers and hours of simulated time cost nothing.
+It injects faults: failed writes and a full disk through
+`gocore/store/sqlite`'s fault hook, crashes and quits that reopen the store
+from what was on disk (at times with a torn WAL frame), dropped, repeated,
+held and reordered events. After every step and reopen it checks that no
+acknowledged message is lost or duplicated, that each chat keeps its order,
+that unread counts and the chat list agree with the archive and the UI, and
+that the archive passes its integrity check. It also checks that a wrong
+key, a newer schema or a damaged file is refused without being changed.
+
+`go test` runs a few fixed seeds (`TestSim`, about a second) and the seeds
+that found bugs (`TestSimRegressions`). A failure prints its seed and the
+command that replays it (`-run 'TestSimSeed$' -sim.seed=N`). Zap has no CI,
+so the long exploration of random seeds runs on a developer's Mac with
+SQLCipher built: `../scripts/sim-explore.sh 8h` overnight, before a release
+and after any change to `gocore/wa` or `gocore/store`, once per fault mode
+(`default`, `queued`, `ingest`, `lostack`). It logs to `../target/sim/`.
+Until [issue #2](https://github.com/AdamAugustinsky/zap/issues/2) is
+fixed, `queued` and `ingest` stop within a few seeds on that issue's
+data loss.

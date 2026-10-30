@@ -110,19 +110,12 @@ func (s *Archive) UpsertChat(c Chat) error {
 	if c.ID == "" {
 		return errors.New("chat id is required")
 	}
-	data, err := encode(c)
-	if err != nil {
-		return err
-	}
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-	if _, err = tx.Exec("INSERT INTO chats(id,activity,payload) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET activity=excluded.activity,payload=excluded.payload", c.ID, c.LastActivity, data); err != nil {
-		return err
-	}
-	if _, err = tx.Exec("INSERT INTO chat_visibility(chat,locked) VALUES(?,?) ON CONFLICT(chat) DO UPDATE SET locked=excluded.locked", c.ID, c.Locked); err != nil {
+	if err = putChat(tx, c.ID, c); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -174,19 +167,12 @@ func (s *Archive) UpdateChat(id string, update func(*Chat)) error {
 		return err
 	}
 	update(&c)
-	b, err = encode(c)
-	if err != nil {
-		return err
-	}
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-	if _, err = tx.Exec("INSERT INTO chats(id,activity,payload) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET activity=excluded.activity,payload=excluded.payload", id, c.LastActivity, b); err != nil {
-		return err
-	}
-	if _, err = tx.Exec("INSERT INTO chat_visibility(chat,locked) VALUES(?,?) ON CONFLICT(chat) DO UPDATE SET locked=excluded.locked", id, c.Locked); err != nil {
+	if err = putChat(tx, id, c); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -220,6 +206,12 @@ func Fold(text string) string {
 		return unicode.ToLower(r)
 	}, cases.Fold().String(norm.NFKD.String(text)))
 }
+
+// liveInPlace reports whether old is a row filed live, which has no order
+// id, that m, history's copy of it, would only move among the messages of
+// its second, where the reader has seen it already (Zap; found by the
+// simulation, gocore/wa's sim_test.go).
+func liveInPlace(old, m Message) bool { return old.Order == 0 && m.Timestamp == old.Timestamp }
 
 func save(tx *sql.Tx, m Message) error {
 	if m.ID == "" || m.ChatID == "" {
@@ -260,13 +252,15 @@ func save(tx *sql.Tx, m Message) error {
 			if original.Timestamp != 0 {
 				m.Timestamp = original.Timestamp
 			}
-			if original.Order != 0 {
+			if original.Order != 0 && !liveInPlace(old, original) {
 				m.Order = original.Order
 			}
 		} else if m.Edited {
 			// The edit-envelope timestamp/order describes the edit operation,
 			// never the position of the message it modifies.
 			m.Timestamp, m.Order = old.Timestamp, old.Order
+		} else if liveInPlace(old, m) {
+			m.Order = 0
 		}
 		if m.Order == 0 {
 			m.Order = old.Order
