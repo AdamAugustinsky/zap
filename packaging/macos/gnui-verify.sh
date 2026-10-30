@@ -120,6 +120,7 @@ allowed = {
     "Resources/COPYING",  # GPL-3.0: the app's licence
     "Resources/LICENSE",  # the notice of the licence, and upstream's MIT notice
     "Resources/THIRD-PARTY-NOTICES.md",
+    "Resources/build-manifest.json",  # the build's identity (scripts/gnui/release_identity.py)
     "_CodeSignature/CodeResources",
 }
 found = set()
@@ -128,6 +129,16 @@ for directory, dirs, files in os.walk(contents):
         found.add(os.path.relpath(os.path.join(directory, name), contents))
 check(found == allowed, f"bundle files: stray {sorted(found - allowed)}, missing {sorted(allowed - found)}")
 check(sorted(os.listdir(app)) == ["Contents"], f"stray entries beside Contents: {sorted(os.listdir(app))}")
+
+# The build manifest names the bundle's libraries.
+manifest_path = os.path.join(contents, "Resources", "build-manifest.json")
+if os.path.isfile(manifest_path):
+    with open(manifest_path, encoding="utf-8") as source:
+        manifest = json.load(source)
+    check(manifest.get("schema") == "zap.build/v1", f"build-manifest.json: schema {manifest.get('schema')!r}")
+    named = sorted(lib.get("name", "") for lib in manifest.get("nativeLibs", []))
+    shipped = sorted(os.listdir(os.path.join(contents, "Frameworks")))
+    check(named == shipped, f"build-manifest.json names libraries {named}, the bundle has {shipped}")
 
 # The libraries: signed by the app's signer, hardened, loaded through their
 # rpath names.

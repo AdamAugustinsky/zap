@@ -1,0 +1,20 @@
+{
+	"schema": 1,
+	"framework": {
+		"module": "gonativeui",
+		"repository": "https://github.com/AdamAugustinsky/go-native-ui",
+		"commit": "977700e06e0a7ca7609fba7745dc806ef2e4589a",
+		"tree": "9dcd5e9f2fd5907779b93c451dabc1131e553d55"
+	},
+	"ghostty": {"status": "absent"},
+	"shaders": {"artifact": "none"},
+	"whatsmeow": {
+		"module": "go.mau.fi/whatsmeow",
+		"replace": "./third_party/whatsmeow",
+		"patchNotes": "gnui/third_party/whatsmeow/ZAP-PATCH.md"
+	},
+	"nativeLibs": [
+		{"path": "target/sqlcipher/libsqlcipher.dylib", "script": "packaging/macos/sqlcipher/build.sh"},
+		{"path": "target/libwebp/libzfwebp.dylib", "script": "packaging/macos/libwebp/build.sh"}
+	]
+}
