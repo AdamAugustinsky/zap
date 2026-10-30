@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync/atomic"
 
 	"gonativeui/app"
 	"gonativeui/app/instance"
@@ -62,6 +63,12 @@ var launched struct {
 	args    []string // a first launch's positional arguments: a link to open
 }
 
+// holding is whether this process holds the single-instance lock, from
+// Launch taking it to stopInstance letting it go: launched.primary moves to
+// the System when its services start (startInstance), and the lock is still
+// held then.
+var holding atomic.Bool
+
 // LaunchOptions are Launch's inputs.
 type LaunchOptions struct {
 	// AppID is the app's identity (the instance lock's name).
@@ -118,6 +125,7 @@ func Launch(o LaunchOptions) (code int, done bool) {
 				return 0, true
 			}
 			launched.primary = p
+			holding.Store(true)
 		}
 	}
 	launched.args = o.Args
@@ -134,7 +142,10 @@ func Launch(o LaunchOptions) (code int, done bool) {
 // HoldsInstance reports whether this process holds the single-instance lock
 // (Launch took it): what taking an account over from the Rust core needs, so
 // that no other copy runs on the same files.
-func HoldsInstance() bool { return launched.primary != nil }
+// It stays true once the services have taken the lock over (startInstance),
+// so that an account taken over on Try again, after a first try failed, is
+// not refused as if another copy ran.
+func HoldsInstance() bool { return holding.Load() }
 
 // sendToRunning hands the arguments to the running copy.
 func sendToRunning(sec *instance.Secondary, o LaunchOptions, cmd command) int {
@@ -181,6 +192,7 @@ func (y *System) stopInstance() {
 	}
 	i.p.Close()
 	i.p = nil
+	holding.Store(false)
 }
 
 // pollInstance does what second launches asked.

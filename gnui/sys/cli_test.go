@@ -128,6 +128,10 @@ func TestARealSecondProcessReachesTheRunningCopyWithoutAWindow(t *testing.T) {
 	r := newRig(t)
 	r.win = nil
 	t.Cleanup(r.y.stopInstance) // newRig began the services: they took the lock
+	if !HoldsInstance() {
+		// an account taken over on Try again needs it (cmd/zapfast/engine.go)
+		t.Fatal("once the services took the lock over, HoldsInstance says it is not held")
+	}
 
 	cmd := exec.Command(os.Args[0], "-test.run=^TestARealSecondProcessReachesTheRunningCopyWithoutAWindow$")
 	cmd.Env = append(os.Environ(), "ZAPFAST_SECOND_PROCESS="+dir)
