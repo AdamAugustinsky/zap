@@ -1,11 +1,14 @@
 package shell
 
 import (
+	"slices"
+
 	"gonativeui/icon"
 	"gonativeui/rexui"
 	"gonativeui/theme"
 	"gonativeui/ui"
 	"gonativeui/widget/base"
+	"gonativeui/widget/workspace"
 
 	"zapfast/i18n"
 	"zapfast/model"
@@ -51,8 +54,6 @@ type splitUI struct {
 	ins   int           // where it would go among the panes; -1 for nowhere
 	grip  model.ChatRef // the pane whose grip is held, 0 for none
 	to    int           // where it would go
-	drag  float32       // the share a divider's drag began at
-	dragI int           // the divider being dragged, -1 for none
 	icons [3]icon.ID    // the dock's grip, take out and Expand
 
 	// the frame's panes, left to right: their chats (0: the pane waiting
@@ -66,79 +67,66 @@ type splitUI struct {
 	max    int          // how many panes the window has room for
 	even   []float32    // shares, reused
 	moved  []float32
+
+	// the panes as they are in the workspace layout, the chat pane the
+	// first (splitID): their chats, and the dividers between them
+	built []model.ChatRef
+	divs  []uint32
 }
 
 func (sp *splitUI) init(e *screen.Env) {
 	sp.icons[0] = e.K.AddIcon(ztheme.SmallIcon("line.3.horizontal", '≡'))
 	sp.icons[1] = e.K.AddIcon(ztheme.SmallIcon("minus", '–'))
 	sp.icons[2] = e.K.AddIcon(ztheme.SmallIcon("arrow.up.left.and.arrow.down.right", '⤢'))
-	sp.ins, sp.to, sp.dragI = -1, -1, -1
+	sp.ins, sp.to = -1, -1
 	sp.slotOf = map[model.ChatRef]int{}
 }
 
-// splitSlot is the first split pane's surface cache slot
-// (theme.Surface.Slot), past the workspace's panes.
-const splitSlot = 8
-
-var splitSurfaceKey = ui.HashString(0, "zapfast/split surface")
-
-// splitSurface builds split pane i's glass at r, as surface builds a
-// workspace pane's: in use (opaque) while its chat is the open one (live)
-// and the conversation's pane is the one in use.
-func (sh *Shell) splitSurface(i int, r [4]float32, live bool) {
-	k := sh.env.K
-	c, th := k.Context(), k.Theme()
-	target := float32(0)
-	if live && sh.panes.Focus() == paneChat && !k.Inactive() {
-		target = 1
+// splitID is pane i's in the workspace layout: the chat pane for the first,
+// the others after the main window's panes.
+func splitID(i int) workspace.PaneID {
+	if i == 0 {
+		return paneChat
 	}
-	s := theme.Surface{
-		Key: ui.KeyN(splitSurfaceKey, uint64(i)), Slot: splitSlot + i, Rect: r,
-		Focus: c.AnimateValue(ui.KeyN(paneFocusKey, 100+uint64(i)), target, 14), Opacity: 1, Top: true,
-	}
-	th.Chrome.SurfaceShadow(c, th, s)
-	kg := th.Chrome.BeginSurface(c, th, s)
-	th.Chrome.EndSurface(c, th, s, kg)
+	return numPanes + workspace.PaneID(i)
 }
 
-// splitUse puts in use the chat of the split pane a press lands in, before
-// anything builds, so that the press acts on its own chat (the workspace
-// has already made the conversation's pane the one in use).
-func (sh *Shell) splitUse(a *state.Account) {
+// splitArrange puts the split view's panes in the workspace layout, the
+// chat pane the first, and arranges it (arrange): the split's chats, as
+// many as the window has room for at minSplitPt each, or, while a tab or a
+// pane's grip is held over them, where they go then. With the split off
+// (on false) the chat pane is alone. It reports whether there is more than
+// one pane to build.
+func (sh *Shell) splitArrange(a *state.Account, on bool, gut float32, arrange func()) bool {
 	sp := &sh.split
-	in := sh.env.C().Input()
-	if !in.Pressed[ui.ButtonLeft] {
-		return
-	}
-	for i, r := range sp.rects {
-		if !shown(r) || sp.chats[i] == 0 || sp.chats[i] == a.Open {
-			continue
-		}
-		if in.MouseX >= r[0] && in.MouseX < r[2] && in.MouseY >= r[1] && in.MouseY < r[3] {
-			a.UsePane(sp.chats[i])
-			return
-		}
-	}
-}
-
-// shown reports whether rect r has room.
-func shown(r [4]float32) bool { return r[2] > r[0] && r[3] > r[1] }
-
-// splitLayout lays out the split view in the conversation's pane cp: its
-// chats, or, while a tab or a pane's grip is held over it, where they go
-// then. It reports whether there is more than one pane to build.
-func (sh *Shell) splitLayout(a *state.Account, cp [4]float32, gut float32) bool {
-	e := &sh.env
-	c := e.C()
-	r := e.K.Theme()
-	sp := &sh.split
-	if !shown(cp) {
+	if !on {
+		sp.chats = sp.chats[:0]
+		sh.splitSync(sp.chats, nil)
+		arrange()
 		return false
 	}
-	room := cp[2] - cp[0]
-	sp.max = min(int((room+gut)/(e.Pt(minSplitPt)+gut)), 1+len(sh.Set.MorePanes))
+	most := 1 + len(sh.Set.MorePanes)
+	if sp.max < 1 {
+		sp.max = most
+	}
+	sh.splitSync(sp.chats, sh.splitChats(a))
+	arrange()
+	// the room is the chat pane's: a side pane that gave the split its own
+	// keeps it first
+	room := sh.splitRoom(gut)
+	if m := min(int((room+gut)/(sh.env.Pt(minSplitPt)+gut)), most); m != sp.max {
+		sp.max = m
+		sh.splitSync(sp.chats, sh.splitChats(a))
+		arrange()
+	}
 	a.SetMaxPanes(max(sp.max, 2))
-	// the chats shown, left to right
+	return len(sp.chats) > 1
+}
+
+// splitChats sets the chats the split shows, left to right, and returns
+// their shares of the width.
+func (sh *Shell) splitChats(a *state.Account) []float32 {
+	sp := &sh.split
 	sp.chats = sp.chats[:0]
 	if a.SplitOn() {
 		sp.chats = append(sp.chats, a.Panes()...)
@@ -161,7 +149,6 @@ func (sh *Shell) splitLayout(a *state.Account, cp [4]float32, gut float32) bool 
 	if len(shares) != n {
 		shares = evenShares(sp.even[:0], n)
 	}
-	sp.base = layoutPanes(sp.base[:0], cp, gut, shares)
 	// a held tab waits between them; a held grip moves its pane along them
 	switch {
 	case sp.held != 0 && sp.ins >= 0 && n < sp.max:
@@ -169,8 +156,7 @@ func (sh *Shell) splitLayout(a *state.Account, cp [4]float32, gut float32) bool 
 		sp.chats = append(sp.chats, 0)
 		copy(sp.chats[at+1:], sp.chats[at:])
 		sp.chats[at] = 0
-		n++
-		shares = evenShares(sp.even[:0], n)
+		shares = evenShares(sp.even[:0], n+1)
 	case sp.grip != 0 && sp.to >= 0 && a.SplitOn():
 		from := -1
 		for i, ref := range sp.chats {
@@ -193,13 +179,95 @@ func (sh *Shell) splitLayout(a *state.Account, cp [4]float32, gut float32) bool 
 			shares = moved
 		}
 	}
-	if n < 2 {
-		return false
+	return shares
+}
+
+// splitSync makes the layout's panes from the chat pane on seq's (0: the
+// pane that waits for a tab, which the focus passes by), split left to
+// right, each at least minPanePt wide and its share of the width. The
+// panes are split again only when seq changes, so that the dividers keep
+// their identities while they are dragged.
+func (sh *Shell) splitSync(seq []model.ChatRef, shares []float32) {
+	sp, l := &sh.split, &sh.panes
+	if !slices.Equal(seq, sp.built) {
+		f := l.Focus()
+		for i := len(sp.built) - 1; i >= 1; i-- {
+			l.Close(splitID(i))
+		}
+		sp.divs = sp.divs[:0]
+		for i := 1; i < len(seq); i++ {
+			sp.divs = append(sp.divs, l.Split(splitID(i-1), splitID(i), workspace.Right, 0.5))
+		}
+		l.SetFocus(f) // a pane that stays keeps it
+		sp.built = append(sp.built[:0], seq...)
 	}
-	sp.goal = layoutPanes(sp.goal[:0], cp, gut, shares)
-	// each pane eases to where it goes (at once under Reduce Motion): the
-	// others slide aside for a pane that comes or moves
+	if len(seq) < 2 {
+		return
+	}
+	for i, ref := range seq {
+		l.SetLimits(splitID(i), workspace.Limits{Min: [2]float32{minPanePt}})
+		l.SetEmpty(splitID(i), ref == 0)
+	}
+	// each divider gives the pane before it its share of the panes from it
+	// on
+	rest := float32(0)
+	for _, v := range shares {
+		rest += v
+	}
+	for i := 0; i < len(sp.divs) && i < len(shares); i++ {
+		if rest > 0 {
+			l.SetShare(sp.divs[i], shares[i]/rest)
+		}
+		rest -= shares[i]
+	}
+}
+
+// splitRoom is the room the split's panes have in the layout, pixels: with
+// more than one, a side pane they squeezed out (Limits.Yield) has its room
+// back.
+func (sh *Shell) splitRoom(gut float32) float32 {
+	sp, l := &sh.split, &sh.panes
+	n := len(sp.chats)
+	first, last := l.Rect(splitID(0)), l.Rect(splitID(n-1))
+	if !shown(first) {
+		return 0
+	}
+	room := last[2] - first[0]
+	if n > 1 && sh.S.Panes.Pane != state.PaneNone && !l.Hidden(paneSide) && !l.Shown(paneSide) {
+		room -= sh.env.Pt(l.Fixed(paneSide)) + gut
+	}
+	return room
+}
+
+// splitRegion is the room the layout gave the split's panes, the
+// conversation's (all of the chat pane's when it is alone).
+func (sh *Shell) splitRegion() [4]float32 {
+	sp, l := &sh.split, &sh.panes
+	r := l.Rect(paneChat)
+	if n := len(sp.chats); n > 1 {
+		r[2] = l.Rect(splitID(n - 1))[2]
+	}
+	return r
+}
+
+// splitPlace puts the split's panes where they are drawn this frame: where
+// the layout put them, each easing there (at once under Reduce Motion) so
+// that the others slide aside for a pane that comes or moves. It keeps
+// where they rest with nothing held, for the drops.
+func (sh *Shell) splitPlace() {
+	sp, l := &sh.split, &sh.panes
+	c, r := sh.env.C(), sh.env.K.Theme()
+	sp.goal = sp.goal[:0]
+	for i := range sp.chats {
+		sp.goal = append(sp.goal, l.Rect(splitID(i)))
+	}
+	if sp.held == 0 && sp.grip == 0 {
+		sp.base = append(sp.base[:0], sp.goal...)
+	}
 	sp.rects = append(sp.rects[:0], sp.goal...)
+	if len(sp.chats) < 2 {
+		return
+	}
 	moving := false
 	for i, ref := range sp.chats {
 		g := sp.goal[i]
@@ -222,24 +290,76 @@ func (sh *Shell) splitLayout(a *state.Account, cp [4]float32, gut float32) bool 
 	if moving {
 		c.RequestFrame()
 	}
-	return true
 }
 
-// layoutPanes appends to dst the panes' rects in room cp, gut apart, each
-// its share of the width (none under minPanePt where they fit).
-func layoutPanes(dst [][4]float32, cp [4]float32, gut float32, shares []float32) [][4]float32 {
-	n := len(shares)
-	w := cp[2] - cp[0] - gut*float32(n-1)
-	x := cp[0]
-	for i, s := range shares {
-		pw := theme.Snap(w * s)
-		if i == n-1 {
-			pw = cp[2] - x
-		}
-		dst = append(dst, [4]float32{x, cp[1], x + pw, cp[3]})
-		x += pw + gut
+// splitPressed puts in use the chat of the split's pane a press focused
+// (the layout's Update), before anything builds, so that the press acts on
+// its own chat.
+func (sh *Shell) splitPressed(a *state.Account) {
+	sp := &sh.split
+	if len(sp.built) < 2 {
+		return
 	}
-	return dst
+	f := sh.panes.Focus()
+	for i, ref := range sp.built {
+		if splitID(i) == f && ref != 0 && ref != a.Open {
+			a.UsePane(ref)
+			sh.focusChat = a.Open
+		}
+	}
+}
+
+// splitFocus keeps the pane in use, while it is one of the split's, the
+// open chat's.
+func (sh *Shell) splitFocus(a *state.Account) {
+	sp, l := &sh.split, &sh.panes
+	if len(sp.built) < 2 {
+		return
+	}
+	f, in, live := l.Focus(), false, -1
+	for i, ref := range sp.built {
+		in = in || splitID(i) == f
+		if ref == a.Open {
+			live = i
+		}
+	}
+	if in && live >= 0 && splitID(live) != f {
+		l.SetFocus(splitID(live))
+	}
+}
+
+// splitMoved keeps the shares a drag of the split's dividers left (the
+// layout's Update), while the panes are the split's at rest.
+func (sh *Shell) splitMoved(a *state.Account) {
+	sp, l := &sh.split, &sh.panes
+	n := len(sp.built)
+	if n < 2 || !slices.Equal(sp.built, a.Panes()) {
+		return
+	}
+	shares := sh.S.Shares(n)
+	rest := float32(1)
+	for i, id := range sp.divs {
+		d, ok := sh.dividerOf(id)
+		if !ok {
+			return
+		}
+		shares[i] = rest * d.Share
+		rest -= shares[i]
+	}
+	shares[n-1] = rest
+	_ = l
+	sh.S.Touch()
+}
+
+// dividerOf is divider id of those the layout shows.
+func (sh *Shell) dividerOf(id uint32) (workspace.Divider, bool) {
+	l := &sh.panes
+	for i := 0; i < l.NumDividers(); i++ {
+		if d := l.Divider(i); d.ID == id {
+			return d, true
+		}
+	}
+	return workspace.Divider{}, false
 }
 
 func evenShares(dst []float32, n int) []float32 {
@@ -248,6 +368,9 @@ func evenShares(dst []float32, n int) []float32 {
 	}
 	return dst
 }
+
+// shown reports whether rect r has room.
+func shown(r [4]float32) bool { return r[2] > r[0] && r[3] > r[1] }
 
 // slot is the screens chat ref builds in: the same while it stays in the
 // split, so that its transcript and composer keep their state as the panes
@@ -280,10 +403,11 @@ func (sh *Shell) slot(ref model.ChatRef) int {
 	return 0
 }
 
-// splitPanes builds the split view's panes where splitLayout put them, each
-// with its chat's state (the ones not in use traded in while they build),
-// the waiting pane, the dividers between them and their docks.
-func (sh *Shell) splitPanes(a *state.Account, gut, tbH, bottom float32) {
+// splitPanes builds the split view's panes where splitPlace put them, each
+// with its glass (the one whose chat is open in use) and its chat's state
+// (the ones not in use traded in while they build), the waiting pane, the
+// dividers between them and their docks.
+func (sh *Shell) splitPanes(a *state.Account) {
 	sp := &sh.split
 	// each pane names its chat: the tabs choose the group only
 	tabbed := sh.env.Tabbed()
@@ -294,7 +418,7 @@ func (sh *Shell) splitPanes(a *state.Account, gut, tbH, bottom float32) {
 		if !shown(r) {
 			continue
 		}
-		sh.splitSurface(i, r, ref != 0 && ref == a.Open)
+		sh.surface(splitID(i), r)
 		if ref == 0 {
 			sh.waiting(a, r)
 			continue
@@ -312,8 +436,10 @@ func (sh *Shell) splitPanes(a *state.Account, gut, tbH, bottom float32) {
 		return // what is held decides; no divider nor dock meanwhile
 	}
 	n := len(sp.chats)
-	for i := 0; i+1 < n; i++ {
-		sh.splitHandle(i, n, (sp.rects[i][2]+sp.rects[i+1][0])/2, tbH, bottom-tbH)
+	for i, id := range sp.divs {
+		if d, ok := sh.dividerOf(id); ok {
+			sh.splitHandle(i, n, d)
+		}
 	}
 	for i := range n {
 		sh.dock(a, i)
@@ -354,59 +480,42 @@ func (sh *Shell) waiting(a *state.Account, r [4]float32) {
 	c.Pop()
 }
 
-// splitHandle is divider i of n, between panes i and i+1, at x: a drag
-// moves it (where the pointer goes, from where it began), a double click
-// evens the two panes, and under the pointer (or while dragged) it shows
-// its bar.
-func (sh *Shell) splitHandle(i, n int, x, y, h float32) {
+// splitHandle is the grab area of divider d, the layout's between panes i
+// and i+1 of n, which the layout's Update moves with a drag (where the
+// pointer goes, from where it began, within the panes' least widths): a
+// double click evens the two panes, and under the pointer (or while
+// dragged) it shows its bar.
+func (sh *Shell) splitHandle(i, n int, d workspace.Divider) {
 	s, e := sh.S, &sh.env
 	c, th := e.C(), e.K.Theme()
-	sp := &sh.split
-	w := e.Pt(8)
-	theme.At(c, x-w/2, y, w, h)
+	x, w := (d.Gutter[0]+d.Gutter[2])/2, e.Pt(8)
+	theme.At(c, x-w/2, d.Gutter[1], w, d.Gutter[3]-d.Gutter[1])
 	c.NextCursor(ui.CursorResizeEW)
 	c.NextAuditExempt(ui.AuditOverflow.Mask() | ui.AuditCovered.Mask())
 	c.NextRole(ui.RoleSplitter)
 	c.NextSemName(i18n.T("Resize the split"))
-	key := ui.KeyN(ui.HashString(0, "zapfast/split-edge"), uint64(i))
-	sig := c.Signal(c.BoxKeyed(ui.Clickable|ui.Hoverable|base.Floating, key, nil))
-	l, r := sp.base[i], sp.base[i+1]
-	pair := r[2] - l[0] - (r[0] - l[2])
-	shares := s.Shares(n)
-	switch {
-	case sig.DoubleClicked:
+	id := c.BoxKeyed(ui.Clickable|ui.Hoverable|base.Floating, d.Key, nil)
+	sig := c.Signal(id)
+	if sig.DoubleClicked {
+		shares := s.Shares(n)
 		s.SetShare(n, i, (shares[i]+shares[i+1])/2)
 		s.Touch()
-	case sig.Dragging && pair > 0:
-		if sp.dragI != i {
-			sp.dragI, sp.drag = i, shares[i]
-		}
-		// DragDelta runs from the press: the share the drag began at, and
-		// as far again as the pointer has gone; it stays where it stops
-		total := shares[i] + shares[i+1]
-		v := sp.drag + sig.DragDelta[0]/pair*total
-		least := e.Pt(minPanePt) / pair * total
-		v = min(max(v, least), total-least)
-		if v != shares[i] {
-			s.SetShare(n, i, v)
-			s.Touch()
-		}
-	case !sig.Dragging && sp.dragI == i:
-		sp.dragI = -1
 	}
 	on := float32(0)
 	if sig.Hovering || sig.Dragging {
 		on = 1
 	}
-	t := c.AnimateValue(ui.KeyN(key, 1), on, th.Motion.Dim)
+	t := c.AnimateValue(ui.KeyN(d.Key, 1), on, th.Motion.Dim)
 	if t < 0.01 {
 		return
 	}
-	bw, bh := e.Pt(4), e.Pt(40)
-	theme.At(c, x-bw/2, y+(h-bh)/2, bw, bh)
+	c.Push(id)
+	c.NextCenter()
+	c.NextSize(ui.Px(e.Pt(4)), ui.Px(e.Pt(40)))
 	c.NextBG(theme.WithAlpha(th.Colors[theme.Label], 0.45*t))
-	c.NextRadius(bw / 2)
-	c.BoxKeyed(base.Floating|ui.DrawBackground, ui.KeyN(key, 2), nil)
+	c.NextRadius(e.Pt(2))
+	c.BoxKeyed(base.Floating|ui.DrawBackground, ui.KeyN(d.Key, 2), nil)
+	c.Pop()
 }
 
 // dock is pane i's dock at the top of its pane, under the pointer: the

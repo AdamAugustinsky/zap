@@ -47,11 +47,13 @@ type paneRig struct {
 	a                *state.Account
 	r                *widgettest.Rig
 	list, chat, side *slot
+	chat2            *slot // the split view's second pane's conversation
 }
 
 func newPaneRig(t *testing.T, w int) *paneRig {
 	t.Helper()
-	p := &paneRig{t: t, s: state.New(), list: &slot{name: "List slot"}, chat: &slot{name: "Chat slot"}, side: &slot{name: "Side slot", width: 380}}
+	p := &paneRig{t: t, s: state.New(), list: &slot{name: "List slot"}, chat: &slot{name: "Chat slot"}, side: &slot{name: "Side slot", width: 380},
+		chat2: &slot{name: "Chat slot 2"}}
 	f := fake.New(nil)
 	link := &abi.Event{Tag: abi.EventTagLink}
 	link.Link.Status.Tag = abi.LinkStatusTagConnected
@@ -59,7 +61,8 @@ func newPaneRig(t *testing.T, w int) *paneRig {
 		{ID: []byte("1@s.whatsapp.net"), Name: []byte("Ada Lovelace"), LastActivity: 5},
 		{ID: []byte("2@s.whatsapp.net"), Name: []byte("Grace Hopper"), LastActivity: 7, Pinned: true, PinnedAt: 9},
 	}}})
-	sh, err := New(p.s, &screen.Set{ChatList: p.list, Conversation: p.chat, Info: p.side, Search: p.side})
+	sh, err := New(p.s, &screen.Set{ChatList: p.list, Conversation: p.chat, Info: p.side, Search: p.side,
+		MorePanes: []screen.PaneScreens{{Conversation: p.chat2}}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +77,7 @@ func newPaneRig(t *testing.T, w int) *paneRig {
 func (p *paneRig) frames() {
 	p.s.Touch()
 	p.r.Frames(2)
-	for _, s := range []*slot{p.list, p.chat, p.side} {
+	for _, s := range []*slot{p.list, p.chat, p.side, p.chat2} {
 		s.built = false
 	}
 	p.s.Touch()
@@ -250,6 +253,37 @@ func TestClosingTheChatFocusesTheList(t *testing.T) {
 	p.open("1@s.whatsapp.net")
 	if p.sh.panes.Focus() != paneChat {
 		t.Errorf("the chat opened again, and the pane in use is %v, want the chat", p.sh.panes.Focus())
+	}
+}
+
+// The split view's chats are panes of the layout beside the chat pane:
+// the pane in use is the open chat's, a press in the other puts its chat
+// in use, and the split closing leaves the window's three panes.
+func TestTheSplitsChatsArePanesOfTheLayout(t *testing.T) {
+	p := newPaneRig(t, 1440)
+	l := &p.sh.panes
+	p.open("1@s.whatsapp.net")
+	ada, grace := p.a.Model.Chats.Find([]byte("1@s.whatsapp.net")), p.a.Model.Chats.Find([]byte("2@s.whatsapp.net"))
+	p.a.OpenSplit(grace)
+	p.frames()
+	if l.Len() != 4 || !l.Shown(splitID(1)) || !p.chat.built || !p.chat2.built {
+		t.Fatalf("split: %d panes, the second shown %v, built %v and %v", l.Len(), l.Shown(splitID(1)), p.chat.built, p.chat2.built)
+	}
+	if p.a.Open != grace || l.Focus() != splitID(1) {
+		t.Errorf("split: open %v (want Grace %v), the pane in use %v, want the second", p.a.Open, grace, l.Focus())
+	}
+	if right := p.chat2.rect.X + p.chat2.rect.W; p.chat.rect.X >= p.chat2.rect.X || right != theme.Snap(1440-p.sh.env.K.Theme().Px.Inset) {
+		t.Errorf("split: the panes at %v and %v, the second to %v", p.chat.rect, p.chat2.rect, right)
+	}
+	p.r.Click(ui.RoleButton, "Chat slot")
+	p.frames()
+	if p.a.Open != ada || l.Focus() != paneChat {
+		t.Errorf("a press in the first pane: open %v (want Ada %v), the pane in use %v", p.a.Open, ada, l.Focus())
+	}
+	p.a.CloseSplit()
+	p.frames()
+	if l.Len() != 3 || p.chat2.built || l.Focus() != paneChat {
+		t.Errorf("the split closed: %d panes, the second built %v, the pane in use %v", l.Len(), p.chat2.built, l.Focus())
 	}
 }
 

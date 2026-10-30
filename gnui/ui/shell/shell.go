@@ -502,15 +502,20 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 		sh.panes, sh.listDiv = newPanes()
 	}
 	l := &sh.panes
-	// A drag of the list's divider moves the list's width, which the
-	// settings keep.
+	// A drag of the list's divider moves the list's width, and a drag of the
+	// split's its panes' shares, which the settings and the state keep.
 	// A press anywhere in a pane makes it the one in use (Rex focuses a pane
-	// on a click), its content's boxes included.
-	if l.Update(c, workspace.Keys{PressAnywhere: true}).Moved {
+	// on a click), its content's boxes included; in the split, its chat.
+	ev := l.Update(c, workspace.Keys{PressAnywhere: true})
+	if ev.Moved {
 		if w := l.Fixed(paneList); w > 0 && w != s.Settings.SidebarWidth {
 			s.Settings.SidebarWidth = w
 			s.Touch()
 		}
+		sh.splitMoved(a)
+	}
+	if ev.Focus {
+		sh.splitPressed(a)
 	}
 	was := l.Focus()
 	ref := model.ChatRef(0)
@@ -535,26 +540,26 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 	// edges, Gutter between them, under the titlebar band.
 	prof := r.Surface(theme.SurfacePane, k.Inactive())
 	in, gut := prof.Inset, prof.Gutter
-	l.Arrange([4]float32{theme.Snap(max(railW, in)), tbH, theme.Snap(W - in), H - in},
-		workspace.Metrics{Scale: k.Scale(), Gutter: [2]float32{gut, gut}, Min: [2]float32{e.Pt(120), e.Pt(120)}})
-	sh.keepFocus(was)
-
-	// The split view lays its chats out in the conversation's pane (split.go),
-	// and a tab dropped on the pane joins them.
-	sh.chatPane = [4]float32{}
-	if l.Shown(paneChat) {
-		sh.chatPane = l.Rect(paneChat)
+	arrange := func() {
+		l.Arrange([4]float32{theme.Snap(max(railW, in)), tbH, theme.Snap(W - in), H - in},
+			workspace.Metrics{Scale: k.Scale(), Gutter: [2]float32{gut, gut}, Min: [2]float32{e.Pt(120), e.Pt(120)}})
 	}
+	// The split view's chats are panes of the layout from the chat pane on,
+	// in the conversation's room (split.go), and a tab dropped on it joins
+	// them.
 	if ref := s.Req.UsePane; ref != 0 {
 		s.Req.UsePane = 0
 		a.UsePane(ref)
 	}
 	sh.followGrip(a)
-	split := false
-	if open && !narrow && !covering && l.Shown(paneChat) {
-		split = sh.splitLayout(a, sh.chatPane, gut)
-		if split {
-			sh.splitUse(a)
+	split := sh.splitArrange(a, open && !narrow && !covering, gut, arrange)
+	sh.keepFocus(was)
+	sh.splitFocus(a)
+	sh.chatPane = [4]float32{}
+	if l.Shown(paneChat) {
+		sh.chatPane = sh.splitRegion()
+		if open && !narrow && !covering {
+			sh.splitPlace()
 		}
 	}
 	// whether the tabs are up, for the chat's header, which builds before
@@ -624,8 +629,7 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 	}
 	switch {
 	case split:
-		cp := sh.chatPane
-		sh.splitPanes(a, gut, cp[1], cp[3])
+		sh.splitPanes(a)
 	case l.Shown(paneChat):
 		sh.chat(a, rect(paneChat), open)
 	}

@@ -36,6 +36,7 @@ const (
 	paneList workspace.PaneID = 1 + iota // the chat list, or the Calls page's
 	paneChat                             // the conversation, or what the page shows
 	paneSide                             // the side pane (info, search, starred…)
+	numPanes                             // the split view's other panes follow (splitID)
 )
 
 var paneFocusKey = ui.HashString(0, "zapfast/pane focus")
