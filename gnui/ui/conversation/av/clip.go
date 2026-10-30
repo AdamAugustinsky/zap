@@ -18,6 +18,7 @@ import (
 	"zapfast/model"
 	"zapfast/state"
 	ztheme "zapfast/theme"
+	"zapfast/ui/conversation/mkey"
 	"zapfast/ui/screen"
 )
 
@@ -710,7 +711,7 @@ func (b *blk) chatRef() model.ChatRef {
 	if ref := b.a.Model.Chats.Find(b.decoded().Chat); ref != 0 {
 		return ref
 	}
-	return b.a.Open
+	return mkey.OpenOf(b.a)
 }
 
 // openFile hands a file to the system (Action::OpenFile), through the

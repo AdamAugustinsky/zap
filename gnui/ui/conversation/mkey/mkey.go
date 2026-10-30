@@ -36,7 +36,19 @@ func Of(a *state.Account, id []byte) K {
 	if a == nil {
 		return K{ID: Hash(id)}
 	}
-	return K{Acct: a.Serial, Chat: a.Open, ID: Hash(id)}
+	return K{Acct: a.Serial, Chat: OpenOf(a), ID: Hash(id)}
+}
+
+// OpenOf is the chat a's messages are being built for: the open one, or
+// the one EnterIn named (a light pane's: peek, the floating chat).
+func OpenOf(a *state.Account) model.ChatRef {
+	if a != nil && a == here && hereChat != 0 {
+		return hereChat
+	}
+	if a == nil {
+		return 0
+	}
+	return a.Open
 }
 
 // In is the key of the message with id in the chat chat of account a.
@@ -55,11 +67,19 @@ func (k K) Slot(n int) int {
 
 // here is the account the transcript is being built for (Enter), for the
 // callers that are given a message and nothing else (kinds.Has).
-var here *state.Account
+var (
+	here     *state.Account
+	hereChat model.ChatRef // the chat built for when not the open one (EnterIn)
+)
 
 // Enter says which account the frame's transcript is built for. The
 // screen calls it before it builds, sizes or asks anything of a message.
-func Enter(a *state.Account) { here = a }
+func Enter(a *state.Account) { here, hereChat = a, 0 }
+
+// EnterIn is Enter for messages of chat, which need not be a's open one: a
+// light pane's (peek, the floating chat) build their media as their own.
+// Enter again (or Enter(nil)) when done.
+func EnterIn(a *state.Account, chat model.ChatRef) { here, hereChat = a, chat }
 
 // Here is the key of the message with id in the transcript being built.
 func Here(id []byte) K { return Of(here, id) }

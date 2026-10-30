@@ -61,4 +61,6 @@ var Shortcuts = [...]Shortcut{
 	{"⌃⌥V", "Split with the next tab", "shell (ui/shell/split.go)"},
 	{"⌃⌥U", "Close the split", "shell (ui/shell/split.go)"},
 	{"⌃⌥P", "Float the chat over other apps", "shell (ui/chatview.Pip)"},
+	{"⌥⌘← / ⌥⌘→", "Previous pane / next pane", "shell (ui/shell/split.go)"},
+	{"⌥⌘⇧← / ⌥⌘⇧→", "Move the pane left / right", "shell (ui/shell/split.go)"},
 }

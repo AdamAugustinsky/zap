@@ -16,6 +16,7 @@ import (
 	"zapfast/model"
 	"zapfast/state"
 	"zapfast/ui/conversation/av/thumbnail"
+	"zapfast/ui/conversation/mkey"
 	"zapfast/ui/screen"
 )
 
@@ -172,7 +173,7 @@ const staleEnd = 2 * time.Second
 
 // is reports whether the loaded clip is message id of the open chat of a.
 func (p *playback) is(a *state.Account, id []byte) bool {
-	return p.acct != nil && p.acct == a && a.Open == p.chat && bytes.Equal(p.msg, id)
+	return p.acct != nil && p.acct == a && mkey.OpenOf(a) == p.chat && bytes.Equal(p.msg, id)
 }
 
 // status is message id's state, position and length (Player::status).
@@ -274,7 +275,7 @@ func seekBy(id []byte, a *state.Account, d time.Duration) {
 func load(s *state.State, a *state.Account, id, path []byte, voice bool, start float32) {
 	stop()
 	stopVideo()
-	pb.acct, pb.chat, pb.voice, pb.ph, pb.start = a, a.Open, voice, loading, start
+	pb.acct, pb.chat, pb.voice, pb.ph, pb.start = a, mkey.OpenOf(a), voice, loading, start
 	pb.msg = append(pb.msg[:0], id...)
 	pb.path = append(pb.path[:0], path...)
 	pb.gen++

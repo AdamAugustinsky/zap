@@ -379,7 +379,7 @@ func (s *Screen) Build(e *screen.Env, r screen.Rect) {
 		under = sy > 0.5
 	}
 	c.Pop()
-	rexui.SoftScrollEdge(e.K.Kit, ui.HashString(c.ParentKey(), "soft edge"), r.W, top, e.Pt(ztheme.T.SoftFade), e.K.Kit.Theme().Colors[theme.Pane], under && ztheme.T.SoftBlur > 0, 0)
+	rexui.SoftScrollEdge(e.K.Kit, ui.HashString(c.ParentKey(), "soft edge"), r.W, top, e.Pt(ztheme.T.SoftFade), e.K.Kit.Theme().Colors[theme.Pane], under && ztheme.T.SoftBlur > 0, e.K.Kit.Theme().Px.RadiusLarge)
 	y := inset
 	if pins {
 		s.pinBar(e, a, ch, r.W, y)

@@ -4852,3 +4852,123 @@ msgstr ""
 #: gnui
 msgid "Take out of the split"
 msgstr ""
+
+#: gnui
+msgid "Previous pane"
+msgstr ""
+
+#: gnui
+msgid "Next pane"
+msgstr ""
+
+#: gnui
+msgid "Move the pane left"
+msgstr ""
+
+#: gnui
+msgid "Move the pane right"
+msgstr ""
+
+#: gnui
+msgid "Previous pane / next pane"
+msgstr ""
+
+#: gnui
+msgid "Move the pane left / right"
+msgstr ""
+
+#: gnui
+msgid "Space colour"
+msgstr ""
+
+#: gnui
+msgid "No colour"
+msgstr ""
+
+#: gnui
+msgid "Gray"
+msgstr ""
+
+#: gnui
+msgid "Colour"
+msgstr ""
+
+#: gnui
+msgid "Blue"
+msgstr ""
+
+#: gnui
+msgid "Purple"
+msgstr ""
+
+#: gnui
+msgid "Pink"
+msgstr ""
+
+#: gnui
+msgid "Red"
+msgstr ""
+
+#: gnui
+msgid "Orange"
+msgstr ""
+
+#: gnui
+msgid "Yellow"
+msgstr ""
+
+#: gnui
+msgid "Green"
+msgstr ""
+
+#: gnui
+msgid "Teal"
+msgstr ""
+
+#: gnui
+msgid "Neighbours"
+msgstr ""
+
+#: gnui
+msgid "Opposite"
+msgstr ""
+
+#: gnui
+msgid "Triad"
+msgstr ""
+
+#: gnui
+msgid "One colour"
+msgstr ""
+
+#: gnui
+msgid "Strength"
+msgstr ""
+
+#: gnui
+msgid "Opacity"
+msgstr ""
+
+#: gnui
+msgid "Colours"
+msgstr ""
+
+#: gnui
+msgid "Add a colour"
+msgstr ""
+
+#: gnui
+msgid "Remove a colour"
+msgstr ""
+
+#: gnui
+msgid "Harmony: {name}"
+msgstr ""
+
+#: gnui
+msgid "Beside the opposite"
+msgstr ""
+
+#: gnui
+msgid "Free"
+msgstr ""

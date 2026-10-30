@@ -1,6 +1,8 @@
 package shell
 
 import (
+	"math"
+
 	"gonativeui/icon"
 	"gonativeui/rexui"
 	"gonativeui/theme"
@@ -34,6 +36,11 @@ type spaceUI struct {
 	swipe   float32 // the swipe going on's travel across, pixels
 	swiping bool
 	icons   map[string]icon.ID // folders' symbols, made as they are met
+	// the colour popover's space and where it opens from (tintPopover)
+	tinting  state.Space
+	tintAt   [4]float32
+	tintOpen bool
+	grab     int // the theme creator's dot being dragged, plus one; 0 none
 }
 
 // goToSpace puts sp on screen, the list coming in from its side.
@@ -156,9 +163,14 @@ func (sh *Shell) spaceStrip(r screen.Rect) {
 		p.Name = name
 		lit := i == at
 		fill := uint32(0)
+		tint := ztheme.SpacePrimary(a.ThemeOf(sp))
 		switch {
+		case lit && tint != 0:
+			fill = theme.WithAlpha(tint, 0.45) // the space's colour
 		case lit:
 			fill = rexui.ChatRowLook.Selected.RGBA(th)
+		case tint != 0:
+			fill = theme.WithAlpha(tint, 0.18+0.12*p.Hot)
 		case p.Hot > 0:
 			fill = theme.WithAlpha(th.Colors[theme.Label], ztheme.T.RowHover*p.Hot)
 		}
@@ -192,8 +204,388 @@ func (sh *Shell) spaceStrip(r screen.Rect) {
 		if sig.Clicked && !lit {
 			sh.goToSpace(sp)
 		}
+		if sig.RightClicked {
+			// its colour: a row of swatches over the strip
+			sh.sp.tinting, sh.sp.tintAt = sp, c.RectOf(c.KeyOf(sig.ID))
+			sh.sp.tintOpen = true
+		}
 	}
 	c.Pop()
+	sh.tintPopover()
+}
+
+// tintPopover is the right-clicked space's theme creator, Zen's made small:
+// a field where the space's colours are dots (round its centre the hue, out
+// from it the saturation) to drag, add (up to three) and take away, a
+// harmony that holds them together or leaves each free, the named colours
+// to start from, and how opaque the theme lies over the window. It stays
+// open while the person tries things; the window shows each at once.
+func (sh *Shell) tintPopover() {
+	sp := &sh.sp
+	if !sp.tintOpen {
+		sp.grab = 0
+		return
+	}
+	s, e := sh.S, &sh.env
+	k := e.K
+	c, th := k.Context(), k.Theme()
+	if sp.tinting.Acct < 0 || sp.tinting.Acct >= len(s.Accounts) {
+		sp.tintOpen = false
+		return
+	}
+	a := s.Accounts[sp.tinting.Acct]
+	cur := a.ThemeOf(sp.tinting)
+	set := func(t state.SpaceTheme) {
+		a.SetTheme(sp.tinting, t)
+		s.Touch()
+	}
+	sw := e.Pt(20)
+	pad, gap := e.Pt(ztheme.Space2), e.Pt(ztheme.Space1)
+	fw := 10*sw + 9*gap // the swatches' row
+	c.NextOverlay(ui.OverlayOpts{})
+	c.NextSize(ui.Children(1), ui.Children(1))
+	c.NextRole(ui.RoleMenu)
+	c.NextSemName(i18n.T("Space colour"))
+	ov := c.BeginOverlay(ui.HashString(0, "zapfast/space tint"), ui.OverlayPopup, sp.tintAt, ui.PlaceAbove)
+	if ov.Dismissed && sp.grab == 0 {
+		sp.tintOpen = false
+	}
+	// the panel (the overlay's own box draws nothing)
+	c.NextAxis(ui.AxisY)
+	c.NextSize(ui.Children(1), ui.Children(1))
+	c.NextGap(e.Pt(ztheme.Space2))
+	c.NextPadding(pad, pad, pad, pad)
+	c.NextBG(th.Colors[theme.Raised] | 0xFF)
+	c.NextBorder(th.Colors[theme.Separator], th.Lines.Hairline)
+	c.NextRadius(e.Pt(ztheme.Pane()))
+	c.NextShadow(ui.Shadow{OffY: e.Pt(4), Sigma: e.Pt(12), Color: 0x00000040})
+	c.Push(c.Box(ui.DrawBackground|ui.DrawBorder, "panel"))
+
+	if t, ok := sh.tintField(cur, fw, fw*0.9); ok {
+		set(t)
+	}
+
+	// the named colours to start from, and none
+	c.NextAxis(ui.AxisX)
+	c.NextCross(ui.CrossCenter)
+	c.NextGap(gap)
+	c.NextSize(ui.Children(1), ui.Children(1))
+	c.Push(c.Box(0, "tints"))
+	swatch := func(name string, label string) {
+		ps := k.PressState(c.Fmt().Str("tint ").Str(name).String(), base.HoverOn)
+		ps.Name = label
+		col := ztheme.TintColor(name)
+		if col == 0 {
+			col = th.Colors[theme.Field] | 0xFF
+		}
+		on := name == cur.Tint && !cur.Custom()
+		c.NextBG(col)
+		c.NextRadius(sw / 2)
+		if on {
+			c.NextBorder(th.Colors[theme.Label], th.Lines.Hairline*2)
+		} else if ps.Hot > 0 {
+			c.NextBorder(theme.WithAlpha(th.Colors[theme.Label], 0.5), th.Lines.Hairline)
+		}
+		var st ui.SemState
+		if on {
+			st = ui.SemSelected
+		}
+		c.NextSemState(st)
+		k.BeginPress(&ps, ui.RoleButton, ui.Px(sw), ui.Px(sw), ui.DrawBackground|ui.DrawBorder, nil)
+		if k.EndPress(&ps).Clicked {
+			if name == "" {
+				set(state.SpaceTheme{Level: cur.Level})
+				sp.tintOpen = false // nothing more to choose
+				return
+			}
+			a.SetTint(sp.tinting, name)
+			s.Touch()
+		}
+	}
+	swatch("", i18n.T("No colour"))
+	for _, name := range state.SpaceTints {
+		swatch(name, tintLabel(name))
+	}
+	c.Pop()
+
+	if !cur.None() {
+		// how opaque it lies over the window
+		c.NextAxis(ui.AxisX)
+		c.NextSize(ui.Px(fw), ui.Children(1))
+		c.Push(c.Box(0, "opacity head"))
+		k.NextWidth(ui.Grow(1))
+		rexui.Label(k.Kit, i18n.T("Opacity"), rexui.LabelOpts{Style: rexui.TextCaption, Color: rexui.Of(theme.Label2)})
+		rexui.Label(k.Kit, c.Fmt().Int(int(cur.Strength()*100+0.5)).Str("%").String(), rexui.LabelOpts{Style: rexui.TextCaption, Color: rexui.Of(theme.Label2)})
+		c.Pop()
+		level := cur.Strength()
+		k.NextWidth(ui.Px(fw))
+		rexui.Slider(k.Kit, i18n.T("Opacity")+"###tint opacity", &level, 0.1, 1, 0.05, rexui.SliderOpts{Size: theme.SizeSmall})
+		if level != cur.Strength() {
+			t := cur
+			t.Level = level
+			set(t)
+		}
+	}
+	c.Pop()
+	c.EndOverlay()
+}
+
+// tintField is the theme creator's field, w×h pixels: a preview of the
+// theme, a ring of hues round its edge, the theme's colours as dots, and
+// the buttons that add a dot, take one away and change the harmony. It
+// returns the theme changed, and whether it changed.
+func (sh *Shell) tintField(cur state.SpaceTheme, w, h float32) (state.SpaceTheme, bool) {
+	sp, e := &sh.sp, &sh.env
+	k := e.K
+	c, th := k.Context(), k.Theme()
+	var cols [3]uint32
+	n := ztheme.SpaceColors(cur, &cols)
+	c.NextSize(ui.Px(w), ui.Px(h))
+	c.NextBG(th.Colors[theme.Field] | 0xFF)
+	c.NextRadius(e.Pt(ztheme.Space3))
+	c.NextBorder(th.Colors[theme.Separator], th.Lines.Hairline)
+	c.NextRole(ui.RoleGroup)
+	c.NextSemName(i18n.T("Colours"))
+	id := c.Box(ui.Clickable|ui.DrawBackground|ui.DrawBorder|ui.Clip, "tint field")
+	sig := c.Signal(id)
+	c.Push(id)
+	// the theme as it will lie, stronger, under everything in the field
+	pv := tintCorners(cols, n, 0.55)
+	c.NextAnchor(ui.AnchorTopLeft, 0, 0)
+	c.NextSize(ui.Pct(1), ui.Pct(1))
+	c.NextBG4(pv[0], pv[1], pv[2], pv[3])
+	c.Box(ui.DrawBackground, "preview")
+
+	// the wheel above the buttons' row
+	tools := e.Pt(ztheme.T.HitTool) + e.Pt(ztheme.Space1)
+	cx, cy := w/2, (h-tools)/2
+	R := min(w/2, (h-tools)/2) - e.Pt(ztheme.Space3)
+	at := func(angle, out float64) (float32, float32) {
+		sn, cs := math.Sincos(angle * math.Pi / 180)
+		return cx + float32(sn*out)*R, cy - float32(cs*out)*R
+	}
+	// the hues round the edge: where each colour lies
+	tick := e.Pt(4)
+	for i := 0; i < 24; i++ {
+		ang := float64(i) * 15
+		x, y := at(ang, 1.08)
+		c.NextAnchor(ui.AnchorTopLeft, x-tick/2, y-tick/2)
+		c.NextSize(ui.Px(tick), ui.Px(tick))
+		c.NextBG(theme.WithAlpha(ztheme.FieldColor(ang, 1), 0.8))
+		c.NextRadius(tick / 2)
+		c.Box(ui.DrawBackground, c.Fmt().Str("hue ").Int(i).String())
+	}
+	// the dots, the space's own the largest; the others above it
+	var px, py [3]float32
+	for i := 0; i < n; i++ {
+		ang, out := ztheme.FieldPlace(cols[i])
+		px[i], py[i] = at(ang, out)
+	}
+	for i := n - 1; i >= 0; i-- {
+		d, ring := e.Pt(14), th.Lines.Hairline*2
+		if i == 0 {
+			d, ring = e.Pt(22), th.Lines.Hairline*3
+		}
+		if sp.grab == i+1 {
+			d *= 1.12
+		}
+		c.NextAnchor(ui.AnchorTopLeft, px[i]-d/2, py[i]-d/2)
+		c.NextSize(ui.Px(d), ui.Px(d))
+		c.NextBG(cols[i])
+		c.NextRadius(d / 2)
+		c.NextBorder(0xFFFFFFFF, ring)
+		c.NextShadow(ui.Shadow{OffY: e.Pt(1), Sigma: e.Pt(3), Color: 0x00000040})
+		c.Box(ui.DrawBackground|ui.DrawBorder, c.Fmt().Str("dot ").Int(i).String())
+	}
+
+	t, changed := cur, false
+	// a press takes the dot under it, or the space's own to put it there
+	r := c.RectOf(c.KeyOf(id))
+	in := c.Input()
+	mx, my := in.MouseX-r[0], in.MouseY-r[1]
+	if sig.Pressed {
+		sp.grab = 1
+		best := e.Pt(16)
+		for i := 0; i < n; i++ {
+			if d := float32(math.Hypot(float64(mx-px[i]), float64(my-py[i]))); d < best {
+				best, sp.grab = d, i+1
+			}
+		}
+	}
+	if (sig.Pressed || sig.Dragging) && sp.grab > 0 {
+		dx, dy := float64(mx-cx), float64(my-cy)
+		ang := math.Atan2(dx, -dy) * 180 / math.Pi
+		out := math.Hypot(dx, dy) / float64(R)
+		t, changed = moveDot(cur, cols, n, sp.grab-1, ang, out), true
+	}
+	if !sig.Dragging && !sig.Pressed {
+		sp.grab = 0
+	}
+
+	// add, take away, harmony
+	c.NextAnchor(ui.AnchorBottom, 0, e.Pt(ztheme.Space1))
+	c.NextAxis(ui.AxisX)
+	c.NextGap(e.Pt(ztheme.Space4))
+	c.NextSize(ui.Children(1), ui.Children(1))
+	c.Push(c.Box(0, "tint tools"))
+	hit := ui.Px(e.Pt(ztheme.T.HitTool))
+	tool := func(sym string, label string, off bool) bool {
+		k.NextSize(hit, hit)
+		if off {
+			c.NextOpacity(0.35)
+		}
+		return rexui.IconButton(k.Kit, sh.folderIcon(sym), label, rexui.IconButtonOpts{Variant: rexui.IconBorderless}).Clicked && !off
+	}
+	if tool("plus", i18n.T("Add a colour"), n >= 3) {
+		t, changed = addDot(cur, cols, n), true
+	}
+	if tool("minus", i18n.T("Remove a colour"), n <= 1) {
+		t, changed = dropDot(cur, cols, n), true
+	}
+	harm := i18n.Format(i18n.T("Harmony: {name}"), "{name}", mixLabel(cur.Mix, n))
+	if tool("point.3.connected.trianglepath.dotted", harm, n <= 1) {
+		t, changed = nextMix(cur, cols, n), true
+	}
+	c.Pop()
+	c.Pop()
+	return t, changed
+}
+
+// custom is theme t with its n colours cols as its own (Dots), so that they
+// can move.
+func custom(t state.SpaceTheme, cols [3]uint32, n int) state.SpaceTheme {
+	t.Tint, t.Dots = "", [3]uint32{}
+	copy(t.Dots[:n], cols[:n])
+	return t
+}
+
+// moveDot is theme t with its dot i moved to angle and distance out: alone
+// with no harmony, or carrying the others with it as its harmony holds them.
+func moveDot(t state.SpaceTheme, cols [3]uint32, n, i int, angle, out float64) state.SpaceTheme {
+	if n == 0 {
+		cols[0], n = ztheme.FieldColor(angle, out), 1
+		return custom(t, cols, n)
+	}
+	turns, hn := ztheme.MixTurns(t.Mix)
+	if t.Mix == "" || hn != n {
+		cols[i] = ztheme.FieldColor(angle, out)
+		return custom(t, cols, n)
+	}
+	if i > 0 {
+		angle -= turns[i-1] // where the first goes for this one to be here
+	}
+	ztheme.Harmonize(ztheme.FieldColor(angle, out), t.Mix, &cols)
+	return custom(t, cols, n)
+}
+
+// addDot is theme t with a colour more: where its harmony puts it, or,
+// free, a third of the way round from the first.
+func addDot(t state.SpaceTheme, cols [3]uint32, n int) state.SpaceTheme {
+	if n == 0 || n >= 3 {
+		return t
+	}
+	if t.Mix != "" {
+		t.Mix = defaultMix(n + 1)
+		ztheme.Harmonize(cols[0], t.Mix, &cols)
+		return custom(t, cols, n+1)
+	}
+	ang, out := ztheme.FieldPlace(cols[0])
+	turn := 180.0
+	if n == 2 {
+		turn = 90
+	}
+	cols[n] = ztheme.FieldColor(ang+turn, max(out, 0.5))
+	return custom(t, cols, n+1)
+}
+
+// dropDot is theme t with its last colour taken away.
+func dropDot(t state.SpaceTheme, cols [3]uint32, n int) state.SpaceTheme {
+	if n <= 1 {
+		return t
+	}
+	if t.Mix != "" {
+		t.Mix = defaultMix(n - 1)
+	}
+	return custom(t, cols, n-1)
+}
+
+// nextMix is theme t with the next harmony for its n colours (free first).
+func nextMix(t state.SpaceTheme, cols [3]uint32, n int) state.SpaceTheme {
+	var ring []string
+	switch n {
+	case 2:
+		ring = []string{"", "complementary"}
+	case 3:
+		ring = []string{"", "analogous", "split", "triadic"}
+	default:
+		return t
+	}
+	at := 0
+	for i, m := range ring {
+		if m == t.Mix {
+			at = i
+		}
+	}
+	t.Mix = ring[(at+1)%len(ring)]
+	if t.Mix != "" {
+		ztheme.Harmonize(cols[0], t.Mix, &cols)
+	}
+	return custom(t, cols, n)
+}
+
+// defaultMix is the harmony n colours take when one is added or taken away
+// under a harmony.
+func defaultMix(n int) string {
+	switch n {
+	case 2:
+		return "complementary"
+	case 3:
+		return "triadic"
+	}
+	return ""
+}
+
+// mixLabel is how harmony mix of n colours reads.
+func mixLabel(mix string, n int) string {
+	switch mix {
+	case "analogous":
+		return i18n.T("Neighbours")
+	case "complementary":
+		return i18n.T("Opposite")
+	case "split":
+		return i18n.T("Beside the opposite")
+	case "triadic":
+		return i18n.T("Triad")
+	}
+	if n <= 1 {
+		return i18n.T("One colour")
+	}
+	return i18n.T("Free")
+}
+
+// tintLabel is a space colour's name as the person reads it.
+func tintLabel(name string) string {
+	switch name {
+	case "blue":
+		return i18n.T("Blue")
+	case "purple":
+		return i18n.T("Purple")
+	case "pink":
+		return i18n.T("Pink")
+	case "red":
+		return i18n.T("Red")
+	case "orange":
+		return i18n.T("Orange")
+	case "yellow":
+		return i18n.T("Yellow")
+	case "green":
+		return i18n.T("Green")
+	case "teal":
+		return i18n.T("Teal")
+	case "gray":
+		return i18n.T("Gray")
+	}
+	return i18n.T("No colour")
 }
 
 // spaceName is how a space is named, and its folder's symbol ("" for an
@@ -223,4 +615,116 @@ func (sh *Shell) folderIcon(sym string) icon.ID {
 	id := sh.env.K.AddIcon(ztheme.ToolIcon(sym, '▤'))
 	sh.sp.icons[sym] = id
 	return id
+}
+
+// spaceTint lays the colour of the space on screen over the window's field,
+// as Arc's spaces and Zen's space themes tint the window: a little of it,
+// showing through the panes' glass. A theme of two or three colours (its
+// mix) runs across the field as a gradient: two from opposite corners, as
+// Zen's 150° pair; three with the space's own along the foot and the others
+// glowing from the top corners. The accent takes the space's colour too
+// (TintAccent). A change of space crossfades from the colours that showed.
+func (sh *Shell) spaceTint(W, H float32) {
+	s, e := sh.S, &sh.env
+	c, r := e.C(), e.K.Theme()
+	ti := &sh.tint
+	th, dark := s.SpaceTheme(), r.Dark()
+	if th != ti.of || dark != ti.dark || !ti.made {
+		// the colours, worked out when the theme or the appearance changes
+		// rather than each frame
+		ti.of, ti.dark, ti.made = th, dark, true
+		var cols [3]uint32
+		n := ztheme.SpaceColors(th, &cols)
+		alpha := float32(ztheme.TintAlphaLight)
+		if dark {
+			alpha = ztheme.TintAlpha
+		}
+		// the default opacity is the plain tint; full is nearly three times it
+		alpha *= float32(math.Pow(float64(th.Strength()/state.DefaultTintLevel), 1.5))
+		ti.goal = tintCorners(cols, n, alpha)
+		ti.goalAcc = [2]uint32{}
+		if n > 0 {
+			ti.goalAcc = [2]uint32{ztheme.TintAccent(cols[0], false), ztheme.TintAccent(cols[0], true)}
+		}
+	}
+	now, acc := ti.goal, ti.goalAcc
+	if now != ti.now || acc != ti.nowAcc {
+		ti.was, ti.wasAcc = ti.shown, ti.shownAcc
+		ti.now, ti.nowAcc = now, acc
+		ti.gen++
+	}
+	t := float32(1)
+	if sh.Slides {
+		t = c.AnimateValueFrom(ui.HashString(ui.KeyN(0, uint64(ti.gen)), "space tint"), 0, 1, ztheme.Enter(r, ztheme.T.DurStandard))
+	}
+	for i := range ti.shown {
+		ti.shown[i] = mixTint(ti.was[i], ti.now[i], t)
+	}
+	for i := range ti.shownAcc {
+		// the accent crossfades through the theme's own where a space has none
+		a, b := ti.wasAcc[i], ti.nowAcc[i]
+		if t < 1 {
+			if a == 0 {
+				a = ztheme.Accent(i == 1)
+			}
+			if b == 0 {
+				b = ztheme.Accent(i == 1)
+			}
+			b = theme.MixRGBA(a, b, t)
+		}
+		ti.shownAcc[i] = b
+	}
+	r.Retint(ti.shownAcc[0], ti.shownAcc[1])
+	if ti.shown == [4]uint32{} {
+		return
+	}
+	theme.At(c, 0, 0, W, H)
+	c.NextBG4(ti.shown[0], ti.shown[1], ti.shown[2], ti.shown[3])
+	c.Box(base.Floating|ui.DrawBackground, "space tint")
+}
+
+// tintUI is the space's colour as it shows, crossfading as it changes.
+type tintUI struct {
+	was, now, shown          [4]uint32 // the field's corners (top left, top right, bottom left, bottom right)
+	wasAcc, nowAcc, shownAcc [2]uint32 // the accent in light and dark; 0 the theme's
+	gen                      uint32    // counts the changes: the crossfade's key
+	// the theme last worked out, and its colours
+	of         state.SpaceTheme
+	dark, made bool
+	goal       [4]uint32
+	goalAcc    [2]uint32
+}
+
+// tintCorners are the field's corner colours for a theme of n colours cols
+// at alpha.
+func tintCorners(cols [3]uint32, n int, alpha float32) [4]uint32 {
+	at := func(c uint32, a float32) uint32 { return theme.WithAlpha(c, a) }
+	switch n {
+	case 1:
+		v := at(cols[0], alpha)
+		return [4]uint32{v, v, v, v}
+	case 2:
+		mid := at(theme.MixRGBA(cols[0], cols[1], 0.5), alpha/2)
+		return [4]uint32{at(cols[0], alpha), mid, mid, at(cols[1], alpha)}
+	case 3:
+		foot := at(cols[0], alpha)
+		return [4]uint32{at(cols[2], alpha), at(cols[1], alpha), foot, foot}
+	}
+	return [4]uint32{}
+}
+
+// mixTint is a t of the way to b; a colour from none (0) keeps b's hue and
+// fades in, and one to none fades out in its own.
+func mixTint(a, b uint32, t float32) uint32 {
+	switch {
+	case t >= 1:
+		return b
+	case a == 0 && b == 0:
+		return 0
+	case a == 0:
+		a = b &^ 0xFF
+	case b == 0:
+		b = a &^ 0xFF
+	}
+	return theme.MixRGBA(a, b, t)
 }

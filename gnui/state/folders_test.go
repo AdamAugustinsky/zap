@@ -15,3 +15,33 @@ func TestFoldersRoundTrip(t *testing.T) {
 		t.Fatalf("folders came back as %+v", back.Folders)
 	}
 }
+
+// A space's whole colour (tint, mix, strength), the account's and a
+// folder's, goes to the file and comes back.
+func TestSpaceThemesRoundTrip(t *testing.T) {
+	a := AccountSettings{SpaceTint: "blue", SpaceTintMix: "complementary", SpaceTintLevel: 0.8,
+		Folders: []Folder{{ID: "f1", Name: "Work", Tint: "teal", TintMix: "triadic", TintLevel: 0.3}}}
+	f := a.toFile()
+	back := f.settings()
+	if back.SpaceTint != "blue" || back.SpaceTintMix != "complementary" || back.SpaceTintLevel != 0.8 {
+		t.Errorf("the account's theme came back %q %q %v", back.SpaceTint, back.SpaceTintMix, back.SpaceTintLevel)
+	}
+	if w := back.Folders[0]; w.Tint != "teal" || w.TintMix != "triadic" || w.TintLevel != 0.3 {
+		t.Errorf("the folder's theme came back %q %q %v", w.Tint, w.TintMix, w.TintLevel)
+	}
+	// colours of one's own, as "#rrggbb"; what does not read is left out
+	own := AccountSettings{SpaceTintDots: [3]uint32{0x8B5CF6FF, 0x22C55EFF}}
+	of := own.toFile()
+	if len(of.SpaceTintColors) != 2 || of.SpaceTintColors[0] != "#8b5cf6" {
+		t.Errorf("own colours went to the file as %v", of.SpaceTintColors)
+	}
+	if b := of.settings(); b.SpaceTintDots != own.SpaceTintDots {
+		t.Errorf("own colours came back %08X", b.SpaceTintDots)
+	}
+	if d := dotsFromFile([]string{"#zz0000", "#00ff00", "red"}); d != [3]uint32{0x00FF00FF} {
+		t.Errorf("bad colours read as %08X", d)
+	}
+	if (SpaceTheme{}).Strength() != DefaultTintLevel || (SpaceTheme{Level: 2}).Strength() != 1 {
+		t.Error("Strength does not default or cap")
+	}
+}

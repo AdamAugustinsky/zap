@@ -279,6 +279,11 @@ type AccountSettings struct {
 	ListFilter          []byte   // the chat list's chip or "label:<id>" (ListFilterKey), nil: All
 	CallFilter          []byte   // the Calls page's chip: "missed", nil: All
 	Folders             []Folder // the chat list's folders (folders.go)
+	// SpaceTint is the account's space's colour (a SpaceTints name; \"\" none).
+	SpaceTint      string
+	SpaceTintMix   string    // the colours that join it (TintMixes)
+	SpaceTintLevel float32   // its opacity (SpaceTheme.Level)
+	SpaceTintDots  [3]uint32 // colours of the person's own (SpaceTheme.Dots)
 }
 
 // DefaultAccountSettings are upstream's defaults (zf:src/settings.rs:852).

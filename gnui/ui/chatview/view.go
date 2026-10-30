@@ -24,6 +24,9 @@ import (
 	"zapfast/model"
 	"zapfast/state"
 	ztheme "zapfast/theme"
+	"zapfast/ui/conversation/av"
+	"zapfast/ui/conversation/kinds"
+	"zapfast/ui/conversation/mkey"
 	"zapfast/ui/screen"
 )
 
@@ -338,7 +341,16 @@ func Bubble(e *screen.Env, a *state.Account, ch model.Chat, m model.Message, i i
 		rexui.Label(k.Kit, model.S(who), rexui.LabelOpts{Style: rexui.TextSemibold, Color: rexui.Of(theme.Label2)})
 	}
 	text := model.S(m.Text())
-	if what := KindLabel(m.Kind()); what != "" {
+	media := false
+	if a == e.Acct() && (kinds.Has(m) || av.Has(m)) {
+		// the message's own block, as the transcript draws it: a photo, a
+		// video or a GIF that plays, a voice note, a document, a place
+		media = mediaBlock(e, a, ch, m, maxW)
+		if media && kinds.Has(m) && kinds.Caption(m) == kinds.Nowhere {
+			text = "" // the block shows its text itself
+		}
+	}
+	if what := KindLabel(m.Kind()); what != "" && !media {
 		if text != "" {
 			text = what + " · " + text
 		} else {
@@ -349,8 +361,10 @@ func Bubble(e *screen.Env, a *state.Account, ch model.Chat, m model.Message, i i
 	if _, sender, summary, ok := m.Quote(); ok {
 		textW = max(textW, quote(e, a, sender, summary, maxW, r))
 	}
-	k.NextWidth(ui.Px(textW))
-	rexui.Label(k.Kit, text, rexui.LabelOpts{Wrap: true})
+	if text != "" {
+		k.NextWidth(ui.Px(textW))
+		rexui.Label(k.Kit, text, rexui.LabelOpts{Wrap: true})
+	}
 	c.NextSize(ui.Pct(1), ui.Children(1))
 	c.NextAxis(ui.AxisX)
 	c.NextJustify(ui.JustifyEnd)
@@ -359,6 +373,35 @@ func Bubble(e *screen.Env, a *state.Account, ch model.Chat, m model.Message, i i
 	c.Pop()
 	c.Pop()
 	c.Pop()
+}
+
+// mediaBlock builds m's media in the bubble, at most maxW wide, as the
+// transcript does (kinds, av), for chat ch, which need not be the open
+// one; it reports whether there was a block to build.
+func mediaBlock(e *screen.Env, a *state.Account, ch model.Chat, m model.Message, maxW float32) bool {
+	mkey.EnterIn(a, ch.Ref())
+	defer mkey.Enter(nil)
+	isKinds := kinds.Has(m)
+	var w, h float32
+	if isKinds {
+		w, h = kinds.Size(e, m, maxW)
+	} else {
+		w, h = av.Size(e, m, maxW)
+	}
+	if w < 1 || h < 1 {
+		return false
+	}
+	c := e.C()
+	c.NextSize(ui.Px(w), ui.Px(h))
+	c.Push(c.Box(0, "block"))
+	rr := screen.Rect{W: w, H: h}
+	if isKinds {
+		kinds.Build(e, m, rr)
+	} else {
+		av.Build(e, m, rr)
+	}
+	c.Pop()
+	return true
 }
 
 // quote is the message a bubble answers: a bar, who wrote it and a line of

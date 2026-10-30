@@ -10,12 +10,55 @@ import (
 // Zap's own, kept in the account's settings (AccountSettings.Folders); the
 // phone never sees them, as it never sees the local labels.
 type Folder struct {
-	ID        string   // unique in the account, kept when renamed
-	Name      string   // as the user gave it
-	Icon      string   // an SF Symbol (FolderIcons)
-	Chats     [][]byte // the chats in it (JIDs), in the order they were put
-	Collapsed bool     // its chats are hidden under its row
-	Space     bool     // it is a space of its own (Spaces: ⌃1–9, the swipe)
+	ID        string    // unique in the account, kept when renamed
+	Name      string    // as the user gave it
+	Icon      string    // an SF Symbol (FolderIcons)
+	Chats     [][]byte  // the chats in it (JIDs), in the order they were put
+	Collapsed bool      // its chats are hidden under its row
+	Space     bool      // it is a space of its own (Spaces: ⌃1–9, the swipe)
+	Tint      string    // its space's colour (SpaceTints; "" none)
+	TintMix   string    // the colours that join it (TintMixes)
+	TintLevel float32   // how strongly the field takes them (SpaceTheme.Level)
+	TintDots  [3]uint32 // colours of the person's own (SpaceTheme.Dots)
+}
+
+// SpaceTints are the colours a space can take, as Arc's: the window's field
+// takes a little of it while the space shows. "" is none.
+var SpaceTints = []string{"blue", "purple", "pink", "red", "orange", "yellow", "green", "teal", "gray"}
+
+// TintMixes are how other colours join a space's, as Zen's harmonies: ""
+// alone (with colours of one's own, each where it was put), then a
+// neighbour on each side of the wheel (50° off), the colour opposite, the
+// two beside the opposite (150° and 210°), and the two a third of the way
+// round.
+var TintMixes = []string{"", "analogous", "complementary", "split", "triadic"}
+
+// DefaultTintLevel is a space theme's strength unless one is chosen, as Zen's
+// opacity starts at the middle.
+const DefaultTintLevel = 0.5
+
+// SpaceTheme is a space's whole colour: a named tint and the colours its
+// mix brings in, or up to three colours of the person's own (Dots, made in
+// the theme creator), and how opaque it lies over the field (0 the default).
+type SpaceTheme struct {
+	Tint  string    // SpaceTints; "" none
+	Mix   string    // TintMixes; with Dots, the harmony that holds them ("" each free)
+	Level float32   // 0..1; 0 is DefaultTintLevel
+	Dots  [3]uint32 // 0xRRGGBBFF, the first the space's own; 0 unused. Over Tint when set
+}
+
+// Custom reports whether the theme's colours are the person's own (Dots).
+func (t SpaceTheme) Custom() bool { return t.Dots[0] != 0 }
+
+// None reports whether the space has no colour.
+func (t SpaceTheme) None() bool { return t.Tint == "" && !t.Custom() }
+
+// Strength is the theme's level, the default when none was chosen.
+func (t SpaceTheme) Strength() float32 {
+	if t.Level <= 0 {
+		return DefaultTintLevel
+	}
+	return min(t.Level, 1)
 }
 
 // FolderIcons are the symbols a folder can take, the first the default.
@@ -155,6 +198,63 @@ func (s *State) SpaceAt(spaces []Space) (Space, int) {
 		}
 	}
 	return cur, -1
+}
+
+// SpaceTint is the colour of the space on screen ("" none): its folder's,
+// or its account's.
+func (s *State) SpaceTint() string {
+	a := s.Acct()
+	if a == nil {
+		return ""
+	}
+	return a.TintOf(Space{Acct: a.Index, Folder: a.SpaceFolder})
+}
+
+// SpaceTheme is the whole colour of the space on screen.
+func (s *State) SpaceTheme() SpaceTheme {
+	a := s.Acct()
+	if a == nil {
+		return SpaceTheme{}
+	}
+	return a.ThemeOf(Space{Acct: a.Index, Folder: a.SpaceFolder})
+}
+
+// TintOf is space sp's colour, sp a space of a.
+func (a *Account) TintOf(sp Space) string { return a.ThemeOf(sp).Tint }
+
+// ThemeOf is space sp's whole colour, sp a space of a.
+func (a *Account) ThemeOf(sp Space) SpaceTheme {
+	if sp.Folder != "" {
+		if i := a.FolderByID(sp.Folder); i >= 0 {
+			f := &a.Settings.Folders[i]
+			return SpaceTheme{Tint: f.Tint, Mix: f.TintMix, Level: f.TintLevel, Dots: f.TintDots}
+		}
+		return SpaceTheme{}
+	}
+	st := &a.Settings
+	return SpaceTheme{Tint: st.SpaceTint, Mix: st.SpaceTintMix, Level: st.SpaceTintLevel, Dots: st.SpaceTintDots}
+}
+
+// SetTint gives space sp of a the named colour tint ("" none) in place of
+// any of its own, keeping its mix and opacity, and saves it.
+func (a *Account) SetTint(sp Space, tint string) {
+	t := a.ThemeOf(sp)
+	t.Tint, t.Dots = tint, [3]uint32{}
+	if t.Mix == "split" {
+		t.Mix = "complementary" // (a named tint's mixes are TintColors')
+	}
+	a.SetTheme(sp, t)
+}
+
+// SetTheme gives space sp of a the whole colour t and saves it.
+func (a *Account) SetTheme(sp Space, t SpaceTheme) {
+	if sp.Folder != "" {
+		a.EditFolder(a.FolderByID(sp.Folder), func(f *Folder) { f.Tint, f.TintMix, f.TintLevel, f.TintDots = t.Tint, t.Mix, t.Level, t.Dots })
+		return
+	}
+	st := &a.Settings
+	st.SpaceTint, st.SpaceTintMix, st.SpaceTintLevel, st.SpaceTintDots = t.Tint, t.Mix, t.Level, t.Dots
+	a.SettingsChanged()
 }
 
 // GoToSpace puts space sp on screen: its account, and within it the whole

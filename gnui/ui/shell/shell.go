@@ -122,6 +122,7 @@ type Shell struct {
 	kb         keyboard      // the single keys' layer (keyboard.go)
 	spaces     []state.Space // the spaces, as last listed (spaces.go)
 	sp         spaceUI
+	tint       tintUI                 // the space colour on screen (spaceTint)
 	bannerH    float32                // the open chat's banner, last frame, which the transcript runs under
 	front      [state.NumWindows]bool // opened alone: to bring forward once open
 	split      splitUI                // the split view's (split.go)
@@ -256,6 +257,15 @@ func (sh *Shell) Context() *ui.Context {
 		return nil
 	}
 	return sh.env.K.Context()
+}
+
+// Accent is the main window's accent as it shows (0 before Init): a space's
+// colour changes it (spaceTint); the tests read it.
+func (sh *Shell) Accent() uint32 {
+	if sh.env.K == nil {
+		return 0
+	}
+	return sh.env.K.Theme().Colors[theme.Accent]
 }
 
 // Init makes the main window's kit and initialises every slot.
@@ -398,6 +408,7 @@ func (sh *Shell) Build(c *ui.Context) {
 	theme.At(c, 0, 0, W, H)
 	c.Push(c.Box(base.Floating, "window"))
 	r.Chrome.Background(c, r) // Rex's field, under everything
+	sh.spaceTint(W, H)
 	a := s.Acct()
 	sh.composerH = 0
 	switch {

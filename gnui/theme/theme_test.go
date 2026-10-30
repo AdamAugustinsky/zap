@@ -512,3 +512,34 @@ func TestDisplayName(t *testing.T) {
 		}
 	}
 }
+
+// OnBubble's kept colours are Palette.OnBubble's, and follow a change of
+// the palette they came from.
+func TestOnBubbleIsKeptRight(t *testing.T) {
+	for _, mine := range []bool{false, true} {
+		if got, want := OnBubble(mine), cur.mixed.OnBubble(mine); got != want {
+			t.Fatalf("mine %v: kept %+v, want %+v", mine, got, want)
+		}
+	}
+	was := cur.mixed
+	defer func() { cur.mixed = was }()
+	cur.mixed.Secondary ^= 0x40404000
+	if got, want := OnBubble(true), cur.mixed.OnBubble(true); got != want {
+		t.Fatalf("after a change: kept %08X, want %08X", got.Secondary, want.Secondary)
+	}
+}
+
+// What a bubble's palette costs: worked out each time (Palette.OnBubble) and
+// as the conversation asks for it, kept (OnBubble).
+func BenchmarkOnBubble(b *testing.B) {
+	b.Run("search", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_ = cur.mixed.OnBubble(i&1 == 0)
+		}
+	})
+	b.Run("kept", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_ = OnBubble(i&1 == 0)
+		}
+	})
+}

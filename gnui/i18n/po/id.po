@@ -5047,3 +5047,123 @@ msgstr "Klik dua kali untuk menampilkan daftar obrolan"
 #: gnui
 msgid "Take out of the split"
 msgstr "Keluarkan dari tampilan terbagi"
+
+#: gnui
+msgid "Previous pane"
+msgstr "Panel sebelumnya"
+
+#: gnui
+msgid "Next pane"
+msgstr "Panel berikutnya"
+
+#: gnui
+msgid "Move the pane left"
+msgstr "Pindahkan panel ke kiri"
+
+#: gnui
+msgid "Move the pane right"
+msgstr "Pindahkan panel ke kanan"
+
+#: gnui
+msgid "Previous pane / next pane"
+msgstr "Panel sebelumnya / berikutnya"
+
+#: gnui
+msgid "Move the pane left / right"
+msgstr "Pindahkan panel ke kiri / kanan"
+
+#: gnui
+msgid "Space colour"
+msgstr "Warna ruang"
+
+#: gnui
+msgid "No colour"
+msgstr "Tanpa warna"
+
+#: gnui
+msgid "Gray"
+msgstr "Abu-abu"
+
+#: gnui
+msgid "Colour"
+msgstr "Warna"
+
+#: gnui
+msgid "Blue"
+msgstr "Biru"
+
+#: gnui
+msgid "Purple"
+msgstr "Ungu"
+
+#: gnui
+msgid "Pink"
+msgstr "Merah muda"
+
+#: gnui
+msgid "Red"
+msgstr "Merah"
+
+#: gnui
+msgid "Orange"
+msgstr "Oranye"
+
+#: gnui
+msgid "Yellow"
+msgstr "Kuning"
+
+#: gnui
+msgid "Green"
+msgstr "Hijau"
+
+#: gnui
+msgid "Teal"
+msgstr "Hijau kebiruan"
+
+#: gnui
+msgid "Neighbours"
+msgstr "Bertetangga"
+
+#: gnui
+msgid "Opposite"
+msgstr "Berlawanan"
+
+#: gnui
+msgid "Triad"
+msgstr "Triad"
+
+#: gnui
+msgid "One colour"
+msgstr "Satu warna"
+
+#: gnui
+msgid "Strength"
+msgstr "Kekuatan"
+
+#: gnui
+msgid "Opacity"
+msgstr "Opasitas"
+
+#: gnui
+msgid "Colours"
+msgstr "Warna"
+
+#: gnui
+msgid "Add a colour"
+msgstr "Tambah warna"
+
+#: gnui
+msgid "Remove a colour"
+msgstr "Hapus warna"
+
+#: gnui
+msgid "Harmony: {name}"
+msgstr "Harmoni: {name}"
+
+#: gnui
+msgid "Beside the opposite"
+msgstr "Di samping lawan"
+
+#: gnui
+msgid "Free"
+msgstr "Bebas"

@@ -120,3 +120,21 @@ func TestTheFloatingChat(t *testing.T) {
 		t.Error("a chat floated behind the lock")
 	}
 }
+
+// A space's colour is kept with its folder, or with its account.
+func TestASpacesColourIsKept(t *testing.T) {
+	r, a := twoChats(t)
+	f := a.FolderByID(a.NewFolder("Work", ""))
+	sp := state.Space{Acct: a.Index, Folder: a.Settings.Folders[f].ID}
+	a.SetTint(sp, "teal")
+	a.SetTint(state.Space{Acct: a.Index}, "orange")
+	if a.TintOf(sp) != "teal" || a.TintOf(state.Space{Acct: a.Index}) != "orange" || r.s.SpaceTint() != "orange" {
+		t.Fatalf("tints: folder %q, account %q, on screen %q", a.TintOf(sp), a.TintOf(state.Space{Acct: a.Index}), r.s.SpaceTint())
+	}
+	// a new colour keeps the mix and the strength chosen
+	a.SetTheme(sp, state.SpaceTheme{Tint: "teal", Mix: "analogous", Level: 0.9})
+	a.SetTint(sp, "pink")
+	if got := a.ThemeOf(sp); got != (state.SpaceTheme{Tint: "pink", Mix: "analogous", Level: 0.9}) {
+		t.Fatalf("after a new colour the theme is %+v", got)
+	}
+}

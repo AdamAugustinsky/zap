@@ -34,7 +34,9 @@ import (
 //     the pane along the others (they slide aside to where it would go),
 //     "Take out of the split", and Expand, which gives the window to it.
 //   - ⌃⌥V adds the next tab to the split (or closes it when there is no room
-//     or no tab left), ⌃⌥U closes the split.
+//     or no tab left), ⌃⌥U closes the split. ⌥⌘← and ⌥⌘→ put the pane beside
+//     in use (the keyboard goes to its composer); with ⇧ they move the pane in
+//     use along the others.
 
 // minSplitPt is the room each pane needs for the split to show, and
 // minPanePt the narrowest a divider makes one.
@@ -599,4 +601,27 @@ func (sh *Shell) replacePane(a *state.Account, i int, ref model.ChatRef) {
 	a.UsePane(gone)
 	a.ClosePane(gone)
 	a.InsertPane(ref, i)
+}
+
+// stepPane puts the pane step places from the one in use in use (and its
+// composer takes the keyboard), or, with move, moves the pane in use there.
+func (sh *Shell) stepPane(a *state.Account, step int, move bool) {
+	p := a.Panes()
+	at := -1
+	for i, ref := range p {
+		if ref == a.Open {
+			at = i
+		}
+	}
+	to := at + step
+	if at < 0 || to < 0 || to >= len(p) {
+		return
+	}
+	if move {
+		a.MovePane(at, to)
+		return
+	}
+	a.UsePane(p[to])
+	sh.S.Req.FocusComposer = true
+	sh.S.Touch()
 }

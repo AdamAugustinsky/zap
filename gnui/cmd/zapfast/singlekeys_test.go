@@ -197,9 +197,44 @@ func TestPeek(t *testing.T) {
 	if ch, _ := a.Model.Chats.Get(a.Model.Chats.Find([]byte(graceJID))); ch.Unread() == 0 {
 		t.Fatal("after the peek and its reply Grace's chat is read")
 	}
+	// the side buttons come out once the panel has landed
+	r.Play(widgettest.Settle())
 	r.Click(ui.RoleButton, "Open")
 	r.Frames(3)
 	if r.s.Peek.Open() || r.openName() != "Grace Hopper" {
 		t.Fatalf("Open: peek %v, open %q", r.s.Peek.Open(), r.openName())
+	}
+}
+
+// A peek with a reply typed asks before Escape throws it away, as Zen's
+// glance asks: the first Escape turns the close button into a red Close, the
+// second closes; with nothing typed one Escape closes, and the panel flies
+// back before the peek is gone.
+func TestThePeekAsksBeforeADraftGoes(t *testing.T) {
+	r, _ := keyRig(t)
+	r.Play(widgettest.Click(ui.RoleListItem, "Ada Lovelace").With(ui.ModAlt), widgettest.Settle())
+	if !r.s.Peek.Open() {
+		t.Fatal("⌥-click opened no peek")
+	}
+	r.Play(widgettest.Type("half a thou"), widgettest.Key(ui.KeyEscape, 0), widgettest.Settle())
+	if !r.s.Peek.Open() {
+		t.Fatal("the first Escape over a draft closed the peek")
+	}
+	if _, ok := r.Find(ui.RoleButton, "Close"); !ok {
+		t.Fatal("asked, there is no Close button")
+	}
+	r.Play(widgettest.Key(ui.KeyEscape, 0), widgettest.Settle())
+	if r.s.Peek.Open() {
+		t.Fatal("the second Escape left the peek open")
+	}
+
+	r.Play(widgettest.Click(ui.RoleListItem, "Ada Lovelace").With(ui.ModAlt), widgettest.Settle())
+	r.Play(widgettest.Key(ui.KeyEscape, 0), widgettest.Idle(1))
+	if !r.s.Peek.Open() {
+		t.Fatal("the peek went at once: it flies back to its row first")
+	}
+	r.Play(widgettest.Settle())
+	if r.s.Peek.Open() {
+		t.Fatal("one Escape with nothing typed left the peek open")
 	}
 }

@@ -1,9 +1,11 @@
 package main
 
 import (
+	"math"
 	"slices"
 	"testing"
 	"zapfast/model"
+	ztheme "zapfast/theme"
 
 	"gonativeui/ui"
 	"gonativeui/widget/widgettest"
@@ -254,4 +256,92 @@ func allNodes(r *rig, role ui.Role, name string) []ui.SemNode {
 		}
 	}
 	return out
+}
+
+// ⌥⌘← and ⌥⌘→ put the pane beside in use, its composer taking the
+// keyboard; with ⇧ they move the pane in use along the others.
+func TestThePanesFromTheKeyboard(t *testing.T) {
+	r, f := keyRig(t)
+	a := r.s.Accounts[0]
+	r.s.Panes.ListHidden = true
+	r.open(adaJID)
+	ada, grace := a.Model.Chats.Find([]byte(adaJID)), a.Model.Chats.Find([]byte(graceJID))
+	a.OpenSplit(grace)
+	r.Frames(3)
+	r.Play(widgettest.Key(ui.KeyLeft, prim|ui.ModAlt), widgettest.Idle(3), widgettest.Type("hi"), widgettest.Key(ui.KeyEnter, 0), widgettest.Idle(3))
+	if a.Open != ada {
+		t.Fatalf("⌥⌘←: open %q", r.openName())
+	}
+	if c, ok := lastSent(f, abi.CommandTagSendText); !ok || string(c.SendText.Chat) != adaJID {
+		t.Fatalf("typing after ⌥⌘← went to %q", c.SendText.Chat)
+	}
+	// (the test's drawn field takes ⌥⌘⇧→ as a selection; the app's native one
+	// leaves it to the menu)
+	r.Play(widgettest.Key(ui.KeyEscape, 0), widgettest.Idle(2), widgettest.Key(ui.KeyRight, prim|ui.ModAlt|ui.ModShift), widgettest.Idle(3))
+	if !slices.Equal(a.Panes(), []model.ChatRef{grace, ada}) || a.Open != ada {
+		t.Fatalf("⌥⌘⇧→: open %q, panes %v", r.openName(), a.Panes())
+	}
+}
+
+// A space has a colour, as Arc's: a right click on it in the strip shows
+// the swatches, and the one chosen tints the window while it shows.
+func TestASpacesColour(t *testing.T) {
+	r, _ := keyRig(t)
+	a := r.s.Accounts[0]
+	work := a.FolderByID(a.NewFolder("Work", "briefcase"))
+	a.EditFolder(work, func(f *state.Folder) { f.Space = true })
+	r.s.GoToSpace(state.Space{Acct: a.Index, Folder: a.Settings.Folders[work].ID})
+	r.Frames(3)
+	r.Play(widgettest.RClick(ui.RoleButton, "Work"), widgettest.Idle(2))
+	r.Click(ui.RoleButton, "Purple")
+	r.Frames(2)
+	if got := a.Settings.Folders[work].Tint; got != "purple" || r.s.SpaceTint() != "purple" {
+		t.Fatalf("the folder's colour %q, the space's %q", got, r.s.SpaceTint())
+	}
+	// the accent takes the space's colour, once it has crossfaded (the
+	// rig's appearance is dark)
+	r.Play(widgettest.Settle())
+	if want := ztheme.TintAccent(ztheme.TintColor("purple"), true) | 0xFF; r.sh.Accent()|0xFF != want {
+		t.Errorf("in a purple space the accent is %08X, want %08X", r.sh.Accent(), want)
+	}
+	// the theme creator, in the same popover, which stays open: a colour
+	// more makes the colours the space's own, free; a harmony then holds
+	// them, the second opposite the first
+	r.Click(ui.RoleButton, "Add a colour")
+	r.Frames(2)
+	got := r.s.SpaceTheme()
+	if !got.Custom() || got.Dots[1] == 0 || got.Dots[2] != 0 || got.Dots[0]|0xFF != ztheme.TintColor("purple") {
+		t.Fatalf("after Add a colour the space's theme is %+v", got)
+	}
+	r.Click(ui.RoleButton, "Harmony: Free")
+	r.Frames(2)
+	got = r.s.SpaceTheme()
+	h0, _ := ztheme.FieldPlace(got.Dots[0])
+	h1, _ := ztheme.FieldPlace(got.Dots[1])
+	if d := math.Abs(math.Mod(h1-h0+360, 360) - 180); got.Mix != "complementary" || d > 2 {
+		t.Fatalf("the harmony is %q, the hues %v and %v apart", got.Mix, h0, h1)
+	}
+	// dragging on the field moves the space's colour, its partner with it,
+	// and the opacity is a slider
+	r.Play(widgettest.Drag(ui.RoleGroup, "Colours", 10, 6), widgettest.Idle(2))
+	moved := r.s.SpaceTheme()
+	if moved.Dots[0] == got.Dots[0] {
+		t.Fatal("a drag on the field moved no colour")
+	}
+	m0, _ := ztheme.FieldPlace(moved.Dots[0])
+	m1, _ := ztheme.FieldPlace(moved.Dots[1])
+	if d := math.Abs(math.Mod(m1-m0+360, 360) - 180); d > 2 {
+		t.Errorf("after the drag the pair is %v° from opposite", d)
+	}
+	if _, ok := r.Find(ui.RoleSlider, "Opacity"); !ok {
+		t.Error("there is no Opacity slider")
+	}
+	r.s.GoToSpace(state.Space{Acct: a.Index})
+	r.Play(widgettest.Settle())
+	if r.s.SpaceTint() != "" {
+		t.Errorf("the account's space took the folder's colour: %q", r.s.SpaceTint())
+	}
+	if r.sh.Accent()|0xFF != ztheme.Accent(true)|0xFF {
+		t.Errorf("back in a space with no colour the accent is %08X, not Zap's green", r.sh.Accent())
+	}
 }
