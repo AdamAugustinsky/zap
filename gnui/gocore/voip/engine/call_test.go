@@ -328,10 +328,14 @@ func TestAPeerThatGoesAwayIsReportedStalled(t *testing.T) {
 func TestADroppedRelayClosesAConnectedCall(t *testing.T) {
 	r := &memRelay{}
 	a, _ := pair(t, r, sideOpts{}, sideOpts{})
+	// The sides dial at once, so which end is a's is a race: the relay
+	// drops them all.
 	r.mu.Lock()
-	end := r.ends[0]
+	ends := append([]*memTransport(nil), r.ends...)
 	r.mu.Unlock()
-	end.Close()
+	for _, end := range ends {
+		end.Close()
+	}
 	ev := a.ev.wait(t, CallClosed, 3*time.Second)
 	if ev.Reason != "The relay connection dropped" {
 		t.Errorf("reason %q", ev.Reason)

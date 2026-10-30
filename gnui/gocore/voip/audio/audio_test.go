@@ -113,15 +113,18 @@ func TestDeviceSwitchKeepsTheChannels(t *testing.T) {
 	default:
 	}
 	// The speaker's frames are at the device's own rate: 500 Hz at 16 kHz
-	// on s2.
-	heard := s2.heard()
-	pcm := make([]int16, 0, FrameSamples)
-	for _, v := range heard[len(heard)-FrameSamples:] {
-		pcm = append(pcm, toInt16(v))
-	}
-	if got := hz(pcm); got < 450 || got > 550 {
-		t.Fatalf("s2 heard %.0f Hz, want 500", got)
-	}
+	// on s2. A starved machine can leave a gap in the last frame, which
+	// reads lower, so a whole frame is waited for.
+	var got float64
+	eventually(t, "s2 at 500 Hz", func() bool {
+		heard := s2.heard()
+		pcm := make([]int16, 0, FrameSamples)
+		for _, v := range heard[len(heard)-FrameSamples:] {
+			pcm = append(pcm, toInt16(v))
+		}
+		got = hz(pcm)
+		return got >= 450 && got <= 550
+	})
 
 	a.Close()
 	if _, ok := <-drain(mic); ok {
