@@ -46,8 +46,8 @@ func TestSaveWithChatIsOneTransaction(t *testing.T) {
 }
 
 // A row filed live keeps its place among the messages of its second when
-// history files it again with an order id; a row history brings first
-// keeps history's order.
+// history files it again with an order id, edited since or not; a row
+// history brings first keeps history's order.
 func TestHistoryKeepsALiveRowInPlace(t *testing.T) {
 	s, _, _ := testStore(t)
 	chat := "c@s.whatsapp.net"
@@ -55,7 +55,13 @@ func TestHistoryKeepsALiveRowInPlace(t *testing.T) {
 	if err := s.SaveMessages(live); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.SaveMessages([]Message{{ID: "A", ChatID: chat, Text: "a", Timestamp: 100, Order: 7}, {ID: "C", ChatID: chat, Text: "c", Timestamp: 90, Order: 5}}); err != nil {
+	// B was edited live, so history's unedited copy takes the branch for
+	// an original that came after its edit.
+	if err := s.UpdateMessage(chat, "B", func(m *Message) { m.Text, m.Edited = "b2", true }); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.SaveMessages([]Message{{ID: "A", ChatID: chat, Text: "a", Timestamp: 100, Order: 7}, {ID: "B", ChatID: chat, Text: "b", Timestamp: 100, Order: 3},
+		{ID: "C", ChatID: chat, Text: "c", Timestamp: 90, Order: 5}}); err != nil {
 		t.Fatal(err)
 	}
 	page, _, err := s.Messages(chat, "", 10)
@@ -68,6 +74,9 @@ func TestHistoryKeepsALiveRowInPlace(t *testing.T) {
 	}
 	if ids != "CAB" {
 		t.Fatalf("order %s, want CAB", ids)
+	}
+	if b, _ := s.Message(chat, "B"); b.Text != "b2" || b.Order != 0 {
+		t.Fatalf("the edited live row: %+v", b)
 	}
 	if c, _ := s.Message(chat, "C"); c.Order != 5 {
 		t.Fatalf("history's own row lost its order: %d", c.Order)

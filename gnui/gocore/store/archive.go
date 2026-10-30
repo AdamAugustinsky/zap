@@ -207,6 +207,12 @@ func Fold(text string) string {
 	}, cases.Fold().String(norm.NFKD.String(text)))
 }
 
+// liveInPlace reports whether old is a row filed live, which has no order
+// id, that m, history's copy of it, would only move among the messages of
+// its second, where the reader has seen it already (Zap; found by the
+// simulation, gocore/wa's sim_test.go).
+func liveInPlace(old, m Message) bool { return old.Order == 0 && m.Timestamp == old.Timestamp }
+
 func save(tx *sql.Tx, m Message) error {
 	if m.ID == "" || m.ChatID == "" {
 		return errors.New("message and chat ids are required")
@@ -246,17 +252,14 @@ func save(tx *sql.Tx, m Message) error {
 			if original.Timestamp != 0 {
 				m.Timestamp = original.Timestamp
 			}
-			if original.Order != 0 {
+			if original.Order != 0 && !liveInPlace(old, original) {
 				m.Order = original.Order
 			}
 		} else if m.Edited {
 			// The edit-envelope timestamp/order describes the edit operation,
 			// never the position of the message it modifies.
 			m.Timestamp, m.Order = old.Timestamp, old.Order
-		} else if old.Order == 0 && m.Timestamp == old.Timestamp {
-			// Zap: a row filed live has no order id. History's would move it
-			// among the messages of its second, where the reader has seen it
-			// already (found by the simulation, gocore/wa's sim_test.go).
+		} else if liveInPlace(old, m) {
 			m.Order = 0
 		}
 		if m.Order == 0 {
