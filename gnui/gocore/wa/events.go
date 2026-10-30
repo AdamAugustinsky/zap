@@ -6,6 +6,7 @@ package wa
 
 import (
 	"log/slog"
+	"time"
 
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
@@ -214,6 +215,8 @@ func (e *Engine) incoming(evt *events.Message) error {
 		}
 		changed, err := e.arch.ApplyReaction(chat, x.GetKey().GetID(), store.Reaction{Sender: sender, Emoji: x.GetText(), Timestamp: at / 1000}, at)
 		if noRows(err) {
+			// Its target is not filed yet: it waits (early.go).
+			e.early.waitReaction(earlyReaction{chat: chat, target: x.GetKey().GetID(), sender: sender, emoji: x.GetText(), at: at}, time.Now())
 			return nil
 		}
 		if changed {
@@ -290,6 +293,9 @@ func (e *Engine) keep(m store.Message, info types.MessageInfo, existed, waited b
 	if err := e.arch.SaveMessages([]store.Message{m}); err != nil {
 		return err
 	}
+	e.retireCallTwins(m)
+	// The phone may have read it, and reacted, before it reached us.
+	read := e.settleEarly(m)
 	stored, err := e.arch.Message(chat, m.ID)
 	if noRows(err) {
 		return nil
@@ -297,7 +303,7 @@ func (e *Engine) keep(m store.Message, info types.MessageInfo, existed, waited b
 	if err != nil {
 		return err
 	}
-	unread := !existed && !m.FromMe
+	unread := !existed && !m.FromMe && !read
 	if err := e.arch.UpdateChat(chat, func(c *store.Chat) {
 		if c.Kind == "" {
 			c.Kind = archiveKind(chat)
@@ -322,6 +328,11 @@ func (e *Engine) keep(m store.Message, info types.MessageInfo, existed, waited b
 		}
 	}); err != nil {
 		return err
+	}
+	if read {
+		if err := e.readThrough(chat, stored); err != nil {
+			return err
+		}
 	}
 	e.pendingMotion(chat, m.ID)
 	if existed {
@@ -359,7 +370,7 @@ func (e *Engine) receipt(evt *events.Receipt) error {
 		status = 2
 	case types.ReceiptTypePlayed:
 		status = 3
-	case types.ReceiptTypeReadSelf:
+	case types.ReceiptTypeReadSelf, types.ReceiptTypePlayedSelf:
 		return e.readElsewhere(evt)
 	default:
 		return nil
@@ -403,12 +414,16 @@ func (e *Engine) receipt(evt *events.Receipt) error {
 }
 
 // readElsewhere is our own read receipt from another device: the chat is
-// read through the newest of the messages it names.
+// read through the newest of the messages it names. One not filed yet
+// waits for its message (early.go).
 func (e *Engine) readElsewhere(evt *events.Receipt) error {
 	chat := e.canonical(evt.Chat)
 	var newest store.Message
 	for _, id := range evt.MessageIDs {
 		m, err := e.arch.Message(chat, id)
+		if noRows(err) && evt.Chat != types.StatusBroadcastJID {
+			e.early.waitRead(chat, id, time.Now())
+		}
 		if err == nil && (m.Timestamp > newest.Timestamp || newest.ID == "") {
 			newest = m
 		}

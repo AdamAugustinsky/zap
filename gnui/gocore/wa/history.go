@@ -87,6 +87,7 @@ func (e *Engine) history(evt *events.HistorySync) error {
 			if err := e.arch.Canonicalize(conv.GetLidJID(), conv.GetPnJID()); err != nil {
 				return err
 			}
+			e.remapEarly(conv.GetLidJID(), conv.GetPnJID())
 			id = conv.GetPnJID()
 		}
 		if err := e.arch.UpdateChat(id, func(c *store.Chat) {
@@ -131,7 +132,8 @@ func (e *Engine) history(evt *events.HistorySync) error {
 		}
 		batch := make([]store.Message, 0, 128)
 		var polls []*events.Message
-		var photos []string
+		var photos, kept []string
+		var calls []store.Message
 		count := 0
 		var latest store.Message
 		flush := func() error {
@@ -209,6 +211,10 @@ func (e *Engine) history(evt *events.HistorySync) error {
 			if m.Kind == store.KindImage {
 				photos = append(photos, m.ID)
 			}
+			if m.Kind == store.KindCall {
+				calls = append(calls, m)
+			}
+			kept = append(kept, m.ID)
 			batch = append(batch, m)
 			count++
 			if m.Timestamp > latest.Timestamp {
@@ -230,6 +236,13 @@ func (e *Engine) history(evt *events.HistorySync) error {
 		}
 		for _, photo := range photos {
 			e.pendingMotion(id, photo)
+		}
+		for _, call := range calls {
+			e.retireCallTwins(call)
+		}
+		// The phone may have read, or reacted to, messages it sends only now.
+		if _, err := e.settleFiled(id, kept); err != nil {
+			return err
 		}
 		if latest.ID != "" {
 			if err := e.arch.UpdateChat(id, func(c *store.Chat) {
@@ -264,6 +277,8 @@ func (e *Engine) historyReaction(msg *events.Message, chat, sender string) error
 	}
 	_, err := e.arch.ApplyReaction(chat, x.GetKey().GetID(), store.Reaction{Sender: sender, Emoji: x.GetText(), Timestamp: at / 1000}, at)
 	if noRows(err) {
+		// Its target may come in a later chunk (early.go).
+		e.early.waitReaction(earlyReaction{chat: chat, target: x.GetKey().GetID(), sender: sender, emoji: x.GetText(), at: at}, time.Now())
 		return nil
 	}
 	return err

@@ -3,6 +3,7 @@ package wa
 import (
 	"context"
 	"log/slog"
+	"strings"
 	"time"
 
 	"go.mau.fi/whatsmeow/types"
@@ -146,6 +147,26 @@ func (e *Engine) fileCall(c calls.Entry) {
 		e.emitMessages(c.Chat, []store.Message{stored}, false, false)
 	}
 	e.emitChat(c.Chat)
+}
+
+// retireCallTwins drops this app's own entries for a call the phone has
+// now filed itself (zf:src/backend/worker/calls.rs:891).
+func (e *Engine) retireCallTwins(m store.Message) {
+	if m.Kind != store.KindCall || strings.HasPrefix(m.ID, store.CallEntryPrefix) {
+		return
+	}
+	twins, err := e.arch.LocalCallTwins(m.ChatID, m.Timestamp, m.FromMe)
+	if err != nil {
+		slog.Warn("zapfast wa: the chat's call entries could not be read", "err", err)
+		return
+	}
+	for _, id := range twins {
+		if err := e.arch.DeleteLocal(m.ChatID, id); err != nil {
+			slog.Warn("zapfast wa: a duplicate call entry stays", "err", err)
+			continue
+		}
+		e.messageDeleted(m.ChatID, id)
+	}
 }
 
 // emitCallLog hands the Calls page the account's calls, newest first.

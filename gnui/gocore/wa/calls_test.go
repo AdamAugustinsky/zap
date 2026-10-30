@@ -9,8 +9,10 @@ import (
 	"time"
 
 	waBinary "go.mau.fi/whatsmeow/binary"
+	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
+	"google.golang.org/protobuf/proto"
 
 	"zapfast/abi"
 	"zapfast/core"
@@ -187,5 +189,40 @@ func TestGroupAndLinkCallsAreFiled(t *testing.T) {
 	log := only(evs, abi.EventTagCallLog)
 	if len(log) != 1 || len(log[0].CallLog.Messages) != 2 || string(log[0].CallLog.Messages[0].Chat) != calls.LinkChat {
 		t.Fatalf("the call log: %s", tags(evs))
+	}
+}
+
+// The phone's call-log message is a call entry in its chat, and replaces
+// the one this app filed for the same call (zf:src/backend/worker/calls.rs:891,
+// call_log_content).
+func TestACallLogMessageIsACallEntry(t *testing.T) {
+	h := newHarness(t, options{callMedia: &fakeCallMedia{}, callClient: &fakeCallClient{}})
+	h.start()
+	h.e.post(func() {
+		h.e.fileCall(calls.Entry{CallID: "00MINE", Chat: peer.String(), Time: t0.Unix(), Status: abi.CallStatusMissed, Caller: peer.String()})
+	})
+	h.take()
+	log := &waE2E.Message{CallLogMesssage: &waE2E.CallLogMessage{IsVideo: proto.Bool(true), CallOutcome: waE2E.CallLogMessage_REJECTED.Enum(), DurationSecs: proto.Int64(-4),
+		Participants: []*waE2E.CallLogMessage_CallParticipant{{}, {}}}}
+	h.inject(message(peer, peer, "CL1", t0.Add(30*time.Second), log))
+	evs := h.take()
+	if d := only(evs, abi.EventTagMessageDeleted); len(d) != 1 || string(d[0].MessageDeleted.ID) != "zapfast-call-00MINE" {
+		t.Fatalf("the app's own entry stays: %s", tags(evs))
+	}
+	m := messagesOf(evs)
+	if len(m) != 1 || m[0].Content.Tag != abi.ContentTagCall {
+		t.Fatalf("the phone's entry: %+v", m)
+	}
+	if c := m[0].Content.Call; !c.Video || c.Status != abi.CallStatusDeclined || c.Duration != 0 || !c.Group {
+		t.Fatalf("call %+v", c)
+	}
+	// Silenced or missed: nobody answered. No outcome: answered.
+	for outcome, want := range map[*waE2E.CallLogMessage_CallOutcome]abi.CallStatus{
+		waE2E.CallLogMessage_SILENCED_BY_DND.Enum(): abi.CallStatusMissed,
+		nil: abi.CallStatusAnswered,
+	} {
+		if got := callLogEntry(&waE2E.CallLogMessage{CallOutcome: outcome}); callStatus(got.Status) != want {
+			t.Fatalf("%v: %+v", outcome, got)
+		}
 	}
 }

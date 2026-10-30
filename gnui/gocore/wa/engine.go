@@ -134,6 +134,7 @@ type Engine struct {
 	settings     []appstate.PatchInfo   // chat settings to send to the phone, in order
 	mended       bool                   // rows filed as unsupported signalling were mended (mend.go)
 	asked        map[[2]string]bool     // messages asked of the phone by the mending: no notification
+	early        earlyEvents            // the phone's reads and reactions waiting for their message (early.go)
 
 	// calls is WP7's call bridge (calls.go): set by Open, before any
 	// command, and never replaced.
@@ -532,6 +533,7 @@ func (e *Engine) canonical(j types.JID) string {
 			if err := e.arch.Canonicalize(j.String(), to); err != nil {
 				slog.Warn("zapfast wa: canonicalizing a chat", "err", err)
 			}
+			e.remapEarly(j.String(), to)
 			return to
 		}
 	}
