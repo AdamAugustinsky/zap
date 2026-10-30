@@ -366,7 +366,7 @@ func TestTheMenuBarIsUpstreams(t *testing.T) {
 	m := sh.Menu()
 	want := []struct{ title, items string }{
 		{"Zap", "About Zap|Settings…|Quit Zap"},
-		{"File", "New Chat…|Close Window"},
+		{"File", "New Chat…|Close Tab|Close Window"},
 		{"Edit", "Undo|Redo|Cut|Copy|Paste|Select All|Find…"},
 		{"View", "Toggle Sidebar|Zoom In|Zoom Out|Actual Size|Enter Full Screen"},
 		{"Window", "Minimize|Zoom|Show Zap"},
