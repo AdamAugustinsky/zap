@@ -213,7 +213,7 @@ func (s *Screen) chatRow(e *screen.Env, in *rowInfo, selected, typing bool, typi
 	c.BoxKeyed(ui.DrawText|ui.FadeOverflowX, ui.KeyN(p.Key, 22), base.StrBytes(in.title))
 	if len(in.when) > 0 {
 		tm := &r.Styles[theme.StyleCaption1]
-		c.NextSize(ui.TextSize(base.LabelSlack), ui.Px(tm.Line))
+		c.NextSize(ui.TextSize(0), ui.Px(tm.Line))
 		c.NextFont(ztheme.Mono(k, 10.5)) // Rex's metadata is the terminal's
 		c.NextTextColor(timeC)
 		c.BoxKeyed(ui.DrawText, ui.KeyN(p.Key, 23), in.when)
@@ -240,7 +240,7 @@ func (s *Screen) chatRow(e *screen.Env, in *rowInfo, selected, typing bool, typi
 		c.BoxKeyed(ui.DrawText|ui.EllipsisOverflowX, ui.KeyN(p.Key, 25), base.StrBytes(typingText))
 	default:
 		if in.draftOf != "" {
-			c.NextSize(ui.TextSize(base.LabelSlack), ui.Px(ps.Line))
+			c.NextSize(ui.TextSize(0), ui.Px(ps.Line))
 			c.NextFont(ps.Font)
 			c.NextTextColor(accent)
 			if on {

@@ -215,7 +215,7 @@ func (s *Screen) chipWidth(e *screen.Env, name string, count int, chev bool) flo
 	r, sc := k.Theme(), k.Scale()
 	shown, _ := ui.SplitLabel(name)
 	gap := theme.Snap(5 * sc)
-	w := 2*theme.Snap(9*sc) + k.TextWidth(r.Sizes[theme.SizeSmall].Font.Font, shown) + base.LabelSlack
+	w := 2*theme.Snap(9*sc) + ui.CeilText(k.TextWidth(r.Sizes[theme.SizeSmall].Font.Font, shown))
 	if count > 0 {
 		f := e.C().Fmt()
 		if count > 99 {
@@ -225,7 +225,7 @@ func (s *Screen) chipWidth(e *screen.Env, name string, count int, chev bool) flo
 		}
 		bh := theme.Snap(rexui.BadgeLook.H[rexui.BadgeCount] * sc)
 		tw := k.TextWidthBytes(r.Styles[theme.StyleCaption2].Font, f.Bytes())
-		w += gap + max(bh, theme.Snap(tw+2*theme.Snap(rexui.BadgeLook.PadX[rexui.BadgeCount]*sc)+base.LabelSlack))
+		w += gap + max(bh, ui.CeilText(tw+2*theme.Snap(rexui.BadgeLook.PadX[rexui.BadgeCount]*sc)))
 	}
 	if chev {
 		w += gap + theme.Snap(chevPt*sc)
@@ -321,7 +321,7 @@ func (s *Screen) chip(e *screen.Env, name string, count int, on, dotted bool, do
 		c.NextRadius(d / 2)
 		c.BoxKeyed(ui.DrawBackground, ui.KeyN(tg.Key, 40), nil)
 	}
-	c.NextSize(ui.TextSize(base.LabelSlack), ui.Px(st.FontLine))
+	c.NextSize(ui.TextSize(0), ui.Px(st.FontLine))
 	c.NextFont(st.Font.Font)
 	c.NextTextColor(fg)
 	c.BoxKeyed(ui.DrawText, ui.KeyN(tg.Key, 41), base.StrBytes(tg.Name))
