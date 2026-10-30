@@ -1,0 +1,1094 @@
+{
+  "call_log": [
+    "3EB0CALL02",
+    "zapfast-call-0001"
+  ],
+  "chats": [
+    {
+      "admin": true,
+      "archived": false,
+      "ephemeral": 86400,
+      "favorite": true,
+      "favorite_position": 0,
+      "history_start": true,
+      "id": "120363000000000001@g.us",
+      "info_locked": true,
+      "kind": "group",
+      "labels": [
+        "label-1760000301"
+      ],
+      "last": {
+        "from_me": false,
+        "summary": "Synthetic group reply"
+      },
+      "last_activity": 1760000950,
+      "left": false,
+      "locked": false,
+      "marked_unread": false,
+      "muted_until": 1900000000,
+      "name": "Synthetic Group",
+      "participants": [
+        "15550001001@s.whatsapp.net",
+        "15550002002@s.whatsapp.net",
+        "100000000003003@lid"
+      ],
+      "pinned": false,
+      "pinned_at": 0,
+      "read_only": false,
+      "unread": 2
+    },
+    {
+      "admin": false,
+      "archived": false,
+      "ephemeral": null,
+      "favorite": true,
+      "favorite_position": 1,
+      "history_start": false,
+      "id": "15550002002@s.whatsapp.net",
+      "info_locked": null,
+      "kind": "direct",
+      "labels": [
+        "label-1760000301",
+        "label-1760000302"
+      ],
+      "last": {
+        "from_me": true,
+        "summary": "Synthetic message being deleted"
+      },
+      "last_activity": 1760000900,
+      "left": false,
+      "locked": false,
+      "marked_unread": false,
+      "muted_until": 0,
+      "name": "Synthetic Bea",
+      "participants": [],
+      "pinned": true,
+      "pinned_at": 1760000123000,
+      "read_only": false,
+      "unread": 0
+    },
+    {
+      "admin": false,
+      "archived": true,
+      "ephemeral": null,
+      "favorite": true,
+      "favorite_position": 2,
+      "history_start": false,
+      "id": "100000000003003@lid",
+      "info_locked": null,
+      "kind": "direct",
+      "labels": [],
+      "last": {
+        "from_me": false,
+        "summary": "Synthetic menu"
+      },
+      "last_activity": 1760000800,
+      "left": false,
+      "locked": true,
+      "marked_unread": true,
+      "muted_until": null,
+      "name": "Synthetic Cy",
+      "participants": [],
+      "pinned": false,
+      "pinned_at": 0,
+      "read_only": false,
+      "unread": 0
+    },
+    {
+      "admin": false,
+      "archived": false,
+      "ephemeral": null,
+      "favorite": false,
+      "favorite_position": 0,
+      "history_start": false,
+      "id": "120363000000000099@newsletter",
+      "info_locked": null,
+      "kind": "broadcast",
+      "labels": [],
+      "last": {
+        "from_me": false,
+        "summary": "Synthetic channel post"
+      },
+      "last_activity": 1760000700,
+      "left": false,
+      "locked": false,
+      "marked_unread": false,
+      "muted_until": null,
+      "name": "Synthetic News",
+      "participants": [],
+      "pinned": false,
+      "pinned_at": 0,
+      "read_only": true,
+      "unread": 0
+    },
+    {
+      "admin": false,
+      "archived": false,
+      "ephemeral": null,
+      "favorite": false,
+      "favorite_position": 0,
+      "history_start": false,
+      "id": "15550004004@s.whatsapp.net",
+      "info_locked": null,
+      "kind": "direct",
+      "labels": [],
+      "last": {
+        "from_me": false,
+        "summary": "Synthetic message after the clear"
+      },
+      "last_activity": 1760000600,
+      "left": false,
+      "locked": false,
+      "marked_unread": false,
+      "muted_until": null,
+      "name": "Synthetic Cleared",
+      "participants": [],
+      "pinned": false,
+      "pinned_at": 0,
+      "read_only": false,
+      "unread": 0
+    },
+    {
+      "admin": false,
+      "archived": false,
+      "ephemeral": null,
+      "favorite": false,
+      "favorite_position": 0,
+      "history_start": false,
+      "id": "120363000000000002@g.us",
+      "info_locked": null,
+      "kind": "group",
+      "labels": [],
+      "last": {
+        "from_me": false,
+        "summary": "Synthetic old group message"
+      },
+      "last_activity": 1759000000,
+      "left": true,
+      "locked": false,
+      "marked_unread": false,
+      "muted_until": null,
+      "name": "Synthetic Old Group",
+      "participants": [],
+      "pinned": false,
+      "pinned_at": 0,
+      "read_only": false,
+      "unread": 0
+    }
+  ],
+  "drafts": [
+    [
+      "120363000000000001@g.us",
+      "Synthetic group draft"
+    ],
+    [
+      "15550002002@s.whatsapp.net",
+      "Synthetic draft to Bea"
+    ]
+  ],
+  "favorites": [
+    "120363000000000001@g.us",
+    "15550002002@s.whatsapp.net",
+    "100000000003003@lid"
+  ],
+  "generator": "zfcore/tests/migration_oracle.rs at 5a57d37 (the Rust core of Zap 0.19.0)",
+  "labels": [
+    {
+      "color": "#ff8800",
+      "created_at": 1760000301,
+      "id": "label-1760000301",
+      "name": "Synthetic Work"
+    },
+    {
+      "color": "#00aa55",
+      "created_at": 1760000302,
+      "id": "label-1760000302",
+      "name": "Synthetic Home"
+    }
+  ],
+  "media_paths": [
+    [
+      "15550002002@s.whatsapp.net",
+      "3EB0IMAGE1",
+      "media/synthetic-photo.jpg"
+    ],
+    [
+      "15550002002@s.whatsapp.net",
+      "3EB0VOICE1",
+      "media/synthetic-voice.ogg"
+    ]
+  ],
+  "messages": {
+    "100000000003003@lid": [
+      {
+        "chat": "100000000003003@lid",
+        "content": {
+          "card": {
+            "body": "Pick one",
+            "buttons": [
+              {
+                "action": "Unavailable",
+                "label": "Site",
+                "url": "https://example.com"
+              },
+              {
+                "action": {
+                  "Copy": "SYN123"
+                },
+                "label": "Code",
+                "url": null
+              }
+            ],
+            "image": null,
+            "needs_phone": false
+          },
+          "kind": "interactive",
+          "text": "Synthetic menu"
+        },
+        "delivered_at": null,
+        "edited": false,
+        "forwarded": false,
+        "from_me": false,
+        "history_order": null,
+        "id": "3EB0INTER1",
+        "mentions": [],
+        "quoted": null,
+        "reactions": [],
+        "read_at": null,
+        "sender": "100000000003003@lid",
+        "sender_name": "Synthetic Sender",
+        "status": "none",
+        "thumbnail": null,
+        "timestamp": 1760000030
+      }
+    ],
+    "120363000000000001@g.us": [
+      {
+        "chat": "120363000000000001@g.us",
+        "content": {
+          "kind": "text",
+          "preview": null,
+          "text": "Synthetic group message for @all"
+        },
+        "delivered_at": 1760000041,
+        "edited": false,
+        "forwarded": false,
+        "from_me": true,
+        "history_order": null,
+        "id": "3EB0GROUP1",
+        "mentions": [
+          {
+            "id": "mention-all",
+            "user": "all"
+          }
+        ],
+        "quoted": null,
+        "reactions": [],
+        "read_at": 1760000042,
+        "sender": "15550001001@s.whatsapp.net",
+        "sender_name": null,
+        "status": "read",
+        "thumbnail": null,
+        "timestamp": 1760000040
+      },
+      {
+        "chat": "120363000000000001@g.us",
+        "content": {
+          "kind": "poll",
+          "options": [
+            "Yes",
+            "No",
+            "Maybe"
+          ],
+          "question": "Synthetic question?",
+          "state": {
+            "can_vote": false,
+            "counts": [
+              1,
+              0,
+              1
+            ],
+            "history_complete": false,
+            "refresh_failed": false,
+            "refresh_needed": false,
+            "refreshing": false,
+            "selectable": 1,
+            "selected": [],
+            "voters": 0
+          }
+        },
+        "delivered_at": null,
+        "edited": false,
+        "forwarded": false,
+        "from_me": false,
+        "history_order": null,
+        "id": "3EB0POLL01",
+        "mentions": [],
+        "quoted": null,
+        "reactions": [
+          {
+            "emoji": "❤️",
+            "from_me": true,
+            "sender": "15550001001@s.whatsapp.net"
+          }
+        ],
+        "read_at": null,
+        "sender": "15550002002@s.whatsapp.net",
+        "sender_name": "Synthetic Sender",
+        "status": "none",
+        "thumbnail": null,
+        "timestamp": 1760000041
+      },
+      {
+        "chat": "120363000000000001@g.us",
+        "content": {
+          "kind": "text",
+          "preview": null,
+          "text": "Synthetic group reply"
+        },
+        "delivered_at": null,
+        "edited": false,
+        "forwarded": false,
+        "from_me": false,
+        "history_order": null,
+        "id": "3EB0GROUP2",
+        "mentions": [],
+        "quoted": null,
+        "reactions": [],
+        "read_at": null,
+        "sender": "100000000003003@lid",
+        "sender_name": "Synthetic Sender",
+        "status": "none",
+        "thumbnail": null,
+        "timestamp": 1760000042
+      }
+    ],
+    "120363000000000002@g.us": [
+      {
+        "chat": "120363000000000002@g.us",
+        "content": {
+          "kind": "text",
+          "preview": null,
+          "text": "Synthetic old group message"
+        },
+        "delivered_at": null,
+        "edited": false,
+        "forwarded": false,
+        "from_me": false,
+        "history_order": null,
+        "id": "3EB0LEFT01",
+        "mentions": [],
+        "quoted": null,
+        "reactions": [],
+        "read_at": null,
+        "sender": "15550002002@s.whatsapp.net",
+        "sender_name": "Synthetic Sender",
+        "status": "none",
+        "thumbnail": null,
+        "timestamp": 1759000000
+      }
+    ],
+    "120363000000000099@newsletter": [
+      {
+        "chat": "120363000000000099@newsletter",
+        "content": {
+          "kind": "text",
+          "preview": null,
+          "text": "Synthetic channel post"
+        },
+        "delivered_at": null,
+        "edited": false,
+        "forwarded": false,
+        "from_me": false,
+        "history_order": null,
+        "id": "3EB0NEWS01",
+        "mentions": [],
+        "quoted": null,
+        "reactions": [],
+        "read_at": null,
+        "sender": "120363000000000099@newsletter",
+        "sender_name": "Synthetic Sender",
+        "status": "none",
+        "thumbnail": null,
+        "timestamp": 1760000043
+      }
+    ],
+    "15550002002@s.whatsapp.net": [
+      {
+        "chat": "15550002002@s.whatsapp.net",
+        "content": {
+          "kind": "text",
+          "preview": {
+            "description": "A synthetic link card",
+            "title": "Example page",
+            "url": "https://example.com/page"
+          },
+          "text": "Synthetic hello https://example.com/page and www.example.org."
+        },
+        "delivered_at": 1760000002,
+        "edited": false,
+        "forwarded": false,
+        "from_me": true,
+        "history_order": 10,
+        "id": "3EB0TEXT01",
+        "mentions": [
+          {
+            "id": "15550002002@s.whatsapp.net",
+            "user": "15550002002"
+          }
+        ],
+        "quoted": null,
+        "reactions": [],
+        "read_at": 1760000003,
+        "sender": "15550001001@s.whatsapp.net",
+        "sender_name": null,
+        "status": "read",
+        "thumbnail": null,
+        "timestamp": 1760000001
+      },
+      {
+        "chat": "15550002002@s.whatsapp.net",
+        "content": {
+          "kind": "text",
+          "preview": null,
+          "text": "Synthetic reply @15550001001"
+        },
+        "delivered_at": null,
+        "edited": true,
+        "forwarded": true,
+        "from_me": false,
+        "history_order": null,
+        "id": "3EB0TEXT02",
+        "mentions": [
+          {
+            "id": "15550001001@s.whatsapp.net",
+            "user": "15550001001"
+          }
+        ],
+        "quoted": {
+          "id": "3EB0TEXT01",
+          "mentions": [],
+          "sender": "15550001001@s.whatsapp.net",
+          "sender_name": null,
+          "summary": "Synthetic hello"
+        },
+        "reactions": [
+          {
+            "emoji": "👍",
+            "from_me": true,
+            "sender": "15550001001@s.whatsapp.net"
+          }
+        ],
+        "read_at": null,
+        "sender": "15550002002@s.whatsapp.net",
+        "sender_name": "Synthetic Sender",
+        "status": "none",
+        "thumbnail": null,
+        "timestamp": 1760000002
+      },
+      {
+        "chat": "15550002002@s.whatsapp.net",
+        "content": {
+          "caption": "Synthetic photo",
+          "kind": "image",
+          "media": {
+            "height": 480,
+            "mime": "image/jpeg",
+            "path": "media/synthetic-photo.jpg",
+            "size": 2048,
+            "width": 640
+          },
+          "motion": {
+            "path": null
+          }
+        },
+        "delivered_at": null,
+        "edited": false,
+        "forwarded": false,
+        "from_me": false,
+        "history_order": null,
+        "id": "3EB0IMAGE1",
+        "mentions": [],
+        "quoted": null,
+        "reactions": [],
+        "read_at": null,
+        "sender": "15550002002@s.whatsapp.net",
+        "sender_name": "Synthetic Sender",
+        "status": "none",
+        "thumbnail": [
+          255,
+          216,
+          255,
+          224,
+          0,
+          16
+        ],
+        "timestamp": 1760000010
+      },
+      {
+        "chat": "15550002002@s.whatsapp.net",
+        "content": {
+          "caption": null,
+          "gif": false,
+          "kind": "video",
+          "media": {
+            "height": 320,
+            "mime": "video/mp4",
+            "path": null,
+            "size": 40000,
+            "width": 320
+          },
+          "note": true,
+          "seconds": 12
+        },
+        "delivered_at": 1760000012,
+        "edited": false,
+        "forwarded": false,
+        "from_me": true,
+        "history_order": null,
+        "id": "3EB0VIDEO1",
+        "mentions": [],
+        "quoted": null,
+        "reactions": [],
+        "read_at": 1760000013,
+        "sender": "15550001001@s.whatsapp.net",
+        "sender_name": null,
+        "status": "read",
+        "thumbnail": null,
+        "timestamp": 1760000011
+      },
+      {
+        "chat": "15550002002@s.whatsapp.net",
+        "content": {
+          "caption": "Synthetic gif",
+          "gif": true,
+          "kind": "video",
+          "media": {
+            "height": 150,
+            "mime": "video/mp4",
+            "path": null,
+            "size": 9000,
+            "width": 200
+          },
+          "note": false,
+          "seconds": 3
+        },
+        "delivered_at": null,
+        "edited": false,
+        "forwarded": false,
+        "from_me": false,
+        "history_order": null,
+        "id": "3EB0GIF001",
+        "mentions": [],
+        "quoted": null,
+        "reactions": [],
+        "read_at": null,
+        "sender": "15550002002@s.whatsapp.net",
+        "sender_name": "Synthetic Sender",
+        "status": "none",
+        "thumbnail": null,
+        "timestamp": 1760000012
+      },
+      {
+        "chat": "15550002002@s.whatsapp.net",
+        "content": {
+          "kind": "audio",
+          "media": {
+            "height": null,
+            "mime": "audio/ogg; codecs=opus",
+            "path": "media/synthetic-voice.ogg",
+            "size": 5000,
+            "width": null
+          },
+          "seconds": 4,
+          "voice_note": true,
+          "waveform": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63
+          ]
+        },
+        "delivered_at": null,
+        "edited": false,
+        "forwarded": false,
+        "from_me": false,
+        "history_order": null,
+        "id": "3EB0VOICE1",
+        "mentions": [],
+        "quoted": null,
+        "reactions": [],
+        "read_at": null,
+        "sender": "15550002002@s.whatsapp.net",
+        "sender_name": "Synthetic Sender",
+        "status": "none",
+        "thumbnail": null,
+        "timestamp": 1760000013
+      },
+      {
+        "chat": "15550002002@s.whatsapp.net",
+        "content": {
+          "kind": "audio",
+          "media": {
+            "height": null,
+            "mime": "audio/mpeg",
+            "path": null,
+            "size": 70000,
+            "width": null
+          },
+          "seconds": 61,
+          "voice_note": false,
+          "waveform": []
+        },
+        "delivered_at": 1760000015,
+        "edited": false,
+        "forwarded": false,
+        "from_me": true,
+        "history_order": null,
+        "id": "3EB0AUDIO1",
+        "mentions": [],
+        "quoted": null,
+        "reactions": [],
+        "read_at": 1760000016,
+        "sender": "15550001001@s.whatsapp.net",
+        "sender_name": null,
+        "status": "read",
+        "thumbnail": null,
+        "timestamp": 1760000014
+      },
+      {
+        "chat": "15550002002@s.whatsapp.net",
+        "content": {
+          "caption": "Synthetic document",
+          "file_name": "synthetic.pdf",
+          "kind": "document",
+          "media": {
+            "height": null,
+            "mime": "application/pdf",
+            "path": null,
+            "size": 12345,
+            "width": null
+          },
+          "pages": 3
+        },
+        "delivered_at": null,
+        "edited": false,
+        "forwarded": false,
+        "from_me": false,
+        "history_order": null,
+        "id": "3EB0DOC001",
+        "mentions": [],
+        "quoted": null,
+        "reactions": [],
+        "read_at": null,
+        "sender": "15550002002@s.whatsapp.net",
+        "sender_name": "Synthetic Sender",
+        "status": "none",
+        "thumbnail": null,
+        "timestamp": 1760000015
+      },
+      {
+        "chat": "15550002002@s.whatsapp.net",
+        "content": {
+          "animated": true,
+          "kind": "sticker",
+          "media": {
+            "height": 512,
+            "mime": "image/webp",
+            "path": null,
+            "size": 3000,
+            "width": 512
+          }
+        },
+        "delivered_at": null,
+        "edited": false,
+        "forwarded": false,
+        "from_me": false,
+        "history_order": null,
+        "id": "3EB0STICK1",
+        "mentions": [],
+        "quoted": null,
+        "reactions": [],
+        "read_at": null,
+        "sender": "15550002002@s.whatsapp.net",
+        "sender_name": "Synthetic Sender",
+        "status": "none",
+        "thumbnail": null,
+        "timestamp": 1760000016
+      },
+      {
+        "chat": "15550002002@s.whatsapp.net",
+        "content": {
+          "caption": null,
+          "count": 4,
+          "kind": "sticker_pack",
+          "name": "Synthetic pack",
+          "publisher": "Synthetic"
+        },
+        "delivered_at": null,
+        "edited": false,
+        "forwarded": false,
+        "from_me": false,
+        "history_order": null,
+        "id": "3EB0PACK01",
+        "mentions": [],
+        "quoted": null,
+        "reactions": [],
+        "read_at": null,
+        "sender": "15550002002@s.whatsapp.net",
+        "sender_name": "Synthetic Sender",
+        "status": "none",
+        "thumbnail": null,
+        "timestamp": 1760000017
+      },
+      {
+        "chat": "15550002002@s.whatsapp.net",
+        "content": {
+          "address": "1 Synthetic Street",
+          "kind": "location",
+          "latitude": -23.5,
+          "longitude": -46.6,
+          "name": "Synthetic place"
+        },
+        "delivered_at": 1760000019,
+        "edited": false,
+        "forwarded": false,
+        "from_me": true,
+        "history_order": null,
+        "id": "3EB0LOC001",
+        "mentions": [],
+        "quoted": null,
+        "reactions": [],
+        "read_at": 1760000020,
+        "sender": "15550001001@s.whatsapp.net",
+        "sender_name": null,
+        "status": "read",
+        "thumbnail": null,
+        "timestamp": 1760000018
+      },
+      {
+        "chat": "15550002002@s.whatsapp.net",
+        "content": {
+          "accuracy_m": 10,
+          "ended": false,
+          "heading_deg": 90,
+          "kind": "livelocation",
+          "latitude": 51.5,
+          "longitude": -0.12,
+          "newer_on_phone": true,
+          "sequence": 3,
+          "speed_mps": 1.5,
+          "updated": 1760000050
+        },
+        "delivered_at": null,
+        "edited": false,
+        "forwarded": false,
+        "from_me": false,
+        "history_order": null,
+        "id": "3EB0LIVE01",
+        "mentions": [],
+        "quoted": null,
+        "reactions": [],
+        "read_at": null,
+        "sender": "15550002002@s.whatsapp.net",
+        "sender_name": "Synthetic Sender",
+        "status": "none",
+        "thumbnail": [
+          255,
+          216,
+          255,
+          224,
+          0,
+          16
+        ],
+        "timestamp": 1760000019
+      },
+      {
+        "chat": "15550002002@s.whatsapp.net",
+        "content": {
+          "display_name": "Synthetic Contact",
+          "kind": "contact",
+          "vcard": "BEGIN:VCARD\nFN:Synthetic Contact\nEND:VCARD"
+        },
+        "delivered_at": null,
+        "edited": false,
+        "forwarded": false,
+        "from_me": false,
+        "history_order": null,
+        "id": "3EB0VCARD1",
+        "mentions": [],
+        "quoted": null,
+        "reactions": [],
+        "read_at": null,
+        "sender": "15550002002@s.whatsapp.net",
+        "sender_name": "Synthetic Sender",
+        "status": "none",
+        "thumbnail": null,
+        "timestamp": 1760000020
+      },
+      {
+        "chat": "15550002002@s.whatsapp.net",
+        "content": {
+          "kind": "revoked"
+        },
+        "delivered_at": null,
+        "edited": false,
+        "forwarded": false,
+        "from_me": false,
+        "history_order": null,
+        "id": "3EB0REVOK1",
+        "mentions": [],
+        "quoted": null,
+        "reactions": [],
+        "read_at": null,
+        "sender": "15550002002@s.whatsapp.net",
+        "sender_name": "Synthetic Sender",
+        "status": "none",
+        "thumbnail": null,
+        "timestamp": 1760000021
+      },
+      {
+        "chat": "15550002002@s.whatsapp.net",
+        "content": {
+          "kind": "unsupported",
+          "what": "A synthetic unsupported message"
+        },
+        "delivered_at": null,
+        "edited": false,
+        "forwarded": false,
+        "from_me": false,
+        "history_order": null,
+        "id": "3EB0UNSUP1",
+        "mentions": [],
+        "quoted": null,
+        "reactions": [],
+        "read_at": null,
+        "sender": "15550002002@s.whatsapp.net",
+        "sender_name": "Synthetic Sender",
+        "status": "none",
+        "thumbnail": null,
+        "timestamp": 1760000022
+      },
+      {
+        "chat": "15550002002@s.whatsapp.net",
+        "content": {
+          "kind": "phoneonly",
+          "live_location": false,
+          "once": "photo",
+          "view_once": true
+        },
+        "delivered_at": null,
+        "edited": false,
+        "forwarded": false,
+        "from_me": false,
+        "history_order": null,
+        "id": "3EB0ONCE01",
+        "mentions": [],
+        "quoted": null,
+        "reactions": [],
+        "read_at": null,
+        "sender": "15550002002@s.whatsapp.net",
+        "sender_name": "Synthetic Sender",
+        "status": "none",
+        "thumbnail": null,
+        "timestamp": 1760000023
+      },
+      {
+        "chat": "15550002002@s.whatsapp.net",
+        "content": {
+          "duration": 0,
+          "group": false,
+          "kind": "call",
+          "status": "missed",
+          "video": true
+        },
+        "delivered_at": null,
+        "edited": false,
+        "forwarded": false,
+        "from_me": false,
+        "history_order": null,
+        "id": "zapfast-call-0001",
+        "mentions": [],
+        "quoted": null,
+        "reactions": [],
+        "read_at": null,
+        "sender": "15550002002@s.whatsapp.net",
+        "sender_name": "Synthetic Sender",
+        "status": "none",
+        "thumbnail": null,
+        "timestamp": 1760000024
+      },
+      {
+        "chat": "15550002002@s.whatsapp.net",
+        "content": {
+          "duration": 95,
+          "group": false,
+          "kind": "call",
+          "status": "answered",
+          "video": false
+        },
+        "delivered_at": 1760000026,
+        "edited": false,
+        "forwarded": false,
+        "from_me": true,
+        "history_order": null,
+        "id": "3EB0CALL02",
+        "mentions": [],
+        "quoted": null,
+        "reactions": [],
+        "read_at": 1760000027,
+        "sender": "15550001001@s.whatsapp.net",
+        "sender_name": null,
+        "status": "read",
+        "thumbnail": null,
+        "timestamp": 1760000025
+      },
+      {
+        "chat": "15550002002@s.whatsapp.net",
+        "content": {
+          "kind": "text",
+          "preview": null,
+          "text": "Synthetic message being deleted"
+        },
+        "delivered_at": 1760000028,
+        "edited": false,
+        "forwarded": false,
+        "from_me": true,
+        "history_order": null,
+        "id": "3EB0DELME2",
+        "mentions": [],
+        "quoted": null,
+        "reactions": [],
+        "read_at": 1760000029,
+        "sender": "15550001001@s.whatsapp.net",
+        "sender_name": null,
+        "status": "read",
+        "thumbnail": null,
+        "timestamp": 1760000027
+      }
+    ],
+    "15550004004@s.whatsapp.net": [
+      {
+        "chat": "15550004004@s.whatsapp.net",
+        "content": {
+          "kind": "text",
+          "preview": null,
+          "text": "Synthetic message after the clear"
+        },
+        "delivered_at": null,
+        "edited": false,
+        "forwarded": false,
+        "from_me": false,
+        "history_order": null,
+        "id": "3EB0GONE02",
+        "mentions": [],
+        "quoted": null,
+        "reactions": [],
+        "read_at": null,
+        "sender": "15550004004@s.whatsapp.net",
+        "sender_name": "Synthetic Sender",
+        "status": "none",
+        "thumbnail": null,
+        "timestamp": 1760000600
+      }
+    ]
+  },
+  "now": 1800000000,
+  "pins": {
+    "100000000003003@lid": [],
+    "120363000000000001@g.us": [
+      {
+        "by_me": false,
+        "expires_at": 1900000000,
+        "id": "3EB0GROUP2",
+        "pinned_at": 1760000321,
+        "sender": "100000000003003@lid"
+      }
+    ],
+    "120363000000000002@g.us": [],
+    "120363000000000099@newsletter": [],
+    "15550002002@s.whatsapp.net": [
+      {
+        "by_me": true,
+        "expires_at": 1900000000,
+        "id": "3EB0TEXT02",
+        "pinned_at": 1760000320,
+        "sender": ""
+      }
+    ],
+    "15550004004@s.whatsapp.net": []
+  },
+  "stars": {
+    "100000000003003@lid": [],
+    "120363000000000001@g.us": [
+      "3EB0POLL01"
+    ],
+    "120363000000000002@g.us": [],
+    "120363000000000099@newsletter": [],
+    "15550002002@s.whatsapp.net": [
+      "3EB0TEXT01"
+    ],
+    "15550004004@s.whatsapp.net": []
+  },
+  "synthetic": true
+}
