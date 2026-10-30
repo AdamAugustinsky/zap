@@ -209,7 +209,7 @@ func (e *Engine) incoming(evt *events.Message) error {
 	if noChat(evt.Info) {
 		return nil
 	}
-	chat, sender := e.canonical(e.chatOf(evt.Info)), e.canonical(evt.Info.Sender)
+	chat, sender := e.chatID(evt.Info), e.senderID(evt.Info)
 	if x := unwrap(evt.Message); x != nil {
 		e.timerOf(chat, x, evt.Info)
 	}
@@ -295,7 +295,7 @@ func (e *Engine) undecryptable(evt *events.UndecryptableMessage) error {
 		return nil
 	}
 	slog.Info("zapfast wa: a message did not decrypt", "group", evt.Info.IsGroup, "unavailable", evt.IsUnavailable, "type", string(evt.UnavailableType))
-	chat, sender := e.canonical(e.chatOf(evt.Info)), e.canonical(evt.Info.Sender)
+	chat, sender := e.chatID(evt.Info), e.senderID(evt.Info)
 	if _, err := e.arch.Message(chat, evt.Info.ID); !noRows(err) {
 		return err // stored already, or the archive failed
 	}
@@ -510,6 +510,45 @@ func (e *Engine) chatOf(info types.MessageInfo) types.JID {
 		return info.Sender
 	}
 	return info.Chat
+}
+
+// chatID is the chat a live message is filed in. A direct chat WhatsApp
+// addresses by a privacy id (@lid) is filed under its phone number when the
+// message carries it (SenderAlt on theirs, RecipientAlt on ours, as a
+// message sent from the phone is), whether or not the mapping is known yet:
+// the phone shows one chat, not one per id. Otherwise canonical decides.
+func (e *Engine) chatID(info types.MessageInfo) string {
+	j := e.chatOf(info)
+	if j.Server == types.HiddenUserServer {
+		alt := info.SenderAlt
+		if info.IsFromMe {
+			alt = info.RecipientAlt
+		}
+		if alt.Server == types.DefaultUserServer {
+			return e.learned(j, alt)
+		}
+	}
+	return e.canonical(j)
+}
+
+// senderID is who sent a live message, by phone number when the message
+// carries it beside a privacy id (a group member's), as chatID files chats.
+func (e *Engine) senderID(info types.MessageInfo) string {
+	if !info.IsFromMe && info.Sender.Server == types.HiddenUserServer && info.SenderAlt.Server == types.DefaultUserServer {
+		return e.learned(info.Sender, info.SenderAlt)
+	}
+	return e.canonical(info.Sender)
+}
+
+// learned files what was kept under privacy id lid under its phone number
+// pn, as canonical does once the mapping is known, and returns pn.
+func (e *Engine) learned(lid, pn types.JID) string {
+	from, to := lid.ToNonAD().String(), pn.ToNonAD().String()
+	if err := e.arch.Canonicalize(from, to); err != nil {
+		slog.Warn("zapfast wa: canonicalizing a chat", "err", err)
+	}
+	e.remapEarly(from, to)
+	return to
 }
 
 // timerOf follows a chat's disappearing-message timer: a protocol message

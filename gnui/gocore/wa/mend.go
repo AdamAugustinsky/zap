@@ -44,6 +44,7 @@ func (e *Engine) mend() {
 		}
 	}
 	e.mendSignalling()
+	e.mendPrivacyIDs()
 	waiting, err := e.arch.OfKind(kindWaiting, time.Now().Add(-askBack).Unix())
 	if err != nil {
 		slog.Warn("zapfast wa: listing waiting messages", "err", err)
@@ -138,5 +139,25 @@ func (e *Engine) mendSignalling() {
 		if err := e.arch.UpdateChat(chat, func(c *store.Chat) { c.Preview = summary(newest[0]) }); err == nil {
 			e.emitChat(chat)
 		}
+	}
+}
+
+// mendPrivacyIDs files each chat kept under a privacy id under its phone
+// number once the mapping is known (canonical), as a later message would.
+func (e *Engine) mendPrivacyIDs() {
+	chats, err := e.arch.Chats()
+	if err != nil {
+		return
+	}
+	moved := false
+	for _, c := range chats {
+		j, err := types.ParseJID(c.ID)
+		if err != nil || j.Server != types.HiddenUserServer {
+			continue
+		}
+		moved = e.canonical(j) != c.ID || moved
+	}
+	if moved {
+		e.emitChats()
 	}
 }
