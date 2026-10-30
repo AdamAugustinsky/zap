@@ -198,6 +198,12 @@ func isPlaintext(path string) (bool, error) {
 	return err == nil && bytes.Equal(h[:], plaintextHeader), err
 }
 
+// hasData reports whether path is a file with something in it.
+func hasData(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.Size() > 0
+}
+
 // Connect opens a connection, applies the key and proves it.
 func (c *Connector) Connect(ctx context.Context) (driver.Conn, error) {
 	l, err := load()
@@ -215,8 +221,21 @@ func (c *Connector) Connect(ctx context.Context) (driver.Conn, error) {
 		if plain {
 			return nil, ErrPlaintext
 		}
+		if !c.cfg.ReadOnly && hasData(c.cfg.Path) {
+			// The key is proven read-only first: a read-write connection
+			// that fails the proof still checkpoints the WAL into the
+			// database, and deletes it, as it closes, and a wrong key must
+			// change nothing. A read-only one never checkpoints.
+			probe := c.cfg
+			probe.ReadOnly, probe.Pragmas = true, nil
+			pc, err := (&Connector{cfg: probe}).Connect(ctx)
+			if err != nil {
+				return nil, err
+			}
+			pc.Close()
+		}
 	}
-	cn := &conn{l: l, call: clib.NewCall(), icall: clib.NewCall(), out: new(outParams)}
+	cn := &conn{l: l, call: clib.NewCall(), icall: clib.NewCall(), out: new(outParams), path: c.cfg.Path}
 	flags := int32(openNoMutex | openExResCode)
 	if c.cfg.ReadOnly {
 		flags |= openReadOnly
@@ -238,6 +257,7 @@ func (c *Connector) Connect(ctx context.Context) (driver.Conn, error) {
 		cn.Close()
 		return nil, err
 	}
+	cn.ready = true
 	return cn, nil
 }
 
@@ -297,6 +317,10 @@ type conn struct {
 	out    *outParams
 	sqlbuf []byte
 	closed bool
+	// path is the database's file, and ready is set once the key and the
+	// pragmas are in: what a fault hook is told and asked from (faults.go).
+	path  string
+	ready bool
 }
 
 var (
@@ -427,6 +451,18 @@ func (cn *conn) execBytes(ctx context.Context, query []byte, args []driver.Named
 	if cn.closed {
 		return nil, driver.ErrBadConn
 	}
+	if op, fault := cn.faultOf(query); fault != FaultNone {
+		var res driver.Result
+		err := cn.withFault(op, fault, func() (err error) {
+			res, err = cn.execStatements(ctx, query, args)
+			return err
+		})
+		return res, err
+	}
+	return cn.execStatements(ctx, query, args)
+}
+
+func (cn *conn) execStatements(ctx context.Context, query []byte, args []driver.NamedValue) (driver.Result, error) {
 	if err := cn.setSQL(query); err != nil {
 		return nil, err
 	}
@@ -790,7 +826,11 @@ func (s *stmt) ExecContext(ctx context.Context, args []driver.NamedValue) (drive
 	}
 	stop := s.cn.watch(ctx)
 	defer stop()
-	r, err := s.run()
+	var r result
+	err := s.cn.withFault(FaultExec, s.cn.stmtFault(), func() (err error) {
+		r, err = s.run()
+		return err
+	})
 	if err != nil {
 		return nil, ctxError(ctx, err)
 	}
