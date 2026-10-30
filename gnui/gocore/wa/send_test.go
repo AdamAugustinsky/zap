@@ -9,6 +9,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -225,6 +226,48 @@ func TestSendFiles(t *testing.T) {
 	h.send(abi.Command{Tag: abi.CommandTagSendFiles, SendFiles: abi.CommandSendFiles{Chat: chatID(peer), Paths: [][]byte{[]byte(filepath.Join(dir, "missing"))}}})
 	if got := lastError(t, h.take()); got == "" {
 		t.Fatal("a missing file is reported")
+	}
+}
+
+// A sent video carries its size, length and (on macOS) a poster thumbnail,
+// as the Rust core's did (zf:src/backend/worker/video_preview.rs:46), so it
+// shows as a video before it is downloaded.
+func TestSendVideoPreview(t *testing.T) {
+	h := newHarness(t, options{})
+	h.start()
+	for _, c := range []struct {
+		name           string
+		w, hgt, secs   uint32
+		thumbW, thumbH int
+	}{
+		{"launch.mp4", 640, 360, 4, 96, 54},
+		{"note.mp4", 360, 360, 4, 96, 96},
+	} {
+		path := filepath.Join("..", "demo", "assets", "videos", c.name)
+		h.send(abi.Command{Tag: abi.CommandTagSendFiles, SendFiles: abi.CommandSendFiles{Chat: chatID(peer), Paths: [][]byte{[]byte(path)}}})
+		evs := h.take()
+		v := h.f.lastSent().msg.GetVideoMessage()
+		if v.GetWidth() != c.w || v.GetHeight() != c.hgt || v.GetSeconds() != c.secs || v.GetMimetype() != "video/mp4" {
+			t.Fatalf("%s: %v", c.name, v)
+		}
+		if runtime.GOOS == "darwin" {
+			cfg, format, err := image.DecodeConfig(bytes.NewReader(v.GetJPEGThumbnail()))
+			if err != nil || format != "jpeg" || cfg.Width != c.thumbW || cfg.Height != c.thumbH {
+				t.Fatalf("%s: thumbnail %v %s %+v", c.name, err, format, cfg)
+			}
+		}
+		m := evs[0].Messages.Messages[0]
+		if m.Content.Tag != abi.ContentTagVideo || m.Content.Video.Seconds != c.secs || m.Content.Video.Media.Width != c.w || m.HasThumbnail != (runtime.GOOS == "darwin") {
+			t.Fatalf("%s: row %+v", c.name, m)
+		}
+	}
+	// A GIF's clip has no file: its poster is read from a temporary copy.
+	data, err := os.ReadFile(filepath.Join("..", "demo", "assets", "videos", "launch.mp4"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if w, _, secs, thumb := preview("", data); w != 640 || secs != 4 || (len(thumb) > 0) != (runtime.GOOS == "darwin") {
+		t.Fatalf("from bytes: %d %d %d", w, secs, len(thumb))
 	}
 }
 

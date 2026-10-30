@@ -16,6 +16,11 @@
 // ([MakeSticker]) are encoded by libwebp, from libzfwebp.dylib
 // (packaging/macos/libwebp/build.sh), loaded with gonativeui/clib.
 //
+// A video being sent is measured from its MP4 header ([InspectVideo]: size,
+// length and when its poster shows), as upstream's mp4_frames poster; its
+// poster frame is decoded by AVFoundation ([VideoPoster]) where upstream
+// decoded H.264 with openh264.
+//
 // Nothing here needs cgo. A codec or library that is missing gives an error
 // matching [ErrUnavailable] (and errors.ErrUnsupported), never a crash.
 package av

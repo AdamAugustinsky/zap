@@ -347,13 +347,13 @@ func (u *upload) message(caption string) *waE2E.Message {
 	case u.sticker:
 		return &waE2E.Message{StickerMessage: &waE2E.StickerMessage{URL: proto.String(r.URL), DirectPath: proto.String(r.DirectPath), MediaKey: r.MediaKey, FileEncSHA256: r.FileEncSHA256, FileSHA256: r.FileSHA256, FileLength: proto.Uint64(r.FileLength), Mimetype: proto.String(u.mime), Width: nonzero(u.width), Height: nonzero(u.height), IsAnimated: proto.Bool(u.animated)}}
 	case u.gif:
-		return &waE2E.Message{VideoMessage: &waE2E.VideoMessage{URL: proto.String(r.URL), DirectPath: proto.String(r.DirectPath), MediaKey: r.MediaKey, FileEncSHA256: r.FileEncSHA256, FileSHA256: r.FileSHA256, FileLength: proto.Uint64(r.FileLength), Mimetype: proto.String(u.mime), Caption: capt, Width: nonzero(u.width), Height: nonzero(u.height), GifPlayback: proto.Bool(true)}}
+		return &waE2E.Message{VideoMessage: &waE2E.VideoMessage{URL: proto.String(r.URL), DirectPath: proto.String(r.DirectPath), MediaKey: r.MediaKey, FileEncSHA256: r.FileEncSHA256, FileSHA256: r.FileSHA256, FileLength: proto.Uint64(r.FileLength), Mimetype: proto.String(u.mime), Caption: capt, Width: nonzero(u.width), Height: nonzero(u.height), Seconds: nonzero(u.seconds), JPEGThumbnail: u.thumb, GifPlayback: proto.Bool(true)}}
 	}
 	switch u.kind {
 	case whatsmeow.MediaImage:
 		return &waE2E.Message{ImageMessage: &waE2E.ImageMessage{URL: proto.String(r.URL), DirectPath: proto.String(r.DirectPath), MediaKey: r.MediaKey, FileEncSHA256: r.FileEncSHA256, FileSHA256: r.FileSHA256, FileLength: proto.Uint64(r.FileLength), Mimetype: proto.String(u.mime), Caption: capt, Width: nonzero(u.width), Height: nonzero(u.height), JPEGThumbnail: u.thumb}}
 	case whatsmeow.MediaVideo:
-		return &waE2E.Message{VideoMessage: &waE2E.VideoMessage{URL: proto.String(r.URL), DirectPath: proto.String(r.DirectPath), MediaKey: r.MediaKey, FileEncSHA256: r.FileEncSHA256, FileSHA256: r.FileSHA256, FileLength: proto.Uint64(r.FileLength), Mimetype: proto.String(u.mime), Caption: capt}}
+		return &waE2E.Message{VideoMessage: &waE2E.VideoMessage{URL: proto.String(r.URL), DirectPath: proto.String(r.DirectPath), MediaKey: r.MediaKey, FileEncSHA256: r.FileEncSHA256, FileSHA256: r.FileSHA256, FileLength: proto.Uint64(r.FileLength), Mimetype: proto.String(u.mime), Caption: capt, Width: nonzero(u.width), Height: nonzero(u.height), Seconds: nonzero(u.seconds), JPEGThumbnail: u.thumb}}
 	case whatsmeow.MediaAudio:
 		return &waE2E.Message{AudioMessage: &waE2E.AudioMessage{URL: proto.String(r.URL), DirectPath: proto.String(r.DirectPath), MediaKey: r.MediaKey, FileEncSHA256: r.FileEncSHA256, FileSHA256: r.FileSHA256, FileLength: proto.Uint64(r.FileLength), Mimetype: proto.String(u.mime), PTT: proto.Bool(u.ptt), Seconds: nonzero(u.seconds), Waveform: u.wave}}
 	}
@@ -475,7 +475,10 @@ func readFile(path string, documents bool) (*upload, error) {
 			u.kind, u.width, u.height, u.thumb = whatsmeow.MediaImage, w, h, thumbnail(data)
 		}
 	case strings.HasPrefix(kind, "video/"):
+		// The picture, size and length phones show before downloading it
+		// (zf:src/backend/worker.rs:11427).
 		u.kind = whatsmeow.MediaVideo
+		u.width, u.height, u.seconds, u.thumb = preview(path, data)
 	case strings.HasPrefix(kind, "audio/"):
 		u.kind = whatsmeow.MediaAudio
 	}
