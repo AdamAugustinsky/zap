@@ -328,7 +328,7 @@ func parseDepth(e *events.Message, chat, sender string, depth int) store.Message
 	case p.GetLocationMessage() != nil:
 		x := p.GetLocationMessage()
 		m.Kind = kindLocation
-		m.Text = x.GetName() + "\n" + x.GetAddress()
+		m.Text = oneLine(x.GetName()) + "\n" + x.GetAddress()
 		m.Latitude = x.GetDegreesLatitude()
 		m.Longitude = x.GetDegreesLongitude()
 		ctx = x.GetContextInfo()
@@ -344,12 +344,12 @@ func parseDepth(e *events.Message, chat, sender string, depth int) store.Message
 	case p.GetContactMessage() != nil:
 		x := p.GetContactMessage()
 		m.Kind = kindContact
-		m.Text = x.GetDisplayName() + "\n" + x.GetVcard()
+		m.Text = oneLine(x.GetDisplayName()) + "\n" + x.GetVcard()
 		ctx = x.GetContextInfo()
 	case p.GetContactsArrayMessage() != nil:
 		x := p.GetContactsArrayMessage()
 		m.Kind = kindContact
-		m.Text = x.GetDisplayName() + "\n"
+		m.Text = oneLine(x.GetDisplayName()) + "\n"
 		for _, c := range x.GetContacts() {
 			m.Text += c.GetVcard() + "\n"
 		}
@@ -682,8 +682,12 @@ func nativeChoices(im *waE2E.InteractiveMessage) []nativeChoice {
 	return out
 }
 
-// safeURL is a web address with a host and no credentials.
+// safeURL is a web address with a host and no credentials. url.Parse lets
+// control characters through in a fragment, so they are refused here.
 func safeURL(raw string) bool {
+	if strings.ContainsFunc(raw, unicode.IsControl) {
+		return false
+	}
 	u, err := url.Parse(raw)
 	return err == nil && u.Host != "" && (u.Scheme == "http" || u.Scheme == "https") && u.User == nil
 }
@@ -802,3 +806,7 @@ func firstLine(text string) (string, string) {
 	first, rest, _ := strings.Cut(text, "\n")
 	return first, rest
 }
+
+// oneLine is a name as the first line of such a text: a sender's newline
+// in it would push the rest of the name into the address or the vCard.
+func oneLine(name string) string { return strings.ReplaceAll(name, "\n", " ") }

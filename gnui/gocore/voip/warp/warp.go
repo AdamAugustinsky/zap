@@ -50,10 +50,12 @@ func MITag(authKey, packetWithoutTag []byte, roc uint32) [MITagMaxLen]byte {
 }
 
 // VerifyMITag checks a received tag in constant time. A length mismatch is a
-// rejection. Callers must reject a packet whose tag fails before folding any
-// receive ROC state (RFC 3711 3.3.1).
+// rejection, and so is a tag length outside 1..MITagMaxLen: an empty tag
+// would compare equal to an empty expected tag and authenticate anything.
+// Callers must reject a packet whose tag fails before folding any receive
+// ROC state (RFC 3711 3.3.1).
 func VerifyMITag(authKey, packetWithoutTag []byte, roc uint32, tagLen int, received []byte) bool {
-	if tagLen > MITagMaxLen || len(received) != tagLen {
+	if tagLen < 1 || tagLen > MITagMaxLen || len(received) != tagLen {
 		return false
 	}
 	expected := MITag(authKey, packetWithoutTag, roc)

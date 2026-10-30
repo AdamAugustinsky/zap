@@ -1,6 +1,6 @@
 // From zapfast-go 3104c46 (internal/migration/session_signal.go), MIT: the
 // Signal record conversion, unchanged but for errSignalRecord wrapping
-// ErrIncompatible.
+// ErrIncompatible and sessionJID refusing a ':' left in the user.
 
 package migrate
 
@@ -103,7 +103,9 @@ func sessionJID(source string) (types.JID, error) {
 		return types.EmptyJID, errSignalRecord
 	}
 	jid, err := types.ParseJID(source)
-	if err != nil || jid.User == "" || jid.Server == "" || strings.ContainsAny(jid.User, " \t\r\n/@") {
+	// types.ParseJID leaves a ':' in the user of a malformed address
+	// (":.0@0"), which no account's address has.
+	if err != nil || jid.User == "" || jid.Server == "" || strings.ContainsAny(jid.User, " \t\r\n/@:") {
 		return types.EmptyJID, errSignalRecord
 	}
 	if jid.Server == types.LegacyUserServer {
