@@ -392,9 +392,19 @@ func (e *Engine) groupChanged(v *events.GroupInfo) error {
 		}
 		return err
 	}
+	// The members' ids before the row is locked: canonical moves a privacy
+	// id's chat over, which takes the archive's lock that UpdateChat holds.
+	ids := func(js []types.JID) []string {
+		out := make([]string, len(js))
+		for i, j := range js {
+			out[i] = e.canonical(j)
+		}
+		return out
+	}
+	join, leave, promote, demote := ids(v.Join), ids(v.Leave), ids(v.Promote), ids(v.Demote)
 	leftUs := false
-	for _, j := range v.Leave {
-		if e.isMe(e.canonical(j)) || e.isMe(j.ToNonAD().String()) {
+	for i, j := range v.Leave {
+		if e.isMe(leave[i]) || e.isMe(j.ToNonAD().String()) {
 			leftUs = true
 		}
 	}
@@ -421,8 +431,7 @@ func (e *Engine) groupChanged(v *events.GroupInfo) error {
 				c.EphemeralSeconds = v.Ephemeral.DisappearingTimer
 			}
 		}
-		for _, j := range v.Join {
-			id := e.canonical(j)
+		for _, id := range join {
 			if !contains(c.Participants, id) {
 				c.Participants = append(c.Participants, id)
 			}
@@ -430,19 +439,19 @@ func (e *Engine) groupChanged(v *events.GroupInfo) error {
 				c.Left = false
 			}
 		}
-		for _, j := range v.Leave {
-			c.Participants = without(c.Participants, e.canonical(j))
+		for _, id := range leave {
+			c.Participants = without(c.Participants, id)
 		}
 		if leftUs {
 			c.Left, c.Admin = true, false
 		}
-		for _, j := range v.Promote {
-			if e.isMe(e.canonical(j)) {
+		for _, id := range promote {
+			if e.isMe(id) {
 				c.Admin = true
 			}
 		}
-		for _, j := range v.Demote {
-			if e.isMe(e.canonical(j)) {
+		for _, id := range demote {
+			if e.isMe(id) {
 				c.Admin = false
 			}
 		}

@@ -132,6 +132,25 @@ func TestGroupChangesFromWhatsApp(t *testing.T) {
 	}
 }
 
+// A member WhatsApp names by a mapped privacy id is filed under the number,
+// its chat moved over before the group's row is locked: moving it under
+// that lock waited on the lock itself, and the engine stopped for good.
+func TestGroupChangeByPrivacyID(t *testing.T) {
+	h := inGroup(t)
+	lid := types.NewJID("88001234567", types.HiddenUserServer)
+	h.f.lids[lid] = peer2
+	h.inject(&events.GroupInfo{JID: group, Join: []types.JID{lid}, Promote: []types.JID{lid}})
+	// the change, then the info a promotion asks for again
+	c := only(h.take(), abi.EventTagChatUpdated)[0].ChatUpdated.Chat
+	if len(c.Participants) != 3 || string(c.Participants[2]) != peer2.String() {
+		t.Fatalf("joined: %+v", c.Participants)
+	}
+	h.inject(&events.GroupInfo{JID: group, Leave: []types.JID{lid}})
+	if c := one(t, h.take(), abi.EventTagChatUpdated).ChatUpdated.Chat; len(c.Participants) != 2 {
+		t.Fatalf("left: %+v", c.Participants)
+	}
+}
+
 func TestInvites(t *testing.T) {
 	h := linked(t)
 	x := h.f.more()
