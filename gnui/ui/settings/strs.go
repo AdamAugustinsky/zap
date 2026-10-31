@@ -14,6 +14,7 @@ type strs struct {
 	smaller, larger, play, cancel, save                                string
 	storageUsed, clearMedia, images, videos, stickersName, other       string
 	openThemes, howTheme, tagline, shortcuts, about, sourceCode        string
+	edit                                                               string
 	creditBefore, creditAfter                                          string
 	updateTitle, releaseNotes, checkingDownload, downloading, progress string
 	of, readyToInstall, finishFirst, restart, preparing, fromGitHub    string
@@ -36,6 +37,7 @@ func (t *strs) build() {
 	t.versionLine = "Zap " + state.Version
 	t.checkNow, t.openFolder, t.open, t.change = T("Check now"), T("Open folder"), T("Open"), T("Change…")
 	t.useDefault, t.clear = T("Use default"), T("Clear")
+	t.edit = T("Edit…")
 	t.smaller, t.larger, t.play, t.cancel, t.save = T("Smaller"), T("Larger"), T("Play"), T("Cancel"), T("Save")
 	t.storageUsed, t.clearMedia = T("Storage used"), T("Clear…")
 	t.images, t.videos, t.stickersName, t.other = T("Images"), T("Videos and GIFs"), T("Stickers"), T("Other")

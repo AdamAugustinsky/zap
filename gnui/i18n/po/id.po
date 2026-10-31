@@ -5219,3 +5219,15 @@ msgstr "Warna gelembung"
 #: gnui
 msgid "This copy of Zap was built on this Mac, so it updates by being rebuilt, not from a release."
 msgstr "Salinan Zap ini dibuat di Mac ini, jadi diperbarui dengan membuatnya ulang, bukan dari rilis."
+
+#: gnui
+msgid "Actions"
+msgstr "Tindakan"
+
+#: gnui
+msgid "Colours and grain for the space on screen. With no folders, that is your account's main view."
+msgstr "Warna dan butiran untuk ruang di layar. Tanpa folder, itu tampilan utama akun Anda."
+
+#: gnui
+msgid "Edit…"
+msgstr "Edit…"

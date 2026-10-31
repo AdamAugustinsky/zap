@@ -52,6 +52,12 @@ func (s *Screen) control(e *screen.Env, d *rowDef, title string) {
 		if v, ok := s.popup(e, title, languageIndex(st), s.tx.lang[:], d.ctrl); ok {
 			s.setLanguage(e, v)
 		}
+	case rSpaceColour:
+		// the theme creator opens in the main window, on its space
+		if button(e, s.tx.edit) {
+			e.S.Req.SpaceColour = true
+			e.S.RaiseMain()
+		}
 	case rTransparency:
 		s.flip(e, title, &st.Transparency)
 	case rZoom:

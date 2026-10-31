@@ -5248,3 +5248,15 @@ msgstr "Цвет пузырей"
 #: gnui
 msgid "This copy of Zap was built on this Mac, so it updates by being rebuilt, not from a release."
 msgstr "Эта копия Zap собрана на этом Mac, поэтому она обновляется пересборкой, а не из выпуска."
+
+#: gnui
+msgid "Actions"
+msgstr "Действия"
+
+#: gnui
+msgid "Colours and grain for the space on screen. With no folders, that is your account's main view."
+msgstr "Цвета и зернистость пространства на экране. Без папок это главный вид вашего аккаунта."
+
+#: gnui
+msgid "Edit…"
+msgstr "Изменить…"

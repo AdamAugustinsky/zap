@@ -1,6 +1,6 @@
 // Package spotlight is ⌘K: one field that finds a chat, a person, a message
-// or a file across every linked account, over the main window, as macOS's
-// Spotlight does. Chats and people match in the model as the text changes;
+// or a file across every linked account, and an action of the app's (the
+// space's colours), over the main window, as macOS's Spotlight does. Chats and people match in the model as the text changes;
 // messages match first in the conversations already loaded (at once), then
 // in each account's archive (Command SearchMessages, 150 ms after the typing
 // rests). A message that is a document, a picture, a video or a link goes
@@ -32,7 +32,8 @@ import (
 type section uint8
 
 const (
-	secRecent section = iota // the empty field: the chats used last
+	secRecent  section = iota // the empty field: the chats used last
+	secActions                // what the app does, by its name or a word for it
 	secChats
 	secPeople
 	secMessages
@@ -41,7 +42,7 @@ const (
 )
 
 // caps are how many results a section shows.
-var caps = [numSections]int{secRecent: 6, secChats: 5, secPeople: 4, secMessages: 8, secFiles: 6}
+var caps = [numSections]int{secRecent: 6, secActions: 2, secChats: 5, secPeople: 4, secMessages: 8, secFiles: 6}
 
 // result is one row.
 type result struct {
@@ -55,7 +56,20 @@ type result struct {
 	ts     int64
 	ic     icon.ID // a file's or a link's kind; 0: the chat's picture
 	person bool
+	act    action // an action's row: what Enter does
 }
+
+// action is what an action's row does.
+type action uint8
+
+const (
+	actNone        action = iota
+	actSpaceColour        // the theme creator on the space on screen (View → Space colour…)
+)
+
+// spaceColourWords are words that find Space colour besides its translated
+// name, which finds it in every language.
+const spaceColourWords = "colour color theme tint grain appearance"
 
 // Screen is the overlay.
 type Screen struct {
@@ -70,7 +84,7 @@ type Screen struct {
 	sel     int
 	age     int        // frames since it opened
 	mouse   [2]float32 // the pointer, last frame: a row is picked by moving over it
-	ic      struct{ doc, photo, video, link, msg icon.ID }
+	ic      struct{ doc, photo, video, link, msg, palette icon.ID }
 }
 
 // New is the overlay, closed.
@@ -84,6 +98,7 @@ func (s *Screen) Init(e *screen.Env) error {
 	s.ic.video = k.AddIcon(ztheme.ToolIcon("video", '▶'))
 	s.ic.link = k.AddIcon(ztheme.ToolIcon("link", '↗'))
 	s.ic.msg = k.AddIcon(ztheme.ToolIcon("text.bubble", '✉'))
+	s.ic.palette = k.AddIcon(ztheme.ToolIcon("paintpalette", '◐'))
 	return nil
 }
 
@@ -332,6 +347,8 @@ func sectionName(sec section) string {
 	switch sec {
 	case secRecent:
 		return i18n.T("Recent")
+	case secActions:
+		return i18n.T("Actions")
 	case secChats:
 		return i18n.T("Chats")
 	case secPeople:
@@ -394,6 +411,9 @@ func (s *Screen) collect(e *screen.Env) {
 			count[rw.sec]++
 			s.rows = append(s.rows, rw)
 		}
+	}
+	if s.query != "" && e.S.Acct() != nil && wordsMatch(i18n.T("Space colour")+" "+spaceColourWords, s.needle) {
+		add(result{sec: secActions, acct: e.S.Active, act: actSpaceColour, title: i18n.T("Space colour…"), ic: s.ic.palette})
 	}
 	seen := map[string]bool{} // messages already listed: account and id
 	for ai, a := range e.S.Accounts {
@@ -594,9 +614,25 @@ func preview(ch model.Chat) string {
 	return model.S(ch.Preview())
 }
 
+// wordsMatch reports whether needle (folded) starts one of words' words.
+func wordsMatch(words, needle string) bool {
+	for _, w := range strings.Fields(format.Fold(words)) {
+		if strings.HasPrefix(w, needle) {
+			return true
+		}
+	}
+	return strings.HasPrefix(format.Fold(words), needle) // more than one word typed
+}
+
 // open opens a result, in its account.
 func (s *Screen) open(e *screen.Env, rw result) {
 	st := e.S
+	if rw.act == actSpaceColour {
+		s.close(e)
+		st.Req.SpaceColour = true // the shell opens it (ui/shell/menu.go)
+		st.Touch()
+		return
+	}
 	a := s.acct(e, rw.acct)
 	if a == nil {
 		return

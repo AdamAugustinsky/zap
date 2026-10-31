@@ -16,7 +16,7 @@ import (
 func (s *Screen) exists(e *screen.Env, d *rowDef) bool {
 	a := e.Acct()
 	switch d.id {
-	case rAutoDownload, rHistory, rNotify, rReceipts, rTyping:
+	case rAutoDownload, rHistory, rNotify, rReceipts, rTyping, rSpaceColour:
 		return a != nil
 	case rShowContent, rMsgSound, rLimit, rGroupSounds, rMentionSound:
 		return a != nil && a.Settings.Notifications

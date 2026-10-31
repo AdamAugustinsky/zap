@@ -5271,3 +5271,15 @@ msgstr "Couleur des bulles"
 #: gnui
 msgid "This copy of Zap was built on this Mac, so it updates by being rebuilt, not from a release."
 msgstr "Cette copie de Zap a été compilée sur ce Mac : elle se met à jour en la recompilant, pas depuis une version publiée."
+
+#: gnui
+msgid "Actions"
+msgstr "Actions"
+
+#: gnui
+msgid "Colours and grain for the space on screen. With no folders, that is your account's main view."
+msgstr "Couleurs et grain de l’espace à l’écran. Sans dossiers, c’est la vue principale de votre compte."
+
+#: gnui
+msgid "Edit…"
+msgstr "Modifier…"

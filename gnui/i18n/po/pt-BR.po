@@ -5234,3 +5234,15 @@ msgstr "Cor dos balões"
 #: gnui
 msgid "This copy of Zap was built on this Mac, so it updates by being rebuilt, not from a release."
 msgstr "Esta cópia do Zap foi compilada neste Mac, então ela se atualiza ao ser compilada de novo, não por uma versão publicada."
+
+#: gnui
+msgid "Actions"
+msgstr "Ações"
+
+#: gnui
+msgid "Colours and grain for the space on screen. With no folders, that is your account's main view."
+msgstr "Cores e granulação do espaço na tela. Sem pastas, é a visualização principal da sua conta."
+
+#: gnui
+msgid "Edit…"
+msgstr "Editar…"

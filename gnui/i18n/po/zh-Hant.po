@@ -5071,3 +5071,15 @@ msgstr "氣泡顏色"
 #: gnui
 msgid "This copy of Zap was built on this Mac, so it updates by being rebuilt, not from a release."
 msgstr "此 Zap 副本是在這台 Mac 上建置的，因此需要重新建置來更新，而不是從發行版更新。"
+
+#: gnui
+msgid "Actions"
+msgstr "操作"
+
+#: gnui
+msgid "Colours and grain for the space on screen. With no folders, that is your account's main view."
+msgstr "螢幕上空間的顏色與顆粒。沒有資料夾時，就是您帳號的主畫面。"
+
+#: gnui
+msgid "Edit…"
+msgstr "編輯…"

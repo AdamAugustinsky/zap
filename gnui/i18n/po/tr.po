@@ -5214,3 +5214,15 @@ msgstr "Balon rengi"
 #: gnui
 msgid "This copy of Zap was built on this Mac, so it updates by being rebuilt, not from a release."
 msgstr "Zap'ın bu kopyası bu Mac'te derlendi; bir sürümden değil, yeniden derlenerek güncellenir."
+
+#: gnui
+msgid "Actions"
+msgstr "Eylemler"
+
+#: gnui
+msgid "Colours and grain for the space on screen. With no folders, that is your account's main view."
+msgstr "Ekrandaki alanın renkleri ve greni. Klasör yoksa bu, hesabınızın ana görünümüdür."
+
+#: gnui
+msgid "Edit…"
+msgstr "Düzenle…"
