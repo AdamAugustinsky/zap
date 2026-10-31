@@ -142,7 +142,7 @@ var rowDefs = func() []rowDef {
 		{id: rTheme, sec: secAppearance, title: m("Theme"), ctrl: 200},
 		{id: rThemeLinks, sec: secAppearance, kw: []tx{m("Open themes folder"), m("How to make a theme")}},
 		{id: rFont, sec: secAppearance, title: m("Font"), desc: m("System is your desktop's interface font. Inter looks the same on every computer."), ctrl: 200},
-		{id: rTransparency, sec: secAppearance, title: m("Transparency"), desc: m("The desktop shows softly through the window's background. The system's Reduce transparency setting turns it off too."), ctrl: 54},
+		{id: rTransparency, sec: secAppearance, title: m("Transparency"), desc: m("The desktop shows softly through the window's background. Off, windows moving behind Zap cost it no graphics work; the change is complete the next time Zap opens. The system's Reduce transparency setting turns it off too."), ctrl: 54},
 		{id: rZoom, sec: secAppearance, title: m("Zoom"), desc: m("Ctrl+Plus and Ctrl+Minus work anywhere, and Ctrl+0 resets it."), ctrl: 144},
 		{id: rLanguage, sec: secAppearance, title: m("Language"), ctrl: 200},
 

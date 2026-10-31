@@ -4728,8 +4728,8 @@ msgstr "Saydamlık"
 
 #. Go port: Settings, Appearance: the transparency switch's description; machine translation.
 #: gnui/ui/settings/rows.go
-msgid "The desktop shows softly through the window's background. The system's Reduce transparency setting turns it off too."
-msgstr "Masaüstü pencerenin arka planından hafifçe görünür. Sistemin Saydamlığı azalt ayarı da bunu kapatır."
+msgid "The desktop shows softly through the window's background. Off, windows moving behind Zap cost it no graphics work; the change is complete the next time Zap opens. The system's Reduce transparency setting turns it off too."
+msgstr "Masaüstü pencerenin arka planından yumuşakça görünür. Kapalıyken Zap'ın arkasında hareket eden pencereler ona grafik yükü getirmez; değişiklik Zap bir sonraki açılışında tamamlanır. Sistemin Saydamlığı azalt ayarı da onu kapatır."
 
 #: gnui/ui/shell/keyboard.go
 msgid "Unarchived"

@@ -220,10 +220,16 @@ func Config(s *state.State) app.Config {
 		cfg.Width, cfg.Height = s.Settings.WindowW, s.Settings.WindowH
 	}
 	cfg.Titlebar, cfg.TrafficLights = rexui.TitlebarFor(ToolbarStyle)
-	// Rex's glass behind the window, always: Settings.Transparency only
-	// decides whether the field covers it (Build), so turning it off and on
-	// takes effect at once.
+	// Rex's glass behind the window, when Settings.Transparency is on as the
+	// window opens. The system blurs it again whenever anything behind the
+	// window moves, about a sixth of the GPU on an M1 (zap-notes speed
+	// audit), so with it off the window has none. Turned off while open, the
+	// field covers it at once (Build) and it goes with the next launch;
+	// turned on, it comes with the next launch.
 	cfg.Backdrop = platform.BackdropGlass
+	if s != nil && !s.Settings.Transparency {
+		cfg.Backdrop = platform.BackdropNone
+	}
 	if s != nil {
 		cfg.Place = func(w *platform.Window) { restoreFrame(&s.Settings, w) }
 	}

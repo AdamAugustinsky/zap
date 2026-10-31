@@ -4785,8 +4785,8 @@ msgstr "Transparence"
 
 #. Go port: Settings, Appearance: the transparency switch's description; machine translation.
 #: gnui/ui/settings/rows.go
-msgid "The desktop shows softly through the window's background. The system's Reduce transparency setting turns it off too."
-msgstr "Le bureau transparaît doucement à travers le fond de la fenêtre. Le réglage système Réduire la transparence la désactive aussi."
+msgid "The desktop shows softly through the window's background. Off, windows moving behind Zap cost it no graphics work; the change is complete the next time Zap opens. The system's Reduce transparency setting turns it off too."
+msgstr "Le bureau transparaît doucement à travers le fond de la fenêtre. Désactivée, les fenêtres qui bougent derrière Zap ne lui coûtent aucun travail graphique ; le changement est complet à la prochaine ouverture de Zap. Le réglage système Réduire la transparence la désactive aussi."
 
 #: gnui/ui/shell/keyboard.go
 msgid "Unarchived"

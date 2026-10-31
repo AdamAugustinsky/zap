@@ -4762,8 +4762,8 @@ msgstr "Прозрачность"
 
 #. Go port: Settings, Appearance: the transparency switch's description; machine translation.
 #: gnui/ui/settings/rows.go
-msgid "The desktop shows softly through the window's background. The system's Reduce transparency setting turns it off too."
-msgstr "Рабочий стол мягко просвечивает сквозь фон окна. Системная настройка «Уменьшить прозрачность» тоже её отключает."
+msgid "The desktop shows softly through the window's background. Off, windows moving behind Zap cost it no graphics work; the change is complete the next time Zap opens. The system's Reduce transparency setting turns it off too."
+msgstr "Рабочий стол мягко просвечивает сквозь фон окна. Если выключено, окна, движущиеся за Zap, не требуют от него графической работы; изменение полностью вступит в силу при следующем запуске Zap. Системная настройка «Уменьшить прозрачность» тоже её выключает."
 
 #: gnui/ui/shell/keyboard.go
 msgid "Unarchived"
