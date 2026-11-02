@@ -118,6 +118,9 @@ func TestDeviceSwitchKeepsTheChannels(t *testing.T) {
 	var got float64
 	eventually(t, "s2 at 500 Hz", func() bool {
 		heard := s2.heard()
+		if len(heard) < FrameSamples {
+			return false // not a whole frame yet
+		}
 		pcm := make([]int16, 0, FrameSamples)
 		for _, v := range heard[len(heard)-FrameSamples:] {
 			pcm = append(pcm, toInt16(v))

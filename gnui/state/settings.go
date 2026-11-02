@@ -235,7 +235,7 @@ func DefaultSettings() Settings {
 	return Settings{
 		Version: SettingsVersion, Theme: ThemeDark, Font: FontSystem, Zoom: 1,
 		SidebarWidth: 300, SearchPaneWidth: 380, InfoPaneWidth: 380,
-		EnterSends: true, ShowWallpaper: true, ShowShortcutHints: true, Transparency: true,
+		EnterSends: true, ShowWallpaper: true, Transparency: true,
 		KeepRunning: true, Notifications: true, NotificationText: true,
 		MessageSound: SoundChoice{Sound: SoundReceive}, MentionSound: SoundChoice{Sound: SoundAlert},
 		GroupSounds: true, KeepChatsArchived: true, CheckForUpdates: true,

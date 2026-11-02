@@ -24,18 +24,18 @@ func init() {
 	// the titlebar's tabs: Rex's capsule and pill in the field's greens
 	// rather than its lilacs
 	t := &rexui.TabsRecipes[rexui.TabsRex]
-	t.Capsule = [2]rexui.Pair{rexui.Solid(0xD6E6DC, 0x27342F), rexui.Solid(0xD2E0D7, 0x24302C)}
-	t.CapsuleBackdrop = [2]rexui.Pair{rexui.PairA(0xD6E6DC, 0x27342F, 0.5, 0.55), rexui.PairA(0xD2E0D7, 0x24302C, 0.5, 0.55)}
-	t.Pill = [2]rexui.Pair{rexui.Solid(0xFBFEFC, 0x35443E), rexui.Solid(0xF7FCF9, 0x313F39)}
+	t.Capsule = [2]rexui.Pair{rexui.Solid(0xDEE4E0, 0x282D2B), rexui.Solid(0xDAE1DC, 0x252A28)}
+	t.CapsuleBackdrop = [2]rexui.Pair{rexui.PairA(0xDEE4E0, 0x282D2B, 0.5, 0.55), rexui.PairA(0xDAE1DC, 0x252A28, 0.5, 0.55)}
+	t.Pill = [2]rexui.Pair{rexui.Solid(0xFCFDFC, 0x343A37), rexui.Solid(0xF8FAF9, 0x303633)}
 	// a quiet hairline all round the chosen tab: Rex's rim on the end caps
 	// alone read as a border that broke off along the top and bottom
-	t.PillRim, t.PillRimAround = rexui.PairA(0x1E3A2E, 0xFFFFFF, 0.12, 0.07), true
-	t.PillShadow = [2]rexui.Pair{rexui.PairA(0x1E3A2E, 0x000000, 0.13, 0.40), rexui.PairA(0x1E3A2E, 0x000000, 0.14, 0.45)}
-	t.Sep = rexui.PairA(0x7F9188, 0xB2C2BA, 1, 0.6)
-	t.Press = rexui.PairA(0x1E3A2E, 0xFFFFFF, 0.09, 0.08)
-	t.Name = [2]rexui.Pair{rexui.Solid(0x55605A, 0xA9B3AE), rexui.Solid(0x1B2420, 0xEEF2F0)}
-	t.Detail = [2]rexui.Pair{rexui.Solid(0x8A958F, 0x8B9690), rexui.Solid(0x1B2420, 0xEEF2F0)}
-	t.CloseFill = rexui.PairA(0x1E3A2E, 0xFFFFFF, 0.08, 0.08)
+	t.PillRim, t.PillRimAround = rexui.PairA(0x26302B, 0xFFFFFF, 0.12, 0.07), true
+	t.PillShadow = [2]rexui.Pair{rexui.PairA(0x26302B, 0x000000, 0.13, 0.40), rexui.PairA(0x26302B, 0x000000, 0.14, 0.45)}
+	t.Sep = rexui.PairA(0x848E89, 0xB3BCB7, 1, 0.6)
+	t.Press = rexui.PairA(0x26302B, 0xFFFFFF, 0.09, 0.08)
+	t.Name = [2]rexui.Pair{rexui.Solid(0x575F5B, 0xA9B0AC), rexui.Solid(0x1C211F, 0xEEF1EF)}
+	t.Detail = [2]rexui.Pair{rexui.Solid(0x8B9490, 0x8C9591), rexui.Solid(0x1C211F, 0xEEF1EF)}
+	t.CloseFill = rexui.PairA(0x26302B, 0xFFFFFF, 0.08, 0.08)
 
 }
 
@@ -60,13 +60,13 @@ func tuneMetrics(th *gtheme.Theme) {
 // and in dark (where the same share reads fainter over the darker panes);
 // rexui's chosen toggles and segments take the row's.
 const (
-	ownTint, ownTintDark = 0.16, 0.30
-	rowTint, rowTintDark = 0.14, 0.24
+	ownTint, ownTintDark = 0.11, 0.22
+	rowTint, rowTintDark = 0.10, 0.18
 )
 
 // Rex is ZapFast's stock theme: Rex in WhatsApp's colours. Its field is a
-// mint that settles to WhatsApp's chat beige in light, a deep green ink in
-// dark, and the accent is WhatsApp's green, as a Mac whose accent were set
+// quiet grey with a trace of green in light, a near-neutral ink in dark
+// (flat across, so with transparency off the window is solid), and the accent is WhatsApp's green, as a Mac whose accent were set
 // to it: the default buttons, the badges, the focus ring, the selection and
 // the tints of your bubbles and of the open chat. The macOS roles' neutral
 // greys (fields, the window, menus, the selection without focus) would read
@@ -117,10 +117,10 @@ func Accent(dark bool) uint32 {
 // The fields' base colours (the Field role: rings and backdrops drawn on
 // it), and the dark panes'.
 const (
-	lightField = 0xE0EBE4FF
-	darkField  = 0x19211EFF
-	darkPane   = 0x222A27FF
-	darkRaised = 0x2B3430FF
+	lightField = 0xE6E9E7FF
+	darkField  = 0x181B1AFF
+	darkPane   = 0x212524FF
+	darkRaised = 0x2A2F2DFF
 )
 
 // field is the window background: in light a mint, greener toward the left
@@ -128,32 +128,33 @@ const (
 // dark a green ink, lifted toward the teal at the top, and the glass of the
 // unfocused panes the same ink, lighter.
 var field = rex.FieldColors{
+	// Flat across, a few shades down: a solid window, not a wash.
 	Light: []rex.FieldStop{
-		{Y: 0, Mid: 0xF7FBF8, Left: 0xF7FBF8, Right: 0xF7FBF8},
-		{Y: 6, Mid: 0xEAF4EE, Left: 0xE4F2EA, Right: 0xECF3EC},
-		{Y: 40, Mid: 0xE3EFE8, Left: 0xDCEDE3, Right: 0xE6EEE6},
-		{Y: 160, Mid: 0xDFEBE4, Left: 0xD6E9DE, Right: 0xE3EBE2},
-		{Y: 520, Mid: 0xE0E8E2, Left: 0xD8E6DD, Right: 0xE5E8DF},
-		{Y: 900, Mid: 0xE4E6DF, Left: 0xDCE5DB, Right: 0xEAE6DC},
-		{Y: 1278, Mid: 0xEAE6DD, Left: 0xE1E6DA, Right: 0xEEE6DA},
+		{Y: 0, Mid: 0xF4F6F5, Left: 0xF4F6F5, Right: 0xF4F6F5},
+		{Y: 6, Mid: 0xEBEEEC, Left: 0xEBEEEC, Right: 0xEBEEEC},
+		{Y: 40, Mid: 0xE8EBE9, Left: 0xE8EBE9, Right: 0xE8EBE9},
+		{Y: 160, Mid: 0xE6E9E7, Left: 0xE6E9E7, Right: 0xE6E9E7},
+		{Y: 520, Mid: 0xE6E8E6, Left: 0xE6E8E6, Right: 0xE6E8E6},
+		{Y: 900, Mid: 0xE7E8E5, Left: 0xE7E8E5, Right: 0xE7E8E5},
+		{Y: 1278, Mid: 0xE9E9E6, Left: 0xE9E9E6, Right: 0xE9E9E6},
 	},
 	Dark: []rex.FieldStop{
-		{Y: 0, Mid: 0x22302C, Left: 0x21302B, Right: 0x232F2B},
-		{Y: 6, Mid: 0x1F2C28, Left: 0x1D2C27, Right: 0x202B27},
-		{Y: 40, Mid: 0x1C2824, Left: 0x1A2823, Right: 0x1D2723},
-		{Y: 160, Mid: 0x1A2421, Left: 0x182520, Right: 0x1B231F},
-		{Y: 520, Mid: 0x171F1C, Left: 0x16211C, Right: 0x191F1B},
-		{Y: 900, Mid: 0x161C1A, Left: 0x151E1A, Right: 0x181C19},
-		{Y: 1278, Mid: 0x171B19, Left: 0x161D19, Right: 0x191B18},
+		{Y: 0, Mid: 0x242827, Left: 0x242827, Right: 0x242827},
+		{Y: 6, Mid: 0x202423, Left: 0x202423, Right: 0x202423},
+		{Y: 40, Mid: 0x1D2120, Left: 0x1D2120, Right: 0x1D2120},
+		{Y: 160, Mid: 0x1B1F1E, Left: 0x1B1F1E, Right: 0x1B1F1E},
+		{Y: 520, Mid: 0x191C1B, Left: 0x191C1B, Right: 0x191C1B},
+		{Y: 900, Mid: 0x181B1A, Left: 0x181B1A, Right: 0x181B1A},
+		{Y: 1278, Mid: 0x181B1A, Left: 0x181B1A, Right: 0x181B1A},
 	},
-	DarkGlass: 0x2A3430,
-	// over the glass (Settings.Transparency): the mint and the green ink
-	Scrim: [2]uint32{0xE6F3EB, 0x17201D},
+	DarkGlass: 0x2B302E,
+	// over the glass (Settings.Transparency): a quiet grey-green
+	Scrim: [2]uint32{0xEAEEEB, 0x181B1A},
 }
 
 // The dark ink's green: a grey's red, green and blue as the dark panes have
 // them (#262A28 for #282828).
-const inkR, inkG, inkB = 0.95, 1.04, 1.0
+const inkR, inkG, inkB = 0.98, 1.02, 1.0
 
 func scale(v uint32, k float32) uint32 { return uint32(min(float32(v)*k+0.5, 255)) }
 
