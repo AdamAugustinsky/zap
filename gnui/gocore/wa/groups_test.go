@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	"go.mau.fi/whatsmeow/appstate"
 	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/proto/waSyncAction"
 	"go.mau.fi/whatsmeow/types"
@@ -254,5 +255,68 @@ func TestContactsJoinPrivacyID(t *testing.T) {
 	h.inject(message(group, peer, "G1", t0, &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{Text: proto.String("hi @88001234567"), ContextInfo: ctx}}))
 	if m := one(t, h.take(), abi.EventTagIncoming).Incoming.Message.Mentions; len(m) != 1 || string(m[0].User) != "88001234567" || string(m[0].ID) != peer2.String() {
 		t.Fatalf("mention: %+v", m)
+	}
+}
+
+// An address-book entry filed under a privacy id carries the number: the
+// two are learnt as one person, so the saved name goes before the chosen
+// one even when no message ever mapped them.
+func TestContactsLearnPrivacyID(t *testing.T) {
+	h := linked(t)
+	lid := types.NewJID("88001234568", types.HiddenUserServer)
+	x := h.f.more()
+	x.contacts[peer2] = types.ContactInfo{Found: true, PushName: "gh"}
+	x.contacts[lid] = types.ContactInfo{Found: true, FullName: "Grace Hopper", FirstName: "Grace"}
+	h.inject(&events.Contact{JID: lid, Action: &waSyncAction.ContactAction{FullName: proto.String("Grace Hopper"), PnJID: proto.String(peer2.String())}})
+	c := one(t, h.take(), abi.EventTagContacts).Contacts.Contacts
+	if len(c) != 1 || string(c[0].ID) != peer2.String() || string(c[0].FullName) != "Grace Hopper" || string(c[0].PushName) != "gh" {
+		t.Fatalf("contact: %+v", c)
+	}
+}
+
+// An account whose address book was synced before Zap had its names (one
+// taken over from the Rust core) fetches it whole once; a new link, whose
+// first sync brings it, does not.
+func TestContactsResyncOnce(t *testing.T) {
+	connect := func(h *harness) {
+		h.f.setConnected(true)
+		h.inject(&events.Connected{})
+		h.take()
+	}
+
+	started := func() *harness {
+		h := newHarness(t, options{})
+		h.take()
+		h.c.Start()
+		h.take()
+		return h
+	}
+
+	// A failed fetch is owed still.
+	h := started()
+	h.f.more().resyncErr = errors.New("no app state key")
+	connect(h)
+	if h.f.called("ResyncContacts") != 1 || h.e.contactsResynced() {
+		t.Fatalf("failed fetch: %v", h.f.calls)
+	}
+
+	h = started()
+	connect(h)
+	if h.f.called("ResyncContacts") != 1 || !h.e.contactsResynced() {
+		t.Fatalf("not fetched: %v", h.f.calls)
+	}
+
+	// A new link: whatsmeow's own first sync marks it.
+	h = started()
+	h.inject(&events.PairSuccess{ID: types.NewADJID(me.User, 0, 7), Platform: "android"})
+	h.take()
+	connect(h)
+	if h.f.called("ResyncContacts") != 0 || h.e.contactsResynced() {
+		t.Fatalf("a new link fetched: %v", h.f.calls)
+	}
+	h.inject(&events.AppStateSyncComplete{Name: appstate.WAPatchCriticalUnblockLow})
+	h.take()
+	if !h.e.contactsResynced() {
+		t.Fatal("the first sync did not mark it")
 	}
 }

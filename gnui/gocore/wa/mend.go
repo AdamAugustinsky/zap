@@ -47,6 +47,7 @@ func (e *Engine) mend() {
 	e.mendSignalling()
 	e.mendStubs()
 	e.mendPrivacyIDs()
+	e.resyncContacts()
 	waiting, err := e.arch.OfKind(kindWaiting, time.Now().Add(-askBack).Unix())
 	if err != nil {
 		slog.Warn("zapfast wa: listing waiting messages", "err", err)

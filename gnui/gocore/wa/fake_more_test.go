@@ -30,6 +30,7 @@ type fakeMore struct {
 	joinPending                 bool
 	contacts                    map[types.JID]types.ContactInfo
 	named                       []string
+	resyncErr                   error
 	onWhatsApp                  []types.IsOnWhatsAppResponse
 	onWhatsAppErr               error
 	privacySettings             *types.PrivacySettings
@@ -136,6 +137,26 @@ func (f *fakeClient) PutContactName(_ context.Context, j types.JID, full, first 
 	m.contacts[j] = c
 	m.named = append(m.named, full)
 	return nil
+}
+
+func (f *fakeClient) ResyncContacts(context.Context) error {
+	f.call("ResyncContacts")
+	m := f.more()
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.resyncErr
+}
+
+func (f *fakeClient) PutLIDMapping(_ context.Context, a, b types.JID) {
+	if a.Server == types.DefaultUserServer {
+		a, b = b, a
+	}
+	if a.Server != types.HiddenUserServer || b.Server != types.DefaultUserServer {
+		return
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.lids[a.ToNonAD()] = b.ToNonAD()
 }
 
 func (f *fakeClient) IsOnWhatsApp(_ context.Context, phones []string) ([]types.IsOnWhatsAppResponse, error) {

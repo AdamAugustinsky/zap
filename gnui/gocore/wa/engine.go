@@ -136,6 +136,7 @@ type Engine struct {
 	typing       []chatState            // chat states to send, in order
 	settings     []appstate.PatchInfo   // chat settings to send to the phone, in order
 	mended       bool                   // mend ran this session (mend.go)
+	paired       bool                   // the device was linked this session
 	asked        map[[2]string]bool     // messages asked of the phone by the mending: no notification
 	early        earlyEvents            // the phone's reads and reactions waiting for their message (early.go)
 

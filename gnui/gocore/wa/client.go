@@ -102,6 +102,13 @@ type Client interface {
 	Contacts(ctx context.Context) (map[types.JID]types.ContactInfo, error)
 	Contact(ctx context.Context, user types.JID) (types.ContactInfo, error)
 	PutContactName(ctx context.Context, user types.JID, fullName, firstName string) error
+	// ResyncContacts fetches the phone's address book (the app state
+	// collection critical_unblock_low) whole again; its entries come as
+	// events.Contact, and the store keeps their names.
+	ResyncContacts(ctx context.Context) error
+	// PutLIDMapping records that a privacy id and a phone-number id (in
+	// either order) are one person; any other pair is ignored.
+	PutLIDMapping(ctx context.Context, a, b types.JID)
 	IsOnWhatsApp(ctx context.Context, phones []string) ([]types.IsOnWhatsAppResponse, error)
 	UserInfo(ctx context.Context, jids []types.JID) (map[types.JID]types.UserInfo, error)
 
@@ -308,6 +315,14 @@ func (w *waClient) Contact(ctx context.Context, user types.JID) (types.ContactIn
 
 func (w *waClient) PutContactName(ctx context.Context, user types.JID, fullName, firstName string) error {
 	return w.c.Store.Contacts.PutContactName(ctx, user, fullName, firstName)
+}
+
+func (w *waClient) ResyncContacts(ctx context.Context) error {
+	return w.c.FetchAppState(ctx, appstate.WAPatchCriticalUnblockLow, true, false)
+}
+
+func (w *waClient) PutLIDMapping(ctx context.Context, a, b types.JID) {
+	w.c.StoreLIDPNMapping(ctx, a.ToNonAD(), b.ToNonAD())
 }
 
 func (w *waClient) IsOnWhatsApp(ctx context.Context, phones []string) ([]types.IsOnWhatsAppResponse, error) {

@@ -262,6 +262,7 @@ func (e *Engine) newContact(c *abi.CommandNewContact) {
 func (e *Engine) contactEvent(evt any) {
 	switch v := evt.(type) {
 	case *events.Contact:
+		e.learnContactID(v.JID, v.Action)
 		e.contactChanged(v.JID, v.Action.GetFullName())
 	case *events.PushName:
 		// whatsmeow keeps the name under both ids: the phone number is the
@@ -272,6 +273,61 @@ func (e *Engine) contactEvent(evt any) {
 		}
 		e.contactChanged(j, v.NewPushName)
 	}
+}
+
+// learnContactID records the other id an address-book entry carries: the
+// phone files an entry under a privacy id with its number beside it (or
+// the other way round), and until whatsmeow knows the two are one person
+// the saved name stays under an id no chat is filed under, so the chat
+// goes by the name its owner chose.
+func (e *Engine) learnContactID(j types.JID, a *waSyncAction.ContactAction) {
+	for _, s := range []string{a.GetPnJID(), a.GetLidJID()} {
+		if alt, err := types.ParseJID(s); err == nil && alt.User != "" {
+			e.cli.PutLIDMapping(e.ctx, j, alt)
+		}
+	}
+}
+
+// contactsResyncKey marks an account whose address book whatsmeow holds
+// whole. An account taken over from the Rust core came with the address
+// book's sync position but not its names, so whatsmeow never asked for
+// them again; it fetches them once, as linking does.
+const contactsResyncKey = "contacts-resynced"
+
+func (e *Engine) contactsResynced() bool {
+	v, err := e.arch.Metadata(contactsResyncKey)
+	return err == nil && len(v) > 0
+}
+
+func (e *Engine) markContactsResynced() {
+	if err := e.arch.SetMetadata(contactsResyncKey, []byte("1")); err != nil {
+		slog.Warn("zapfast wa: marking the address book fetched", "err", err)
+	}
+}
+
+// resyncContacts fetches the address book whole, once per account; a
+// failure (keys not yet shared, the connection lost) tries again next
+// session. A device linked this session is left to its own first sync,
+// which marks it (handle). Each entry comes as an events.Contact, which
+// sends the contact on.
+func (e *Engine) resyncContacts() {
+	if e.paired || e.contactsResynced() {
+		return
+	}
+	cli, gen := e.cli, e.gen
+	e.job(func(ctx context.Context) func() {
+		err := cli.ResyncContacts(ctx)
+		return func() {
+			if gen != e.gen {
+				return
+			}
+			if err != nil {
+				slog.Warn("zapfast wa: fetching the address book", "err", err)
+				return
+			}
+			e.markContactsResynced()
+		}
+	})
 }
 
 // seenNames are contact records for the direct chats no contact names (not

@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"time"
 
+	"go.mau.fi/whatsmeow/appstate"
 	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
@@ -24,6 +25,7 @@ func (e *Engine) handle(evt any) {
 	case *events.Connected:
 		e.connected()
 	case *events.PairSuccess:
+		e.paired = true
 		e.qr, e.pairCode, e.pairingPhone = "", "", ""
 		e.setStatus(linkTag(abi.LinkStatusTagConnecting))
 	case *events.Disconnected:
@@ -117,6 +119,12 @@ func (e *Engine) handle(evt any) {
 		e.unarchiveSetting(v)
 	case *events.Contact, *events.PushName:
 		e.contactEvent(evt)
+	case *events.AppStateSyncComplete:
+		// A linked device's first sync (or a recovery) brings the whole
+		// address book: no fetch of it is owed.
+		if v.Name == appstate.WAPatchCriticalUnblockLow {
+			e.markContactsResynced()
+		}
 
 	// Groups.
 	case *events.GroupInfo:
