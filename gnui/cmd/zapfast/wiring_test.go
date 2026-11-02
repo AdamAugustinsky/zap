@@ -395,6 +395,9 @@ func TestTheEmptyPaneHasTheLogoAndTheHint(t *testing.T) {
 	linked(f)
 	r := newRig(t, f)
 	const hint = "⌘+K to search · ? for keyboard shortcuts"
+	r.s.Settings.ShowShortcutHints = true
+	r.s.Touch()
+	r.Frames(2)
 	for _, n := range []string{"Zap", "Select a chat on the left.", hint} {
 		if _, ok := r.Find(ui.RoleLabel, n); !ok {
 			t.Errorf("no %q:\n%s", n, widgettest.Dump(r.Tree()))

@@ -49,7 +49,7 @@ func TestEnterSendsTheText(t *testing.T) {
 
 // CP-001: with Enter sends off, Enter does not send and ⌘Enter does.
 func TestCommandEnterSendsWhenEnterDoesNot(t *testing.T) {
-	r := newRig(t, nil, func(s *state.State) { s.Settings.EnterSends = false })
+	r := newRig(t, nil, func(s *state.State) { s.Settings.EnterSends, s.Settings.ShowShortcutHints = false, true })
 	r.open(ada)
 	r.focus()
 	r.typeText("one")
@@ -303,7 +303,7 @@ func TestFocusRequest(t *testing.T) {
 // CP-022: the hints bar under the composer; its × hides it and the
 // keyboard opens the shortcuts.
 func TestShortcutHints(t *testing.T) {
-	r := newRig(t, nil, nil)
+	r := newRig(t, nil, func(s *state.State) { s.Settings.ShowShortcutHints = true })
 	r.open(ada)
 	if !r.hasText("Enter sends · Shift+Enter for a new line · *bold* _italic_ ~strike~ · ⌘+V pastes a picture") {
 		t.Fatal("no hints")
