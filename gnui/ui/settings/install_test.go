@@ -318,12 +318,12 @@ func TestNextPublisherKeyIsAcceptedAtBothChecks(t *testing.T) {
 // name has to be the version's: an older release's authentic package, name
 // and signature replayed under a newer version are refused before any download.
 func TestAnOlderReleaseReplayedUnderANewerVersionIsRefused(t *testing.T) {
-	old, pub := makeFeed(t, "0.20.5", []byte("an older, vulnerable release")) // really signed, by the publisher's key
+	old, pub := makeFeed(t, "0.21.0", []byte("an older, vulnerable release")) // really signed, by the publisher's key
 	for name, mangle := range map[string]func(r *Release){
 		"the older package under a newer version": func(r *Release) { r.Version = "0.22.0" },
 		"another file name altogether":            func(r *Release) { r.File = "evil.zip" },
-		"a path in the name":                      func(r *Release) { r.File = "../ZapFast-0.20.5.zip" },
-		"a lower case name":                       func(r *Release) { r.File = "zapfast-0.20.5.zip" },
+		"a path in the name":                      func(r *Release) { r.File = "../ZapFast-0.21.0.zip" },
+		"a lower case name":                       func(r *Release) { r.File = "zapfast-0.21.0.zip" },
 	} {
 		t.Run(name, func(t *testing.T) {
 			rf := &recordingFeed{rel: old.rel}
