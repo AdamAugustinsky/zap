@@ -3,8 +3,8 @@
 	"framework": {
 		"module": "gonativeui",
 		"repository": "https://github.com/AdamAugustinsky/go-native-ui",
-		"commit": "98a25f427a7ceb924635565ea7e69209277c0dd5",
-		"tree": "a64cdbc79764ce32b06296e244a1aeb420ba92f6"
+		"commit": "51c499f4f95da1c1557a598d534304d3257d4d30",
+		"tree": "0be9f9ef07c3c8f20c3feed4a74a20ff0dbfcddf"
 	},
 	"ghostty": {"status": "absent"},
 	"shaders": {"artifact": "metallib", "metallib_sha256": "6036ad02b4c81a591962f67c39d5a88072fca719ee90a989c10b1e69672b177c"},
