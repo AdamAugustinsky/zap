@@ -102,10 +102,8 @@ type Shell struct {
 	// archivedUnread is how many archived chats are unread (the badge).
 	archivedUnread int
 	inits          bool
-	// toastBuf is this frame's copy of the toasts; toastKeys the box of each
-	// shown (at most 4 info and 3 errors), for its height.
+	// toastBuf is this frame's copy of the toasts.
 	toastBuf   []state.Toast
-	toastKeys  [8]toastKey
 	tb         rexui.Toolbar   // the titlebar band
 	listTB     rexui.Toolbar   // the panes' title rows
 	chatTB     []rexui.Toolbar // each chat pane slot's title row (the split view's others)
@@ -1466,9 +1464,10 @@ func (sh *Shell) accounts(anchor screen.Rect) {
 }
 
 // toasts shows the waiting toasts stacked at the bottom right, above the
-// composer, oldest on top (zf:src/ui/mod.rs:618-744): an info toast for
-// 3.2 s (INFO_TOAST_LIFETIME), an error until dismissed, with "Copy this
-// message". Workers may post while it runs (State.ToastsInto copies).
+// composer, oldest on top (zf:src/ui/mod.rs:618-744), in rexui's toast
+// stack: an info toast for 3.2 s (INFO_TOAST_LIFETIME), an error until
+// dismissed, with "Copy this message". Workers may post while it runs
+// (State.ToastsInto copies).
 func (sh *Shell) toasts(W, H float32) {
 	s, e, k := sh.S, &sh.env, sh.env.K
 	sh.toastBuf = s.ToastsInto(sh.toastBuf[:0])
@@ -1476,46 +1475,41 @@ func (sh *Shell) toasts(W, H float32) {
 		return
 	}
 	c := k.Context()
-	m := e.Pt(rexui.ToastLook.Margin)
-	w := min(e.Pt(rexui.ToastLook.MaxW), W-2*m)
-	bottom := H - e.Pt(20)
+	inset := float32(theme.Space5)
+	// the stack's room: the window, or what is above the composer, a
+	// step over it
+	room := H
 	if sh.composerH > 0 {
-		bottom = H - sh.composerH - e.Pt(12)
+		room = H - sh.composerH + e.Pt(inset-theme.Space3)
 	}
-	x := W - e.Pt(20) - w - m
-	// Newest at the bottom: laid out from the last, each on the height it
-	// had last frame.
-	y := bottom
-	for i := len(sh.toastBuf) - 1; i >= 0; i-- {
+	theme.At(c, 0, 0, W, room)
+	c.Push(c.Box(base.Floating, "toast room"))
+	st := rexui.BeginToastStack(k.Kit, i18n.T("Notifications")+"###toasts", rexui.ToastStackOpts{
+		Inset: inset, Width: min(rexui.ToastLook.MaxW, W/k.Scale()-2*inset)})
+	for i := range sh.toastBuf {
 		t := &sh.toastBuf[i]
-		h := sh.toastHeight(t.ID)
-		hb := h + 2*m
-		theme.At(c, x, y+m-hb, w+2*m, hb)
-		c.Push(c.BoxKeyed(base.Floating, ui.KeyN(ui.HashString(0, "zapfast/toast"), t.ID), nil))
-		o := rexui.ToastOpts{BannerOpts: rexui.BannerOpts{Level: rexui.BannerInfo, Dismissible: true}, Duration: 3.2}
+		o := rexui.StackToastOpts{Level: rexui.BannerInfo, Duration: float32(infoToastLife.Seconds())}
 		head := t.Text
 		if t.Error {
-			o.Level, o.Duration = rexui.BannerError, -1
+			o.Level, o.Duration = rexui.BannerError, 0
 			o.ActionIcon, o.ActionIconName = sh.ic.copy, i18n.T("Copy this message")
-			// Upstream wraps a toast's whole text; the banner's title is one
-			// line that fades, so an error's reason ("Could not open the
-			// attachment: no such file") goes on the wrapped line below.
+			// the title is one line: an error's reason ("Could not open the
+			// attachment: no such file") goes on the wrapped line below
 			if i := bytes.Index(head, colonSpace); i > 0 && i+len(colonSpace) < len(head) {
 				head, o.Message = head[:i], model.S(head[i+len(colonSpace):])
 			}
 		}
-		title := c.Fmt().Str(model.S(head)).Str("###toast").Uint64(t.ID).String()
-		sig := rexui.Toast(k.Kit, title, o)
-		sh.noteToast(t.ID, c.KeyOf(sig.ID))
-		c.Pop()
-		if sig.Action && c.ClipboardSet != nil {
+		o.Title = model.S(head)
+		sig := st.Toast(t.ID, o)
+		if sig.IconAction && c.ClipboardSet != nil {
 			c.ClipboardSet(t.Text)
 		}
 		if sig.Dismissed {
 			s.DismissToast(t.ID)
 		}
-		y -= h + e.Pt(8)
 	}
+	rexui.EndToastStack(k.Kit, &st)
+	c.Pop()
 }
 
 // ageToasts is the lock screen's part in the toasts: upstream keeps them
@@ -1547,51 +1541,6 @@ type myAvatar struct {
 	gen         uint32
 	path        []byte
 	key         img.Key
-}
-
-type toastKey struct {
-	id  uint64
-	key ui.Key
-}
-
-// toastHeight is the height toast id had last frame (0 the first).
-func (sh *Shell) toastHeight(id uint64) float32 {
-	for _, t := range sh.toastKeys {
-		if t.id == id {
-			if r := sh.env.K.Context().RectOf(t.key); r[3] > r[1] {
-				return r[3] - r[1]
-			}
-		}
-	}
-	return 0
-}
-
-// noteToast keeps toast id's box key, to read its height next frame: the
-// slot of a toast no longer shown is reused.
-func (sh *Shell) noteToast(id uint64, key ui.Key) {
-	free := -1
-	for i := range sh.toastKeys {
-		t := &sh.toastKeys[i]
-		if t.id == id {
-			t.key = key
-			return
-		}
-		if free < 0 && !sh.showing(t.id) {
-			free = i
-		}
-	}
-	if free >= 0 {
-		sh.toastKeys[free] = toastKey{id, key}
-	}
-}
-
-func (sh *Shell) showing(id uint64) bool {
-	for i := range sh.toastBuf {
-		if sh.toastBuf[i].ID == id {
-			return true
-		}
-	}
-	return false
 }
 
 // bannerAction is the banner button's label for the action it stands for

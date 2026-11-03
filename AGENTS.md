@@ -19,6 +19,10 @@ coding agents and new contributors.
   because a protobuf field for it exists.
 - Screenshots, captures, comparison pages and recordings made for a review
   go in the pull request, never the repository.
+- Generic UI behaviour and look (tokens, list keys, menus, toasts, key
+  hints, icons, formatting) belong in go-native-ui and its rexui kit: add
+  what Zap needs there first, then use it here, rather than building it in
+  the app.
 - Do not broaden a task into adjacent features or a general refactor.
   Preserve existing user behaviour unless the task changes it.
 

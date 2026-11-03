@@ -33,15 +33,16 @@ func ToolIcon(name string) icon.Spec { return rexui.ToolbarIcon(name, 0) }
 // overlaps by TickStep of a check's width.
 func TickIcon(name string) icon.Spec {
 	s := icon.Lucide(name).Size(TickPt)
-	s.Weight = 0.3
+	s.Weight = 0.45
 	return s
 }
 
-// TickPt is the delivery marks' size; TickStep how far the second check of
-// a pair sits from the first, as a share of a check's width.
+// TickPt is the delivery marks' size, a Lucide box whose check is two
+// thirds of it (SF's 10 pt check drew about as wide); TickStep how far the
+// second check of a pair sits from the first, as a share of the box.
 const (
-	TickPt   = 10
-	TickStep = 0.42
+	TickPt   = 14
+	TickStep = 0.3
 )
 
 // LargeIcon is name at the composer's size.

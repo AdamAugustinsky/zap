@@ -4,8 +4,9 @@
 // messages match first in the conversations already loaded (at once), then
 // in each account's archive (Command SearchMessages, 150 ms after the typing
 // rests). A message that is a document, a picture, a video or a link goes
-// under Files and links. ↑ and ↓ move, Enter opens, Escape or a click
-// outside closes.
+// under Files and links. It is rexui's command palette: ↑ ↓, Page Up and
+// Page Down move (the selection kept in view), Enter opens, Escape or a
+// click outside closes.
 package spotlight
 
 import (
@@ -18,7 +19,6 @@ import (
 	"gonativeui/rexui"
 	"gonativeui/theme"
 	"gonativeui/ui"
-	"gonativeui/widget/base"
 
 	"zapfast/abi"
 	"zapfast/format"
@@ -74,18 +74,17 @@ const spaceColourWords = "colour color theme tint grain appearance"
 
 // Screen is the overlay.
 type Screen struct {
-	field   ui.TextBuffer
-	rev     uint32
+	pal     rexui.PaletteState
 	query   string
 	needle  string
 	changed time.Time // when the text last changed
 	sent    string    // the text the accounts were asked for
 	gens    []uint32  // each account's SearchHits answer, as last read
 	rows    []result
-	sel     int
-	age     int        // frames since it opened
-	mouse   [2]float32 // the pointer, last frame: a row is picked by moving over it
-	ic      struct{ doc, photo, video, link, msg, palette icon.ID }
+	// items are the palette's rows: a section's header (-1 - its section)
+	// or a result's index in rows
+	items []int
+	ic    struct{ doc, photo, video, link, msg, palette icon.ID }
 }
 
 // New is the overlay, closed.
@@ -106,179 +105,58 @@ func (s *Screen) Init(e *screen.Env) error {
 // debounce is how long the typing rests before the archives are asked.
 const debounce = 150 * time.Millisecond
 
-// Pt sizes.
-const (
-	panelW   = 640
-	panelTop = 88
-	rowPt    = 44
-	listMax  = 420
-)
+// rowPt is a result's height.
+const rowPt = 44
 
 // Build builds the overlay while State.Spotlight.
 func (s *Screen) Build(e *screen.Env) {
 	st := e.S
 	if !st.Spotlight || st.Lock.Locked {
-		if s.age != 0 {
+		if s.pal.Open {
 			s.reset()
 		}
 		return
 	}
-	s.age++
-	c, k := e.C(), e.K
-	r := k.Theme()
-	w, h := c.Size()
-	W, H := float32(w), float32(h)
-
-	// it comes down from where Spotlight lives, a little, and fades in
-	// (motion.go: Short, from its place)
-	t := c.AnimateValueFrom(ui.HashString(0, "spotlight in"), 0, 1, r.Enter(ztheme.T.DurShort))
-
-	// A modal over the whole window, as peek's: the composer's native text
-	// view hides under it. A click outside closes it.
-	c.NextSize(ui.Pct(1), ui.Pct(1))
-	c.NextRole(ui.RoleGroup)
-	if c.BeginOverlay(ui.HashString(0, "spotlight"), ui.OverlayModal, [4]float32{0, 0, W, H}, ui.PlaceCenter).Dismissed {
-		c.EndOverlay()
+	k := e.K
+	s.pal.Show(string(st.Req.SpotlightText)) // opens it, and adds what a key typed
+	st.Req.SpotlightText = st.Req.SpotlightText[:0]
+	p, ok := rexui.BeginPalette(k.Kit, i18n.T("Search everything")+"###spotlight", &s.pal, rexui.PaletteOpts{Placeholder: i18n.T("Chats, people, messages, files")})
+	if !ok { // a click outside closed it
 		s.close(e)
 		return
 	}
-	defer c.EndOverlay()
-	theme.At(c, 0, 0, W, H)
-	c.NextBG(theme.WithAlpha(0x000000FF, ztheme.T.ScrimDim*t))
-	scrim := c.Box(base.Floating|ui.Clickable|ui.DrawBackground, "spotlight scrim")
-	if c.Signal(scrim).Clicked {
-		s.close(e)
-		return
-	}
-	pw := min(e.Pt(panelW), W-e.Pt(theme.Space8))
-	x := theme.Snap((W - pw) / 2)
-	y := e.Pt(panelTop) - (1-t)*e.Pt(theme.Space2)
-	c.NextOpacity(t)
-	theme.At(c, x, y, pw, 0)
-	c.NextSize(ui.Px(pw), ui.Children(1))
-	c.NextAxis(ui.AxisY)
-	c.NextPadding(e.Pt(theme.Space2), e.Pt(theme.Space2), e.Pt(theme.Space2), e.Pt(theme.Space2))
-	c.NextGap(e.Pt(theme.Space1))
-	c.NextBG(r.Colors[theme.Raised] | 0xFF)
-	c.NextRadius(e.Pt(theme.WindowRadius))
-	c.NextBorder(r.Colors[theme.Separator], r.Lines.Hairline)
-	c.NextShadow(ui.Shadow{OffY: e.Pt(12), Sigma: e.Pt(24), Color: 0x00000040})
-	c.NextRole(ui.RoleDialog)
-	c.NextSemName(i18n.T("Search everything"))
-	c.Push(c.Box(base.Floating|ui.DrawBackground|ui.DrawBorder|ui.Clickable, "spotlight"))
-
-	sig := rexui.SearchField(k.Kit, i18n.T("Search everything")+"###spotlight", &s.field, i18n.T("Chats, people, messages, files"), rexui.FieldOpts{Size: theme.SizeLarge})
-	if s.age <= 2 {
-		c.SetFocus(sig.Key)
-	}
-	if t := st.Req.SpotlightText; len(t) > 0 {
-		s.field.SetString(s.field.String() + string(t))
-		s.field.SetCaret(len(s.field.String()))
-		st.Req.SpotlightText = t[:0]
-	}
-	if s.field.Rev() != s.rev {
-		s.rev = s.field.Rev()
-		s.query = strings.TrimSpace(s.field.String())
+	if p.QueryChanged {
+		s.query = strings.TrimSpace(p.Query)
 		s.needle = format.Fold(s.query)
 		s.changed = time.Now()
-		s.sel = 0
 		s.collect(e)
 	}
 	s.ask(e)
 	if s.hitsChanged(e) {
 		s.collect(e)
 	}
-
-	// the keys: ↑ ↓ move, Enter opens, Escape closes
+	p.Results(len(s.items))
+	for i, it := range s.items {
+		if it < 0 {
+			p.Header(i, sectionName(section(-1-it)))
+			continue
+		}
+		s.row(e, &p, i, &s.rows[it])
+	}
+	sig := rexui.EndPalette(k.Kit, &p)
 	switch {
-	case c.TakeKey(ui.KeyDown, 0):
-		s.sel = min(s.sel+1, len(s.rows)-1)
-	case c.TakeKey(ui.KeyUp, 0):
-		s.sel = max(s.sel-1, 0)
-	}
-	if sig.Cancelled || c.TakeKey(ui.KeyEscape, 0) {
-		c.Pop()
+	case sig.Activated && sig.Row >= 0 && sig.Row < len(s.items) && s.items[sig.Row] >= 0:
+		s.open(e, s.rows[s.items[sig.Row]])
+	case sig.Closed:
 		s.close(e)
-		return
-	}
-	open := -1
-	defer func() { in := c.Input(); s.mouse = [2]float32{in.MouseX, in.MouseY} }()
-	if sig.Submitted && len(s.rows) > 0 {
-		open = s.sel
-	}
-	if i := s.list(e, pw-2*e.Pt(theme.Space2)); i >= 0 {
-		open = i
-	}
-	c.Pop()
-	if open >= 0 && open < len(s.rows) {
-		s.open(e, s.rows[open])
 	}
 }
 
-// list builds the rows under their sections and reports a clicked one.
-func (s *Screen) list(e *screen.Env, w float32) int {
-	c, k := e.C(), e.K
-	if len(s.rows) == 0 {
-		if s.query != "" {
-			c.NextPadding(e.Pt(theme.Space2), e.Pt(theme.Space3), e.Pt(theme.Space2), e.Pt(theme.Space3))
-			c.NextSize(ui.Pct(1), ui.Children(1))
-			c.Push(c.Box(0, "nothing"))
-			rexui.Label(k.Kit, i18n.T("Nothing found"), rexui.LabelOpts{Color: rexui.Of(theme.Label2)})
-			c.Pop()
-		}
-		return -1
-	}
-	k.NextScrollMaxHeight(listMax) // as tall as the results, up to listMax
-	v := k.BeginScroll("spotlight results", &scrollState, base.ScrollVertical)
-	clicked := -1
-	last := section(255)
-	for i := range s.rows {
-		rw := &s.rows[i]
-		if rw.sec != last {
-			last = rw.sec
-			c.NextPadding(e.Pt(theme.Space2), e.Pt(theme.Space2), e.Pt(theme.Space2), e.Pt(theme.Space1))
-			c.NextSize(ui.Pct(1), ui.Children(1))
-			c.Push(c.Box(0, c.Fmt().Str("section ").Int(int(rw.sec)).String()))
-			rexui.Label(k.Kit, sectionName(rw.sec), rexui.LabelOpts{Style: rexui.TextCaption, Color: rexui.Of(theme.Label2)})
-			c.Pop()
-		}
-		if s.row(e, i, w) {
-			clicked = i
-		}
-	}
-	k.CloseScrollContent(&v)
-	rexui.ScrollBars(k.Kit, &v)
-	k.CloseScroll(&v)
-	return clicked
-}
-
-// scrollState is the results' scroll (one overlay, one window).
-var scrollState base.ScrollState
-
-// row builds result i and reports a click.
-func (s *Screen) row(e *screen.Env, i int, w float32) bool {
+// row builds result rw as the palette's row i.
+func (s *Screen) row(e *screen.Env, p *rexui.Palette, i int, rw *result) {
 	c, k := e.C(), e.K.Kit
 	r := k.Theme()
-	rw := &s.rows[i]
-	p := k.PressState(c.Fmt().Str("result").Int(i).String(), base.HoverOn)
-	p.Name = rw.title
-	if in := c.Input(); p.Hot > 0.5 && (in.MouseX != s.mouse[0] || in.MouseY != s.mouse[1]) {
-		s.sel = i // the pointer moving over a row picks it, as the arrows do
-	}
-	fill := uint32(0)
-	switch {
-	case i == s.sel:
-		fill = rexui.ChatRowLook.Selected.RGBA(r)
-	case p.Hot > 0:
-		fill = theme.WithAlpha(r.Colors[theme.Label], ztheme.T.RowHover*p.Hot)
-	}
-	c.NextBG(fill)
-	c.NextRadius(e.Pt(ztheme.Nested()))
-	c.NextAxis(ui.AxisX)
-	c.NextCross(ui.CrossCenter)
-	c.NextGap(e.Pt(theme.Space3))
-	c.NextPadding(e.Pt(theme.Space2), 0, e.Pt(theme.Space2), 0)
-	k.BeginPress(&p, ui.RoleButton, ui.Px(w), ui.Px(e.Pt(rowPt)), ui.DrawBackground, nil)
+	row := p.Row(i, c.Fmt().Str(rw.title).Str("###result").Int(i).String(), rexui.ListRowOpts{Height: rowPt, Gap: theme.Space3})
 	side := e.Pt(28)
 	c.NextSize(ui.Px(side), ui.Px(side))
 	c.NextAxis(ui.AxisX)
@@ -292,19 +170,19 @@ func (s *Screen) row(e *screen.Env, i int, w float32) bool {
 	}
 	c.Pop()
 	c.NextAxis(ui.AxisY)
-	c.NextSize(ui.Pct(1), ui.Children(1))
+	c.NextSize(ui.Grow(1), ui.Children(1))
 	c.Push(c.Box(0, "text"))
 	k.NextWidth(ui.Pct(1))
-	rexui.Label(k, rw.title, rexui.LabelOpts{})
+	rexui.Label(k, rw.title, rexui.LabelOpts{Color: row.Text()})
 	if rw.sub != "" {
 		k.NextWidth(ui.Pct(1))
-		rexui.Label(k, rw.sub, rexui.LabelOpts{Style: rexui.TextCaption, Color: rexui.Of(theme.Label2)})
+		rexui.Label(k, rw.sub, rexui.LabelOpts{Style: rexui.TextCaption, Color: row.Text2()})
 	}
 	c.Pop()
 	if meta := s.meta(e, rw); meta != "" {
-		rexui.Label(k, meta, rexui.LabelOpts{Color: rexui.Of(theme.Label2), MetaPt: ztheme.T.MetaPt})
+		rexui.Label(k, meta, rexui.LabelOpts{Color: row.Text2(), MetaPt: ztheme.T.MetaPt})
 	}
-	return k.EndPress(&p).Clicked
+	p.EndRow()
 }
 
 // meta is what a row says at its end: the time of a message, and the
@@ -506,10 +384,15 @@ func (s *Screen) collect(e *screen.Env) {
 			}
 		}
 	}
-	// the sections in their order, stable within each
+	// the sections in their order, stable within each, each under its
+	// header
 	sortSections(s.rows)
-	if s.sel >= len(s.rows) {
-		s.sel = max(len(s.rows)-1, 0)
+	s.items = s.items[:0]
+	for i := range s.rows {
+		if i == 0 || s.rows[i].sec != s.rows[i-1].sec {
+			s.items = append(s.items, -1-int(s.rows[i].sec))
+		}
+		s.items = append(s.items, i)
 	}
 }
 
@@ -664,7 +547,7 @@ func (s *Screen) close(e *screen.Env) {
 }
 
 func (s *Screen) reset() {
-	s.field.SetString("")
-	s.rev, s.query, s.needle, s.sent = 0, "", "", ""
-	s.rows, s.sel, s.age = s.rows[:0], 0, 0
+	s.pal.Hide()
+	s.query, s.needle, s.sent = "", "", ""
+	s.rows, s.items = s.rows[:0], s.items[:0]
 }

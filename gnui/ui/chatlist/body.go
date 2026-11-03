@@ -32,6 +32,7 @@ func (s *Screen) body(e *screen.Env, a *state.Account) {
 		s.empty(e, a)
 		return
 	}
+	s.keys(e, a)
 	// With legacy scrollers (a mouse, or "Always" in System Settings) the
 	// rows end before the bar rather than under it.
 	v := base.BeginVList(c, "chats", &s.st, base.VListOpts{Estimate: rowH * k.Scale(), Line: 40, BarRoom: k.VListBarRoom("chats", &s.sbar)})
@@ -219,6 +220,15 @@ func (s *Screen) chat(e *screen.Env, a *state.Account, ref model.ChatRef) (typin
 		selected = ref == s.selRef
 	}
 	sig := s.chatRow(e, in, selected, typing, who)
+	c0 := e.C()
+	if ref == s.focusRef { // the row the keys reached takes the focus
+		s.focusRef = 0
+		c0.SetFocus(c0.KeyOf(sig.ID))
+		c0.SetFocusVisible(true)
+	}
+	if c0.Focused(sig.ID) {
+		s.rowFocus = true
+	}
 	// A row opens its chat when the button goes down, as a macOS list
 	// selects, not a click's length later; the keyboard's activation is
 	// its Clicked.
