@@ -17,10 +17,10 @@ func TestFailedMessageCannotReloadHistory(t *testing.T) {
 	m.Status = abi.DeliveryFailed
 	r.open(ada, m)
 	r.Play(widgettest.RClick(ui.RoleGroup, bubble("You", base0)), widgettest.Idle(2))
-	if r.node(ui.RoleButton, "Reload earlier messages").State&ui.SemDisabled == 0 {
+	if r.node(ui.RoleMenuItem, "Reload earlier messages").State&ui.SemDisabled == 0 {
 		t.Fatal("failed message offers Reload earlier messages")
 	}
-	r.Play(widgettest.Click(ui.RoleButton, "Reload earlier messages"), widgettest.Idle(2))
+	r.Play(widgettest.Click(ui.RoleMenuItem, "Reload earlier messages"), widgettest.Idle(2))
 	if len(r.sent(abi.CommandTagReloadHistory)) != 0 {
 		t.Fatal("disabled Reload sent a command")
 	}
@@ -40,11 +40,11 @@ func TestDownloadingMenuDoesNotRequestAnotherDownload(t *testing.T) {
 			}
 			r.open(ada, m)
 			r.Play(widgettest.RClick(ui.RoleGroup, bubble("Ada Lovelace", base0)), widgettest.Idle(2))
-			if disabled := r.node(ui.RoleButton, label).State&ui.SemDisabled != 0; disabled != downloading {
+			if disabled := r.node(ui.RoleMenuItem, label).State&ui.SemDisabled != 0; disabled != downloading {
 				t.Fatalf("%q disabled = %v", label, disabled)
 			}
 			before := len(r.sent(abi.CommandTagDownload))
-			r.Play(widgettest.Click(ui.RoleButton, label), widgettest.Idle(2))
+			r.Play(widgettest.Click(ui.RoleMenuItem, label), widgettest.Idle(2))
 			sent := r.sent(abi.CommandTagDownload)[before:]
 			if downloading {
 				if len(sent) != 0 {

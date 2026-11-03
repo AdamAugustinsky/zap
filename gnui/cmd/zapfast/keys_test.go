@@ -570,10 +570,10 @@ func TestTabWalksTheMainWindowInUpstreamsOrder(t *testing.T) {
 		t.Fatalf("phone links: %v steady allocations/frame", n)
 	}
 	r.Play(widgettest.Key(ui.KeyEnter, 0), widgettest.Idle(2))
-	if _, ok := r.Find(ui.RoleButton, "Copy number"); !ok {
+	if _, ok := r.Find(ui.RoleMenuItem, "Copy number"); !ok {
 		t.Fatal("Enter did not open the phone link's menu")
 	}
-	r.Play(widgettest.Click(ui.RoleButton, "Message"), widgettest.Idle(2))
+	r.Play(widgettest.Click(ui.RoleMenuItem, "Message"), widgettest.Idle(2))
 	found := false
 	for _, cmd := range f.Sent() {
 		found = found || cmd.Tag == abi.CommandTagEnsureChat && string(cmd.EnsureChat.Chat) == "15550100@s.whatsapp.net"

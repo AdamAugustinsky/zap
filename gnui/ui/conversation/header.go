@@ -131,11 +131,10 @@ func (s *Screen) Toolbar(e *screen.Env, tb *rexui.Toolbar) {
 	}
 	more := tb.Item(ic.more, i18n.T("More"))
 	if more.Clicked {
-		s.more = !s.more
 		s.menu.open = false
 	}
-	if s.more {
-		s.moreMenu(e, a, ch, c.RectOf(c.KeyOf(more.ID)))
+	if item, ok := rexui.DropdownMenu(e.K.Kit, more.ID, func(m *[]ui.MenuItem) { s.moreItems(a, ch, m) }); ok {
+		s.moreAct(e, a, ch, item)
 	}
 }
 

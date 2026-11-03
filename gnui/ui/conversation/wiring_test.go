@@ -60,7 +60,7 @@ func TestSelectionBarTakesTheComposersPlace(t *testing.T) {
 	r.open(ada, msg(ada, "s1", base0, false, "first"))
 	r.must(ui.RoleLabel, "Composer")
 	r.Play(widgettest.Click(ui.RoleButton, "More"), widgettest.Idle(2),
-		widgettest.Click(ui.RoleButton, "Select messages"), widgettest.Idle(2))
+		widgettest.Click(ui.RoleMenuItem, "Select messages"), widgettest.Idle(2))
 	if !r.s.Panes.Selecting {
 		t.Fatal("not selecting")
 	}
@@ -85,7 +85,8 @@ func TestMenuReactions(t *testing.T) {
 	r.open(ada, msg(ada, "m1", base0, false, "react"))
 	name := bubble("Ada Lovelace", base0)
 	r.Play(widgettest.RClick(ui.RoleGroup, name), widgettest.Idle(2),
-		widgettest.Click(ui.RoleButton, "🦀"), widgettest.Idle(2))
+		widgettest.Click(ui.RoleMenuItem, "React"), widgettest.Idle(2),
+		widgettest.Click(ui.RoleMenuItem, "🦀"), widgettest.Idle(2))
 	got := r.sent(abi.CommandTagReact)
 	if len(got) != 1 || string(got[0].React.Emoji) != "🦀" || string(got[0].React.Message) != "m1" {
 		t.Fatalf("reacts %+v", got)
@@ -94,12 +95,13 @@ func TestMenuReactions(t *testing.T) {
 		t.Errorf("reaction counts %+v", re)
 	}
 	r.Play(widgettest.RClick(ui.RoleGroup, name), widgettest.Idle(2),
-		widgettest.Click(ui.RoleButton, "React with any emoji"), widgettest.Idle(2))
+		widgettest.Click(ui.RoleMenuItem, "React"), widgettest.Idle(2),
+		widgettest.Click(ui.RoleMenuItem, "React with any emoji"), widgettest.Idle(2))
 	rt := &r.s.Panes.ReactTarget
 	if !rt.Open() || string(rt.Msg.At(0)) != "m1" || rt.Chat != r.a.Open || rt.Anchor.Empty() {
 		t.Errorf("reaction target %+v", rt)
 	}
-	r.mustNot(ui.RoleButton, "Copy message ID") // the menu closed
+	r.mustNot(ui.RoleMenuItem, "Copy message ID") // the menu closed
 }
 
 // The header places calls through ui/calls; while the chat has the live
@@ -166,7 +168,7 @@ func TestMenuOpensTheViewer(t *testing.T) {
 		Path: []byte("/nonexistent/v1.jpg"), HasPath: true}
 	r.open(ada, p)
 	r.Play(widgettest.RClick(ui.RoleGroup, bubble("Ada Lovelace", base0)), widgettest.Idle(2),
-		widgettest.Click(ui.RoleButton, "Open in the viewer"), widgettest.Idle(2))
+		widgettest.Click(ui.RoleMenuItem, "Open in the viewer"), widgettest.Idle(2))
 	// (the shell takes Want; the rig has no viewer window)
 	w := &r.s.Win
 	if w.ViewerHasCard || w.ViewerMsg.Len() != 1 || string(w.ViewerMsg.At(0)) != "v1" || w.ViewerChat != r.a.Open {

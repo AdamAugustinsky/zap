@@ -5283,3 +5283,11 @@ msgstr "Couleurs et grain de l’espace à l’écran. Sans dossiers, c’est la
 #: gnui
 msgid "Edit…"
 msgstr "Modifier…"
+
+#: gnui/ui (Zap)
+msgid "Playback speed"
+msgstr "Vitesse de lecture"
+
+#: gnui/ui (Zap)
+msgid "Mute notifications"
+msgstr "Mettre les notifications en sourdine"

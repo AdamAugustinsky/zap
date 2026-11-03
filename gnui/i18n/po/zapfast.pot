@@ -5035,3 +5035,11 @@ msgstr ""
 #: gnui
 msgid "Edit…"
 msgstr ""
+
+#: gnui/ui (Zap)
+msgid "Playback speed"
+msgstr ""
+
+#: gnui/ui (Zap)
+msgid "Mute notifications"
+msgstr ""

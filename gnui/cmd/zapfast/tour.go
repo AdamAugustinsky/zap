@@ -419,7 +419,7 @@ func (t *tour) launch() []script.Step {
 	add(pause(600))
 	// reply to Ada's voice message from its menu, an emoji completed
 	add(script.RClick(ui.RoleSlider, "Voice message"), pause(450))
-	add(click(ui.RoleButton, "Reply"), pause(400))
+	add(click(ui.RoleMenuItem, "Reply"), pause(400))
 	add(typing("See you tonight! :smile", 25)...)
 	add(pause(400))
 	add(t.label("Enter · Complete emoji", key(ui.KeyEnter, 0))...)

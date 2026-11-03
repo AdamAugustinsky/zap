@@ -133,7 +133,10 @@ func (s *Screen) ctxMenu(e *screen.Env, id ui.ID, kind menuKind, ref model.ChatR
 	}
 }
 
-// chatMenu describes the chat's menu, in upstream's order.
+// chatMenu describes the chat's menu in WhatsApp's groups: where to look at
+// it, what it is in the list (read, pinned, favourite, archived), how it
+// notifies and where it is filed (mute, sound, folder, labels, lock), what
+// it is (number, info), and leaving or deleting it, set apart in red.
 func (s *Screen) chatMenu(items *[]ui.MenuItem, e *screen.Env, a *state.Account, ref model.ChatRef) {
 	ch, ok := a.Model.Chats.Get(ref)
 	if !ok {
@@ -173,19 +176,15 @@ func (s *Screen) chatMenu(items *[]ui.MenuItem, e *screen.Env, a *state.Account,
 	} else {
 		add(ui.MenuItem{ID: miArchive, Title: i18n.T("Archive"), Symbol: "archivebox", Icon: "archive"})
 	}
-	if s.canLeave(a, ch) {
-		leave := i18n.T("Leave group")
-		if isChannel(ch) {
-			leave = i18n.T("Leave channel")
-		}
-		add(ui.MenuItem{ID: miLeave, Title: leave, Symbol: "rectangle.portrait.and.arrow.right", Icon: "log-out"})
-	}
+	add(ui.MenuSeparator)
 	if ch.Muted(now) {
 		add(ui.MenuItem{ID: miUnmute, Title: i18n.T("Unmute"), Symbol: "bell", Icon: "bell"})
 	} else {
-		add(ui.MenuItem{ID: miMute8h, Title: i18n.T("Mute for 8 hours"), Symbol: "bell.slash", Icon: "bell-off"})
-		add(ui.MenuItem{ID: miMuteWeek, Title: i18n.T("Mute for a week"), Symbol: "bell.slash", Icon: "bell-off"})
-		add(ui.MenuItem{ID: miMuteForever, Title: i18n.T("Mute indefinitely"), Symbol: "bell.slash", Icon: "bell-off"})
+		add(ui.MenuItem{Title: i18n.T("Mute notifications"), Symbol: "bell.slash", Icon: "bell-off", Sub: []ui.MenuItem{
+			{ID: miMute8h, Title: i18n.T("Mute for 8 hours")},
+			{ID: miMuteWeek, Title: i18n.T("Mute for a week")},
+			{ID: miMuteForever, Title: i18n.T("Mute indefinitely")},
+		}})
 	}
 	add(ui.MenuItem{Title: i18n.T("Notification sound"), Symbol: "speaker.wave.2", Icon: "volume-2", Sub: s.soundItems(ch)})
 	add(ui.MenuItem{Title: i18n.T("Folder"), Symbol: "folder", Icon: "folder", Sub: s.folderItems(a, ch)})
@@ -200,6 +199,14 @@ func (s *Screen) chatMenu(items *[]ui.MenuItem, e *screen.Env, a *state.Account,
 		add(ui.MenuItem{ID: miCopy, Title: i18n.T("Copy number"), Symbol: "doc.on.doc", Icon: "copy"})
 	}
 	add(ui.MenuItem{ID: miInfo, Title: i18n.T("Info"), Symbol: "info.circle", Icon: "info"})
+	add(ui.MenuSeparator)
+	if s.canLeave(a, ch) {
+		leave := i18n.T("Leave group")
+		if isChannel(ch) {
+			leave = i18n.T("Leave channel")
+		}
+		add(ui.MenuItem{ID: miLeave, Title: leave, Symbol: "rectangle.portrait.and.arrow.right", Icon: "log-out", Destructive: true})
+	}
 	// deleting reaches the phone, so it waits for a connection
 	add(ui.MenuItem{ID: miDelete, Title: i18n.T("Delete chat"), Symbol: "trash", Icon: "trash-2", Destructive: true, Disabled: !a.Model.Link.Connected()})
 }

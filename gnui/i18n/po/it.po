@@ -5258,3 +5258,11 @@ msgstr "Colori e grana dello spazio sullo schermo. Senza cartelle, è la vista p
 #: gnui
 msgid "Edit…"
 msgstr "Modifica…"
+
+#: gnui/ui (Zap)
+msgid "Playback speed"
+msgstr "Velocità di riproduzione"
+
+#: gnui/ui (Zap)
+msgid "Mute notifications"
+msgstr "Silenzia notifiche"

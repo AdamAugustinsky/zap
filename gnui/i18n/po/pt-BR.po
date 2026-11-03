@@ -5246,3 +5246,11 @@ msgstr "Cores e granulação do espaço na tela. Sem pastas, é a visualização
 #: gnui
 msgid "Edit…"
 msgstr "Editar…"
+
+#: gnui/ui (Zap)
+msgid "Playback speed"
+msgstr "Velocidade de reprodução"
+
+#: gnui/ui (Zap)
+msgid "Mute notifications"
+msgstr "Silenciar notificações"

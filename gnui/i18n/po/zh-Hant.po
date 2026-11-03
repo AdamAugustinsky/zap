@@ -5083,3 +5083,11 @@ msgstr "螢幕上空間的顏色與顆粒。沒有資料夾時，就是您帳號
 #: gnui
 msgid "Edit…"
 msgstr "編輯…"
+
+#: gnui/ui (Zap)
+msgid "Playback speed"
+msgstr "播放速度"
+
+#: gnui/ui (Zap)
+msgid "Mute notifications"
+msgstr "靜音通知"

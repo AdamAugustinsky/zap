@@ -76,7 +76,9 @@ func TestPinPastTheLimitToastsInstead(t *testing.T) {
 func TestMenuMuteAndDelete(t *testing.T) {
 	r := newRig(t)
 	r.chats(chat("1", "Ada", 10))
-	r.choose("Ada", "Mute indefinitely")
+	r.Play(widgettest.RClick(ui.RoleListItem, "Ada"), widgettest.Idle(2),
+		widgettest.Click(ui.RoleMenuItem, "Mute notifications"), widgettest.Idle(2),
+		widgettest.Click(ui.RoleMenuItem, "Mute indefinitely"), widgettest.Idle(2))
 	if c, ok := r.lastCmd(abi.CommandTagSetMuted); !ok || !c.SetMuted.HasUntil || c.SetMuted.Until != 0 {
 		t.Errorf("SetMuted: %v", r.f.SentTags())
 	}
@@ -251,9 +253,10 @@ func TestNativeMenuHasUpstreamsItemsInOrder(t *testing.T) {
 	un.Unread = 1
 	r.chats(un)
 	req := r.nativeMenu("Ada")
-	// Zap's Float first (no chat is open to split beside), then upstream's
-	want := []string{"Float over other apps", "-", "Mark as read", "Pin to top", "Add to favorites", "Archive", "Mute for 8 hours", "Mute for a week", "Mute indefinitely",
-		"Notification sound", "Folder", "Labels", "Lock chat", "-", "Copy number", "Info", "Delete chat"}
+	// Zap's Float first (no chat is open to split beside), then WhatsApp's
+	// groups, the mute lengths in a submenu and deleting set apart
+	want := []string{"Float over other apps", "-", "Mark as read", "Pin to top", "Add to favorites", "Archive", "-", "Mute notifications",
+		"Notification sound", "Folder", "Labels", "Lock chat", "-", "Copy number", "Info", "-", "Delete chat"}
 	if got := titles(req.Items); !slices.Equal(got, want) {
 		t.Fatalf("items\n got %v\nwant %v", got, want)
 	}
@@ -280,8 +283,8 @@ func TestChannelMenuItemsAndEnabledStates(t *testing.T) {
 				r.Frames(2)
 			}
 			req := r.nativeMenu("News")
-			want := []string{"Float over other apps", "-", "Mark as unread", "Pin to top", "Archive", "Leave channel", "Mute for 8 hours", "Mute for a week", "Mute indefinitely",
-				"Notification sound", "Folder", "Labels", "Lock chat", "-", "Info", "Delete chat"}
+			want := []string{"Float over other apps", "-", "Mark as unread", "Pin to top", "Archive", "-", "Mute notifications",
+				"Notification sound", "Folder", "Labels", "Lock chat", "-", "Info", "-", "Leave channel", "Delete chat"}
 			if got := titles(req.Items); !slices.Equal(got, want) {
 				t.Fatalf("connected=%v favorite=%v: items %v, want %v", connected, favorite, got, want)
 			}

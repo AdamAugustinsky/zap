@@ -68,20 +68,22 @@ type Screen struct {
 	strength float32
 
 	menu struct {
-		open   bool
-		msg    model.IDList
-		anchor [4]float32
+		open    bool
+		opening bool // the frame after the right click: MenuAt opens it
+		msg     model.IDList
+		anchor  [4]float32
 	}
 	one      model.IDList // one message's id, for the reducers that take a list
 	quickBuf [][]byte     // the menu's quick reactions
 	more     bool         // the header's More menu
 	delMenu  bool         // selection mode's Delete… menu
+	delOpen  bool         // it opens this frame (MenuAt)
 	delAt    [4]float32   // where a right click on a selected message opened it
 	narrow   bool         // the conversation has the window's whole width
 	lastNew  uint64       // the newest message's item, as announce last saw it
 	// a number's menu, opened from a message's text
 	phone struct {
-		open            bool
+		open, opening   bool // opening: the frame after the click, MenuAt opens it
 		at              [4]float32
 		written, digits []byte
 	}

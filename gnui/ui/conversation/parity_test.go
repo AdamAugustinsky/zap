@@ -32,7 +32,7 @@ func TestAttachmentMenuItems(t *testing.T) {
 	r.open(ada, p, st)
 	menu := func(ts int64, item string) {
 		r.Play(widgettest.RClick(ui.RoleGroup, bubble("Ada Lovelace", ts)), widgettest.Idle(2),
-			widgettest.Click(ui.RoleButton, item), widgettest.Idle(2))
+			widgettest.Click(ui.RoleMenuItem, item), widgettest.Idle(2))
 	}
 	menu(base0, "Copy image")
 	if c := r.sent(abi.CommandTagPrepareClipboardImage); len(c) != 1 || string(c[0].PrepareClipboardImage.Path) != photo {
@@ -54,12 +54,12 @@ func TestRightClickInSelectionDeletes(t *testing.T) {
 	r := newRig(t)
 	r.open(ada, msg(ada, "x1", base0, true, "mine"), msg(ada, "x2", base0+60, false, "theirs"))
 	r.Play(widgettest.RClick(ui.RoleGroup, bubble("You", base0)), widgettest.Idle(2),
-		widgettest.Click(ui.RoleButton, "Select"), widgettest.Idle(2))
+		widgettest.Click(ui.RoleMenuItem, "Select"), widgettest.Idle(2))
 	if !r.s.Panes.Selection.Has([]byte("x1")) {
 		t.Fatal("not selected")
 	}
 	r.Play(widgettest.RClick(ui.RoleGroup, bubble("You", base0)), widgettest.Idle(2),
-		widgettest.Click(ui.RoleButton, "Delete for me"), widgettest.Idle(2))
+		widgettest.Click(ui.RoleMenuItem, "Delete for me"), widgettest.Idle(2))
 	if d := r.s.Dialog; d.Kind != state.DialogConfirmDeleteSelection || d.IDs.Len() != 1 {
 		t.Errorf("dialog %v ids %d", d.Kind, d.IDs.Len())
 	}
@@ -202,12 +202,12 @@ func TestTextLinks(t *testing.T) {
 		t.Errorf("web link opened %v", sh.paths)
 	}
 	r.Play(widgettest.Click(ui.RoleLink, "+1 555 0100"), widgettest.Idle(2),
-		widgettest.Click(ui.RoleButton, "Copy number"), widgettest.Idle(2))
+		widgettest.Click(ui.RoleMenuItem, "Copy number"), widgettest.Idle(2))
 	if got := string(r.clip); got != "+1 555 0100" {
 		t.Errorf("copied %q", got)
 	}
 	r.Play(widgettest.Click(ui.RoleLink, "+1 555 0100"), widgettest.Idle(2),
-		widgettest.Click(ui.RoleButton, "Message"), widgettest.Idle(2))
+		widgettest.Click(ui.RoleMenuItem, "Message"), widgettest.Idle(2))
 	if c := r.sent(abi.CommandTagEnsureChat); len(c) != 1 || string(c[0].EnsureChat.Chat) != "15550100@s.whatsapp.net" {
 		t.Errorf("EnsureChat %+v", c)
 	}
@@ -229,7 +229,7 @@ func TestPhoneMenuAnchorsToKeyboardLinkOrPointer(t *testing.T) {
 		} else {
 			r.Play(widgettest.Key(key, 0), widgettest.Idle(2))
 		}
-		r.must(ui.RoleButton, "Copy number")
+		r.must(ui.RoleMenuItem, "Copy number")
 		if got := r.scr.phone.at; got != want {
 			t.Errorf("key %v: menu anchor %v, want %v", key, got, want)
 		}
@@ -278,8 +278,8 @@ func TestCallEntryCallsBack(t *testing.T) {
 	call.Content = abi.Content{Tag: abi.ContentTagCall, Call: abi.ContentCall{Video: true, Status: abi.CallStatusMissed}}
 	r.open(ada, call)
 	r.Play(widgettest.RClick(ui.RoleGroup, bubble("Ada Lovelace", base0)), widgettest.Idle(2))
-	r.mustNot(ui.RoleButton, "Reply")
-	r.Play(widgettest.Click(ui.RoleButton, "Video call").Nth(1), widgettest.Idle(2))
+	r.mustNot(ui.RoleMenuItem, "Reply")
+	r.Play(widgettest.Click(ui.RoleMenuItem, "Video call"), widgettest.Idle(2))
 	if c := r.sent(abi.CommandTagStartCall); len(c) != 1 || !c[0].StartCall.Video || string(c[0].StartCall.Chat) != ada {
 		t.Errorf("StartCall %+v", c)
 	}
@@ -432,7 +432,7 @@ func TestAlbumGrid(t *testing.T) {
 	}
 	// an item's own menu
 	r.Play(widgettest.RClick(ui.RoleButton, "Download photo").Nth(1), widgettest.Idle(2),
-		widgettest.Click(ui.RoleButton, "Copy message ID"), widgettest.Idle(2))
+		widgettest.Click(ui.RoleMenuItem, "Copy message ID"), widgettest.Idle(2))
 	if string(r.clip) != "al2" {
 		t.Errorf("the item's menu copied %q", r.clip)
 	}
@@ -638,7 +638,7 @@ func TestShiftClickSelectsARange(t *testing.T) {
 		return "Select message from Ada Lovelace, " + hhmm(base0+int64(i)*60) + ": line " + strconv.Itoa(i)
 	}
 	r.Play(widgettest.RClick(ui.RoleGroup, bubble("Ada Lovelace", base0+60)), widgettest.Idle(2),
-		widgettest.Click(ui.RoleButton, "Select"), widgettest.Idle(2))
+		widgettest.Click(ui.RoleMenuItem, "Select"), widgettest.Idle(2))
 	r.Play(widgettest.Click(ui.RoleCheckbox, check(4)).With(ui.ModShift), widgettest.Idle(2))
 	if n := r.s.Panes.Selection.Len(); n != 4 {
 		t.Errorf("a Shift-click on the check selected %d, want 4 (1 to 4)", n)
@@ -745,17 +745,17 @@ func TestUnavailableMenuItemsAreDisabled(t *testing.T) {
 		r.Play(widgettest.RClick(ui.RoleGroup, bubble(who, ts)), widgettest.Idle(2))
 	}
 	menu("Ada Lovelace", base0)
-	if disabled(ui.RoleButton, "Reload earlier messages") {
+	if disabled(ui.RoleMenuItem, "Reload earlier messages") {
 		t.Error("Reload earlier messages is disabled while connected")
 	}
 	r.Play(widgettest.Key(ui.KeyEscape, 0), widgettest.Idle(2))
 	menu("You", r.now.Unix()-60)
-	if !disabled(ui.RoleButton, "Reload earlier messages") {
+	if !disabled(ui.RoleMenuItem, "Reload earlier messages") {
 		t.Error("Reload earlier messages is enabled on a pending message")
 	}
 	r.Play(widgettest.Key(ui.KeyEscape, 0), widgettest.Idle(2))
 	r.Play(widgettest.Click(ui.RoleButton, "More"), widgettest.Idle(2))
-	if disabled(ui.RoleButton, "Clear chat") {
+	if disabled(ui.RoleMenuItem, "Clear chat") {
 		t.Error("Clear chat is disabled while connected")
 	}
 	r.Play(widgettest.Key(ui.KeyEscape, 0), widgettest.Idle(2))
@@ -763,12 +763,12 @@ func TestUnavailableMenuItemsAreDisabled(t *testing.T) {
 	r.f.Emit(ev(abi.EventTagLink, func(e *abi.Event) { e.Link.Status.Tag = abi.LinkStatusTagDisconnected }))
 	r.Frames(2)
 	menu("Ada Lovelace", base0)
-	if !disabled(ui.RoleButton, "Reload earlier messages") {
+	if !disabled(ui.RoleMenuItem, "Reload earlier messages") {
 		t.Error("Reload earlier messages is enabled offline")
 	}
 	r.Play(widgettest.Key(ui.KeyEscape, 0), widgettest.Idle(2))
 	r.Play(widgettest.Click(ui.RoleButton, "More"), widgettest.Idle(2))
-	if !disabled(ui.RoleButton, "Clear chat") {
+	if !disabled(ui.RoleMenuItem, "Clear chat") {
 		t.Error("Clear chat is enabled offline")
 	}
 	r.Play(widgettest.Key(ui.KeyEscape, 0), widgettest.Idle(2))
