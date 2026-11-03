@@ -345,9 +345,9 @@ const (
 // photoItems is the group picture's menu: Change photo, and Remove photo when
 // there is a photo to remove.
 func photoItems(m *[]ui.MenuItem, hasPic bool) {
-	*m = append(*m, ui.MenuItem{ID: menuChangePhoto, Title: i18n.T("Change photo"), Symbol: "photo"})
+	*m = append(*m, ui.MenuItem{ID: menuChangePhoto, Title: i18n.T("Change photo"), Symbol: "photo", Icon: "image"})
 	if hasPic {
-		*m = append(*m, ui.MenuItem{ID: menuRemovePhoto, Title: i18n.T("Remove photo"), Symbol: "trash"})
+		*m = append(*m, ui.MenuItem{ID: menuRemovePhoto, Title: i18n.T("Remove photo"), Symbol: "trash", Icon: "trash-2"})
 	}
 }
 

@@ -76,20 +76,20 @@ func (s *Screen) Init(e *screen.Env) error {
 	k := e.K
 	emoji.Warm()
 	pt := float32(15)
-	add := func(sym string, fb rune) icon.ID { return k.AddIcon(icon.Spec{Symbol: sym, Fallback: fb, Pt: pt}) }
-	s.ic.clock = add("clock", '◷')
-	s.ic.star = add("star", '☆')
-	s.ic.starOff = add("star.slash", '☆')
-	s.ic.bubble = add("bubble.left", '✉')
+	add := func(name string) icon.ID { return k.AddIcon(icon.Lucide(name).Size(pt)) }
+	s.ic.clock = add("clock")
+	s.ic.star = add("star")
+	s.ic.starOff = add("star-off")
+	s.ic.bubble = add("message-circle")
 	s.ic.plus = icon.Plus
-	s.ic.trash = add("trash", '✕')
-	s.ic.send = add("arrowshape.turn.up.right", '➦')
-	s.ic.photo = add("photo", '▣')
-	s.ic.link = add("arrow.up.right.square", '↗')
-	s.ic.doc = add("doc.text", '▤')
+	s.ic.trash = add("trash-2")
+	s.ic.send = add("forward")
+	s.ic.photo = add("image")
+	s.ic.link = add("external-link")
+	s.ic.doc = add("file-text")
 	s.ic.check = icon.Check
 	s.ic.xmark = icon.Close
-	s.ic.sticker = add("face.smiling", '☺')
+	s.ic.sticker = add("smile")
 	s.em.init()
 	s.gif.init()
 	s.st.init()

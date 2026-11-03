@@ -83,6 +83,12 @@ type Screen struct {
 	focus     bool
 	searchKey ui.Key
 	cmdr      searchCmd
+	// nav is the list's keyboard navigation (keys.go); rowFocus says a chat
+	// row had the focus last frame, focusRef the row the focus goes to when
+	// it is built
+	nav      base.ListNav
+	rowFocus bool
+	focusRef model.ChatRef
 	mirrors   []*mirror // by account, Serial
 
 	// what the chips show
@@ -96,8 +102,7 @@ type Screen struct {
 	contactKeys      []string
 	offerSelf        bool
 
-	menu ctxMenu
-	lm   labelManager
+	lm labelManager
 
 	sentQuery string
 	// ⌘K was open: it asks the same archive for its own text, in the same
@@ -133,6 +138,7 @@ func (s *Screen) Init(e *screen.Env) error {
 	s.hour12 = format.Hour12()
 	s.search.Reserve(256)
 	s.cmdr.s = s
+	s.nav.Selectable = s.navRow
 	s.dwellKey = ui.HashString(0, "chatlist dwell")
 	e.S.OnAccountGone(s, s.accountGone)
 	return nil
@@ -193,7 +199,6 @@ func (s *Screen) Build(e *screen.Env, r screen.Rect) {
 	s.body(e, a)
 	k.EndContainer()
 	k.EndContainer()
-	s.menu.build(s, e, a)
 	s.lm.build(s, e, a)
 }
 
@@ -216,7 +221,6 @@ func (s *Screen) takeRequests(e *screen.Env, a *state.Account) {
 		s.searchRev = s.search.Rev()
 		s.query, s.needle, s.needleB, s.selRef = "", nil, nil, 0
 		s.kept = s.kept[:0]
-		s.menu.close()
 		s.open = 0
 	}
 }
@@ -641,7 +645,7 @@ func (s *Screen) header(e *screen.Env, a *state.Account) {
 	sc := k.Scale()
 	pad := theme.Snap(10 * sc)
 	c.NextAxis(ui.AxisY)
-	c.NextPadding(pad, theme.Snap(4*sc), pad, theme.Snap(6*sc))
+	c.NextPadding(pad, theme.Snap(4*sc), pad, theme.Snap(8*sc))
 	c.NextGap(theme.Snap(8 * sc))
 	c.NextSize(ui.Pct(1), ui.Children(1))
 	box := c.BoxKeyed(0, ui.HashString(c.ParentKey(), "header"), nil)
@@ -657,8 +661,8 @@ func (s *Screen) header(e *screen.Env, a *state.Account) {
 	c.Pop()
 }
 
-// searchField builds the search field. The arrows walk the matching chats
-// while it keeps the focus; Enter opens the one reached; Escape clears it
+// searchField builds the search field. The arrows, Page Up and Page Down walk
+// the matching chats (the list's ListNav, keys.go) while it keeps the focus; Enter opens the one reached; Escape clears it
 // and gives the keyboard to the open chat's composer.
 func (s *Screen) searchField(e *screen.Env, a *state.Account) {
 	k := e.K
@@ -692,19 +696,13 @@ func (sc *searchCmd) FieldCommand(cmd ui.FieldCommand, _ rune) bool {
 		return false
 	}
 	switch cmd {
-	case ui.FieldMoveDown, ui.FieldMoveUp:
+	case ui.FieldMoveDown, ui.FieldMoveUp, ui.FieldPageDown, ui.FieldPageUp:
 		if s.query == "" || len(s.refs) == 0 {
 			return false
 		}
-		i := slices.Index(s.refs, s.selRef)
-		if cmd == ui.FieldMoveDown {
-			i = min(i+1, len(s.refs)-1)
-		} else if i > 0 {
-			i--
+		if s.nav.FieldCommand(cmd, 0) {
+			s.reach(s.nav.Sel)
 		}
-		i = max(i, 0)
-		s.selRef = s.refs[i]
-		s.reveal(s.selRef)
 		return true
 	case ui.FieldInsertNewline:
 		if s.query == "" || len(s.refs) == 0 {

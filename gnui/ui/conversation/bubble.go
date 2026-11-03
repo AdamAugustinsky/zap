@@ -720,7 +720,7 @@ func (s *Screen) quote(e *screen.Env, a *state.Account, ch model.Chat, m model.M
 		inner = s.span - e.Pt(quoteBarPt+2*ztheme.T.QuotePad)
 	}
 	c.NextAxis(ui.AxisY)
-	c.NextGap(e.Pt(ztheme.Micro))
+	c.NextGap(e.Pt(theme.GridMicro))
 	pad := ztheme.T.QuotePad
 	c.NextPadding(e.Pt(quoteBarPt+pad), e.Pt(pad), e.Pt(pad), e.Pt(pad))
 	c.NextBG(bg)

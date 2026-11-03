@@ -46,15 +46,15 @@ func (sh *Shell) glided(id workspace.PaneID, gut float32) ([4]float32, float32) 
 		g.last[id] = l.Rect(id)
 	}
 	b := g.last[id]
-	rate := ztheme.Toward(r, ztheme.T.DurStandard, on)
+	d := ztheme.T.DurStandard
 	if !g.on {
-		rate = theme.Instant
+		d = 0 // at once
 	}
-	target := float32(0)
-	if on {
-		target = 1
+	t := theme.Glide(c, r, ui.KeyN(glideKey, uint64(id)), on, d)
+	rate := float32(theme.Instant)
+	if d > 0 {
+		rate = r.Toward(d, on)
 	}
-	t := c.AnimateValue(ui.KeyN(glideKey, uint64(id)), target, rate)
 	x0 := c.AnimateValue(ui.KeyN(glideKey, 10+uint64(id)), b[0], rate)
 	x1 := c.AnimateValue(ui.KeyN(glideKey, 20+uint64(id)), b[2], rate)
 	pr := [4]float32{theme.Snap(x0), b[1], theme.Snap(x1), b[3]}

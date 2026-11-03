@@ -2,10 +2,8 @@ package theme
 
 import (
 	"gonativeui/rexui"
-	"gonativeui/text"
 	gtheme "gonativeui/theme"
 	"gonativeui/theme/rex"
-	"gonativeui/widget"
 )
 
 // ZapFast is Rex only (Superlogical's look) in WhatsApp's green: where
@@ -23,20 +21,13 @@ func init() {
 
 	// the titlebar's tabs: Rex's capsule and pill in the field's greens
 	// rather than its lilacs
-	t := &rexui.TabsRecipes[rexui.TabsRex]
-	t.Capsule = [2]rexui.Pair{rexui.Solid(0xDEE4E0, 0x282D2B), rexui.Solid(0xDAE1DC, 0x252A28)}
-	t.CapsuleBackdrop = [2]rexui.Pair{rexui.PairA(0xDEE4E0, 0x282D2B, 0.5, 0.55), rexui.PairA(0xDAE1DC, 0x252A28, 0.5, 0.55)}
-	t.Pill = [2]rexui.Pair{rexui.Solid(0xFCFDFC, 0x343A37), rexui.Solid(0xF8FAF9, 0x303633)}
-	// a quiet hairline all round the chosen tab: Rex's rim on the end caps
-	// alone read as a border that broke off along the top and bottom
-	t.PillRim, t.PillRimAround = rexui.PairA(0x26302B, 0xFFFFFF, 0.12, 0.07), true
-	t.PillShadow = [2]rexui.Pair{rexui.PairA(0x26302B, 0x000000, 0.13, 0.40), rexui.PairA(0x26302B, 0x000000, 0.14, 0.45)}
-	t.Sep = rexui.PairA(0x848E89, 0xB3BCB7, 1, 0.6)
-	t.Press = rexui.PairA(0x26302B, 0xFFFFFF, 0.09, 0.08)
-	t.Name = [2]rexui.Pair{rexui.Solid(0x575F5B, 0xA9B0AC), rexui.Solid(0x1C211F, 0xEEF1EF)}
-	t.Detail = [2]rexui.Pair{rexui.Solid(0x8B9490, 0x8C9591), rexui.Solid(0x1C211F, 0xEEF1EF)}
-	t.CloseFill = rexui.PairA(0x26302B, 0xFFFFFF, 0.08, 0.08)
-
+	rexui.TintTabs(&rexui.TabsRecipes[rexui.TabsRex], rexui.TabsTint{
+		Capsule: [2]uint32{0xDEE4E0, 0x282D2B}, CapsuleInactive: [2]uint32{0xDAE1DC, 0x252A28},
+		Pill: [2]uint32{0xFCFDFC, 0x343A37}, PillInactive: [2]uint32{0xF8FAF9, 0x303633},
+		Ink:  0x26302B,
+		Name: [2]uint32{0x575F5B, 0xA9B0AC}, Detail: [2]uint32{0x8B9490, 0x8C9591}, Chosen: [2]uint32{0x1C211F, 0xEEF1EF},
+		Sep: [2]uint32{0x848E89, 0xB3BCB7},
+	})
 }
 
 // tuneRecipes puts T's values into Rex's recipes: the bubbles and the chat
@@ -49,11 +40,12 @@ func tuneRecipes() {
 	rexui.ChatRowLook.Pad, rexui.ChatRowLook.Gap = T.ListRowPad, T.ListRowGap
 }
 
-// tuneMetrics puts T's into th: the panes on Zap's grid, concentric with
-// the window.
+// tuneMetrics puts T's into th: the panes on the grid, concentric with the
+// window, and the five durations, which Rex's components follow (hover,
+// fades, the panes' focus dimming).
 func tuneMetrics(th *gtheme.Theme) {
-	th.Metrics.Inset, th.Metrics.Gutter, th.Metrics.RadiusLarge = T.PaneInset, T.PaneGutter, Pane()
-	tuneMotion(th)
+	th.SetPaneGrid(T.PaneInset, T.PaneGutter)
+	th.SetDurations(gtheme.Durations{Micro: T.DurMicro, Short: T.DurShort, Standard: T.DurStandard, Long: T.DurLong, ExitScale: T.ExitScale})
 }
 
 // How much of the accent tints your bubbles and the open chat's row, in light
@@ -78,14 +70,6 @@ func Rex() *gtheme.Theme {
 	th := rex.ThemeWithField(field)
 	tuneMetrics(th)
 	d := &th.Roles[1]
-	for i, v := range d {
-		r, g, b, a := v>>24, v>>16&0xFF, v>>8&0xFF, v&0xFF
-		if a < 0xE6 || r != g || g != b {
-			continue // a translucent fill takes the green of what is under it
-		}
-		d[i] = scale(r, inkR)<<24 | scale(g, inkG)<<16 | scale(b, inkB)<<8 | a
-		th.Own[i] = true
-	}
 	th.Dark.Background, th.Dark.Surface, th.Dark.SurfaceRaised = darkField, darkPane, darkRaised
 	th.Light.Background = lightField
 	th.Roles[0][gtheme.Field], d[gtheme.Field] = lightField, darkField
@@ -148,24 +132,9 @@ var field = rex.FieldColors{
 		{Y: 1278, Mid: 0x181B1A, Left: 0x181B1A, Right: 0x181B1A},
 	},
 	DarkGlass: 0x2B302E,
+	// the dark ink's green on every opaque grey: a grey's red, green and
+	// blue as the dark panes have them (#262A28 for #282828)
+	DarkCast: [3]float32{0.98, 1.02, 1.0},
 	// over the glass (Settings.Transparency): a quiet grey-green
 	Scrim: [2]uint32{0xEAEEEB, 0x181B1A},
 }
-
-// The dark ink's green: a grey's red, green and blue as the dark panes have
-// them (#262A28 for #282828).
-const inkR, inkG, inkB = 0.98, 1.02, 1.0
-
-func scale(v uint32, k float32) uint32 { return uint32(min(float32(v)*k+0.5, 255)) }
-
-// Meta is the face Rex sets its metadata in (times, numbers, sizes, hints):
-// the UI face with tabular figures at sizePt points in k's scale, a step
-// under the text it sits beside (rexui.MetaFont). Asking for it each frame
-// is a lookup.
-func Meta(k *widget.Kit, sizePt float32) text.FontKey {
-	return k.TextSystem().Font(text.FontDesc{SizePt: sizePt, TabularDigits: true, Scale: k.Scale()})
-}
-
-// MetaPt is the metadata's size beside body text: times in the chat list,
-// the call log and the bubbles, the composer's hints.
-const MetaPt = 11

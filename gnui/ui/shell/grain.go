@@ -42,7 +42,7 @@ func (sh *Shell) spaceGrain(W, H float32) {
 	g := s.SpaceTheme().Grain
 	t := g
 	if sh.Slides {
-		t = c.AnimateValue(ui.HashString(0, "zapfast/grain level"), g, ztheme.Enter(k.Theme(), ztheme.T.DurStandard))
+		t = c.AnimateValue(ui.HashString(0, "zapfast/grain level"), g, k.Theme().Enter(ztheme.T.DurStandard))
 	}
 	if t <= 0.001 {
 		return

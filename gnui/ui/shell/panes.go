@@ -147,6 +147,7 @@ func (sh *Shell) body(r [4]float32) screen.Rect {
 func (sh *Shell) surface(p workspace.PaneID, r [4]float32) { sh.surfaceAt(p, r, 1) }
 
 // surfaceAt is surface at opacity op: a pane gliding in or away (glide.go).
+// Its focus eases at the theme's dimming rate, as rexui's pane card's does.
 func (sh *Shell) surfaceAt(p workspace.PaneID, r [4]float32, op float32) {
 	k := sh.env.K
 	c, th := k.Context(), k.Theme()
@@ -156,7 +157,7 @@ func (sh *Shell) surfaceAt(p workspace.PaneID, r [4]float32, op float32) {
 	}
 	s := theme.Surface{
 		Key: sh.panes.PaneKey(p), Slot: sh.panes.Slot(p), Rect: r,
-		Focus: c.AnimateValue(ui.KeyN(paneFocusKey, uint64(p)), target, 14), Opacity: op, Top: true,
+		Focus: c.AnimateValue(ui.KeyN(paneFocusKey, uint64(p)), target, th.Motion.Dim), Opacity: op, Top: true,
 	}
 	th.Chrome.SurfaceShadow(c, th, s)
 	kg := th.Chrome.BeginSurface(c, th, s)
@@ -317,7 +318,7 @@ func (sh *Shell) accountChip(a *state.Account, h float32) ui.Key {
 	c.NextSize(ui.Px(size), ui.Px(size))
 	c.Push(c.Box(0, "picture"))
 	rexui.Avatar(k.Kit, model.S(name), rexui.AvatarOpts{Size: 26, Image: sh.myPicture(a, int32(size)), Backdrop: rexui.Of(theme.Field)})
-	sh.elsewhereDot(size)
+	sh.elsewhereDot()
 	c.Pop()
 	c.NextAxis(ui.AxisY)
 	c.NextSize(ui.Pct(1), ui.Children(0))
@@ -341,24 +342,11 @@ func (sh *Shell) accountChip(a *state.Account, h float32) ui.Key {
 	return p.Key
 }
 
-// elsewhereDot marks a picture size pixels wide when another account has
+// elsewhereDot marks the picture being built when another account has
 // unread chats, ringed in the field's colour so it reads on any picture.
-func (sh *Shell) elsewhereDot(size float32) {
+func (sh *Shell) elsewhereDot() {
 	if sh.unreadElsewhere() == 0 {
 		return
 	}
-	e := &sh.env
-	c, r := e.C(), e.K.Theme()
-	ring, dot := e.Pt(12), e.Pt(9)
-	theme.At(c, size-e.Pt(3)-ring/2, e.Pt(3)-ring/2, ring, ring)
-	c.NextBG(r.Colors[theme.Field])
-	c.NextRadius(ring / 2)
-	c.NextAuditExempt(ui.AuditOverflow.Mask() | ui.AuditCovered.Mask())
-	c.Push(c.Box(base.Floating|ui.DrawBackground, "elsewhere"))
-	c.NextCenter()
-	c.NextSize(ui.Px(dot), ui.Px(dot))
-	c.NextBG(r.Colors[theme.Accent])
-	c.NextRadius(dot / 2)
-	c.Box(base.Floating|ui.DrawBackground, "dot")
-	c.Pop()
+	rexui.BadgeDot(sh.env.K.Kit, rexui.BadgeDotOpts{Color: rexui.Of(theme.Accent), Backdrop: rexui.Of(theme.Field), Ring: 12, Dot: 9})
 }

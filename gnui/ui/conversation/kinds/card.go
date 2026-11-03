@@ -194,7 +194,7 @@ func (b *blk) previewBuild(r screen.Rect) {
 	p, _ := b.previewOf()
 	ref, hasThumb := b.m.Thumbnail()
 	radius := b.pt(ztheme.Nested())
-	pad := b.pt(ztheme.Space2)
+	pad := b.pt(theme.Space2)
 	name := i18n.T("Link preview")
 	if len(p.Title) > 0 {
 		name = string(p.Title)

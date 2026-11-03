@@ -26,7 +26,7 @@ func NewContent() *Content { return &Content{} }
 // Init readies the pane for the main window.
 func (p *Content) Init(e *screen.Env) error {
 	p.h = hubOf(e.S)
-	p.ic = e.K.AddIcon(icon.Spec{Symbol: "phone.badge.plus", Fallback: '+', Pt: 28})
+	p.ic = e.K.AddIcon(icon.Lucide("phone-forwarded").Size(28))
 	return nil
 }
 

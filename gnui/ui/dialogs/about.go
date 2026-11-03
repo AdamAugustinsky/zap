@@ -134,7 +134,7 @@ func (s *Screen) shortcuts(e *screenEnv, dl *rexui.Dialog) {
 			k.NextGap(16)
 			k.BeginContainer(ui.AxisX, ui.CrossStart, e.C().Fmt().Str("row").Int(i).String(), ui.Pct(1), ui.Children(1), 0)
 			k.NextWidth(k.Fixed(shortcutsKeys))
-			rexui.Label(k.Kit, list[i].Keys, rexui.LabelOpts{Style: rexui.TextSemibold})
+			rexui.Label(k.Kit, rexui.KeyText(list[i].Keys), rexui.LabelOpts{Style: rexui.TextSemibold})
 			k.NextWidth(widget.Fill)
 			rexui.Label(k.Kit, i18n.T(list[i].What), rexui.LabelOpts{Style: rexui.TextBody, Color: secondary, Wrap: true})
 			k.EndContainer()

@@ -242,35 +242,33 @@ func (s *Screen) addIcons(e *screen.Env) {
 	ic := &s.icons
 	// Keep registration order: IDs are positions in the window's atlas.
 	for _, it := range [...]struct {
-		dst *icon.ID
-		sym string
-		fb  rune
+		dst  *icon.ID
+		name string
 	}{
-		{&ic.call, "phone", '☎'}, {&ic.video, "video", '▶'}, {&ic.hangup, "phone.down.fill", '✆'},
-		{&ic.search, "magnifyingglass", '⌕'}, {&ic.more, "ellipsis", '…'},
+		{&ic.call, "phone"}, {&ic.video, "video"}, {&ic.hangup, "phone-off"},
+		{&ic.search, "search"}, {&ic.more, "ellipsis"},
 	} {
-		*it.dst = k.AddIcon(rexui.ToolbarSymbol(it.sym, it.fb))
+		*it.dst = k.AddIcon(ztheme.ToolIcon(it.name))
 	}
-	ic.reply = k.AddIcon(ztheme.ToolIcon("arrowshape.turn.up.left", '↩'))
-	ic.close = k.AddIcon(ztheme.ToolIcon("xmark", '×'))
+	ic.reply = k.AddIcon(ztheme.ToolIcon("reply"))
+	ic.close = k.AddIcon(ztheme.ToolIcon("x"))
 	// The Newest message button, 0.46 of its 40 pt.
-	ic.down = k.AddIcon(icon.Spec{Symbol: "arrow.down", Fallback: '↓', Pt: newestPt * 0.46})
+	ic.down = k.AddIcon(icon.Lucide("arrow-down").Size(newestPt * 0.46))
 	for _, it := range [...]struct {
-		dst *icon.ID
-		sym string
-		fb  rune
+		dst  *icon.ID
+		name string
 	}{
-		{&ic.pin, "pin.fill", '⚲'}, {&ic.star, "star.fill", '★'}, {&ic.forward, "arrowshape.turn.up.right", '↪'},
-		{&ic.trash, "trash", '⌫'}, {&ic.copy, "doc.on.doc", '⎘'}, {&ic.clock, "arrow.clockwise", '↻'},
-		{&ic.info, "info.circle", 'ⓘ'}, {&ic.check, "checkmark.circle", '✓'}, {&ic.archive, "archivebox", '▤'},
-		{&ic.open, "arrow.up.forward.app", '↗'}, {&ic.folder, "folder", '▭'}, {&ic.photo, "photo", '▣'},
-		{&ic.edit, "pencil", '✎'}, {&ic.eraser, "eraser", '⌧'}, {&ic.plus, "plus", '+'},
-		{&ic.back, "chevron.left", '‹'},
+		{&ic.pin, "pin"}, {&ic.star, "star"}, {&ic.forward, "forward"},
+		{&ic.trash, "trash-2"}, {&ic.copy, "copy"}, {&ic.clock, "rotate-cw"},
+		{&ic.info, "info"}, {&ic.check, "circle-check"}, {&ic.archive, "archive"},
+		{&ic.open, "external-link"}, {&ic.folder, "folder"}, {&ic.photo, "image"},
+		{&ic.edit, "pencil"}, {&ic.eraser, "eraser"}, {&ic.plus, "plus"},
+		{&ic.back, "chevron-left"},
 	} {
-		*it.dst = k.AddIcon(ztheme.ToolIcon(it.sym, it.fb)) // the bars' items, as the header's
+		*it.dst = k.AddIcon(ztheme.ToolIcon(it.name)) // the bars' items, as the header's
 	}
-	ic.pinSmall = k.AddIcon(icon.Spec{Symbol: "pin.fill", Fallback: '⚲', Pt: footMarkPt})
-	ic.smile = k.AddIcon(icon.Spec{Symbol: "face.smiling", Fallback: '☺', Pt: 16})
+	ic.pinSmall = k.AddIcon(icon.Lucide("pin").Size(footMarkPt))
+	ic.smile = k.AddIcon(icon.Lucide("smile").Size(16))
 	ic.ticks = addTickIcons(k)
 	ic.ok = true
 }

@@ -118,18 +118,16 @@ func (w *Window) Init(e *screen.Env) error {
 	tb := theme.MacWindow.Capsule.Glyph + 2
 	ic := &w.ic
 	for _, it := range [...]struct {
-		dst *icon.ID
-		sym string
-		fb  rune
-		pt  float32
+		dst  *icon.ID
+		spec icon.Spec
 	}{
-		{&ic.mic, "mic.fill", '●', 18}, {&ic.micOff, "mic.slash.fill", '○', 18}, {&ic.video, "video.fill", '▶', 18}, {&ic.videoOff, "video.slash.fill", '▷', 18},
-		{&ic.devices, "speaker.wave.2.fill", '♪', 18}, {&ic.hangup, "phone.down.fill", '✕', 18}, {&ic.accept, "phone.fill", '☎', 18},
-		{&ic.hide, "chevron.left", '‹', tb}, {&ic.full, "arrow.up.left.and.arrow.down.right", '⤢', tb}, {&ic.unfull, "arrow.down.right.and.arrow.up.left", '⤡', tb},
-		{&ic.link, "link", '∞', 48}, {&ic.badge, "mic.slash.fill", '○', 14},
-		{&ic.micSmall, "mic", '●', 12}, {&ic.speakerSmall, "speaker.wave.2", '♪', 12}, {&ic.videoSmall, "video", '▶', 12},
+		{&ic.mic, icon.Lucide("mic").Size(18)}, {&ic.micOff, icon.Lucide("mic-off").Size(18)}, {&ic.video, icon.Lucide("video").Size(18)}, {&ic.videoOff, icon.Lucide("video-off").Size(18)},
+		{&ic.devices, icon.Lucide("volume-2").Size(18)}, {&ic.hangup, icon.Lucide("phone-off").Size(18)}, {&ic.accept, icon.Lucide("phone").Size(18)},
+		{&ic.hide, icon.Lucide("chevron-left").Size(tb)}, {&ic.full, icon.Lucide("maximize-2").Size(tb)}, {&ic.unfull, icon.Lucide("minimize-2").Size(tb)},
+		{&ic.link, icon.Lucide("link").Size(48)}, {&ic.badge, icon.Lucide("mic-off").Size(14)},
+		{&ic.micSmall, icon.Lucide("mic").Size(12)}, {&ic.speakerSmall, icon.Lucide("volume-2").Size(12)}, {&ic.videoSmall, icon.Lucide("video").Size(12)},
 	} {
-		*it.dst = e.K.AddIcon(icon.Spec{Symbol: it.sym, Fallback: it.fb, Pt: it.pt})
+		*it.dst = e.K.AddIcon(it.spec)
 	}
 	w.devicesOpen = false
 	w.pics.reset()

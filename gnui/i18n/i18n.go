@@ -119,7 +119,16 @@ func SetLocale(l Locale) {
 	}
 	currentLoc.Store(uint32(l))
 	current.Store(catalogOf(l))
+	if f := observer.Load(); f != nil {
+		(*f)(l)
+	}
 }
+
+var observer atomic.Pointer[func(Locale)]
+
+// Observe has f hear every SetLocale, as it is set: what keeps the
+// framework's words and formats (rexui.SetStrings) in Zap's language.
+func Observe(f func(Locale)) { observer.Store(&f) }
 
 // Current is the language set with SetLocale (English until then).
 func Current() Locale { return Locale(currentLoc.Load()) }

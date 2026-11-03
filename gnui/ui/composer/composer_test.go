@@ -62,8 +62,8 @@ func TestCommandEnterSendsWhenEnterDoesNot(t *testing.T) {
 		t.Fatalf("⌘Enter sent %v", r.f.SentTags())
 	}
 	// The hints bar says so.
-	if !r.hasText("⌘+Enter sends") {
-		t.Error("the hints do not name ⌘+Enter")
+	if !r.hasText("⌘Enter sends") {
+		t.Error("the hints do not name ⌘Enter")
 	}
 }
 
@@ -305,10 +305,10 @@ func TestFocusRequest(t *testing.T) {
 func TestShortcutHints(t *testing.T) {
 	r := newRig(t, nil, func(s *state.State) { s.Settings.ShowShortcutHints = true })
 	r.open(ada)
-	if !r.hasText("Enter sends · Shift+Enter for a new line · *bold* _italic_ ~strike~ · ⌘+V pastes a picture") {
+	if !r.hasText("Enter sends · Shift+Enter for a new line · *bold* _italic_ ~strike~ · ⌘V pastes a picture") {
 		t.Fatal("no hints")
 	}
-	r.Play(widgettest.Click(ui.RoleButton, "All shortcuts (⌘+/)"), widgettest.Idle(2))
+	r.Play(widgettest.Click(ui.RoleButton, "All shortcuts (⌘/)"), widgettest.Idle(2))
 	if r.s.Dialog.Kind != state.DialogShortcuts {
 		t.Error("the keyboard did not open the shortcuts")
 	}

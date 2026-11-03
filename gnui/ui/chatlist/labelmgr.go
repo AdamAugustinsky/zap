@@ -149,7 +149,7 @@ func (lm *labelManager) swatches(k *base.Kit, sel *string, changed *bool) {
 	c := k.Context()
 	sc := k.Scale()
 	c.NextAxis(ui.AxisX)
-	c.NextGap(theme.Snap(3 * sc))
+	c.NextGap(theme.Snap(4 * sc))
 	c.NextRole(ui.RoleRadioGroup)
 	c.NextSemName(i18n.P("label colour", "Colour"))
 	c.NextSize(ui.Children(1), ui.Children(1))

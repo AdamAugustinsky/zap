@@ -187,24 +187,27 @@ func (s *Screen) moreName(a *state.Account, chosen bool, fold state.Filter, name
 }
 
 // moreChip is the chip the folded filters open from: their menu, native
-// where the app has native menus, else drawn under the chip.
+// where the app has native menus, else rexui's drawn dropdown under the chip.
 func (s *Screen) moreChip(e *screen.Env, a *state.Account, chosen bool, names *[state.FilterChannels + 1]string) {
 	c := e.C()
 	on := chosen && a.Filter >= s.fold && a.Filter <= state.FilterChannels
 	sig := s.chip(e, s.moreName(a, chosen, s.fold, names)+"###more filters", 0, on, false, 0, true)
 	e.TabStop(filterStops[s.fold], sig.ID)
 	s.revealFocused(e, sig)
+	if !c.NativeMenus() {
+		if id, ok := rexui.DropdownMenu(e.K.Kit, sig.ID, func(m *[]ui.MenuItem) { s.menuItems(m, e, a, menuFilters, 0, 0) }); ok {
+			s.menuAct(e, a, menuFilters, 0, 0, id)
+		}
+		return
+	}
 	if id, out := c.ContextMenuResult(sig.ID); out == ui.MenuChosen {
 		s.menuAct(e, a, menuFilters, 0, 0, id)
 	}
-	if !sig.Clicked {
-		return
-	}
-	r := c.Rect(sig.ID)
-	var items []ui.MenuItem
-	s.menuItems(&items, e, a, menuFilters, 0, 0)
-	if !c.ContextMenu(sig.ID, r[0], r[3], items) {
-		s.menu = ctxMenu{kind: menuFilters, at: [2]float32{r[0], r[3]}, items: s.menu.items[:0]}
+	if sig.Clicked {
+		r := c.Rect(sig.ID)
+		items := e.K.MenuScratch()
+		s.menuItems(items, e, a, menuFilters, 0, 0)
+		c.ContextMenu(sig.ID, r[0], r[3], *items)
 	}
 }
 
@@ -310,8 +313,8 @@ func (s *Screen) chip(e *screen.Env, name string, count int, on, dotted bool, do
 	c.NextRadius(h / 2)
 	c.NextAxis(ui.AxisX)
 	c.NextCross(ui.CrossCenter)
-	c.NextGap(theme.Snap(5 * sc))
-	c.NextPadding(theme.Snap(9*sc), 0, theme.Snap(9*sc), 0)
+	c.NextGap(theme.Snap(4 * sc))
+	c.NextPadding(theme.Snap(8*sc), 0, theme.Snap(8*sc), 0)
 	k.BeginToggle(&tg, ui.RoleCheckbox, ui.Children(1), ui.Px(h), flags)
 	k.FocusRing(tg.ID, tg.Visual, h/2)
 	if dotted {
@@ -360,10 +363,7 @@ func colorOf(r *theme.Resolved, hex string) uint32 {
 // channelsMenu offers "Mute all channels" on the Channels chip's right
 // click (zf:src/ui/chats.rs:627).
 func (s *Screen) channelsMenu(e *screen.Env, a *state.Account, sig base.Signal) {
-	if !s.native(e, sig.ID, menuChannels, 0, 0) && sig.RightClicked {
-		in := e.C().Input()
-		s.menu.showChannels(in.MouseX, in.MouseY)
-	}
+	s.ctxMenu(e, sig.ID, menuChannels, 0, 0)
 }
 
 // muteAllChannels mutes or unmutes every channel (Action::MuteAllChannels).

@@ -35,10 +35,10 @@ type folderUI struct {
 func (f *folderUI) add(k *base.Kit) {
 	f.icons = f.icons[:0]
 	for _, sym := range state.FolderIcons {
-		f.icons = append(f.icons, k.AddIcon(ztheme.ToolIcon(sym, '▤')))
+		f.icons = append(f.icons, k.AddIcon(ztheme.ToolIcon(state.FolderLucide(sym))))
 	}
-	f.open = k.AddIcon(ztheme.SmallIcon("chevron.down", '▾'))
-	f.shut = k.AddIcon(ztheme.SmallIcon("chevron.right", '▸'))
+	f.open = k.AddIcon(ztheme.SmallIcon("chevron-down"))
+	f.shut = k.AddIcon(ztheme.SmallIcon("chevron-right"))
 }
 
 // iconOf is the atlas icon of a folder's symbol (the first for one unknown).
@@ -78,7 +78,7 @@ func (s *Screen) folderRow(e *screen.Env, a *state.Account, fi int) {
 	c.NextRadius(theme.Snap(rc.Radius * sc))
 	c.NextAxis(ui.AxisX)
 	c.NextCross(ui.CrossCenter)
-	c.NextGap(e.Pt(ztheme.Space2))
+	c.NextGap(e.Pt(theme.Space2))
 	c.NextPadding(pad, 0, pad, 0)
 	c.NextSize(ui.Pct(1), ui.Pct(1))
 	c.Push(c.BoxKeyed(ui.DrawBackground, ui.KeyN(p.Key, 1), nil))
@@ -115,10 +115,7 @@ func (s *Screen) folderRow(e *screen.Env, a *state.Account, fi int) {
 	if sig.Clicked && !renaming {
 		a.EditFolder(fi, func(x *state.Folder) { x.Collapsed = !x.Collapsed })
 	}
-	if !s.native(e, sig.ID, menuFolder, 0, fi) && sig.RightClicked {
-		in := c.Input()
-		s.menu.showFolder(fi, in.MouseX, in.MouseY)
-	}
+	s.ctxMenu(e, sig.ID, menuFolder, 0, fi)
 }
 
 // rule is the line under the folders: the chats under it are in none.
@@ -126,7 +123,7 @@ func (s *Screen) rule(e *screen.Env) {
 	c, r := e.C(), e.K.Theme()
 	sc := e.K.Scale()
 	inset := theme.Snap((rexui.ChatRowLook.Inset + rexui.ChatRowLook.Pad) * sc)
-	c.NextPadding(inset, e.Pt(ztheme.Space2), inset, e.Pt(ztheme.Space2))
+	c.NextPadding(inset, e.Pt(theme.Space2), inset, e.Pt(theme.Space2))
 	c.NextSize(ui.Pct(1), ui.Children(1))
 	c.Push(c.Box(0, "rule"))
 	c.NextSize(ui.Pct(1), ui.Px(r.Lines.Hairline))
@@ -164,34 +161,34 @@ func (s *Screen) folderMenu(items *[]ui.MenuItem, a *state.Account, fi int) {
 	}
 	fd := &a.Settings.Folders[fi]
 	add := func(it ui.MenuItem) { *items = append(*items, it) }
-	add(ui.MenuItem{ID: miFolderRename, Title: i18n.T("Rename…"), Symbol: "pencil"})
+	add(ui.MenuItem{ID: miFolderRename, Title: i18n.T("Rename…"), Symbol: "pencil", Icon: "pencil"})
 	var icons []ui.MenuItem
 	for i, sym := range state.FolderIcons {
-		it := ui.MenuItem{ID: miFolderIcon + i, Title: sym, Symbol: sym}
+		it := ui.MenuItem{ID: miFolderIcon + i, Title: sym, Symbol: sym, Icon: state.FolderLucide(sym)}
 		if sym == fd.Icon {
 			it.Mark = ui.MarkOn
 		}
 		icons = append(icons, it)
 	}
-	add(ui.MenuItem{Title: i18n.T("Icon"), Symbol: fd.Icon, Sub: icons})
+	add(ui.MenuItem{Title: i18n.T("Icon"), Symbol: fd.Icon, Icon: state.FolderLucide(fd.Icon), Sub: icons})
 	// its space's colour, as Arc's (state.SpaceTints)
 	tints := []ui.MenuItem{{ID: miFolderTint, Title: i18n.T("No colour")}}
 	for i, name := range state.SpaceTints {
-		tints = append(tints, ui.MenuItem{ID: miFolderTint + 1 + i, Title: tintLabel(name), Symbol: "circle.fill"})
+		tints = append(tints, ui.MenuItem{ID: miFolderTint + 1 + i, Title: tintLabel(name), Symbol: "circle.fill", Icon: "circle"})
 	}
 	for i := range tints {
 		if name := tintAt(tints[i].ID - miFolderTint); name == fd.Tint && fd.TintDots[0] == 0 {
 			tints[i].Mark = ui.MarkOn
 		}
 	}
-	add(ui.MenuItem{Title: i18n.T("Colour"), Symbol: "paintpalette", Sub: tints})
+	add(ui.MenuItem{Title: i18n.T("Colour"), Symbol: "paintpalette", Icon: "palette", Sub: tints})
 	if fd.Space {
-		add(ui.MenuItem{ID: miFolderSpace, Title: i18n.T("Stop showing it as a space"), Symbol: "square.stack"})
+		add(ui.MenuItem{ID: miFolderSpace, Title: i18n.T("Stop showing it as a space"), Symbol: "square.stack", Icon: "layers"})
 	} else {
-		add(ui.MenuItem{ID: miFolderSpace, Title: i18n.T("Show it as a space (⌃1–9)"), Symbol: "square.stack"})
+		add(ui.MenuItem{ID: miFolderSpace, Title: i18n.T("Show it as a space (⌃1–9)"), Symbol: "square.stack", Icon: "layers"})
 	}
 	add(ui.MenuSeparator)
-	add(ui.MenuItem{ID: miFolderDelete, Title: i18n.T("Delete folder (its chats stay)"), Symbol: "trash", Destructive: true})
+	add(ui.MenuItem{ID: miFolderDelete, Title: i18n.T("Delete folder (its chats stay)"), Symbol: "trash", Icon: "trash-2", Destructive: true})
 }
 
 // folderAct does what a folder's menu chose.
@@ -224,7 +221,7 @@ func (s *Screen) folderItems(a *state.Account, ch model.Chat) []ui.MenuItem {
 	var out []ui.MenuItem
 	for i := range a.Settings.Folders {
 		fd := &a.Settings.Folders[i]
-		it := ui.MenuItem{ID: miFolder + i, Title: fd.Name, Symbol: fd.Icon}
+		it := ui.MenuItem{ID: miFolder + i, Title: fd.Name, Symbol: fd.Icon, Icon: state.FolderLucide(fd.Icon)}
 		if i == in {
 			it.Mark = ui.MarkOn
 		}
@@ -236,7 +233,7 @@ func (s *Screen) folderItems(a *state.Account, ch model.Chat) []ui.MenuItem {
 	if len(out) > 0 {
 		out = append(out, ui.MenuSeparator)
 	}
-	return append(out, ui.MenuItem{ID: miNewFolder, Title: i18n.T("New folder…"), Symbol: "folder.badge.plus"})
+	return append(out, ui.MenuItem{ID: miNewFolder, Title: i18n.T("New folder…"), Symbol: "folder.badge.plus", Icon: "folder-plus"})
 }
 
 // chatFolderAct moves a chat as its Folder submenu chose; it reports

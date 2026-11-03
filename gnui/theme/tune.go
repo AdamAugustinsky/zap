@@ -1,5 +1,7 @@
 package theme
 
+import gtheme "gonativeui/theme"
+
 // Tunables are the design values the screens read each frame, rather than
 // constants, so that the playground (cmd/zapfast -playground, dev builds)
 // can move them while the app runs. T is the live set; Defaults the code's,
@@ -55,21 +57,22 @@ type Tunables struct {
 var Defaults = Tunables{
 	PaneInset: PaneInset, PaneGutter: PaneGutter,
 	BubblePadX: BubblePadX, BubblePadY: BubblePadY,
-	RowGap: Micro, RunGap: MinGap, NameGap: Space1,
-	QuotePad: Space2, BlockGap: MinGap, TranscriptSide: Space4, HeaderPadX: Space2,
-	ListRowPad: Space3, ListRowGap: Space3,
-	DockGap: Space2, InfoMargin: Space4,
+	RowGap: gtheme.GridMicro, RunGap: gtheme.MinGap, NameGap: gtheme.Space1,
+	QuotePad: gtheme.Space2, BlockGap: gtheme.MinGap, TranscriptSide: gtheme.Space4, HeaderPadX: gtheme.Space2,
+	ListRowPad: gtheme.Space3, ListRowGap: gtheme.Space3,
+	DockGap: gtheme.Space2, InfoMargin: gtheme.Space4,
 
 	BubbleRadius: BubbleRadius,
 
 	MetaPt: 11, BubbleTimePt: 8,
 
-	HitTool: HitTool, HitLarge: HitLarge,
+	HitTool: gtheme.HitTool, HitLarge: gtheme.HitLarge,
 
-	DurMicro: 0.1, DurShort: 0.18, DurStandard: 0.25, DurLong: 0.35, ExitScale: 0.7,
+	DurMicro: gtheme.DefaultDurations.Micro, DurShort: gtheme.DefaultDurations.Short, DurStandard: gtheme.DefaultDurations.Standard,
+	DurLong: gtheme.DefaultDurations.Long, ExitScale: gtheme.DefaultDurations.ExitScale,
 	RowHover: 0.05, RowPress: 0.04, ToolRest: 0, ToolLift: 0, ScrimDim: 0.16,
 
-	SoftBlur: 1, SoftFade: Space6,
+	SoftBlur: 1, SoftFade: gtheme.Space6,
 
 	MinTabs: 2,
 }
@@ -87,14 +90,11 @@ func Changed() { Gen++ }
 // the bubble, never under InnerRadius.
 func Nested() float32 { return max(InnerRadius, T.BubbleRadius-T.BubblePadY) }
 
-// Pane is the panes' radius: concentric with the window's.
-func Pane() float32 { return max(InnerRadius, WindowRadius-T.PaneInset) }
-
 // SpaceSteps are the grid's steps a spacing knob moves between.
-var SpaceSteps = []float32{0, Micro, Space1, Space2, Space3, Space4, Space5, Space6, Space8, 40, 48}
+var SpaceSteps = []float32{0, gtheme.GridMicro, gtheme.Space1, gtheme.Space2, gtheme.Space3, gtheme.Space4, gtheme.Space5, gtheme.Space6, gtheme.Space8, 40, 48}
 
 // RadiusSteps are a radius knob's.
-var RadiusSteps = []float32{0, Space1, 6, Space2, 10, Space3, 14, Space4, 18, Space5, Space6}
+var RadiusSteps = []float32{0, gtheme.Space1, 6, gtheme.Space2, 10, gtheme.Space3, 14, gtheme.Space4, 18, gtheme.Space5, gtheme.Space6}
 
 // Knob is one of T's fields as the playground shows it.
 type Knob struct {

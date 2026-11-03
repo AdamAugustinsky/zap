@@ -413,7 +413,7 @@ func TestShortcutsListAndHintSwitch(t *testing.T) {
 	if len(screen.Shortcuts) != 49 {
 		t.Fatalf("%d shortcuts", len(screen.Shortcuts))
 	}
-	for _, name := range []string{"⌘K", "⌘Shift+F", "⌥↑ / ⌥↓", "J / K", "G then I / A / S / C"} {
+	for _, name := range []string{"⌘K", "⇧⌘F", "⌥↑ / ⌥↓", "J / K", "G then I / A / S / C"} {
 		if !r.has(ui.RoleLabel, name) {
 			t.Errorf("no %q", name)
 		}

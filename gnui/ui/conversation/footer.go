@@ -81,9 +81,9 @@ type tickIcons struct{ tick, wait, fail icon.ID }
 
 func addTickIcons(k interface{ AddIcon(icon.Spec) icon.ID }) tickIcons {
 	return tickIcons{
-		tick: k.AddIcon(ztheme.TickIcon("checkmark", '✓')),
-		wait: k.AddIcon(ztheme.TickIcon("clock", '◷')),
-		fail: k.AddIcon(ztheme.TickIcon("exclamationmark.circle.fill", '!')),
+		tick: k.AddIcon(ztheme.TickIcon("check")),
+		wait: k.AddIcon(ztheme.TickIcon("clock")),
+		fail: k.AddIcon(ztheme.TickIcon("circle-alert")),
 	}
 }
 

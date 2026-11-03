@@ -170,23 +170,20 @@ const (
 )
 
 func iconSpecs() []icon.Spec {
-	s := func(sym string, fb rune, pt float32) icon.Spec {
-		return icon.Spec{Symbol: sym, Fallback: fb, Pt: pt}
-	}
 	return []icon.Spec{
-		s("play.fill", '▶', 16),
-		s("pause.fill", '⏸', 16),
-		s("arrow.down", '⬇', 16),
-		s("exclamationmark.circle", '!', 18),
-		s("music.note", '♪', 18),
-		s("video.fill", '▶', 16),
-		s("play.fill", '▶', 22),
-		s("pause.fill", '⏸', 22),
-		s("exclamationmark.circle", '!', 22),
-		s("arrow.up.right.square", '↗', 14), // as a document's (kinds)
-		s("arrow.up.left.and.arrow.down.right", '⤢', 16),
-		s("speaker.wave.2.fill", '♪', 16),
-		s("speaker.slash.fill", '×', 16),
+		icon.Lucide("play").Filled().Size(16),
+		icon.Lucide("pause").Filled().Size(16),
+		icon.Lucide("arrow-down").Size(16),
+		icon.Lucide("circle-alert").Size(18),
+		icon.Lucide("music").Size(18),
+		icon.Lucide("video").Size(16),
+		icon.Lucide("play").Filled().Size(22),
+		icon.Lucide("pause").Filled().Size(22),
+		icon.Lucide("circle-alert").Size(22),
+		icon.Lucide("external-link").Size(14), // as a document's (kinds)
+		icon.Lucide("maximize-2").Size(16),
+		icon.Lucide("volume-2").Size(16),
+		icon.Lucide("volume-x").Size(16),
 	}
 }
 

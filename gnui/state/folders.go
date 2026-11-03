@@ -77,12 +77,28 @@ func (t SpaceTheme) Strength() float32 {
 	return min(t.Level, 1)
 }
 
-// FolderIcons are the symbols a folder can take, the first the default.
+// FolderIcons are the symbols a folder can take, the first the default:
+// SF Symbols' names, which a folder keeps in its settings and the native
+// menus show; FolderLucide is the Lucide icon drawn for each.
 var FolderIcons = []string{
 	"folder", "briefcase", "house", "person.2", "heart", "star", "bag", "cart",
 	"airplane", "book", "graduationcap", "gamecontroller", "music.note", "camera",
 	"hammer", "chart.bar", "leaf", "pawprint", "globe", "flame", "sparkles", "tag",
 	"bubble.left.and.bubble.right", "bell",
+}
+
+// folderLucide is FolderIcons' Lucide icons, in their order.
+var folderLucide = [...]string{"folder", "briefcase", "house", "users", "heart", "star", "shopping-bag", "shopping-cart", "plane", "book", "graduation-cap", "gamepad-2", "music", "camera", "hammer", "chart-column", "leaf", "paw-print", "globe", "flame", "sparkles", "tag", "messages-square", "bell"}
+
+// FolderLucide is the Lucide icon drawn for a folder's symbol (FolderIcons),
+// "folder" for one unknown.
+func FolderLucide(sym string) string {
+	for i, s := range FolderIcons {
+		if s == sym && i < len(folderLucide) {
+			return folderLucide[i]
+		}
+	}
+	return folderLucide[0]
 }
 
 // FolderOf is the index in Settings.Folders of the folder chat is in, or -1.

@@ -18,7 +18,7 @@ func TestSpotlightOpensSpaceColour(t *testing.T) {
 				t.Fatal("the theme creator is open already")
 			}
 			r.Play(widgettest.Key('K', prim), widgettest.Idle(2), widgettest.Type(word), widgettest.Idle(3))
-			if _, ok := r.Find(ui.RoleButton, "Space colour…"); !ok {
+			if _, ok := r.Find(ui.RoleListItem, "Space colour…"); !ok {
 				t.Fatalf("%q: no Space colour… action", word)
 			}
 			r.Play(widgettest.Key(ui.KeyEnter, 0), widgettest.Idle(4))

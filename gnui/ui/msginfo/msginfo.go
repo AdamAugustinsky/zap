@@ -144,8 +144,8 @@ func New() *Screen { return &Screen{} }
 // Init readies the pane for a window: its symbols, and the receipts it keeps.
 func (s *Screen) Init(e *screen.Env) error {
 	s.env = e
-	s.ic.closeX = e.K.AddIcon(ztheme.ToolIcon("xmark", '✕'))
-	s.ic.back = e.K.AddIcon(ztheme.ToolIcon("chevron.left", '‹'))
+	s.ic.closeX = e.K.AddIcon(ztheme.ToolIcon("x"))
+	s.ic.back = e.K.AddIcon(ztheme.ToolIcon("chevron-left"))
 	e.S.Listen(s, abi.EventTagReceipts)
 	return nil
 }

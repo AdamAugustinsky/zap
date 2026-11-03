@@ -503,7 +503,8 @@ func TestFoldedFiltersPickFromMore(t *testing.T) {
 		t.Fatalf("the More chip does not read Groups, chosen")
 	}
 	r.Play(widgettest.Click(ui.RoleCheckbox, "Groups"), widgettest.Idle(3))
-	r.Play(widgettest.Click(ui.RoleMenuItem, "Groups"), widgettest.Idle(3))
+	// the chosen filter is a checked item
+	r.Play(widgettest.Click(ui.RoleMenuItemCheckbox, "Groups"), widgettest.Idle(3))
 	if r.acct().Filter != state.FilterAll || !r.has(ui.RoleCheckbox, "More") {
 		t.Errorf("picking Groups again left filter %v, want All", r.acct().Filter)
 	}
@@ -551,5 +552,31 @@ func TestTheListsSearchAsksAgainAfterSpotlight(t *testing.T) {
 	}
 	if len(asked) != 1 || asked[0] != "lunch" {
 		t.Fatalf("after ⌘K closed the list asked %q", asked)
+	}
+}
+
+// With a chat's row focused, ↓ and ↑ open the next and the previous chat,
+// End and Home the last and the first (the framework's ListNav), and the row
+// reached keeps the keyboard.
+func TestArrowsWalkTheList(t *testing.T) {
+	r := newRig(t)
+	r.chats(chat("1", "Ada", 3), chat("2", "Grace", 2), chat("3", "Margaret", 1))
+	open := func() string {
+		a := r.acct()
+		ch, _ := a.Model.Chats.Get(a.Open)
+		return string(ch.Name())
+	}
+	r.Play(widgettest.Click(ui.RoleListItem, "Ada"), widgettest.Idle(2))
+	for _, step := range []struct {
+		key  ui.KeyCode
+		want string
+	}{{ui.KeyDown, "Grace"}, {ui.KeyDown, "Margaret"}, {ui.KeyUp, "Grace"}, {ui.KeyHome, "Ada"}, {ui.KeyEnd, "Margaret"}} {
+		r.Play(widgettest.Key(step.key, 0), widgettest.Idle(2))
+		if got := open(); got != step.want {
+			t.Fatalf("after %v the open chat is %q, want %q", step.key, got, step.want)
+		}
+		if n, ok := r.Focused(); !ok || n.Role != ui.RoleListItem {
+			t.Fatalf("after %v the focus left the list", step.key)
+		}
 	}
 }

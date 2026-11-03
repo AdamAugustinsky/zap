@@ -81,9 +81,9 @@ func (s *Screen) Init(e *screen.Env) error {
 	// question is asked again after the unlock.
 	e.S.OnLock(s, func(*state.State) { s.withdrawAlert() })
 	e.S.OnAccountGone(&s.lab, s.lab.gone)
-	s.poll.removeIc = e.K.AddIcon(ztheme.SmallIcon("xmark", '✕'))
-	s.lab.iconEdit = e.K.AddIcon(icon.Spec{Symbol: "pencil", Fallback: '✎', Pt: 13})
-	s.lab.iconTrash = e.K.AddIcon(icon.Spec{Symbol: "trash", Fallback: '🗑', Pt: 13})
+	s.poll.removeIc = e.K.AddIcon(ztheme.SmallIcon("x"))
+	s.lab.iconEdit = e.K.AddIcon(icon.Lucide("pencil").Size(13))
+	s.lab.iconTrash = e.K.AddIcon(icon.Lucide("trash-2").Size(13))
 	s.fwd.search.Reserve(256)
 	s.chat.search.Reserve(256)
 	s.contact.phone.Reserve(64)

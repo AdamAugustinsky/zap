@@ -8,6 +8,7 @@ import (
 
 	"zapfast/i18n"
 	"zapfast/state"
+	"zapfast/ui/screen"
 )
 
 // CP-022: the shortcut hints line fits the composer's own width, in the
@@ -36,7 +37,7 @@ func TestTheHintsLineFitsInTheLongestLanguages(t *testing.T) {
 				r.AuditLayout(lang.Tag()+"/"+c.name, widgettest.Allow{Check: ui.AuditCentre, Where: "Switch account",
 					Reason: "the rail's account picture, the shell's, off by 0.6 px with a pane open"},
 					widgettest.Allow{Check: ui.AuditCentre, Where: "Image \"99@s.whatsapp.net\"", Reason: "the same picture in the other languages"})
-				if !r.has(ui.RoleButton, i18n.Format(i18n.T("All shortcuts ({})"), "{}", keyLabel("Ctrl+/"))) {
+				if !r.has(ui.RoleButton, i18n.Format(i18n.T("All shortcuts ({})"), "{}", screen.KeyHint("Ctrl+/"))) {
 					t.Error("the shortcuts button is gone")
 				}
 			})

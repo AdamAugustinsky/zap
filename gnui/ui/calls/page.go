@@ -115,17 +115,17 @@ func NewPage() *Page {
 func (p *Page) Init(e *screen.Env) error {
 	p.h = hubOf(e.S)
 	p.pics.reset()
-	add := func(sym string, fb rune, pt float32) icon.ID {
-		return e.K.AddIcon(icon.Spec{Symbol: sym, Fallback: fb, Pt: pt})
+	add := func(name string, pt float32) icon.ID {
+		return e.K.AddIcon(icon.Lucide(name).Size(pt))
 	}
 	// a row's call buttons and the title row's items as toolbar items, a
 	// call's direction as the row's indicators (theme/icons.go)
-	tool := func(sym string, fb rune) icon.ID { return e.K.AddIcon(ztheme.ToolIcon(sym, fb)) }
-	small := func(sym string, fb rune) icon.ID { return e.K.AddIcon(ztheme.SmallIcon(sym, fb)) }
+	tool := func(name string) icon.ID { return e.K.AddIcon(ztheme.ToolIcon(name)) }
+	small := func(name string) icon.ID { return e.K.AddIcon(ztheme.SmallIcon(name)) }
 	p.ic = pageIcons{
-		voice: tool("phone", '☎'), video: tool("video", '▶'), newCall: tool("phone.badge.plus", '+'),
-		back: tool("chevron.left", '‹'), out: small("phone.arrow.up.right", '↗'), in: small("phone.arrow.down.left", '↙'),
-		missed: small("phone.fill.arrow.down.left", '↙'), link: add("link", '∞', 18), big: add("phone", '☎', 40),
+		voice: tool("phone"), video: tool("video"), newCall: tool("phone-forwarded"),
+		back: tool("chevron-left"), out: small("phone-outgoing"), in: small("phone-incoming"),
+		missed: small("phone-missed"), link: add("link", 18), big: add("phone", 40),
 	}
 	return nil
 }
@@ -454,7 +454,7 @@ func (p *Page) historyRow(e *screen.Env, a *state.Account, ac *acct, lst *base.L
 	c.BoxKeyed(ui.DrawText|ui.EllipsisOverflowX, ui.KeyN(rs.Key, 1), name)
 	cs := &th.Styles[theme.StyleCaption1]
 	c.NextSize(ui.TextSize(0), ui.Px(cs.Line))
-	c.NextFont(ztheme.Meta(k, ztheme.T.MetaPt)) // Rex's metadata, as the chat list's times
+	c.NextFont(rexui.MetaFont(k.Kit, ztheme.T.MetaPt)) // Rex's metadata, as the chat list's times
 	c.NextTextColor(fg2)
 	c.BoxKeyed(ui.DrawText, ui.KeyN(rs.Key, 2), rw.stamp.of(p.rb))
 	c.Pop()

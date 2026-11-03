@@ -259,26 +259,6 @@ type hintStrings struct {
 	rowW  float32
 }
 
-// keyLabel is zf:src/ui/keys.rs:668's label on macOS: ⌘ for Ctrl, ⌥ for Alt.
-func keyLabel(s string) string {
-	var b []byte
-	for i := 0; i < len(s); {
-		switch {
-		case hasAt(s, i, "Ctrl"):
-			b, i = append(b, "⌘"...), i+4
-		case hasAt(s, i, "Strg"):
-			b, i = append(b, "⌘"...), i+4
-		case hasAt(s, i, "Alt"):
-			b, i = append(b, "⌥"...), i+3
-		default:
-			b, i = append(b, s[i]), i+1
-		}
-	}
-	return string(b)
-}
-
-func hasAt(s string, i int, w string) bool { return len(s)-i >= len(w) && s[i:i+len(w)] == w }
-
 // hintsBar is the shortcut hints under the composer
 // (zf:src/ui/conversation.rs:1860-1899).
 func (s *Screen) hintsBar(e *screen.Env, rowW float32) {
@@ -287,11 +267,11 @@ func (s *Screen) hintsBar(e *screen.Env, rowW float32) {
 	if !h.ok || h.enter != enter || h.loc != loc {
 		h.ok, h.enter, h.loc = true, enter, loc
 		if enter {
-			h.hint = keyLabel(i18n.T("Enter sends · Shift+Enter for a new line · *bold* _italic_ ~strike~ · Ctrl+V pastes a picture"))
+			h.hint = screen.KeyHint(i18n.T("Enter sends · Shift+Enter for a new line · *bold* _italic_ ~strike~ · Ctrl+V pastes a picture"))
 		} else {
-			h.hint = keyLabel(i18n.T("Ctrl+Enter sends · *bold* _italic_ ~strike~ · Ctrl+V pastes a picture"))
+			h.hint = screen.KeyHint(i18n.T("Ctrl+Enter sends · *bold* _italic_ ~strike~ · Ctrl+V pastes a picture"))
 		}
-		h.all = i18n.Format(i18n.T("All shortcuts ({})"), "{}", keyLabel("Ctrl+/"))
+		h.all = i18n.Format(i18n.T("All shortcuts ({})"), "{}", screen.KeyHint("Ctrl+/"))
 		h.hideTip = i18n.T("Hide shortcut hints (bring them back from Keyboard shortcuts)")
 		h.rowW = -1
 	}
@@ -338,7 +318,7 @@ func (s *Screen) fitHints(e *screen.Env, rowW float32) string {
 	kw, _ := k.IconSize(s.ic.keyboard)
 	icon := theme.Snap(r.Sizes[theme.SizeSmall].Icon)
 	room := rowW - max(icon, xw) - max(icon, kw) - 3*hintsGap
-	font := ztheme.Meta(k, ztheme.T.MetaPt) // the hints' size, the metadata's
+	font := rexui.MetaFont(k.Kit, ztheme.T.MetaPt) // the hints' size, the metadata's
 	h := s.hints.hint
 	for len(h) > 0 && k.TextWidth(font, h) > room {
 		i := strings.LastIndex(h, hintsSep)

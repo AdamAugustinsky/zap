@@ -440,11 +440,11 @@ func NewSearch() *Search { return &Search{} }
 func (p *Search) Init(e *screen.Env) error {
 	p.h = hubOf(e.S)
 	p.h.listen()
-	p.closeIc = e.K.AddIcon(ztheme.ToolIcon("xmark", '×'))
-	p.backIc = e.K.AddIcon(ztheme.ToolIcon("chevron.left", '‹'))
-	p.nextIc = e.K.AddIcon(ztheme.ToolIcon("chevron.right", '›'))
-	p.calIc = e.K.AddIcon(ztheme.ToolIcon("calendar", '▦'))
-	p.findIc = e.K.AddIcon(icon.Spec{Symbol: "magnifyingglass", Fallback: '⌕', Pt: 28})
+	p.closeIc = e.K.AddIcon(ztheme.ToolIcon("x"))
+	p.backIc = e.K.AddIcon(ztheme.ToolIcon("chevron-left"))
+	p.nextIc = e.K.AddIcon(ztheme.ToolIcon("chevron-right"))
+	p.calIc = e.K.AddIcon(ztheme.ToolIcon("calendar"))
+	p.findIc = e.K.AddIcon(icon.Lucide("search").Size(28))
 	p.ticks = addTickIcons(e.K.Kit)
 	return nil
 }

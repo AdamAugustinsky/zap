@@ -46,8 +46,8 @@ func New() *Screen { return &Screen{} }
 
 // Init readies the switcher for a window: its icons.
 func (s *Screen) Init(e *screen.Env) error {
-	s.check = e.K.AddIcon(icon.Spec{Symbol: "checkmark", Fallback: '✓', Pt: 14, Weight: 0.3})
-	s.plus = e.K.AddIcon(icon.Spec{Symbol: "plus", Fallback: '+', Pt: 14, Weight: 0.3})
+	s.check = e.K.AddIcon(icon.Spec{Lucide: "check", Pt: 14, Weight: 0.3})
+	s.plus = e.K.AddIcon(icon.Spec{Lucide: "plus", Pt: 14, Weight: 0.3})
 	return nil
 }
 
@@ -115,7 +115,7 @@ func (s *Screen) Build(e *screen.Env, anchor screen.Rect) {
 	c := e.C()
 	p := rexui.BeginPopover(k.Kit, "accounts", [4]float32{anchor.X, anchor.Y, anchor.X + anchor.W, anchor.Y + anchor.H},
 		rexui.PopoverOpts{Edge: rexui.PopoverRight, Label: i18n.T("Accounts"), Width: menuWidth, NoPad: true})
-	k.NextPad(6)
+	k.NextPad(theme.Space2)
 	k.NextGap(0)
 	k.BeginContainer(ui.AxisY, ui.CrossStart, "menu", ui.Pct(1), ui.Children(1), 0)
 	switchTo := -1

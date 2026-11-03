@@ -9,7 +9,6 @@ import (
 	"zapfast/i18n"
 	"zapfast/model"
 	"zapfast/state"
-	ztheme "zapfast/theme"
 	"zapfast/ui/chatview"
 	"zapfast/ui/screen"
 )
@@ -44,7 +43,7 @@ func (w *Window) Init(e *screen.Env) error {
 func (w *Window) Config(*state.State) app.WindowConfig {
 	return app.WindowConfig{
 		Title: i18n.T("Peek"), Width: floatW, Height: floatH, Backdrop: platform.BackdropGlass,
-		Panel: &platform.Panel{Floating: true, AllSpaces: true, Shadow: true, Radius: ztheme.WindowRadius},
+		Panel: &platform.Panel{Floating: true, AllSpaces: true, Shadow: true, Radius: theme.WindowRadius},
 		Place: placeFloat,
 	}
 }
@@ -80,7 +79,7 @@ func (w *Window) Build(e *screen.Env) {
 	if !r.Backdrop {
 		// No glass (Reduce transparency): the panel paints its own shape.
 		c.NextBG(r.Colors[theme.Raised] | 0xFF)
-		c.NextRadius(e.Pt(ztheme.WindowRadius))
+		c.NextRadius(e.Pt(theme.WindowRadius))
 		fl = ui.DrawBackground
 	}
 	theme.At(c, 0, 0, W, H)
