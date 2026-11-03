@@ -49,11 +49,11 @@ func NewPip() *Pip { return &Pip{v: New("pip")} }
 // Init readies its icons and its composer, in its window.
 func (p *Pip) Init(e *screen.Env) error {
 	k := e.K
-	p.mini = k.AddIcon(ztheme.ToolIcon("minus", '–'))
-	p.open = k.AddIcon(ztheme.ToolIcon("macwindow", '□'))
-	p.close = k.AddIcon(ztheme.ToolIcon("xmark", '×'))
-	p.glyph = k.AddIcon(ztheme.LargeIcon("bubble.left.fill", '●'))
-	p.xsmall = k.AddIcon(ztheme.SmallIcon("xmark", '×'))
+	p.mini = k.AddIcon(ztheme.ToolIcon("minus"))
+	p.open = k.AddIcon(ztheme.ToolIcon("app-window"))
+	p.close = k.AddIcon(ztheme.ToolIcon("x"))
+	p.glyph = k.AddIcon(ztheme.LargeIcon("message-circle"))
+	p.xsmall = k.AddIcon(ztheme.SmallIcon("x"))
 	p.shrunk, p.focused = false, false
 	return p.v.Init(e)
 }
@@ -63,7 +63,7 @@ func (p *Pip) Init(e *screen.Env) error {
 func (p *Pip) Config(*state.State) app.WindowConfig {
 	return app.WindowConfig{
 		Title: "Zap", Width: pipW, Height: pipH,
-		Panel: &platform.Panel{Floating: true, AllSpaces: true, Shadow: true, Radius: ztheme.WindowRadius},
+		Panel: &platform.Panel{Floating: true, AllSpaces: true, Shadow: true, Radius: theme.WindowRadius},
 		Place: placePip,
 	}
 }
@@ -155,7 +155,7 @@ func (p *Pip) chat(e *screen.Env, a *state.Account, ch model.Chat) {
 	W, H := float32(w), float32(h)
 	theme.At(c, 0, 0, W, H)
 	c.NextBG(r.Colors[theme.Raised] | 0xFF)
-	c.NextRadius(e.Pt(ztheme.WindowRadius))
+	c.NextRadius(e.Pt(theme.WindowRadius))
 	c.NextBorder(r.Colors[theme.Separator], r.Lines.Hairline)
 	c.NextAxis(ui.AxisY)
 	c.NextRole(ui.RoleDialog)
@@ -165,8 +165,8 @@ func (p *Pip) chat(e *screen.Env, a *state.Account, ch model.Chat) {
 	// the title row: the chat, and what the window does; it moves the window
 	c.NextAxis(ui.AxisX)
 	c.NextCross(ui.CrossCenter)
-	c.NextGap(e.Pt(ztheme.Space2))
-	c.NextPadding(e.Pt(ztheme.Space3), e.Pt(ztheme.Space2), e.Pt(ztheme.Space2), e.Pt(ztheme.Space2))
+	c.NextGap(e.Pt(theme.Space2))
+	c.NextPadding(e.Pt(theme.Space3), e.Pt(theme.Space2), e.Pt(theme.Space2), e.Pt(theme.Space2))
 	c.NextSize(ui.Pct(1), ui.Children(1))
 	c.Push(c.Box(ui.WindowDrag, "head"))
 	name := model.S(Title(a, ch))

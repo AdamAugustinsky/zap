@@ -134,8 +134,8 @@ func (sh *Shell) spaceShift() (float32, float32) {
 	e := &sh.env
 	c, r := e.C(), e.K.Theme()
 	key := ui.HashString(ui.KeyN(0, uint64(sh.S.SpaceGen)), "space slide")
-	t := c.AnimateValueFrom(key, 0, 1, ztheme.Enter(r, ztheme.T.DurStandard))
-	return (1 - t) * sh.sp.dir * e.Pt(ztheme.Space6), 0.4 + 0.6*t
+	t := c.AnimateValueFrom(key, 0, 1, r.Enter(ztheme.T.DurStandard))
+	return (1 - t) * sh.sp.dir * e.Pt(theme.Space6), 0.4 + 0.6*t
 }
 
 // spaceStrip builds the spaces' strip in the list pane's foot r (window
@@ -155,7 +155,7 @@ func (sh *Shell) spaceStrip(r screen.Rect) {
 	c.NextAxis(ui.AxisX)
 	c.NextCross(ui.CrossCenter)
 	c.NextJustify(ui.JustifyCenter)
-	c.NextGap(e.Pt(ztheme.Space1))
+	c.NextGap(e.Pt(theme.Space1))
 	c.NextRole(ui.RoleGroup)
 	c.NextSemName(i18n.T("Spaces"))
 	c.Push(c.Box(base.Floating, "spaces"))
@@ -258,7 +258,7 @@ func (sh *Shell) tintPopover() {
 		s.Touch()
 	}
 	sw := e.Pt(20)
-	pad, gap := e.Pt(ztheme.Space2), e.Pt(ztheme.Space1)
+	pad, gap := e.Pt(theme.Space2), e.Pt(theme.Space1)
 	fw := 10*sw + 9*gap // the swatches' row
 	c.NextOverlay(ui.OverlayOpts{})
 	c.NextSize(ui.Children(1), ui.Children(1))
@@ -275,11 +275,11 @@ func (sh *Shell) tintPopover() {
 	// the panel (the overlay's own box draws nothing)
 	c.NextAxis(ui.AxisY)
 	c.NextSize(ui.Children(1), ui.Children(1))
-	c.NextGap(e.Pt(ztheme.Space2))
+	c.NextGap(e.Pt(theme.Space2))
 	c.NextPadding(pad, pad, pad, pad)
 	c.NextBG(th.Colors[theme.Raised] | 0xFF)
 	c.NextBorder(th.Colors[theme.Separator], th.Lines.Hairline)
-	c.NextRadius(e.Pt(ztheme.Pane()))
+	c.NextRadius(e.K.Theme().Px.RadiusLarge)
 	c.NextShadow(ui.Shadow{OffY: e.Pt(4), Sigma: e.Pt(12), Color: 0x00000040})
 	c.Push(c.Box(ui.DrawBackground|ui.DrawBorder, "panel"))
 
@@ -379,7 +379,7 @@ func (sh *Shell) modeRow(cur string, w float32) (string, bool) {
 	e := &sh.env
 	k := e.K
 	c, th := k.Context(), k.Theme()
-	gap := e.Pt(ztheme.Space1)
+	gap := e.Pt(theme.Space1)
 	h := e.Pt(ztheme.T.HitTool)
 	c.NextAxis(ui.AxisX)
 	c.NextGap(gap)
@@ -389,10 +389,10 @@ func (sh *Shell) modeRow(cur string, w float32) (string, bool) {
 	c.Push(c.Box(0, "tint modes"))
 	chosen, picked := cur, false
 	for _, mode := range state.SpaceModes {
-		sym, label := "circle.lefthalf.filled", i18n.T("Like the app")
+		sym, label := "sun-moon", i18n.T("Like the app")
 		switch mode {
 		case "light":
-			sym, label = "sun.max", i18n.T("Light")
+			sym, label = "sun", i18n.T("Light")
 		case "dark":
 			sym, label = "moon", i18n.T("Dark")
 		}
@@ -438,7 +438,7 @@ func (sh *Shell) tintField(cur state.SpaceTheme, w, h float32) (state.SpaceTheme
 	n := ztheme.SpaceColors(cur, &cols)
 	c.NextSize(ui.Px(w), ui.Px(h))
 	c.NextBG(th.Colors[theme.Field] | 0xFF)
-	c.NextRadius(e.Pt(ztheme.Space3))
+	c.NextRadius(e.Pt(theme.Space3))
 	c.NextBorder(th.Colors[theme.Separator], th.Lines.Hairline)
 	c.NextRole(ui.RoleGroup)
 	c.NextSemName(i18n.T("Colours"))
@@ -453,9 +453,9 @@ func (sh *Shell) tintField(cur state.SpaceTheme, w, h float32) (state.SpaceTheme
 	c.Box(ui.DrawBackground, "preview")
 
 	// the wheel above the buttons' row
-	tools := e.Pt(ztheme.T.HitTool) + e.Pt(ztheme.Space1)
+	tools := e.Pt(ztheme.T.HitTool) + e.Pt(theme.Space1)
 	cx, cy := w/2, (h-tools)/2
-	R := min(w/2, (h-tools)/2) - e.Pt(ztheme.Space3)
+	R := min(w/2, (h-tools)/2) - e.Pt(theme.Space3)
 	at := func(angle, out float64) (float32, float32) {
 		sn, cs := math.Sincos(angle * math.Pi / 180)
 		return cx + float32(sn*out)*R, cy - float32(cs*out)*R
@@ -524,9 +524,9 @@ func (sh *Shell) tintField(cur state.SpaceTheme, w, h float32) (state.SpaceTheme
 	}
 
 	// add, take away, lock, harmony
-	c.NextAnchor(ui.AnchorBottom, 0, e.Pt(ztheme.Space1))
+	c.NextAnchor(ui.AnchorBottom, 0, e.Pt(theme.Space1))
 	c.NextAxis(ui.AxisX)
-	c.NextGap(e.Pt(ztheme.Space4))
+	c.NextGap(e.Pt(theme.Space4))
 	c.NextSize(ui.Children(1), ui.Children(1))
 	c.Push(c.Box(0, "tint tools"))
 	hit := ui.Px(e.Pt(ztheme.T.HitTool))
@@ -543,7 +543,7 @@ func (sh *Shell) tintField(cur state.SpaceTheme, w, h float32) (state.SpaceTheme
 	if tool("minus", i18n.T("Remove a colour"), n <= 1) {
 		t, changed = dropDot(cur, cols, n), true
 	}
-	lock, lockSym := i18n.T("Move the colours together"), "lock.open"
+	lock, lockSym := i18n.T("Move the colours together"), "lock-open"
 	if cur.Lock {
 		lock, lockSym = i18n.T("Move each colour on its own"), "lock"
 	}
@@ -552,7 +552,7 @@ func (sh *Shell) tintField(cur state.SpaceTheme, w, h float32) (state.SpaceTheme
 		t.Lock = !cur.Lock
 	}
 	harm := i18n.Format(i18n.T("Harmony: {name}"), "{name}", mixLabel(cur.Mix, n, cur.Lock))
-	if tool("point.3.connected.trianglepath.dotted", harm, n <= 1) {
+	if tool("wand-sparkles", harm, n <= 1) {
 		t, changed = nextMix(cur, cols, n), true
 	}
 	c.Pop()
@@ -702,7 +702,7 @@ func (sh *Shell) spaceName(a *state.Account, sp state.Space) (string, string) {
 	if sp.Folder != "" {
 		if i := a.FolderByID(sp.Folder); i >= 0 {
 			f := &a.Settings.Folders[i]
-			return f.Name, f.Icon
+			return f.Name, state.FolderLucide(f.Icon)
 		}
 	}
 	name := a.Model.Me.Name()
@@ -712,7 +712,8 @@ func (sh *Shell) spaceName(a *state.Account, sp state.Space) (string, string) {
 	return model.S(name), ""
 }
 
-// folderIcon is a folder symbol's atlas icon, made the first time.
+// folderIcon is a Lucide icon's atlas icon as a toolbar's item, made the
+// first time.
 func (sh *Shell) folderIcon(sym string) icon.ID {
 	if sh.sp.icons == nil {
 		sh.sp.icons = map[string]icon.ID{}
@@ -720,7 +721,7 @@ func (sh *Shell) folderIcon(sym string) icon.ID {
 	if id, ok := sh.sp.icons[sym]; ok {
 		return id
 	}
-	id := sh.env.K.AddIcon(ztheme.ToolIcon(sym, '▤'))
+	id := sh.env.K.AddIcon(ztheme.ToolIcon(sym))
 	sh.sp.icons[sym] = id
 	return id
 }
@@ -765,7 +766,7 @@ func (sh *Shell) spaceTint(W, H float32) {
 	}
 	t := float32(1)
 	if sh.Slides {
-		t = c.AnimateValueFrom(ui.HashString(ui.KeyN(0, uint64(ti.gen)), "space tint"), 0, 1, ztheme.Enter(r, ztheme.T.DurStandard))
+		t = c.AnimateValueFrom(ui.HashString(ui.KeyN(0, uint64(ti.gen)), "space tint"), 0, 1, r.Enter(ztheme.T.DurStandard))
 	}
 	for i := range ti.shown {
 		ti.shown[i] = mixTint(ti.was[i], ti.now[i], t)

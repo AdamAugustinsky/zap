@@ -10,6 +10,7 @@ package spotlight
 
 import (
 	"bytes"
+	gformat "gonativeui/format"
 	"strings"
 	"time"
 
@@ -93,12 +94,12 @@ func New() *Screen { return &Screen{} }
 // Init readies its icons.
 func (s *Screen) Init(e *screen.Env) error {
 	k := e.K
-	s.ic.doc = k.AddIcon(ztheme.ToolIcon("doc.text", '▤'))
-	s.ic.photo = k.AddIcon(ztheme.ToolIcon("photo", '▣'))
-	s.ic.video = k.AddIcon(ztheme.ToolIcon("video", '▶'))
-	s.ic.link = k.AddIcon(ztheme.ToolIcon("link", '↗'))
-	s.ic.msg = k.AddIcon(ztheme.ToolIcon("text.bubble", '✉'))
-	s.ic.palette = k.AddIcon(ztheme.ToolIcon("paintpalette", '◐'))
+	s.ic.doc = k.AddIcon(ztheme.ToolIcon("file-text"))
+	s.ic.photo = k.AddIcon(ztheme.ToolIcon("image"))
+	s.ic.video = k.AddIcon(ztheme.ToolIcon("video"))
+	s.ic.link = k.AddIcon(ztheme.ToolIcon("link"))
+	s.ic.msg = k.AddIcon(ztheme.ToolIcon("message-square-text"))
+	s.ic.palette = k.AddIcon(ztheme.ToolIcon("palette"))
 	return nil
 }
 
@@ -130,7 +131,7 @@ func (s *Screen) Build(e *screen.Env) {
 
 	// it comes down from where Spotlight lives, a little, and fades in
 	// (motion.go: Short, from its place)
-	t := c.AnimateValueFrom(ui.HashString(0, "spotlight in"), 0, 1, ztheme.Enter(r, ztheme.T.DurShort))
+	t := c.AnimateValueFrom(ui.HashString(0, "spotlight in"), 0, 1, r.Enter(ztheme.T.DurShort))
 
 	// A modal over the whole window, as peek's: the composer's native text
 	// view hides under it. A click outside closes it.
@@ -149,17 +150,17 @@ func (s *Screen) Build(e *screen.Env) {
 		s.close(e)
 		return
 	}
-	pw := min(e.Pt(panelW), W-e.Pt(ztheme.Space8))
+	pw := min(e.Pt(panelW), W-e.Pt(theme.Space8))
 	x := theme.Snap((W - pw) / 2)
-	y := e.Pt(panelTop) - (1-t)*e.Pt(ztheme.Space2)
+	y := e.Pt(panelTop) - (1-t)*e.Pt(theme.Space2)
 	c.NextOpacity(t)
 	theme.At(c, x, y, pw, 0)
 	c.NextSize(ui.Px(pw), ui.Children(1))
 	c.NextAxis(ui.AxisY)
-	c.NextPadding(e.Pt(ztheme.Space2), e.Pt(ztheme.Space2), e.Pt(ztheme.Space2), e.Pt(ztheme.Space2))
-	c.NextGap(e.Pt(ztheme.Space1))
+	c.NextPadding(e.Pt(theme.Space2), e.Pt(theme.Space2), e.Pt(theme.Space2), e.Pt(theme.Space2))
+	c.NextGap(e.Pt(theme.Space1))
 	c.NextBG(r.Colors[theme.Raised] | 0xFF)
-	c.NextRadius(e.Pt(ztheme.WindowRadius))
+	c.NextRadius(e.Pt(theme.WindowRadius))
 	c.NextBorder(r.Colors[theme.Separator], r.Lines.Hairline)
 	c.NextShadow(ui.Shadow{OffY: e.Pt(12), Sigma: e.Pt(24), Color: 0x00000040})
 	c.NextRole(ui.RoleDialog)
@@ -205,7 +206,7 @@ func (s *Screen) Build(e *screen.Env) {
 	if sig.Submitted && len(s.rows) > 0 {
 		open = s.sel
 	}
-	if i := s.list(e, pw-2*e.Pt(ztheme.Space2)); i >= 0 {
+	if i := s.list(e, pw-2*e.Pt(theme.Space2)); i >= 0 {
 		open = i
 	}
 	c.Pop()
@@ -219,7 +220,7 @@ func (s *Screen) list(e *screen.Env, w float32) int {
 	c, k := e.C(), e.K
 	if len(s.rows) == 0 {
 		if s.query != "" {
-			c.NextPadding(e.Pt(ztheme.Space2), e.Pt(ztheme.Space3), e.Pt(ztheme.Space2), e.Pt(ztheme.Space3))
+			c.NextPadding(e.Pt(theme.Space2), e.Pt(theme.Space3), e.Pt(theme.Space2), e.Pt(theme.Space3))
 			c.NextSize(ui.Pct(1), ui.Children(1))
 			c.Push(c.Box(0, "nothing"))
 			rexui.Label(k.Kit, i18n.T("Nothing found"), rexui.LabelOpts{Color: rexui.Of(theme.Label2)})
@@ -235,7 +236,7 @@ func (s *Screen) list(e *screen.Env, w float32) int {
 		rw := &s.rows[i]
 		if rw.sec != last {
 			last = rw.sec
-			c.NextPadding(e.Pt(ztheme.Space2), e.Pt(ztheme.Space2), e.Pt(ztheme.Space2), e.Pt(ztheme.Space1))
+			c.NextPadding(e.Pt(theme.Space2), e.Pt(theme.Space2), e.Pt(theme.Space2), e.Pt(theme.Space1))
 			c.NextSize(ui.Pct(1), ui.Children(1))
 			c.Push(c.Box(0, c.Fmt().Str("section ").Int(int(rw.sec)).String()))
 			rexui.Label(k.Kit, sectionName(rw.sec), rexui.LabelOpts{Style: rexui.TextCaption, Color: rexui.Of(theme.Label2)})
@@ -275,8 +276,8 @@ func (s *Screen) row(e *screen.Env, i int, w float32) bool {
 	c.NextRadius(e.Pt(ztheme.Nested()))
 	c.NextAxis(ui.AxisX)
 	c.NextCross(ui.CrossCenter)
-	c.NextGap(e.Pt(ztheme.Space3))
-	c.NextPadding(e.Pt(ztheme.Space2), 0, e.Pt(ztheme.Space2), 0)
+	c.NextGap(e.Pt(theme.Space3))
+	c.NextPadding(e.Pt(theme.Space2), 0, e.Pt(theme.Space2), 0)
 	k.BeginPress(&p, ui.RoleButton, ui.Px(w), ui.Px(e.Pt(rowPt)), ui.DrawBackground, nil)
 	side := e.Pt(28)
 	c.NextSize(ui.Px(side), ui.Px(side))
@@ -333,7 +334,7 @@ func stamp(ts int64, now time.Time) string {
 	case 1:
 		return i18n.T("Yesterday")
 	}
-	return t.Format("02/01/06")
+	return gformat.Date(t)
 }
 
 func accountName(a *state.Account) []byte {

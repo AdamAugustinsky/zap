@@ -9,6 +9,7 @@
 package chatview
 
 import (
+	gformat "gonativeui/format"
 	"strings"
 	"time"
 
@@ -146,8 +147,8 @@ func (v *View) Transcript(e *screen.Env, a *state.Account, ch model.Chat, w floa
 	sv := k.BeginScroll(v.name+" messages", &v.scroll, base.ScrollVertical)
 	c.NextAxis(ui.AxisY)
 	c.NextGap(e.Pt(ztheme.T.RowGap))
-	pad := e.Pt(ztheme.Space4)
-	c.NextPadding(pad, e.Pt(ztheme.Space3), pad, e.Pt(ztheme.Space3))
+	pad := e.Pt(theme.Space4)
+	c.NextPadding(pad, e.Pt(theme.Space3), pad, e.Pt(theme.Space3))
 	c.NextSize(ui.Pct(1), ui.Children(1))
 	c.Push(c.Box(0, "list"))
 	n := 0
@@ -244,8 +245,8 @@ func (v *View) Composer(e *screen.Env, a *state.Account, ch model.Chat) bool {
 	c.NextSize(ui.Pct(1), ui.Px(k.Theme().Lines.Hairline))
 	c.NextBG(k.Theme().Colors[theme.Separator])
 	c.Box(ui.DrawBackground, "composer line")
-	pad := e.Pt(ztheme.Space3)
-	c.NextPadding(pad, e.Pt(ztheme.Space2), pad, pad)
+	pad := e.Pt(theme.Space3)
+	c.NextPadding(pad, e.Pt(theme.Space2), pad, pad)
 	c.NextSize(ui.Pct(1), ui.Children(1))
 	c.Push(c.Box(0, "compose"))
 	k.NextWidth(ui.Pct(1))
@@ -415,11 +416,11 @@ func quote(e *screen.Env, a *state.Account, sender, summary []byte, maxW float32
 	}
 	line := model.S(summary)
 	f := r.Styles[theme.StyleBody].Font
-	inner := e.Pt(ztheme.Space2)
-	w := min(maxW, max(k.TextWidth(f, who), k.TextWidth(f, line))+2*inner+e.Pt(ztheme.Space1))
+	inner := e.Pt(theme.Space2)
+	w := min(maxW, max(k.TextWidth(f, who), k.TextWidth(f, line))+2*inner+e.Pt(theme.Space1))
 	c.NextBG(theme.WithAlpha(r.Colors[theme.Label], 0.06))
 	c.NextRadius(e.Pt(ztheme.Nested()))
-	c.NextPadding(inner, e.Pt(ztheme.Space1), inner, e.Pt(ztheme.Space1))
+	c.NextPadding(inner, e.Pt(theme.Space1), inner, e.Pt(theme.Space1))
 	c.NextAxis(ui.AxisY)
 	c.NextSize(ui.Px(w), ui.Children(1))
 	c.Push(c.Box(ui.DrawBackground, "quote"))
@@ -465,7 +466,7 @@ func Stamp(ts int64, now time.Time) string {
 	case 1:
 		return i18n.T("Yesterday")
 	}
-	return t.Format("02/01/06")
+	return gformat.Date(t)
 }
 
 // Title is a chat's name as the list writes it.

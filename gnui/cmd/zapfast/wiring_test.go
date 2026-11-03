@@ -394,7 +394,7 @@ func TestTheEmptyPaneHasTheLogoAndTheHint(t *testing.T) {
 	f := fake.New(nil)
 	linked(f)
 	r := newRig(t, f)
-	const hint = "⌘+K to search · ? for keyboard shortcuts"
+	const hint = "⌘K to search · ? for keyboard shortcuts"
 	r.s.Settings.ShowShortcutHints = true
 	r.s.Touch()
 	r.Frames(2)

@@ -30,7 +30,7 @@ const (
 	cardPadTop   = ztheme.BubblePadY
 	cardPadBot   = ztheme.BubblePadY
 	cardRadius   = ztheme.BubbleRadius
-	cardGapY     = ztheme.Space2
+	cardGapY     = theme.Space2
 	arrowSize    = 40.0
 	bodyMaxLines = 8
 )

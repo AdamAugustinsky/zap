@@ -330,34 +330,34 @@ const (
 )
 
 func iconSpecs() []icon.Spec {
-	s := func(sym string, fb rune, pt float32, w float32) icon.Spec {
-		return icon.Spec{Symbol: sym, Fallback: fb, Pt: pt, Weight: w}
+	s := func(name string, pt float32, w float32) icon.Spec {
+		return icon.Spec{Lucide: name, Pt: pt, Weight: w}
 	}
 	return []icon.Spec{
-		s("doc.text", '▤', 18, 0),
-		s("arrow.up.right.square", '↗', 14, 0),
-		s("arrow.down.circle", '⬇', 20, 0),
-		s("exclamationmark.circle", '!', 20, 0),
-		s("mappin.circle.fill", '⌖', 16, 0),
-		s("person.crop.circle", '☺', 18, 0),
-		s("face.smiling", '☺', 20, 0),
-		s("nosign", '⊘', 13, 0),
-		s("iphone", '▯', 13, 0),
-		s("doc.on.doc", '⧉', 14, 0),
-		s("list.bullet", '≡', 14, 0),
-		s("phone", '☎', 18, 0),
-		s("phone.arrow.down.left", '☎', 18, 0),
-		s("phone.arrow.up.right", '☎', 18, 0),
-		s("phone.arrow.down.left", '☎', 18, 0.3),
-		s("phone.down", '☎', 18, 0),
-		s("video", '▶', 18, 0),
-		s("play.fill", '▶', 14, 0),
-		s("checkmark.circle.fill", '●', 16, 0),
-		s("circle", '○', 16, 0),
-		s("map", '▦', 18, 0),
-		s("checkmark", '✓', 10, 0.56),
-		s("pause.fill", '⏸', 14, 0),
-		s("clock", '◷', 18, 0),
+		s("file-text", 18, 0),
+		s("external-link", 14, 0),
+		s("circle-arrow-down", 20, 0),
+		s("circle-alert", 20, 0),
+		s("map-pin", 16, 0),
+		s("circle-user", 18, 0),
+		s("smile", 20, 0),
+		s("ban", 13, 0),
+		s("smartphone", 13, 0),
+		s("copy", 14, 0),
+		s("list", 14, 0),
+		s("phone", 18, 0),
+		s("phone-incoming", 18, 0),
+		s("phone-outgoing", 18, 0),
+		s("phone-incoming", 18, 0.3),
+		s("phone-off", 18, 0),
+		s("video", 18, 0),
+		s("play", 14, 0).Filled(),
+		s("circle-check", 16, 0),
+		s("circle", 16, 0),
+		s("map", 18, 0),
+		s("check", 10, 0.56),
+		s("pause", 14, 0).Filled(),
+		s("clock", 18, 0),
 	}
 }
 

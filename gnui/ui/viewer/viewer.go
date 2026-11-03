@@ -135,27 +135,25 @@ func (s *Screen) Init(e *screen.Env) error {
 	ic := &s.ic
 	// Preserve registration order, including the differently sized glyphs.
 	for _, it := range [...]struct {
-		dst *icon.ID
-		sym string
-		fb  rune
-		pt  float32
+		dst  *icon.ID
+		spec icon.Spec
 	}{
-		{&ic.prev, "chevron.left", '‹', pt + 4}, {&ic.next, "chevron.right", '›', pt + 4},
-		{&ic.close, "xmark", '✕', pt}, {&ic.plus, "plus", '+', pt}, {&ic.minus, "minus", '−', pt},
-		{&ic.reply, "arrowshape.turn.up.left", '↩', pt}, {&ic.react, "face.smiling", '☺', pt},
-		{&ic.forward, "arrowshape.turn.up.right", '↪', pt}, {&ic.save, "square.and.arrow.down", '⤓', pt},
-		{&ic.download, "arrow.down.circle", '⤓', pt}, {&ic.chat, "bubble.left", '✉', pt},
-		{&ic.open, "arrow.up.forward.square", '↗', pt}, {&ic.copy, "doc.on.doc", '⎘', pt},
-		{&ic.fullscreen, "arrow.up.left.and.arrow.down.right", '⤢', pt},
-		{&ic.exitFull, "arrow.down.right.and.arrow.up.left", '⤡', pt},
-		{&ic.play, "play.circle", '▶', pt}, {&ic.photo, "photo", '▣', pt}, {&ic.failed, "exclamationmark.circle", '!', pt},
-		{&ic.video, "video", '▶', pt},
-		{&ic.bigPlay, "play.fill", '▶', 28}, {&ic.bigVideo, "video", '▶', 48}, {&ic.bigPhoto, "photo", '▣', 48},
-		{&ic.playSm, "play.fill", '▶', 16}, {&ic.pauseSm, "pause.fill", '⏸', 16},
-		{&ic.vol, "speaker.wave.2.fill", '♪', 16}, {&ic.volOff, "speaker.slash.fill", '✕', 16},
-		{&ic.star, "star", '☆', pt}, {&ic.starOff, "star.slash", '★', pt},
+		{&ic.prev, icon.Lucide("chevron-left").Size(pt + 4)}, {&ic.next, icon.Lucide("chevron-right").Size(pt + 4)},
+		{&ic.close, icon.Lucide("x").Size(pt)}, {&ic.plus, icon.Lucide("plus").Size(pt)}, {&ic.minus, icon.Lucide("minus").Size(pt)},
+		{&ic.reply, icon.Lucide("reply").Size(pt)}, {&ic.react, icon.Lucide("smile").Size(pt)},
+		{&ic.forward, icon.Lucide("forward").Size(pt)}, {&ic.save, icon.Lucide("download").Size(pt)},
+		{&ic.download, icon.Lucide("circle-arrow-down").Size(pt)}, {&ic.chat, icon.Lucide("message-circle").Size(pt)},
+		{&ic.open, icon.Lucide("external-link").Size(pt)}, {&ic.copy, icon.Lucide("copy").Size(pt)},
+		{&ic.fullscreen, icon.Lucide("maximize-2").Size(pt)},
+		{&ic.exitFull, icon.Lucide("minimize-2").Size(pt)},
+		{&ic.play, icon.Lucide("circle-play").Size(pt)}, {&ic.photo, icon.Lucide("image").Size(pt)}, {&ic.failed, icon.Lucide("circle-alert").Size(pt)},
+		{&ic.video, icon.Lucide("video").Size(pt)},
+		{&ic.bigPlay, icon.Lucide("play").Filled().Size(28)}, {&ic.bigVideo, icon.Lucide("video").Size(48)}, {&ic.bigPhoto, icon.Lucide("image").Size(48)},
+		{&ic.playSm, icon.Lucide("play").Filled().Size(16)}, {&ic.pauseSm, icon.Lucide("pause").Filled().Size(16)},
+		{&ic.vol, icon.Lucide("volume-2").Size(16)}, {&ic.volOff, icon.Lucide("volume-x").Size(16)},
+		{&ic.star, icon.Lucide("star").Size(pt)}, {&ic.starOff, icon.Lucide("star-off").Size(pt)},
 	} {
-		*it.dst = e.K.AddIcon(icon.Spec{Symbol: it.sym, Fallback: it.fb, Pt: it.pt})
+		*it.dst = e.K.AddIcon(it.spec)
 	}
 	if !s.registered {
 		s.registered = true

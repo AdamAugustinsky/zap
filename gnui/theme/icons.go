@@ -3,49 +3,38 @@ package theme
 import (
 	"gonativeui/icon"
 	"gonativeui/rexui"
+	gtheme "gonativeui/theme"
 )
 
-// Zap's icons come in three sizes, each with the box it is pressed in, so
-// that one role looks and answers alike wherever it is:
+// Zap's icons are Lucide's (go-native-ui's D96), named as on lucide.dev, in
+// the framework's three sizes (gonativeui/theme: SmallIconPt, ToolIconPt,
+// LargeIconPt, pressed in HitSmall, HitTool, HitLarge):
 //   - SmallIcon: an indicator in a row's text (a pin, a muted bell, an @,
-//     ticks, a call's direction) and a small button beside text (a strip's
-//     close, the hints' keyboard), pressed in HitSmall.
+//     a call's direction) and a small button beside text (a strip's close,
+//     the hints' keyboard).
 //   - ToolIcon: a toolbar's or a pane's title row's item, the rail's, Back
-//     and Close: Rex's toolbar symbol (AppKit's, measured), pressed in
-//     HitTool, the band's item.
-//   - LargeIcon: the composer's tools, on plates as tall as its field
-//     (HitLarge).
+//     and Close.
+//   - LargeIcon: the composer's tools, on plates as tall as its field.
 //
-// An icon in a button with a label is the label's size, beside it. An
-// action is outlined; a state (pinned, muted, a call going on) is filled.
-const (
-	SmallIconPt = 12
-	LargeIconPt = 17
+// An icon in a button with a label is the label's size, beside it.
 
-	HitSmall = Space6
-	HitTool  = 28
-	HitLarge = 36 // the composer's field's height
-)
-
-// smallWeight is the small icons' weight (medium), which keeps a glyph that
-// small as heavy as the text it sits in.
-const smallWeight = 0.23
-
-// SmallIcon is symbol at the small size.
-func SmallIcon(symbol string, fallback rune) icon.Spec {
-	return icon.Spec{Symbol: symbol, Fallback: fallback, Pt: SmallIconPt, Weight: smallWeight}
+// SmallIcon is name at the small size, as heavy as the text it sits in.
+func SmallIcon(name string) icon.Spec {
+	s := icon.Lucide(name).Size(gtheme.SmallIconPt)
+	s.Weight = gtheme.SmallIconWeight
+	return s
 }
 
-// ToolIcon is symbol as a toolbar's item.
-func ToolIcon(symbol string, fallback rune) icon.Spec {
-	return rexui.ToolbarSymbol(symbol, fallback)
-}
+// ToolIcon is name as a toolbar's item.
+func ToolIcon(name string) icon.Spec { return rexui.ToolbarIcon(name, 0) }
 
-// TickIcon is symbol as a message's delivery mark: as tall as the
-// metadata it ends and as heavy (semibold, as the time's figures read).
-// A pair of checks overlaps by TickStep of a check's width.
-func TickIcon(symbol string, fallback rune) icon.Spec {
-	return icon.Spec{Symbol: symbol, Fallback: fallback, Pt: TickPt, Weight: 0.3}
+// TickIcon is name as a message's delivery mark: as tall as the metadata it
+// ends and as heavy (semibold, as the time's figures read). A pair of checks
+// overlaps by TickStep of a check's width.
+func TickIcon(name string) icon.Spec {
+	s := icon.Lucide(name).Size(TickPt)
+	s.Weight = 0.3
+	return s
 }
 
 // TickPt is the delivery marks' size; TickStep how far the second check of
@@ -55,7 +44,5 @@ const (
 	TickStep = 0.42
 )
 
-// LargeIcon is symbol at the composer's size.
-func LargeIcon(symbol string, fallback rune) icon.Spec {
-	return icon.Spec{Symbol: symbol, Fallback: fallback, Pt: LargeIconPt}
-}
+// LargeIcon is name at the composer's size.
+func LargeIcon(name string) icon.Spec { return icon.Lucide(name).Size(gtheme.LargeIconPt) }

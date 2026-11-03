@@ -432,12 +432,12 @@ const (
 // then the local packs, checked where they hold the sticker.
 func (s *Screen) stickerMenuItems(path string, kind shelfKind, m *[]ui.MenuItem) {
 	if kind == shelfFavorites {
-		*m = append(*m, ui.MenuItem{ID: menuFavorite, Title: i18n.T("Remove from favorites"), Symbol: "star.slash"})
+		*m = append(*m, ui.MenuItem{ID: menuFavorite, Title: i18n.T("Remove from favorites"), Symbol: "star.slash", Icon: "star-off"})
 	} else {
-		*m = append(*m, ui.MenuItem{ID: menuFavorite, Title: i18n.T("Add to favorites"), Symbol: "star"})
+		*m = append(*m, ui.MenuItem{ID: menuFavorite, Title: i18n.T("Add to favorites"), Symbol: "star", Icon: "star"})
 	}
 	if kind == shelfRecent {
-		*m = append(*m, ui.MenuItem{ID: menuUnrecent, Title: i18n.T("Remove from recents"), Symbol: "xmark"})
+		*m = append(*m, ui.MenuItem{ID: menuUnrecent, Title: i18n.T("Remove from recents"), Symbol: "xmark", Icon: "x"})
 	}
 	hash, sep := "", false
 	for i := range s.st.lib.packs {

@@ -107,24 +107,22 @@ func (s *Screen) Init(e *screen.Env) error {
 	k := e.K
 	ic := &s.ic
 	for _, it := range [...]struct {
-		dst *icon.ID
-		sym string
-		fb  rune
-		pt  float32
+		dst  *icon.ID
+		spec icon.Spec
 	}{
-		{&ic.chevronRight, "chevron.right", '›', ztheme.SmallIconPt},
-		{&ic.chevronDown, "chevron.down", '⌄', ztheme.SmallIconPt},
-		{&ic.check, "checkmark", '✓', 13}, {&ic.pencil, "pencil", '✎', 12},
-		{&ic.message, "message", '✉', 13}, {&ic.person, "person.badge.plus", '☺', 13}, {&ic.copy, "doc.on.doc", '⎘', 13},
-		{&ic.bell, "bell", '♪', 13}, {&ic.bellOff, "bell.slash", '♪', 13}, {&ic.pin, "pin", '⚲', 13}, {&ic.pinOff, "pin.slash", '⚲', 13},
-		{&ic.archive, "archivebox", '▤', 13}, {&ic.unarchive, "tray.and.arrow.up", '▤', 13},
-		{&ic.photo, "photo", '▣', 22}, {&ic.video, "video", '▶', 22}, {&ic.play, "play.fill", '▶', 14},
-		{&ic.doc, "doc.text", '▤', 20}, {&ic.link, "link", '↗', 20}, {&ic.refresh, "arrow.clockwise", '↻', 13},
+		{&ic.chevronRight, icon.Lucide("chevron-right").Size(theme.SmallIconPt)},
+		{&ic.chevronDown, icon.Lucide("chevron-down").Size(theme.SmallIconPt)},
+		{&ic.check, icon.Lucide("check").Size(13)}, {&ic.pencil, icon.Lucide("pencil").Size(12)},
+		{&ic.message, icon.Lucide("message-circle").Size(13)}, {&ic.person, icon.Lucide("user-plus").Size(13)}, {&ic.copy, icon.Lucide("copy").Size(13)},
+		{&ic.bell, icon.Lucide("bell").Size(13)}, {&ic.bellOff, icon.Lucide("bell-off").Size(13)}, {&ic.pin, icon.Lucide("pin").Size(13)}, {&ic.pinOff, icon.Lucide("pin-off").Size(13)},
+		{&ic.archive, icon.Lucide("archive").Size(13)}, {&ic.unarchive, icon.Lucide("archive-restore").Size(13)},
+		{&ic.photo, icon.Lucide("image").Size(22)}, {&ic.video, icon.Lucide("video").Size(22)}, {&ic.play, icon.Lucide("play").Filled().Size(14)},
+		{&ic.doc, icon.Lucide("file-text").Size(20)}, {&ic.link, icon.Lucide("link").Size(20)}, {&ic.refresh, icon.Lucide("rotate-cw").Size(13)},
 	} {
-		*it.dst = k.AddIcon(icon.Spec{Symbol: it.sym, Fallback: it.fb, Pt: it.pt})
+		*it.dst = k.AddIcon(it.spec)
 	}
 	// the title row's Close and Back as toolbar items (theme/icons.go)
-	ic.closeX, ic.back = k.AddIcon(ztheme.ToolIcon("xmark", '✕')), k.AddIcon(ztheme.ToolIcon("chevron.left", '‹'))
+	ic.closeX, ic.back = k.AddIcon(ztheme.ToolIcon("x")), k.AddIcon(ztheme.ToolIcon("chevron-left"))
 	e.S.Listen(s, abi.EventTagChatShared, abi.EventTagChatSharedChanged, abi.EventTagGroupSaving, abi.EventTagChatUpdated, abi.EventTagChats)
 	s.contact.first.Max, s.contact.last.Max = 256, 256
 	s.contact.first.Reserve(256)

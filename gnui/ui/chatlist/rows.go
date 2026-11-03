@@ -30,32 +30,32 @@ type icons struct {
 }
 
 func (ic *icons) add(k *base.Kit, tb float32) {
-	big := func(sym string, fb rune) icon.Spec { return icon.Spec{Symbol: sym, Fallback: fb, Pt: 38} }
+	big := func(name string) icon.Spec { return icon.Lucide(name).Size(38) }
 	// the row's indicators and small buttons at Zap's small size, the
 	// toolbar's items as Rex's (theme/icons.go)
 	for _, it := range [...]struct {
 		dst  *icon.ID
 		spec icon.Spec
 	}{
-		{&ic.pin, ztheme.SmallIcon("pin.fill", '⚲')},
-		{&ic.muted, ztheme.SmallIcon("bell.slash.fill", '⊘')},
-		{&ic.mention, ztheme.SmallIcon("at", '@')},
-		{&ic.clock, ztheme.TickIcon("clock", '◷')},
-		{&ic.failed, ztheme.TickIcon("exclamationmark.circle.fill", '!')},
-		{&ic.timer, icon.Spec{Symbol: "timer", Fallback: '◔', Pt: 9, Weight: 0.3}}, // on the avatar's edge
-		{&ic.tick, ztheme.TickIcon("checkmark", '✓')},
-		{&ic.newChat, ztheme.ToolIcon("square.and.pencil", '✎')},
-		{&ic.sidebar, ztheme.ToolIcon("sidebar.left", '▤')},
-		{&ic.back, ztheme.ToolIcon("chevron.left", '‹')},
-		{&ic.plus, ztheme.SmallIcon("plus", '+')},
-		{&ic.pencil, ztheme.SmallIcon("pencil", '✎')},
-		{&ic.trash, ztheme.SmallIcon("trash", '⌫')},
-		{&ic.more, icon.Spec{Symbol: "chevron.down", Fallback: '▾', Pt: chevPt, Weight: 0.3}},
-		{&ic.eChat, big("bubble.left.and.bubble.right", '✉')},
-		{&ic.eStar, big("star", '☆')},
-		{&ic.eLock, big("lock.open", '⚿')},
-		{&ic.eSearch, big("magnifyingglass", '⌕')},
-		{&ic.eArchive, big("archivebox", '▤')},
+		{&ic.pin, ztheme.SmallIcon("pin")},
+		{&ic.muted, ztheme.SmallIcon("bell-off")},
+		{&ic.mention, ztheme.SmallIcon("at-sign")},
+		{&ic.clock, ztheme.TickIcon("clock")},
+		{&ic.failed, ztheme.TickIcon("circle-alert")},
+		{&ic.timer, icon.Spec{Lucide: "timer", Pt: 9, Weight: 0.3}}, // on the avatar's edge
+		{&ic.tick, ztheme.TickIcon("check")},
+		{&ic.newChat, ztheme.ToolIcon("square-pen")},
+		{&ic.sidebar, ztheme.ToolIcon("panel-left")},
+		{&ic.back, ztheme.ToolIcon("chevron-left")},
+		{&ic.plus, ztheme.SmallIcon("plus")},
+		{&ic.pencil, ztheme.SmallIcon("pencil")},
+		{&ic.trash, ztheme.SmallIcon("trash-2")},
+		{&ic.more, icon.Spec{Lucide: "chevron-down", Pt: chevPt, Weight: 0.3}},
+		{&ic.eChat, big("messages-square")},
+		{&ic.eStar, big("star")},
+		{&ic.eLock, big("lock-open")},
+		{&ic.eSearch, big("search")},
+		{&ic.eArchive, big("archive")},
 	} {
 		*it.dst = k.AddIcon(it.spec)
 	}
@@ -222,7 +222,7 @@ func (s *Screen) chatRow(e *screen.Env, in *rowInfo, selected, typing bool, typi
 	if len(in.when) > 0 {
 		tm := &r.Styles[theme.StyleCaption1]
 		c.NextSize(ui.TextSize(0), ui.Px(tm.Line))
-		c.NextFont(ztheme.Meta(k, ztheme.T.MetaPt)) // Rex's metadata
+		c.NextFont(rexui.MetaFont(k.Kit, ztheme.T.MetaPt)) // Rex's metadata
 		c.NextTextColor(timeC)
 		c.BoxKeyed(ui.DrawText, ui.KeyN(p.Key, 23), in.when)
 	}

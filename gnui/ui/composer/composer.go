@@ -139,19 +139,19 @@ func NewPane(name string) *Screen { return &Screen{name: name} }
 // waits until a chat actually needs the composer.
 func (s *Screen) Init(e *screen.Env) error {
 	k := e.K
-	add := func(sym string, fb rune, pt float32) icon.ID {
-		return k.AddIcon(icon.Spec{Symbol: sym, Fallback: fb, Pt: pt})
+	add := func(name string, pt float32) icon.ID {
+		return k.AddIcon(icon.Lucide(name).Size(pt))
 	}
-	s.ic.plus = k.AddIcon(ztheme.LargeIcon("plus", '+'))
-	s.ic.smile = k.AddIcon(ztheme.LargeIcon("face.smiling", '☺'))
-	s.ic.mic = k.AddIcon(ztheme.LargeIcon("mic", '●'))
-	s.ic.send = add("arrow.up", '↑', 14)
-	s.ic.check = add("checkmark", '✓', 14)
-	s.ic.xmark = k.AddIcon(ztheme.SmallIcon("xmark", '×'))
-	s.ic.pencil = add("pencil", '✎', 13)
-	s.ic.keyboard = k.AddIcon(ztheme.SmallIcon("keyboard", '⌨'))
-	s.ic.clip = add("paperclip", '⎘', 26)
-	s.ic.trash = add("trash", '⌫', 15)
+	s.ic.plus = k.AddIcon(ztheme.LargeIcon("plus"))
+	s.ic.smile = k.AddIcon(ztheme.LargeIcon("smile"))
+	s.ic.mic = k.AddIcon(ztheme.LargeIcon("mic"))
+	s.ic.send = add("arrow-up", 14)
+	s.ic.check = add("check", 14)
+	s.ic.xmark = k.AddIcon(ztheme.SmallIcon("x"))
+	s.ic.pencil = add("pencil", 13)
+	s.ic.keyboard = k.AddIcon(ztheme.SmallIcon("keyboard"))
+	s.ic.clip = add("paperclip", 26)
+	s.ic.trash = add("trash-2", 15)
 	s.env, s.win, s.state = e, e.A.Win, e.S
 	s.enter = enterPolicy(e.S)
 	var text []byte

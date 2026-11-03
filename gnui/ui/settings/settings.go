@@ -133,10 +133,10 @@ func (s *Screen) Init(e *screen.Env) error {
 	s.win.Store(e.A.Window())
 	s.titleLoc = i18n.Current()
 	pt := theme.MacWindow.Capsule.Glyph
-	s.icons.plus = e.K.AddIcon(icon.Spec{Symbol: "plus", Fallback: '+', Pt: pt})
-	s.icons.minus = e.K.AddIcon(icon.Spec{Symbol: "minus", Fallback: '−', Pt: pt})
-	s.icons.play = e.K.AddIcon(icon.Spec{Symbol: "play.fill", Fallback: '▶', Pt: pt})
-	s.icons.pencil = e.K.AddIcon(icon.Spec{Symbol: "pencil", Fallback: '✎', Pt: pt})
+	s.icons.plus = e.K.AddIcon(icon.Lucide("plus").Size(pt))
+	s.icons.minus = e.K.AddIcon(icon.Lucide("minus").Size(pt))
+	s.icons.play = e.K.AddIcon(icon.Lucide("play").Filled().Size(pt))
+	s.icons.pencil = e.K.AddIcon(icon.Lucide("pencil").Size(pt))
 	for _, in := range s.acct { // the window measures the cache each time it opens
 		in.storageAsked = false
 	}

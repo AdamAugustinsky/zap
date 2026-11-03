@@ -291,17 +291,17 @@ func (sh *Shell) Init(a *app.App) error {
 	k := sh.env.K
 	// the rail's destinations and the titlebar's toggle as toolbar items
 	// (theme/icons.go)
-	add := func(sym string, fb rune) icon.ID { return k.AddIcon(ztheme.ToolIcon(sym, fb)) }
-	sh.ic.chats = add("message", '✉')
-	sh.ic.calls = add("phone", '☎')
-	sh.ic.starred = add("star", '☆')
-	sh.ic.archived = add("archivebox", '▤')
-	sh.ic.locked = add("lock", '⚿')
-	sh.ic.settings = add("gearshape", '⚙')
-	sh.ic.sidebar = add("sidebar.left", '▤')
-	sh.ic.copy = k.AddIcon(icon.Spec{Symbol: "doc.on.doc", Fallback: '⧉', Pt: 14})
+	add := func(name string) icon.ID { return k.AddIcon(ztheme.ToolIcon(name)) }
+	sh.ic.chats = add("message-circle")
+	sh.ic.calls = add("phone")
+	sh.ic.starred = add("star")
+	sh.ic.archived = add("archive")
+	sh.ic.locked = add("lock")
+	sh.ic.settings = add("settings")
+	sh.ic.sidebar = add("panel-left")
+	sh.ic.copy = k.AddIcon(icon.Lucide("copy").Size(14))
 	// The empty pane's logo: upstream's bubble at 0.674 of its 72 pt disc.
-	sh.ic.logo = k.AddIcon(icon.Spec{Symbol: "message", Fallback: '✉', Pt: 44})
+	sh.ic.logo = k.AddIcon(icon.Lucide("message-circle").Size(44))
 	if !sh.inits {
 		sh.inits = true
 		if sh.Set.Logic != nil {
@@ -596,7 +596,7 @@ func (sh *Shell) main(a *state.Account, W, H float32) {
 		}
 	}
 	dx := float32(0) // the sliding view's distance from its place
-	p, sliding := sh.slide.step(view, c.Input().Time, ztheme.Dur(r, ztheme.T.DurStandard))
+	p, sliding := sh.slide.step(view, c.Input().Time, r.Dur(ztheme.T.DurStandard))
 	if sliding {
 		c.RequestFrame()
 		if view == narrowDetail {
@@ -913,7 +913,7 @@ func (sl *narrowSlide) step(view int, now int64, dur float32) (float32, bool) {
 		sl.on = false
 		return 1, false
 	}
-	return ztheme.EaseOut(t), true
+	return theme.EaseOut(t), true
 }
 
 // announce has the screen reader say what waits (State.Announce, AX-001):
@@ -1037,15 +1037,11 @@ func (sh *Shell) empty(r screen.Rect) {
 }
 
 // emptyHint is "Ctrl+K to search · ? for keyboard shortcuts" in the
-// language shown, with macOS's key names (zf:src/ui/keys.rs label), made
+// language shown, in this platform's key names (screen.KeyHint), made
 // again only when the language changes.
 func (sh *Shell) emptyHint() string {
 	if loc := i18n.Current(); sh.hint.text == "" || sh.hint.loc != loc {
-		t := i18n.T("Ctrl+K to search · ? for keyboard shortcuts")
-		t = strings.ReplaceAll(t, "Ctrl", "⌘")
-		t = strings.ReplaceAll(t, "Strg", "⌘")
-		t = strings.ReplaceAll(t, "Alt", "⌥")
-		sh.hint.text, sh.hint.loc = t, loc
+		sh.hint.text, sh.hint.loc = screen.KeyHint(i18n.T("Ctrl+K to search · ? for keyboard shortcuts")), loc
 	}
 	return sh.hint.text
 }

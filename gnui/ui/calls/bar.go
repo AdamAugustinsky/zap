@@ -35,10 +35,10 @@ func NewBar() *Bar { return &Bar{} }
 // Init readies the bar for the main window.
 func (b *Bar) Init(e *screen.Env) error {
 	b.h = hubOf(e.S)
-	add := func(sym string, fb rune, pt float32) icon.ID {
-		return e.K.AddIcon(icon.Spec{Symbol: sym, Fallback: fb, Pt: pt})
+	add := func(name string, pt float32) icon.ID {
+		return e.K.AddIcon(icon.Lucide(name).Size(pt))
 	}
-	b.ic.voice, b.ic.video, b.ic.hangup = add("phone.fill", '☎', 15), add("video.fill", '▶', 15), add("phone.down.fill", '✕', 15)
+	b.ic.voice, b.ic.video, b.ic.hangup = add("phone", 15), add("video", 15), add("phone-off", 15)
 	return nil
 }
 

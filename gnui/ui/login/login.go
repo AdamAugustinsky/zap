@@ -56,9 +56,9 @@ func New() *Screen { return &Screen{} }
 
 // Init readies the screen for a window.
 func (s *Screen) Init(e *screen.Env) error {
-	s.phoneIc = e.K.AddIcon(icon.Spec{Symbol: "iphone", Fallback: '☎', Pt: 28})
-	s.alertIc = e.K.AddIcon(icon.Spec{Symbol: "exclamationmark.circle", Fallback: '!', Pt: 28})
-	s.copy = e.K.AddIcon(icon.Spec{Symbol: "doc.on.doc", Fallback: '⧉', Pt: 13})
+	s.phoneIc = e.K.AddIcon(icon.Lucide("smartphone").Size(28))
+	s.alertIc = e.K.AddIcon(icon.Lucide("circle-alert").Size(28))
+	s.copy = e.K.AddIcon(icon.Lucide("copy").Size(13))
 	return nil
 }
 

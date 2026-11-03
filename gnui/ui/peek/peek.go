@@ -84,10 +84,10 @@ func (s *Screen) Init(e *screen.Env) error {
 }
 
 func (v *view) icons(e *screen.Env) {
-	v.close = e.K.AddIcon(ztheme.ToolIcon("xmark", '×'))
-	v.open = e.K.AddIcon(ztheme.ToolIcon("arrow.up.left.and.arrow.down.right", '⤢'))
-	v.split = e.K.AddIcon(ztheme.ToolIcon("rectangle.split.2x1", '◫'))
-	v.float = e.K.AddIcon(ztheme.ToolIcon("pip", '▣'))
+	v.close = e.K.AddIcon(ztheme.ToolIcon("x"))
+	v.open = e.K.AddIcon(ztheme.ToolIcon("maximize-2"))
+	v.split = e.K.AddIcon(ztheme.ToolIcon("columns-2"))
+	v.float = e.K.AddIcon(ztheme.ToolIcon("picture-in-picture-2"))
 }
 
 // Build builds the panel while a peek is open, as Zen's glance: the window
@@ -111,9 +111,9 @@ func (s *Screen) Build(e *screen.Env) {
 	W, H := float32(w), float32(h)
 
 	// t is how far it is out: toward 1 arriving, toward 0 flying back
-	goal, rate := float32(1), ztheme.Enter(r, ztheme.T.DurLong)
+	goal, rate := float32(1), r.Enter(ztheme.T.DurLong)
 	if s.out {
-		goal, rate = 0, ztheme.Exit(r, ztheme.T.DurLong)
+		goal, rate = 0, r.Exit(ztheme.T.DurLong)
 	}
 	t := c.AnimateValueFrom(ui.HashString(0, "peek in"), 0, goal, rate)
 	if s.out && t < 0.02 {
@@ -137,16 +137,16 @@ func (s *Screen) Build(e *screen.Env) {
 	}
 
 	// where it lands: centred with its buttons, the window's height
-	d, gap := e.Pt(sideD), e.Pt(ztheme.Space3)
-	pw := min(max(W*share, e.Pt(panelW)), e.Pt(panelWMax), W-2*e.Pt(ztheme.Space6)-gap-d)
-	ph := H - 2*e.Pt(ztheme.Space6)
+	d, gap := e.Pt(sideD), e.Pt(theme.Space3)
+	pw := min(max(W*share, e.Pt(panelW)), e.Pt(panelWMax), W-2*e.Pt(theme.Space6)-gap-d)
+	ph := H - 2*e.Pt(theme.Space6)
 	x, y := (W-pw-gap-d)/2, (H-ph)/2
 	fx, fy, fw, fh := s.flight(e, p.From, x, y, pw, ph, t, H)
 
 	c.NextOpacity(min(t*4, 1))
 	theme.At(c, fx, fy, fw, fh)
 	c.NextBG(r.Colors[theme.Raised] | 0xFF)
-	c.NextRadius(e.Pt(ztheme.WindowRadius))
+	c.NextRadius(e.Pt(theme.WindowRadius))
 	c.NextBorder(r.Colors[theme.Separator], r.Lines.Hairline)
 	c.NextShadow(ui.Shadow{OffY: e.Pt(16), Sigma: e.Pt(32), Color: 0x00000048})
 	c.NextRole(ui.RoleDialog)
@@ -170,7 +170,7 @@ func (s *Screen) Build(e *screen.Env) {
 			c.WakeIn(int64(s.v.asked * 1e9))
 		}
 	}
-	if b := s.v.side(e, fx+fw+gap, fy+e.Pt(ztheme.Space4), d, t); b != actNone {
+	if b := s.v.side(e, fx+fw+gap, fy+e.Pt(theme.Space4), d, t); b != actNone {
 		did = b
 	}
 	if c.TakeKey(ui.KeyEscape, 0) || did == actClose {
@@ -248,7 +248,7 @@ func (v *view) side(e *screen.Env, x, y, d, t float32) act {
 	k := e.K
 	c := k.Context()
 	r := k.Theme()
-	in := c.AnimateValueFrom(ui.HashString(0, "peek side"), 0, b2f(t > 0.85), ztheme.Enter(r, ztheme.T.DurStandard))
+	in := c.AnimateValueFrom(ui.HashString(0, "peek side"), 0, b2f(t > 0.85), r.Enter(ztheme.T.DurStandard))
 	if in <= 0 {
 		return actNone
 	}
@@ -256,7 +256,7 @@ func (v *view) side(e *screen.Env, x, y, d, t float32) act {
 	c.NextPos(x-(1-in)*e.Pt(20), y)
 	c.NextSize(ui.Children(1), ui.Children(1))
 	c.NextAxis(ui.AxisY)
-	c.NextGap(e.Pt(ztheme.Space3))
+	c.NextGap(e.Pt(theme.Space3))
 	c.Push(c.Box(base.Floating, "peek side"))
 	did := actNone
 	if v.asked > 0 {
@@ -368,8 +368,8 @@ func (v *view) header(e *screen.Env, a *state.Account, ch model.Chat, drag bool)
 	c := k.Context()
 	c.NextAxis(ui.AxisX)
 	c.NextCross(ui.CrossCenter)
-	c.NextGap(e.Pt(ztheme.Space3))
-	c.NextPadding(e.Pt(ztheme.Space3), e.Pt(ztheme.Space3), e.Pt(ztheme.Space2), e.Pt(ztheme.Space2))
+	c.NextGap(e.Pt(theme.Space3))
+	c.NextPadding(e.Pt(theme.Space3), e.Pt(theme.Space3), e.Pt(theme.Space2), e.Pt(theme.Space2))
 	c.NextSize(ui.Pct(1), ui.Children(1))
 	var fl ui.Flags
 	if drag {
@@ -434,13 +434,13 @@ func (v *view) messages(e *screen.Env, a *state.Account, ch model.Chat, pw float
 	sv := k.BeginScroll("peek messages", &v.scroll, base.ScrollVertical)
 	c.NextAxis(ui.AxisY)
 	c.NextGap(e.Pt(ztheme.T.RowGap))
-	c.NextPadding(e.Pt(ztheme.Space3), e.Pt(ztheme.Space3), e.Pt(ztheme.Space3), e.Pt(ztheme.Space3))
+	c.NextPadding(e.Pt(theme.Space3), e.Pt(theme.Space3), e.Pt(theme.Space3), e.Pt(theme.Space3))
 	c.NextSize(ui.Pct(1), ui.Children(1))
 	c.Push(c.Box(0, "list"))
 	if cv == nil || cv.Len() == 0 {
 		rexui.Label(k.Kit, i18n.T("Loading…"), rexui.LabelOpts{Color: rexui.Of(theme.Label2)})
 	} else {
-		maxW := (pw - 2*e.Pt(ztheme.Space3)) * 0.8
+		maxW := (pw - 2*e.Pt(theme.Space3)) * 0.8
 		first := max(cv.Len()-shown, 0)
 		var prev model.Message
 		for i := first; i < cv.Len(); i++ {
@@ -480,7 +480,7 @@ func (v *view) footer(e *screen.Env, a *state.Account, ch model.Chat) act {
 	c.NextSize(ui.Pct(1), ui.Px(k.Theme().Lines.Hairline))
 	c.NextBG(k.Theme().Colors[theme.Separator])
 	c.Box(ui.DrawBackground, "foot line")
-	c.NextPadding(e.Pt(ztheme.Space3), e.Pt(ztheme.Space2), e.Pt(ztheme.Space3), e.Pt(ztheme.Space3))
+	c.NextPadding(e.Pt(theme.Space3), e.Pt(theme.Space2), e.Pt(theme.Space3), e.Pt(theme.Space3))
 	c.NextSize(ui.Pct(1), ui.Children(1))
 	c.Push(c.Box(0, "reply"))
 	k.NextWidth(ui.Pct(1))

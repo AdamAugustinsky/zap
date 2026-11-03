@@ -46,8 +46,8 @@ func New() *Screen { return &Screen{} }
 
 // Init readies the switcher for a window: its icons.
 func (s *Screen) Init(e *screen.Env) error {
-	s.check = e.K.AddIcon(icon.Spec{Symbol: "checkmark", Fallback: '✓', Pt: 14, Weight: 0.3})
-	s.plus = e.K.AddIcon(icon.Spec{Symbol: "plus", Fallback: '+', Pt: 14, Weight: 0.3})
+	s.check = e.K.AddIcon(icon.Spec{Lucide: "check", Pt: 14, Weight: 0.3})
+	s.plus = e.K.AddIcon(icon.Spec{Lucide: "plus", Pt: 14, Weight: 0.3})
 	return nil
 }
 

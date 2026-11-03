@@ -201,7 +201,7 @@ func (sh *Shell) chatTabs(a *state.Account, x0, x1, tbH float32) {
 				}
 				rexui.Avatar(k.Kit, model.S(name), rexui.AvatarOpts{Size: tabPicPt, Image: slot.handle(a, sh.imgs, ch, int32(pic)), Backdrop: rexui.Of(theme.Field)})
 				if ch.Unread() > 0 || ch.MarkedUnread() {
-					sh.unreadDot(pic, ch.Muted(s.Now().Unix()))
+					sh.unreadDot(ch.Muted(s.Now().Unix()))
 				}
 				c.Pop()
 			}
@@ -217,7 +217,7 @@ func (sh *Shell) chatTabs(a *state.Account, x0, x1, tbH float32) {
 		c.Push(c.Box(base.Floating, "picture"))
 		rexui.Avatar(k.Kit, tabs[cell.Index].Title, rexui.AvatarOpts{Size: tabPicPt, Image: t.pics[cell.Index].handle(a, sh.imgs, ch, int32(pic)), Backdrop: rexui.Of(theme.Field)})
 		if ch.Unread() > 0 || ch.MarkedUnread() {
-			sh.unreadDot(pic, ch.Muted(s.Now().Unix()))
+			sh.unreadDot(ch.Muted(s.Now().Unix()))
 		}
 		c.Pop()
 		b.EndTab(&cell)
@@ -338,26 +338,13 @@ func (sh *Shell) moveTab(a *state.Account, refs []model.ChatRef, n, from, to int
 	a.OrderChatTabs(order)
 }
 
-// unreadDot marks a picture size pixels wide whose chat has unread
-// messages, in the accent (grey when the chat is muted), ringed in the
-// field's colour as the account block's.
-func (sh *Shell) unreadDot(size float32, muted bool) {
-	e := &sh.env
-	c, r := e.C(), e.K.Theme()
-	ring, dot := e.Pt(9), e.Pt(6.5)
-	col := r.Colors[theme.Accent]
+// unreadDot marks the picture being built whose chat has unread messages,
+// in the accent (grey when the chat is muted), ringed in the field's colour
+// as the account block's.
+func (sh *Shell) unreadDot(muted bool) {
+	col := rexui.Of(theme.Accent)
 	if muted {
-		col = r.Colors[theme.Label3]
+		col = rexui.Of(theme.Label3)
 	}
-	theme.At(c, size-ring+e.Pt(2), -e.Pt(2), ring, ring)
-	c.NextBG(r.Colors[theme.Field])
-	c.NextRadius(ring / 2)
-	c.NextAuditExempt(ui.AuditOverflow.Mask() | ui.AuditCovered.Mask())
-	c.Push(c.Box(base.Floating|ui.DrawBackground, "unread"))
-	c.NextCenter()
-	c.NextSize(ui.Px(dot), ui.Px(dot))
-	c.NextBG(col)
-	c.NextRadius(dot / 2)
-	c.Box(base.Floating|ui.DrawBackground, "dot")
-	c.Pop()
+	rexui.BadgeDot(sh.env.K.Kit, rexui.BadgeDotOpts{Color: col, Backdrop: rexui.Of(theme.Field), Ring: 9, Dot: 6.5})
 }

@@ -75,9 +75,9 @@ type splitUI struct {
 }
 
 func (sp *splitUI) init(e *screen.Env) {
-	sp.icons[0] = e.K.AddIcon(ztheme.SmallIcon("line.3.horizontal", '≡'))
-	sp.icons[1] = e.K.AddIcon(ztheme.SmallIcon("minus", '–'))
-	sp.icons[2] = e.K.AddIcon(ztheme.SmallIcon("arrow.up.left.and.arrow.down.right", '⤢'))
+	sp.icons[0] = e.K.AddIcon(ztheme.SmallIcon("grip-horizontal"))
+	sp.icons[1] = e.K.AddIcon(ztheme.SmallIcon("minus"))
+	sp.icons[2] = e.K.AddIcon(ztheme.SmallIcon("maximize-2"))
 	sp.ins, sp.to = -1, -1
 	sp.slotOf = map[model.ChatRef]int{}
 }
@@ -274,15 +274,15 @@ func (sh *Shell) splitPlace() {
 		key := ui.KeyN(ui.HashString(0, "zapfast/split pane"), uint64(ref))
 		if ref == 0 {
 			// the waiting pane grows from nothing where it goes
-			t := c.AnimateValueFrom(ui.HashString(0, "zapfast/split waiting"), 0, 1, ztheme.Enter(r, ztheme.T.DurShort))
+			t := c.AnimateValueFrom(ui.HashString(0, "zapfast/split waiting"), 0, 1, r.Enter(ztheme.T.DurShort))
 			mid := (g[0] + g[2]) / 2
 			sp.rects[i][0], sp.rects[i][2] = mid-(mid-g[0])*t, mid+(g[2]-mid)*t
 			moving = moving || t < 1
 			continue
 		}
 		if sh.Slides {
-			x0 := c.AnimateValue(ui.KeyN(key, 1), g[0], ztheme.Toward(r, ztheme.T.DurShort, true))
-			x1 := c.AnimateValue(ui.KeyN(key, 2), g[2], ztheme.Toward(r, ztheme.T.DurShort, true))
+			x0 := c.AnimateValue(ui.KeyN(key, 1), g[0], r.Toward(ztheme.T.DurShort, true))
+			x1 := c.AnimateValue(ui.KeyN(key, 2), g[2], r.Toward(ztheme.T.DurShort, true))
 			sp.rects[i][0], sp.rects[i][2] = theme.Snap(x0), theme.Snap(x1)
 			moving = moving || x0 != g[0] || x1 != g[2]
 		}
@@ -457,11 +457,11 @@ func (sh *Shell) waiting(a *state.Account, r [4]float32) {
 	if !ok {
 		return
 	}
-	in := e.Pt(ztheme.Space2)
+	in := e.Pt(theme.Space2)
 	theme.At(c, r[0], r[1], r[2]-r[0], r[3]-r[1])
 	c.NextBG(theme.WithAlpha(th.Colors[theme.Accent], 0.08))
 	c.NextBorder(theme.WithAlpha(th.Colors[theme.Accent], 0.5), th.Lines.Hairline*2)
-	c.NextRadius(e.Pt(ztheme.Pane()))
+	c.NextRadius(e.K.Theme().Px.RadiusLarge)
 	c.NextAxis(ui.AxisY)
 	c.NextCross(ui.CrossCenter)
 	c.NextJustify(ui.JustifyCenter)
@@ -542,7 +542,7 @@ func (sh *Shell) dock(a *state.Account, i int) {
 		return
 	}
 	hit := e.Pt(ztheme.T.HitTool)
-	pad := e.Pt(ztheme.Space1)
+	pad := e.Pt(theme.Space1)
 	w, h := 3*hit+2*pad, hit+2*pad
 	x := theme.Snap((r[0]+r[2])/2 - w/2)
 	y := theme.Snap(r[1] + (sh.headerH()-h)/2)
@@ -650,7 +650,7 @@ func (sh *Shell) tabDrop(a *state.Account, chat [4]float32, held, prev model.Cha
 	sp := &sh.split
 	e := &sh.env
 	in := e.C().Input()
-	over := held != 0 && shown(chat) && in.MouseY >= chat[1]+e.Pt(ztheme.Space6) &&
+	over := held != 0 && shown(chat) && in.MouseY >= chat[1]+e.Pt(theme.Space6) &&
 		in.MouseX >= chat[0] && in.MouseX < chat[2] && in.MouseY < chat[3]
 	if held == 0 {
 		if sp.held != 0 && sp.ins < 0 && a.Open == sp.from && sp.from != 0 && !in.Released[ui.ButtonLeft] {
@@ -718,11 +718,11 @@ func (sh *Shell) dropZone(r [4]float32, label string) {
 	e := &sh.env
 	k := e.K
 	c, th := k.Context(), k.Theme()
-	in := e.Pt(ztheme.Space2)
+	in := e.Pt(theme.Space2)
 	theme.At(c, r[0]+in, r[1]+in, r[2]-r[0]-2*in, r[3]-r[1]-2*in)
 	c.NextBG(theme.WithAlpha(th.Colors[theme.Accent], 0.12))
 	c.NextBorder(theme.WithAlpha(th.Colors[theme.Accent], 0.6), th.Lines.Hairline*2)
-	c.NextRadius(e.Pt(ztheme.Pane()))
+	c.NextRadius(e.K.Theme().Px.RadiusLarge)
 	c.NextAxis(ui.AxisX)
 	c.NextCross(ui.CrossCenter)
 	c.NextJustify(ui.JustifyCenter)

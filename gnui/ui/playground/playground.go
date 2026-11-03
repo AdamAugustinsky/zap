@@ -87,9 +87,9 @@ func (s *Screen) Build(e *screen.Env) {
 	k.NextScrollInset(tbH)
 	v := k.BeginScroll("Knobs", &s.scroll, base.ScrollVertical)
 	c.NextSize(ui.Pct(1), ui.Children(1))
-	c.NextPadding(e.Pt(ztheme.Space4), e.Pt(ztheme.Space3), e.Pt(ztheme.Space4), e.Pt(ztheme.Space6))
+	c.NextPadding(e.Pt(theme.Space4), e.Pt(theme.Space3), e.Pt(theme.Space4), e.Pt(theme.Space6))
 	c.NextAxis(ui.AxisY)
-	c.NextGap(e.Pt(ztheme.Space2))
+	c.NextGap(e.Pt(theme.Space2))
 	c.Push(c.Box(0, "knobs"))
 	s.actions(e)
 	group := ""
@@ -97,7 +97,7 @@ func (s *Screen) Build(e *screen.Env) {
 		kn := &s.knobs[i]
 		if kn.Group != group {
 			group = kn.Group
-			c.NextSize(ui.Px(1), ui.Px(e.Pt(ztheme.Space2)))
+			c.NextSize(ui.Px(1), ui.Px(e.Pt(theme.Space2)))
 			c.Box(0, c.Fmt().Str("before ").Str(group).String())
 			rexui.Label(k, group, rexui.LabelOpts{Style: rexui.TextHeadline})
 		}
@@ -121,7 +121,7 @@ func (s *Screen) Build(e *screen.Env) {
 // actions are the buttons over the knobs, and what the last one did.
 func (s *Screen) actions(e *screen.Env) {
 	k := e.K
-	k.NextGap(ztheme.Space2)
+	k.NextGap(theme.Space2)
 	k.NextWidth(ui.Pct(1))
 	k.Row("actions")
 	if rexui.Button(k.Kit, "Copy as code", rexui.ButtonOpts{Variant: rexui.ButtonPrimary}).Clicked {
@@ -158,10 +158,10 @@ func (s *Screen) knob(e *screen.Env, i int) {
 	moved := *kn.V != kn.Def
 	c.NextSize(ui.Pct(1), ui.Children(1))
 	c.NextAxis(ui.AxisY)
-	c.NextGap(e.Pt(ztheme.Space1))
+	c.NextGap(e.Pt(theme.Space1))
 	c.Push(c.Box(0, kn.ID))
 
-	k.NextGap(ztheme.Space2)
+	k.NextGap(theme.Space2)
 	k.NextWidth(ui.Pct(1))
 	k.NextCross(ui.CrossCenter)
 	k.Row("head")

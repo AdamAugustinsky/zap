@@ -1,7 +1,23 @@
 package screen
 
+import (
+	"strings"
+
+	"gonativeui/rexui"
+)
+
+// KeyHint is a hint upstream writes with Ctrl and Alt (zf:src/ui/keys.rs:668,
+// "Ctrl+K to search") as this platform writes its keys: ⌘ and ⌥ on macOS,
+// Ctrl+ and Alt+ elsewhere (rexui.KeyText).
+func KeyHint(s string) string { return rexui.KeyText(macKeys.Replace(s)) }
+
+// macKeys writes upstream's modifiers as macOS's symbols ("Strg" is
+// German's Ctrl).
+var macKeys = strings.NewReplacer("Ctrl+", "⌘", "Strg+", "⌘", "Alt+", "⌥")
+
 // Shortcut is one row of the keyboard shortcuts (zf:src/ui/keys.rs:622):
-// its keys as macOS shows them (upstream's label(): Ctrl → ⌘, Alt → ⌥),
+// its keys as macOS writes them, which rexui.KeyText writes as the platform
+// does,
 // what it does (upstream's English: translate with i18n.T), and the package
 // that handles it. The shell's menu model carries the ones that are
 // commands; the others are keys their owner handles in its own widgets.
@@ -14,23 +30,23 @@ type Shortcut struct {
 // help dialog (ui/dialogs, DialogShortcuts) lists them.
 var Shortcuts = [...]Shortcut{
 	{"⌘K", "Search everything: chats, people, messages, files", "shell → ui/spotlight (state.Spotlight)"},
-	{"⌘Shift+F", "Search chats", "shell → ui/chatlist (state.Requests.FocusSearch)"},
+	{"⇧⌘F", "Search chats", "shell → ui/chatlist (state.Requests.FocusSearch)"},
 	{"⌘F", "Search the open chat or the settings", "shell → ui/conversation (Requests.FindInChat), ui/chatlist, ui/settings"},
 	{"↑ / ↓, Enter", "Walk the open chat's search results and jump to one", "ui/conversation (the search pane)"},
 	{"⌘L", "Focus the message input", "shell → ui/composer (Requests.FocusComposer)"},
 	{"⌥↑ / ⌥↓", "Previous / next chat", "shell (state.Visible)"},
-	{"⌘Shift+[ / ]", "Previous / next chat, as in WhatsApp", "shell (state.Visible)"},
+	{"⇧⌘[ / ]", "Previous / next chat, as in WhatsApp", "shell (state.Visible)"},
 	{"⌘1..9", "Go to the tab at this place", "shell (state.ChatTabs)"},
 	{"⌃1..9", "Go to the space at this place", "shell (state.Spaces)"},
 	{"Two fingers across the list", "Next / previous space", "shell (spaces.go)"},
-	{"⌘Shift+1", "Chats", "shell"},
-	{"⌘Shift+2", "Calls", "shell"},
+	{"⇧⌘1", "Chats", "shell"},
+	{"⇧⌘2", "Calls", "shell"},
 	{"↑", "Edit the previous message (when the input is empty)", "ui/composer"},
 	{"Enter", "Send (Shift+Enter for a new line)", "ui/composer"},
 	{"Escape", "Dismiss the current action, return from search, Calls or Starred, leave the message input, or close the chat", "each screen first, then the shell"},
 	{"⌘N", "New chat or message yourself", "shell (DialogNewChat)"},
 	{"⌘E", "Archive or unarchive the open chat", "shell"},
-	{"⌘Shift+A", "Switch to the next linked number", "shell"},
+	{"⇧⌘A", "Switch to the next linked number", "shell"},
 	{"⌘V", "Paste text, or stage a picture from the clipboard", "ui/composer"},
 	{"⌘C", "Copy the selected messages", "ui/conversation"},
 	{"⌘B", "Collapse or expand the chat list", "shell"},
@@ -42,7 +58,7 @@ var Shortcuts = [...]Shortcut{
 	{"⌘0", "Reset zoom", "shell (menu zoom roles)"},
 	{"← / →", "Previous / next item in the media viewer", "ui/viewer"},
 	{"? / ⌘/", "Keyboard shortcuts (? when not typing)", "shell (DialogShortcuts)"},
-	{"⌘Shift+L", "Lock Zap (with an app lock password)", "shell → ui/lock"},
+	{"⇧⌘L", "Lock Zap (with an app lock password)", "shell → ui/lock"},
 	{"⌘W", "Close the window (Zap remains in the tray)", "shell (RoleCloseWindow)"},
 	{"⌘Q", "Quit", "shell (RoleQuit)"},
 	// the single keys, when not typing (shell/keyboard.go)

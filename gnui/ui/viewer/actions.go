@@ -145,9 +145,9 @@ func (s *Screen) pictureMenu(e *screen.Env, id ui.ID, sig ui.Signal) {
 	if sig.RightClicked && s.inMedia(in.MouseX, in.MouseY) {
 		items := k.MenuScratch()
 		*items = append(*items,
-			ui.MenuItem{ID: menuCopy, Title: i18n.T("Copy image"), Symbol: "doc.on.doc"},
-			ui.MenuItem{ID: menuSave, Title: i18n.T("Save as…"), Symbol: "square.and.arrow.down"},
-			ui.MenuItem{ID: menuOpen, Title: i18n.T("Open in another app"), Symbol: "arrow.up.forward.square"})
+			ui.MenuItem{ID: menuCopy, Title: i18n.T("Copy image"), Symbol: "doc.on.doc", Icon: "copy"},
+			ui.MenuItem{ID: menuSave, Title: i18n.T("Save as…"), Symbol: "square.and.arrow.down", Icon: "download"},
+			ui.MenuItem{ID: menuOpen, Title: i18n.T("Open in another app"), Symbol: "arrow.up.forward.square", Icon: "external-link"})
 		c.ContextMenu(id, in.MouseX, in.MouseY, *items)
 	}
 	item, out := c.ContextMenuResult(id)
