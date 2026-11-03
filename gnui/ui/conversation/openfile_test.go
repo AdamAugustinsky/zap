@@ -79,8 +79,8 @@ func TestTheMenusOpenFileOpensOnlyARegularFileOfAKnownFormat(t *testing.T) {
 			r.s.Shell = sh
 			r.open(ada, fileMessage("f1", base0, c.path))
 			r.Play(widgettest.RClick(ui.RoleGroup, bubble("Ada Lovelace", base0)), widgettest.Idle(2))
-			r.must(ui.RoleButton, "Open file")
-			r.Play(widgettest.Click(ui.RoleButton, "Open file"), widgettest.Idle(2))
+			r.must(ui.RoleMenuItem, "Open file")
+			r.Play(widgettest.Click(ui.RoleMenuItem, "Open file"), widgettest.Idle(2))
 			select {
 			case <-sh.done:
 			case <-time.After(5 * time.Second):

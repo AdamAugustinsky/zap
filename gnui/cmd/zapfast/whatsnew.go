@@ -60,10 +60,8 @@ func (t *tour) whatsNew() []script.Step {
 	add(move(ui.RoleListItem, "Rust Berlin"), pause(400))
 	add(click(ui.RoleListItem, "Rust Berlin"), pause(800))
 	add(script.RClick(ui.RoleLabel, "I'll be there around 19:00"), pause(700))
-	// the menu's: each of our bubbles' time and ticks is a Message info
-	// button too, and both of ours in view come first
-	add(move(ui.RoleButton, "Message info").Nth(2), pause(400))
-	add(click(ui.RoleButton, "Message info").Nth(2), pause(3100))
+	add(move(ui.RoleMenuItem, "Message info"), pause(400))
+	add(click(ui.RoleMenuItem, "Message info"), pause(3100))
 	add(esc("Close message info")...)
 	add(pause(600))
 	// The chips (Favorites folds into More at the sidebar's width, whose
@@ -80,8 +78,10 @@ func (t *tour) whatsNew() []script.Step {
 	add(move(ui.RoleListItem, "Grace Hopper"), pause(400))
 	add(click(ui.RoleListItem, "Grace Hopper"), pause(800))
 	add(script.RClick(ui.RoleSlider, "Voice message"), pause(700))
-	add(move(ui.RoleButton, "Playback speed 1.75x"), pause(400))
-	add(click(ui.RoleButton, "Playback speed 1.75x"), pause(900))
+	add(move(ui.RoleMenuItem, "Playback speed"), pause(400))
+	add(click(ui.RoleMenuItem, "Playback speed"), pause(500))
+	add(move(ui.RoleMenuItem, "1.75x"), pause(400))
+	add(click(ui.RoleMenuItem, "1.75x"), pause(900))
 	// The chat list folds to avatars with unread badges.
 	add(t.label("⌘ + B · Collapse the chat list", key('B', prim))...)
 	add(pause(2400))
@@ -89,8 +89,8 @@ func (t *tour) whatsNew() []script.Step {
 	add(pause(700))
 	// Several messages selected and forwarded at once.
 	add(script.RClick(ui.RoleLabel, "Found the bug. It was a moth."), pause(600))
-	add(move(ui.RoleButton, "Select"), pause(400))
-	add(click(ui.RoleButton, "Select"), pause(800))
+	add(move(ui.RoleMenuItem, "Select"), pause(400))
+	add(click(ui.RoleMenuItem, "Select"), pause(800))
 	// two more ticked by their checks (they come after the filter chips,
 	// four at the sidebar's width: three and More; Grace's chat has four
 	// messages)

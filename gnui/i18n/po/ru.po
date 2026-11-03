@@ -5260,3 +5260,11 @@ msgstr "Цвета и зернистость пространства на эк�
 #: gnui
 msgid "Edit…"
 msgstr "Изменить…"
+
+#: gnui/ui (Zap)
+msgid "Playback speed"
+msgstr "Скорость воспроизведения"
+
+#: gnui/ui (Zap)
+msgid "Mute notifications"
+msgstr "Отключить уведомления"

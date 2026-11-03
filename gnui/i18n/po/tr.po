@@ -5226,3 +5226,11 @@ msgstr "Ekrandaki alanın renkleri ve greni. Klasör yoksa bu, hesabınızın an
 #: gnui
 msgid "Edit…"
 msgstr "Düzenle…"
+
+#: gnui/ui (Zap)
+msgid "Playback speed"
+msgstr "Oynatma hızı"
+
+#: gnui/ui (Zap)
+msgid "Mute notifications"
+msgstr "Bildirimleri sessize al"

@@ -24,9 +24,10 @@ func TestConversationReactionPickerTogether(t *testing.T) {
 	r.Frames(4)
 	r.Play(widgettest.Click(ui.RoleTextField, "Message"), widgettest.Type("keep this draft"),
 		widgettest.RClick(ui.RoleGroup, "Ada Lovelace, 12:00"), widgettest.Idle(2),
-		widgettest.Click(ui.RoleButton, "React with any emoji"), widgettest.Idle(3))
+		widgettest.Click(ui.RoleMenuItem, "React"), widgettest.Idle(2),
+		widgettest.Click(ui.RoleMenuItem, "React with any emoji"), widgettest.Idle(3))
 	r.Must(ui.RoleDialog, "React to message")
-	if _, ok := r.Find(ui.RoleButton, "Copy message ID"); ok {
+	if _, ok := r.Find(ui.RoleMenuItem, "Copy message ID"); ok {
 		t.Fatal("the message menu stayed open beside the picker")
 	}
 	r.Play(widgettest.Click(ui.RoleSearchField, "Search emoji"), widgettest.Type("crab"), widgettest.Idle(2),

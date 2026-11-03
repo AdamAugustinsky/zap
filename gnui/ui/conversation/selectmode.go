@@ -82,6 +82,7 @@ func (s *Screen) selectionBar(e *screen.Env, a *state.Account, ch model.Chat, v 
 	del := rexui.Button(k, i18n.T("Delete…"), rexui.ButtonOpts{Variant: rexui.ButtonDestructive})
 	if del.Clicked {
 		s.delMenu, s.delAt = !s.delMenu, [4]float32{}
+		s.delOpen = s.delMenu
 	}
 	if rexui.Button(k, i18n.T("Forward…"), rexui.ButtonOpts{Variant: rexui.ButtonPrimary}).Clicked {
 		logic.OpenForward(e.S, a, ch.Ref(), &pn.Selection)
@@ -92,26 +93,28 @@ func (s *Screen) selectionBar(e *screen.Env, a *state.Account, ch model.Chat, v 
 		s.delMenu = false
 	}
 	if s.delMenu {
-		at, edge := c.RectOf(c.KeyOf(del.ID)), rexui.PopoverAbove
+		at := c.RectOf(c.KeyOf(del.ID))
 		if s.delAt != ([4]float32{}) {
-			at, edge = s.delAt, rexui.PopoverBelow // opened on a selected message
+			at = s.delAt // opened on a selected message
 		}
-		p := rexui.BeginPopover(k, "delete menu", at, rexui.PopoverOpts{Width: 200, Edge: edge, Label: i18n.T("Delete…")})
-		done := false
-		if s.canRevoke(v, &pn.Selection) && item(k, ic.trash, i18n.T("Delete for everyone")) {
-			d := state.Dialog{Kind: state.DialogConfirmDeleteSelection, Chat: ch.Ref(), ForEveryone: true}
+		opening := s.delOpen
+		s.delOpen = false
+		const (
+			delEveryone = iota + 1
+			delMine
+		)
+		item, ok, closed := rexui.MenuAt(k, c.Parent(), opening, at[0], at[1], func(m *[]ui.MenuItem) {
+			if s.canRevoke(v, &pn.Selection) {
+				*m = append(*m, ui.MenuItem{ID: delEveryone, Title: i18n.T("Delete for everyone"), Symbol: "trash", Icon: "trash-2", Destructive: true})
+			}
+			*m = append(*m, ui.MenuItem{ID: delMine, Title: i18n.T("Delete for me"), Symbol: "trash", Icon: "trash-2", Destructive: true})
+		})
+		if ok {
+			d := state.Dialog{Kind: state.DialogConfirmDeleteSelection, Chat: ch.Ref(), ForEveryone: item == delEveryone}
 			copyIDs(&d.IDs, &pn.Selection)
 			e.S.OpenDialog(d)
-			done = true
 		}
-		if item(k, ic.trash, i18n.T("Delete for me")) {
-			d := state.Dialog{Kind: state.DialogConfirmDeleteSelection, Chat: ch.Ref()}
-			copyIDs(&d.IDs, &pn.Selection)
-			e.S.OpenDialog(d)
-			done = true
-		}
-		rexui.EndPopover(k, &p)
-		if done || p.Dismissed {
+		if closed {
 			s.delMenu, s.delAt = false, [4]float32{}
 		}
 	}

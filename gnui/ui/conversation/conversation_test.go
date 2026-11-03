@@ -339,8 +339,8 @@ func TestContextMenu(t *testing.T) {
 	menu := func(item string) {
 		t.Helper()
 		r.Play(widgettest.RClick(ui.RoleGroup, name), widgettest.Idle(2))
-		r.must(ui.RoleButton, item)
-		r.Play(widgettest.Click(ui.RoleButton, item), widgettest.Idle(2))
+		r.must(ui.RoleMenuItem, item)
+		r.Play(widgettest.Click(ui.RoleMenuItem, item), widgettest.Idle(2))
 	}
 	menu("Star")
 	if s := r.sent(abi.CommandTagSetStar); len(s) != 1 || !s[0].SetStar.Starred || string(s[0].SetStar.Message) != "c1" {
@@ -370,14 +370,14 @@ func TestContextMenu(t *testing.T) {
 	}
 	// someone else's message cannot be edited or deleted for everyone
 	r.Play(widgettest.RClick(ui.RoleGroup, name), widgettest.Idle(2))
-	r.mustNot(ui.RoleButton, "Edit")
-	r.mustNot(ui.RoleButton, "Delete for everyone")
+	r.mustNot(ui.RoleMenuItem, "Edit")
+	r.mustNot(ui.RoleMenuItem, "Delete for everyone")
 	r.Play(widgettest.Key(ui.KeyEscape, 0), widgettest.Idle(2))
-	r.mustNot(ui.RoleButton, "Copy message ID")
+	r.mustNot(ui.RoleMenuItem, "Copy message ID")
 	// ours, a minute old, can
 	r.Play(widgettest.RClick(ui.RoleGroup, bubble("You", r.now.Unix()-60)), widgettest.Idle(2))
-	r.must(ui.RoleButton, "Edit")
-	r.Play(widgettest.Click(ui.RoleButton, "Delete for everyone"), widgettest.Idle(2))
+	r.must(ui.RoleMenuItem, "Edit")
+	r.Play(widgettest.Click(ui.RoleMenuItem, "Delete for everyone"), widgettest.Idle(2))
 	if d := r.s.Dialog; d.Kind != state.DialogConfirmDeleteMessage || !d.ForEveryone || string(d.IDs.At(0)) != "c2" {
 		t.Errorf("dialog %+v", d)
 	}
@@ -396,7 +396,7 @@ func TestFourthPinIsRefused(t *testing.T) {
 	r.Frames(3)
 	r.must(ui.RoleButton, "Pinned message 1 of 3: pinned 3")
 	r.Play(widgettest.RClick(ui.RoleGroup, bubble("Ada Lovelace", base0)), widgettest.Idle(2),
-		widgettest.Click(ui.RoleButton, "Pin message"), widgettest.Idle(2))
+		widgettest.Click(ui.RoleMenuItem, "Pin message"), widgettest.Idle(2))
 	if len(r.sent(abi.CommandTagSetMessagePinned)) != 0 || len(r.s.Toasts) == 0 ||
 		string(r.s.Toasts[len(r.s.Toasts)-1].Text) != "This chat already has three pinned messages" {
 		t.Errorf("pinned %d, toasts %d", len(r.sent(abi.CommandTagSetMessagePinned)), len(r.s.Toasts))
@@ -415,7 +415,7 @@ func TestSelectionMode(t *testing.T) {
 	r := newRig(t)
 	r.open(ada, msg(ada, "s1", base0, false, "first"), msg(ada, "s2", base0+60, true, "second"))
 	r.Play(widgettest.RClick(ui.RoleGroup, bubble("Ada Lovelace", base0)), widgettest.Idle(2),
-		widgettest.Click(ui.RoleButton, "Select"), widgettest.Idle(2))
+		widgettest.Click(ui.RoleMenuItem, "Select"), widgettest.Idle(2))
 	if !r.s.Panes.Selecting || r.s.Panes.Selection.Len() != 1 {
 		t.Fatalf("selecting %v, %d", r.s.Panes.Selecting, r.s.Panes.Selection.Len())
 	}
@@ -489,7 +489,7 @@ func TestHeader(t *testing.T) {
 	if r.s.Panes.Pane != state.PaneInfo {
 		t.Errorf("pane %v", r.s.Panes.Pane)
 	}
-	r.Play(widgettest.Click(ui.RoleButton, "More"), widgettest.Idle(2), widgettest.Click(ui.RoleButton, "Archive"), widgettest.Idle(2))
+	r.Play(widgettest.Click(ui.RoleButton, "More"), widgettest.Idle(2), widgettest.Click(ui.RoleMenuItem, "Archive"), widgettest.Idle(2))
 	if c := r.sent(abi.CommandTagSetArchived); len(c) != 1 || !c[0].SetArchived.Archived {
 		t.Errorf("SetArchived %+v", c)
 	}

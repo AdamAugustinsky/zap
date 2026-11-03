@@ -8,6 +8,7 @@ import (
 
 	"gonativeui/icon"
 	"gonativeui/rexui"
+	"gonativeui/theme"
 	"gonativeui/ui"
 	"gonativeui/widget"
 
@@ -104,8 +105,10 @@ func (s *Screen) createPoll(e *screenEnv, a *state.Account, dl *rexui.Dialog) {
 	// in a short window the answers scroll rather than push the dialog out
 	k.NextHeight(k.Fixed(min(max(h-320, 76), 330, float32(p.n)*(36+answerGapPt)+4)))
 	v := k.BeginScroll("poll-answers", &s.scroll, widget.ScrollVertical)
-	// the answers apart, each field its own
+	// the answers apart, each field its own, clear of the overlay scroll bar
+	// that shows over their right edge (the remove buttons sit there)
 	k.NextGap(answerGapPt)
+	k.NextPadding(0, 0, theme.Space3, 0)
 	k.BeginContainer(ui.AxisY, ui.CrossStart, "answers", ui.Pct(1), ui.Children(1), 0)
 	remove := -1
 	for i := 0; i < p.n; i++ {

@@ -29,15 +29,17 @@ func TestVoiceNoteInTheTranscript(t *testing.T) {
 	if !inside(info, b) || info[1] < wave[3]-1 || b[2]-info[2] > 24 {
 		t.Errorf("the footer %v is not on the duration line under %v at the right of %v", info, wave, b)
 	}
-	r.Play(widgettest.RClick(ui.RoleGroup, bubble("You", base0)), widgettest.Idle(2))
-	for _, l := range []string{"1x", "1.25x", "1.5x", "1.75x", "2x"} {
-		r.must(ui.RoleButton, "Playback speed "+l)
+	r.Play(widgettest.RClick(ui.RoleGroup, bubble("You", base0)), widgettest.Idle(2),
+		widgettest.Click(ui.RoleMenuItem, "Playback speed"), widgettest.Idle(2))
+	for _, l := range []string{"1.25x", "1.5x", "1.75x", "2x"} {
+		r.must(ui.RoleMenuItem, l)
 	}
-	r.Play(widgettest.Click(ui.RoleButton, "Playback speed 1.75x"), widgettest.Idle(2))
+	r.must(ui.RoleMenuItemCheckbox, "1x") // the speed in use is checked
+	r.Play(widgettest.Click(ui.RoleMenuItem, "1.75x"), widgettest.Idle(2))
 	if r.s.Settings.VoiceSpeed != 1.75 {
 		t.Errorf("speed %v", r.s.Settings.VoiceSpeed)
 	}
-	r.mustNot(ui.RoleButton, "Playback speed 1.25x")
+	r.mustNot(ui.RoleMenuItem, "1.25x")
 }
 
 // A round video note is drawn without a bubble: the bubble is as wide as

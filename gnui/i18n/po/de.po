@@ -5275,3 +5275,11 @@ msgstr "Farben und Körnung für den angezeigten Bereich. Ohne Ordner ist das di
 #: gnui
 msgid "Edit…"
 msgstr "Bearbeiten…"
+
+#: gnui/ui (Zap)
+msgid "Playback speed"
+msgstr "Wiedergabegeschwindigkeit"
+
+#: gnui/ui (Zap)
+msgid "Mute notifications"
+msgstr "Benachrichtigungen stummschalten"

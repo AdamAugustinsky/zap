@@ -16,7 +16,6 @@ import (
 	"zapfast/model"
 	"zapfast/state"
 	ztheme "zapfast/theme"
-	"zapfast/ui/calls"
 	"zapfast/ui/screen"
 )
 
@@ -397,29 +396,6 @@ func (s *Screen) circle(e *screen.Env, key ui.Key, ic icon.ID, name string, x, y
 }
 
 // ---- a call entry's menu (CV-033) ----
-
-// callMenu is the menu of a call in the transcript: calling the chat back,
-// a person or a group; a group call in a person's chat has no way back from
-// there. It reports a choice.
-func (s *Screen) callMenu(e *screen.Env, a *state.Account, ch model.Chat, m model.Message) bool {
-	k := e.K.Kit
-	if !canCall(a, ch) {
-		return false
-	}
-	if ch.Kind() == abi.ChatKindDirect && m.Decode(&s.dec) == nil && s.dec.Content.Call.Group {
-		itemOff(k, s.icons.call, i18n.T("Group calls happen on the phone"), false)
-		return false
-	}
-	if item(k, s.icons.call, i18n.T("Voice call")) {
-		calls.Place(e.S, a, ch.ID(), false)
-		return true
-	}
-	if item(k, s.icons.video, i18n.T("Video call")) {
-		calls.Place(e.S, a, ch.ID(), true)
-		return true
-	}
-	return false
-}
 
 // ---- who reacted (CV-028) ----
 

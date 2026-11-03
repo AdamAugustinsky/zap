@@ -5082,3 +5082,11 @@ msgstr "屏幕上空间的颜色和颗粒。没有文件夹时，就是你的账
 #: gnui
 msgid "Edit…"
 msgstr "编辑…"
+
+#: gnui/ui (Zap)
+msgid "Playback speed"
+msgstr "播放速度"
+
+#: gnui/ui (Zap)
+msgid "Mute notifications"
+msgstr "静音通知"

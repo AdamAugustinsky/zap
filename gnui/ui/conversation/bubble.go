@@ -321,7 +321,7 @@ func (s *Screen) bubble(e *screen.Env, a *state.Account, ch model.Chat, m model.
 		}
 	} else if at, ok := rightAt(e, brect); ok && picked {
 		// a selected message's menu is the selection's delete choices
-		s.delMenu, s.delAt = true, at
+		s.delMenu, s.delOpen, s.delAt = true, true, at
 	}
 	note := av.NoBubble(m) // a round video note is its own circle
 	bare := kinds.NoBubble(m) || note
@@ -625,7 +625,7 @@ func (s *Screen) follow(e *screen.Env, a *state.Account, m model.Message, i int)
 		// a number offers a chat with it or a copy as written (MK-005)
 		in := e.C().Input()
 		ph := &s.phone
-		ph.open, ph.at = true, [4]float32{in.MouseX, in.MouseY, in.MouseX + 1, in.MouseY + 1}
+		ph.open, ph.opening, ph.at = true, true, [4]float32{in.MouseX, in.MouseY, in.MouseX + 1, in.MouseY + 1}
 		if t := m.Text(); int(sp.End) <= len(t) && sp.Start <= sp.End {
 			ph.written = append(ph.written[:0], t[sp.Start:sp.End]...)
 		}
@@ -646,24 +646,29 @@ func (s *Screen) follow(e *screen.Env, a *state.Account, m model.Message, i int)
 }
 
 // phoneMenu is a number's menu in a message: Message (a chat with it) and
-// Copy number, as written.
+// Copy number, as written; native on macOS, drawn elsewhere (rexui.MenuAt).
 func (s *Screen) phoneMenu(e *screen.Env, a *state.Account) {
-	k := e.K.Kit
 	ph := &s.phone
-	p := rexui.BeginPopover(k, "phone menu", ph.at, rexui.PopoverOpts{Width: 180, Label: model.S(ph.written)})
-	done := false
-	if item(k, s.icons.reply, i18n.T("Message")) && len(ph.digits) > 0 {
+	opening := ph.opening
+	ph.opening = false
+	const (
+		phMessage = iota + 1
+		phCopy
+	)
+	item, ok, closed := rexui.MenuAt(e.K.Kit, e.C().Parent(), opening, ph.at[0], ph.at[1], func(m *[]ui.MenuItem) {
+		*m = append(*m, ui.MenuItem{Header: true, Title: model.S(ph.written)},
+			ui.MenuItem{ID: phMessage, Title: i18n.T("Message"), Symbol: "message", Icon: "message-circle", Disabled: len(ph.digits) == 0},
+			ui.MenuItem{ID: phCopy, Title: i18n.T("Copy number"), Symbol: "doc.on.doc", Icon: "copy"})
+	})
+	switch {
+	case ok && item == phMessage:
 		s.jid = append(append(s.jid[:0], ph.digits...), "@s.whatsapp.net"...)
 		a.StartChat(s.jid, nil, nil)
-		done = true
-	}
-	if item(k, s.icons.copy, i18n.T("Copy number")) {
+	case ok && item == phCopy:
 		s.copied = append(s.copied[:0], ph.written...)
 		setClipboard(e, s.copied)
-		done = true
 	}
-	rexui.EndPopover(k, &p)
-	if done || p.Dismissed {
+	if closed {
 		ph.open = false
 	}
 }
@@ -1100,7 +1105,7 @@ func rightAt(e *screen.Env, rect [4]float32) ([4]float32, bool) {
 }
 
 func (s *Screen) openMenu(id []byte, anchor [4]float32) {
-	s.menu.open = true
+	s.menu.open, s.menu.opening = true, true
 	s.menu.msg.Reset()
 	s.menu.msg.Add(id)
 	s.menu.anchor = anchor

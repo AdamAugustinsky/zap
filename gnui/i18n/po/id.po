@@ -5231,3 +5231,11 @@ msgstr "Warna dan butiran untuk ruang di layar. Tanpa folder, itu tampilan utama
 #: gnui
 msgid "Edit…"
 msgstr "Edit…"
+
+#: gnui/ui (Zap)
+msgid "Playback speed"
+msgstr "Kecepatan pemutaran"
+
+#: gnui/ui (Zap)
+msgid "Mute notifications"
+msgstr "Bisukan notifikasi"
