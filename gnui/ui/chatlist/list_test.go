@@ -503,7 +503,8 @@ func TestFoldedFiltersPickFromMore(t *testing.T) {
 		t.Fatalf("the More chip does not read Groups, chosen")
 	}
 	r.Play(widgettest.Click(ui.RoleCheckbox, "Groups"), widgettest.Idle(3))
-	r.Play(widgettest.Click(ui.RoleMenuItem, "Groups"), widgettest.Idle(3))
+	// the chosen filter is a checked item
+	r.Play(widgettest.Click(ui.RoleMenuItemCheckbox, "Groups"), widgettest.Idle(3))
 	if r.acct().Filter != state.FilterAll || !r.has(ui.RoleCheckbox, "More") {
 		t.Errorf("picking Groups again left filter %v, want All", r.acct().Filter)
 	}

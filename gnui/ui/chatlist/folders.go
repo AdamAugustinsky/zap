@@ -115,10 +115,7 @@ func (s *Screen) folderRow(e *screen.Env, a *state.Account, fi int) {
 	if sig.Clicked && !renaming {
 		a.EditFolder(fi, func(x *state.Folder) { x.Collapsed = !x.Collapsed })
 	}
-	if !s.native(e, sig.ID, menuFolder, 0, fi) && sig.RightClicked {
-		in := c.Input()
-		s.menu.showFolder(fi, in.MouseX, in.MouseY)
-	}
+	s.ctxMenu(e, sig.ID, menuFolder, 0, fi)
 }
 
 // rule is the line under the folders: the chats under it are in none.

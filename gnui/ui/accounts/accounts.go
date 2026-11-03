@@ -115,7 +115,7 @@ func (s *Screen) Build(e *screen.Env, anchor screen.Rect) {
 	c := e.C()
 	p := rexui.BeginPopover(k.Kit, "accounts", [4]float32{anchor.X, anchor.Y, anchor.X + anchor.W, anchor.Y + anchor.H},
 		rexui.PopoverOpts{Edge: rexui.PopoverRight, Label: i18n.T("Accounts"), Width: menuWidth, NoPad: true})
-	k.NextPad(6)
+	k.NextPad(theme.Space2)
 	k.NextGap(0)
 	k.BeginContainer(ui.AxisY, ui.CrossStart, "menu", ui.Pct(1), ui.Children(1), 0)
 	switchTo := -1

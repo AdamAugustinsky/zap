@@ -96,8 +96,7 @@ type Screen struct {
 	contactKeys      []string
 	offerSelf        bool
 
-	menu ctxMenu
-	lm   labelManager
+	lm labelManager
 
 	sentQuery string
 	// ⌘K was open: it asks the same archive for its own text, in the same
@@ -193,7 +192,6 @@ func (s *Screen) Build(e *screen.Env, r screen.Rect) {
 	s.body(e, a)
 	k.EndContainer()
 	k.EndContainer()
-	s.menu.build(s, e, a)
 	s.lm.build(s, e, a)
 }
 
@@ -216,7 +214,6 @@ func (s *Screen) takeRequests(e *screen.Env, a *state.Account) {
 		s.searchRev = s.search.Rev()
 		s.query, s.needle, s.needleB, s.selRef = "", nil, nil, 0
 		s.kept = s.kept[:0]
-		s.menu.close()
 		s.open = 0
 	}
 }
@@ -641,7 +638,7 @@ func (s *Screen) header(e *screen.Env, a *state.Account) {
 	sc := k.Scale()
 	pad := theme.Snap(10 * sc)
 	c.NextAxis(ui.AxisY)
-	c.NextPadding(pad, theme.Snap(4*sc), pad, theme.Snap(6*sc))
+	c.NextPadding(pad, theme.Snap(4*sc), pad, theme.Snap(8*sc))
 	c.NextGap(theme.Snap(8 * sc))
 	c.NextSize(ui.Pct(1), ui.Children(1))
 	box := c.BoxKeyed(0, ui.HashString(c.ParentKey(), "header"), nil)

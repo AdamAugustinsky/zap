@@ -92,7 +92,7 @@ func (s *Screen) skeleton(e *screen.Env) {
 	for i := 0; i < n; i++ {
 		c.NextAxis(ui.AxisX)
 		c.NextCross(ui.CrossCenter)
-		c.NextGap(theme.Snap(10 * sc))
+		c.NextGap(theme.Snap(theme.Space2 * sc))
 		c.NextPadding(theme.Snap(16*sc), 0, theme.Snap(16*sc), 0)
 		c.NextSize(ui.Pct(1), ui.Px(theme.Snap(rowH*sc)))
 		c.Push(c.BoxKeyed(0, ui.KeyN(c.ParentKey(), uint64(i)), nil))
@@ -239,10 +239,7 @@ func (s *Screen) chat(e *screen.Env, a *state.Account, ref model.ChatRef) (typin
 			e.S.PeekChat(a, ref, c.RectOf(c.KeyOf(sig.ID)))
 		}
 	}
-	if !s.native(e, sig.ID, menuChat, ref, 0) && sig.RightClicked {
-		inp := e.C().Input()
-		s.menu.show(ref, inp.MouseX, inp.MouseY)
-	}
+	s.ctxMenu(e, sig.ID, menuChat, ref, 0)
 	return typing
 }
 
@@ -300,7 +297,7 @@ func (s *Screen) section(e *screen.Env, which int) {
 		t = i18n.T("Contacts")
 	}
 	st := &r.Styles[theme.StyleSidebarHeader]
-	c.NextPadding(theme.Snap(16*sc), theme.Snap(10*sc), theme.Snap(16*sc), theme.Snap(4*sc))
+	c.NextPadding(theme.Snap(16*sc), theme.Snap(12*sc), theme.Snap(16*sc), theme.Snap(4*sc))
 	c.NextSize(ui.Pct(1), ui.Children(1))
 	c.NextRole(ui.RoleLabel)
 	c.NextSemName(t)
@@ -439,10 +436,7 @@ func (s *Screen) star(e *screen.Env, a *state.Account, i int) {
 		s.openMessage(a, x.chat, x.id)
 	}
 	// the message's own menu belongs to the conversation; Unstar is here
-	if !s.native(e, sig.ID, menuStar, 0, i) && sig.RightClicked {
-		inp := e.C().Input()
-		s.menu.showStar(i, inp.MouseX, inp.MouseY)
-	}
+	s.ctxMenu(e, sig.ID, menuStar, 0, i)
 }
 
 var _ icon.ID
