@@ -35,6 +35,8 @@ type Host struct {
 	File func(Entry)
 	// Error shows a toast.
 	Error func(text string)
+	// Now is the clock an offer is aged by; nil is time.Now.
+	Now func() time.Time
 }
 
 // Entry is a finished call, for its chat and the call log.
@@ -888,6 +890,14 @@ func (c *Calls) offered(s Signal) {
 		ownFrom = lid
 	}
 	c.send(BuildOfferAckReceipt(s.From, s.StanzaID, s.CallID, s.Creator, ownFrom))
+	ring := c.ringLeft(s)
+	if ring <= 0 {
+		// An offer the server kept while this Mac slept or was offline:
+		// the call ended long ago (answered on the phone, or missed), so
+		// it neither rings nor is refused.
+		slog.Info("zapfast calls: not ringing an offer past its ring", "age", c.timing.Ring-ring)
+		return
+	}
 	switch {
 	case c.media == nil, c.call != nil:
 		// Refused rather than dropped: a dropped offer rings on at the
@@ -895,7 +905,7 @@ func (c *Calls) offered(s Signal) {
 		c.send(rejectWith(s, c.cli.NewID(), RejectBusy))
 		return
 	case s.IsGroup():
-		c.groupOffered(s)
+		c.groupOffered(s, ring)
 		return
 	}
 	chat := c.h.Chat(s.From.ToNonAD())
@@ -914,13 +924,28 @@ func (c *Calls) offered(s Signal) {
 		k.began = time.Now().Unix()
 	}
 	c.call = k
-	k.ringTimer = c.after(c.timing.Ring, k.u.Generation, func(k *call) {
+	k.ringTimer = c.after(ring, k.u.Generation, func(k *call) {
 		if k.u.Phase == abi.CallPhaseIncoming {
 			c.end(k, abi.CallPhaseEnded, abi.CallStatusMissed)
 		}
 	})
 	c.refreshDevices()
 	c.emit(k)
+}
+
+// ringLeft is how much longer an offer may ring: the ring less the time
+// since the caller placed it, which an offer delivered after a sleep has
+// long used up. An offer without a time, or stamped ahead of this Mac's
+// clock, gets the whole ring.
+func (c *Calls) ringLeft(s Signal) time.Duration {
+	if s.Time.IsZero() {
+		return c.timing.Ring
+	}
+	now := time.Now
+	if c.h.Now != nil {
+		now = c.h.Now
+	}
+	return c.timing.Ring - max(now().Sub(s.Time), 0)
 }
 
 // rejectWith is a <reject> to an offer, with a reason when it is a device's

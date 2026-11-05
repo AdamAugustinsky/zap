@@ -437,10 +437,7 @@ func (s *Screen) reactionPreview(e *screen.Env) []byte {
 	if len(t) == 0 {
 		return nil
 	}
-	name := m.SenderName()
-	if len(name) == 0 {
-		name = a.Model.DisplayName(m.Sender())
-	}
+	name := a.Model.PersonName(m.Sender(), m.SenderName())
 	f := e.C().Fmt()
 	f.Str(model.S(name)).Str(": ").Str(model.S(t))
 	return f.Bytes()

@@ -352,10 +352,7 @@ func (d *dropState) build(s *Screen, e *screen.Env, r screen.Rect, ch model.Chat
 	if !sig.Over {
 		return
 	}
-	name := ch.Name()
-	if len(name) == 0 {
-		name = s.acct.Model.DisplayName(ch.ID())
-	}
+	name := s.acct.Model.ChatName(ch)
 	if !bytes.Equal(name, d.for_) || d.label == "" {
 		d.for_ = append(d.for_[:0], name...)
 		d.label = i18n.Format(i18n.T("Drop to send to {name}"), "{name}", string(name))

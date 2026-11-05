@@ -99,7 +99,8 @@ func lastSent(f *fake.Core, tag abi.CommandTag) (abi.Command, bool) {
 }
 
 // Spotlight (ui/spotlight): ⌘K opens it on the field, a name finds its chat,
-// Enter opens it; Escape closes; / opens it as a single key.
+// Enter opens it, its composer taking the keyboard; Escape closes; / opens
+// it as a single key once nothing takes typing.
 func TestSpotlight(t *testing.T) {
 	r, _ := keyRig(t)
 	r.Play(widgettest.Key('K', prim), widgettest.Idle(3))
@@ -111,6 +112,7 @@ func TestSpotlight(t *testing.T) {
 	if r.s.Spotlight || r.openName() != "Grace Hopper" {
 		t.Fatalf("Enter: open %q, Spotlight %v; want Grace Hopper, closed", r.openName(), r.s.Spotlight)
 	}
+	r.Play(widgettest.Key(ui.KeyEscape, 0), widgettest.Idle(3)) // the composer lets go
 	r.Play(widgettest.Key('/', 0), widgettest.Idle(3))
 	if !r.s.Spotlight {
 		t.Fatal("/ did not open Spotlight")

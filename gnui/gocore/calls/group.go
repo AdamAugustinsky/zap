@@ -216,7 +216,7 @@ func offerCaller(s Signal) types.JID {
 
 // groupOffered rings a group call's offer in its group, or, for a call
 // among several people with no group behind it, in its creator's chat.
-func (c *Calls) groupOffered(s Signal) {
+func (c *Calls) groupOffered(s Signal, ring time.Duration) {
 	refuse := func(why string) {
 		slog.Info("zapfast calls: refusing a group call's offer", "why", why)
 		c.send(rejectWith(s, c.cli.NewID(), ""))
@@ -261,7 +261,7 @@ func (c *Calls) groupOffered(s Signal) {
 		k.began = time.Now().Unix()
 	}
 	c.call = k
-	k.ringTimer = c.after(c.timing.Ring, k.u.Generation, func(k *call) {
+	k.ringTimer = c.after(ring, k.u.Generation, func(k *call) {
 		if k.u.Phase == abi.CallPhaseIncoming {
 			c.end(k, abi.CallPhaseEnded, abi.CallStatusMissed)
 		}

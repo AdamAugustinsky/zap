@@ -781,3 +781,19 @@ func TestFullScreenIsTheSystemsItem(t *testing.T) {
 		}
 	}
 }
+
+// Choosing a chat, with a click in the list or through ⌘K, is choosing it
+// to write in: the message field takes the keyboard.
+func TestAChosenChatsComposerTakesTheKeyboard(t *testing.T) {
+	r, _ := keyRig(t)
+	r.Play(widgettest.Click(ui.RoleListItem, "Grace Hopper"), widgettest.Idle(3))
+	if got := r.focusedName(); r.openName() != "Grace Hopper" || got != "Message" {
+		t.Fatalf("after a click: open %q, focus on %q", r.openName(), got)
+	}
+
+	r.Play(widgettest.Key('K', prim), widgettest.Idle(2), widgettest.Type("ada"), widgettest.Idle(3),
+		widgettest.Key(ui.KeyEnter, 0), widgettest.Idle(3))
+	if got := r.focusedName(); r.s.Spotlight || r.openName() != "Ada Lovelace" || got != "Message" {
+		t.Fatalf("after ⌘K: Spotlight %v, open %q, focus on %q", r.s.Spotlight, r.openName(), got)
+	}
+}

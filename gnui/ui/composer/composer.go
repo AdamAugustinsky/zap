@@ -336,11 +336,11 @@ func (s *Screen) Build(e *screen.Env, r screen.Rect) {
 			s.insert(e, a, ins)
 		}
 	}
-	if e.S.Req.FocusComposer && !e.S.Side {
+	// A composer that cannot take the keyboard drops the ask; one that can
+	// takes it once its field is built (s.field), which a chat's first
+	// frame needs before the field has a key to focus.
+	if e.S.Req.FocusComposer && !e.S.Side && (!canSend(&ch) || s.voice.recording()) {
 		e.S.Req.FocusComposer = false
-		if canSend(&ch) && !s.voice.recording() {
-			s.st.Focus(e.K.Kit)
-		}
 	}
 
 	theme.At(c, r.X, r.Y, r.W, r.H)
@@ -626,6 +626,11 @@ func (s *Screen) composer(e *screen.Env, a *state.Account, ch model.Chat) {
 	s.accID = 0
 	sig := rexui.Composer(k.Kit, i18n.P("message field", "Message")+"###message", s.st, o)
 	s.focused, s.fieldID = sig.Focused, sig.ID
+	if e.S.Req.FocusComposer && !e.S.Side {
+		e.S.Req.FocusComposer = false
+		s.st.Focus(k.Kit)
+		e.S.Touch() // the drawn field takes the focus at the next frame
+	}
 	if s.focused && e.S.Side {
 		// typed into straight in its native view (no press reached the
 		// window): this pane is the one in use now

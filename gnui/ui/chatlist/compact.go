@@ -128,5 +128,6 @@ func (s *Screen) compactCell(e *screen.Env, a *state.Account, ref model.ChatRef)
 	rexui.Tooltip(k.Kit, sig.ID, in.title)
 	if sig.Clicked {
 		a.OpenChat(ref)
+		e.S.Req.FocusComposer = true
 	}
 }

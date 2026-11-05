@@ -103,7 +103,8 @@ func TestRoutesFromLoginToTheChats(t *testing.T) {
 }
 
 // A click on a row opens the chat (LoadChat); ⌥↓ steps to the next one;
-// Escape closes it; the rail's Calls and ⌘B change the window.
+// Escape takes the keyboard from its composer, a second closes it; the
+// rail's Calls and ⌘B change the window.
 func TestOpensChatsAndRunsTheShortcuts(t *testing.T) {
 	f := fake.New(nil)
 	linked(f)
@@ -124,7 +125,7 @@ func TestOpensChatsAndRunsTheShortcuts(t *testing.T) {
 	if c, _ := a.OpenChatView(); string(c.Name()) != "Ada Lovelace" {
 		t.Errorf("⌥↑ opened %q", c.Name())
 	}
-	r.Play(widgettest.Key(ui.KeyEscape, 0), widgettest.Idle(2))
+	r.Play(widgettest.Key(ui.KeyEscape, 0), widgettest.Idle(2), widgettest.Key(ui.KeyEscape, 0), widgettest.Idle(2))
 	if a.Open != 0 {
 		t.Error("Escape left the chat open")
 	}

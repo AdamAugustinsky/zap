@@ -351,8 +351,9 @@ func (s *State) PrefillComposer(chat, text []byte) {
 
 // StartChat opens the chat with jid, asking the core to make it first when
 // the account does not have it (Action::StartChat: a contact, a link, a
-// member); it opens once it appears, within 10 seconds. text, when not nil,
-// prefills the composer once it is open (a link's text).
+// member); it opens once it appears, within 10 seconds, and its composer
+// takes the keyboard. text, when not nil, prefills the composer once it is
+// open (a link's text).
 func (a *Account) StartChat(jid, name, text []byte) {
 	st := a.st
 	if text != nil {
@@ -361,6 +362,7 @@ func (a *Account) StartChat(jid, name, text []byte) {
 	if ref := a.Model.Chats.Find(jid); ref != 0 {
 		if c, _ := a.Model.Chats.Get(ref); !c.Locked() || a.Mode == ListLocked {
 			a.OpenChat(ref)
+			st.Req.FocusComposer = true
 		}
 		return
 	}
@@ -385,6 +387,7 @@ func (a *Account) started() {
 		a.starting = a.starting[:0]
 		if a.Active() {
 			a.OpenChat(ref)
+			a.st.Req.FocusComposer = true
 		}
 	}
 }

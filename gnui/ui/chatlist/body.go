@@ -242,6 +242,7 @@ func (s *Screen) chat(e *screen.Env, a *state.Account, ref model.ChatRef) (typin
 	case sig.Clicked || us.Pressed && c.Input().Mods&ui.ModCtrl == 0:
 		s.KeepUnread(e, ref)
 		a.OpenChat(ref)
+		s.pendingFocusComposer = true // a chat chosen is a chat to type in
 	case sig.Hovering:
 		s.dwell(e, a, ref)
 		// Space over a row peeks at it, when nothing takes typing

@@ -484,12 +484,7 @@ func sortSections(rows []result) {
 	}
 }
 
-func title(a *state.Account, ch model.Chat) []byte {
-	if n := ch.Name(); len(n) > 0 {
-		return n
-	}
-	return a.Model.DisplayName(ch.ID())
-}
+func title(a *state.Account, ch model.Chat) []byte { return a.Model.ChatName(ch) }
 
 func preview(ch model.Chat) string {
 	if !ch.HasLast() {
@@ -535,6 +530,8 @@ func (s *Screen) open(e *screen.Env, rw result) {
 		a.SetMode(state.ListChats)
 		a.OpenChat(rw.ref)
 	}
+	// The palette is how one goes to a chat to write in it.
+	st.Req.FocusComposer = true
 	st.Touch()
 }
 

@@ -334,12 +334,7 @@ func rowName(c *ui.Context, title []byte, id int) string {
 }
 
 // chatTitle is the name a chat is listed by.
-func chatTitle(a *state.Account, c model.Chat) []byte {
-	if n := c.Name(); len(n) > 0 {
-		return n
-	}
-	return a.Model.DisplayName(c.ID())
-}
+func chatTitle(a *state.Account, c model.Chat) []byte { return a.Model.ChatName(c) }
 
 // beginActions starts a dialog's row of buttons: rexui's, right-aligned, but a
 // flow, so that in a language with long labels, or a narrow window, the
