@@ -161,10 +161,7 @@ func (sh *Shell) chatTabs(a *state.Account, x0, x1, tbH float32) {
 			continue
 		}
 		ch, _ := a.Model.Chats.Get(ref) // ChatTabs keeps only chats that are there
-		title := ch.Name()
-		if len(title) == 0 {
-			title = a.Model.DisplayName(ch.ID())
-		}
+		title := a.Model.ChatName(ch)
 		chosen := ref == a.Open && s.Page == state.PageChats && !a.GroupShown()
 		t.tabs[n] = rexui.Tab{ID: uint64(ref), Title: model.S(title), Detail: sh.tabDetail(a, ch, n, chosen), Lead: tabLeadPt}
 		t.at[n] = i
@@ -195,10 +192,7 @@ func (sh *Shell) chatTabs(a *state.Account, x0, x1, tbH float32) {
 				}
 				theme.At(c, theme.Snap(cell.X+e.Pt(tabPicX+float32(p)*tabPicStep))-cell.Rect[0], theme.Snap((h-pic)/2), pic, pic)
 				c.Push(c.Box(base.Floating, pairPicName[p]))
-				name := ch.Name()
-				if len(name) == 0 {
-					name = a.Model.DisplayName(ch.ID())
-				}
+				name := a.Model.ChatName(ch)
 				rexui.Avatar(k.Kit, model.S(name), rexui.AvatarOpts{Size: tabPicPt, Image: slot.handle(a, sh.imgs, ch, int32(pic)), Backdrop: rexui.Of(theme.Field)})
 				if ch.Unread() > 0 || ch.MarkedUnread() {
 					sh.unreadDot(ch.Muted(s.Now().Unix()))
@@ -296,11 +290,7 @@ func (sh *Shell) pairTitle(a *state.Account, g state.Group) string {
 			b.WriteString(" · ")
 		}
 		ch, _ := a.Model.Chats.Get(ref)
-		if n := ch.Name(); len(n) > 0 {
-			b.Write(n)
-		} else {
-			b.Write(a.Model.DisplayName(ch.ID()))
-		}
+		b.Write(a.Model.ChatName(ch))
 	}
 	t.pairOf, t.pairTitle = append(t.pairOf[:0], g.Chats...), b.String()
 	return t.pairTitle

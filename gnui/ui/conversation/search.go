@@ -541,10 +541,7 @@ func (p *Search) Build(e *screen.Env, r screen.Rect) {
 
 	switch {
 	case len(bytes.TrimSpace(st.buf.Bytes())) == 0 && st.day.none():
-		name := ch.Name()
-		if len(name) == 0 {
-			name = a.Model.DisplayName(ch.ID())
-		}
+		name := a.Model.ChatName(ch)
 		c.NextSize(ui.Pct(1), ui.Children(1))
 		c.NextPadding(e.Pt(16), e.Pt(24), e.Pt(16), 0)
 		c.NextAxis(ui.AxisY)

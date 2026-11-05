@@ -469,10 +469,7 @@ func (sh *Shell) waiting(a *state.Account, r [4]float32) {
 	c.NextRole(ui.RoleGroup)
 	c.NextSemName(i18n.T("Drop to split"))
 	c.Push(c.Box(base.Floating|ui.DrawBackground|ui.DrawBorder|ui.Clip, "zapfast/split waiting pane"))
-	name := ch.Name()
-	if len(name) == 0 {
-		name = a.Model.DisplayName(ch.ID())
-	}
+	name := a.Model.ChatName(ch)
 	side := e.Pt(48)
 	rexui.Avatar(k.Kit, model.S(name), rexui.AvatarOpts{Size: 48, Image: screen.Avatar(sh.imgs, a, ch.ID(), false, int32(side))})
 	rexui.Label(k.Kit, model.S(name), rexui.LabelOpts{Style: rexui.TextHeadline})

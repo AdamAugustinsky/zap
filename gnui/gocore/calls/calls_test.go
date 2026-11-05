@@ -264,6 +264,8 @@ type harness struct {
 	errs    []string
 	kick    chan struct{}
 	cancel  context.CancelFunc
+	// late is how long after its stamp an offer reaches us (Host.Now).
+	late time.Duration
 }
 
 func newHarness(t *testing.T, withMedia bool) *harness {
@@ -310,6 +312,7 @@ func newHarness(t *testing.T, withMedia bool) *harness {
 		},
 		File:  func(e Entry) { h.mu.Lock(); h.entries = append(h.entries, e); h.mu.Unlock() },
 		Error: func(s string) { h.mu.Lock(); h.errs = append(h.errs, s); h.mu.Unlock() },
+		Now:   func() time.Time { h.mu.Lock(); defer h.mu.Unlock(); return meta(peerDev3).Timestamp.Add(h.late) },
 	}
 	var media Media
 	if withMedia {
@@ -669,6 +672,35 @@ func TestDecliningAndMissing(t *testing.T) {
 	h.ended(abi.CallStatusAnsweredElsewhere)
 	if len(h.entries) != 3 || len(h.media.opened) != 0 {
 		t.Fatalf("entries %+v, media %d", h.entries, len(h.media.opened))
+	}
+}
+
+// An offer the server held while the Mac slept, delivered after its ring
+// is over, is a call that ended long ago: it rings nothing and is filed
+// nowhere, one to one or in a group, busy or not.
+func TestAnOfferDeliveredAfterItsRingDoesNotRing(t *testing.T) {
+	for _, group := range []bool{false, true} {
+		h := newHarness(t, true)
+		h.late = 3 * time.Hour
+		offer := peerOffer(false, CapabilityOffer)
+		if group {
+			offer.GroupJID = types.JID{User: "120363000000000001", Server: types.GroupServer}
+		}
+		h.signal(offer)
+		h.expectSent("receipt:offer→" + peerDev3.String())
+		if len(h.updates) != 0 || len(h.entries) != 0 {
+			t.Fatalf("group %v: a stale offer rang (%+v) or was filed (%+v)", group, h.updates, h.entries)
+		}
+
+		// One a moment late still rings.
+		h.mu.Lock()
+		h.late = 30 * time.Second
+		h.mu.Unlock()
+		h.signal(offer)
+		h.cli.take()
+		if u := h.last(); u.Phase != abi.CallPhaseIncoming {
+			t.Fatalf("group %v: a fresh offer: %+v", group, u)
+		}
 	}
 }
 

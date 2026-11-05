@@ -301,6 +301,20 @@ func TestPersonNameAddressBookFirst(t *testing.T) {
 			t.Errorf("PersonName(%s, %q) = %q, want %q", c.jid, c.hint, got, c.want)
 		}
 	}
+	s.Event(ev(abi.EventTagChats, func(e *abi.Event) {
+		e.Chats = abi.EventChats{Batch: 1, Last: true, Chats: []abi.Chat{
+			{ID: []byte(saved), Name: []byte("ada!")}, // the chat filed under the name she chose
+			{ID: []byte(bare), Name: []byte("Sam from work")},
+			{ID: []byte(group), Name: []byte("Analysts"), Kind: abi.ChatKindGroup},
+		}}
+	}))
+	// A chat is named as its person is everywhere, the saved name before the
+	// chat's own; a group by its subject.
+	for jid, want := range map[string]string{saved: "Ada Lovelace", group: "Analysts", bare: "Sam from work"} {
+		if got := string(s.ChatName(s.Chats.At(s.Chats.Find([]byte(jid))))); got != want {
+			t.Errorf("ChatName(%s) = %q, want %q", jid, got, want)
+		}
+	}
 	if n := testing.AllocsPerRun(20, func() {
 		s.PersonName([]byte(saved), nil)
 		s.PersonName([]byte(pushed), nil)

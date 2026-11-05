@@ -317,11 +317,11 @@ func (sh *Shell) replyToLast(a *state.Account) {
 
 // chatName is how a chat is named in a toast.
 func chatName(s *state.State, ch model.Chat) []byte {
+	if a := s.Acct(); a != nil {
+		return a.Model.ChatName(ch)
+	}
 	if n := ch.Name(); len(n) > 0 {
 		return n
-	}
-	if a := s.Acct(); a != nil {
-		return a.Model.DisplayName(ch.ID())
 	}
 	return ch.ID()
 }

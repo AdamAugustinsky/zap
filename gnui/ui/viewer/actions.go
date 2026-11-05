@@ -24,10 +24,8 @@ import (
 func (s *Screen) toolbar(e *screen.Env, ch model.Chat) {
 	c, k := e.C(), e.K
 	title := model.S(ch.Name())
-	if title == "" {
-		if a := s.account(); a != nil {
-			title = model.S(a.Model.DisplayName(ch.ID()))
-		}
+	if a := s.account(); a != nil {
+		title = model.S(a.Model.ChatName(ch))
 	}
 	if title == "" && s.r.path != "" {
 		title = filepath.Base(s.r.path)

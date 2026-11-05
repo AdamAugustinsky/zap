@@ -402,6 +402,19 @@ func (s *Store) pinned(v *Conversation) bool {
 // hint).
 func (s *Store) DisplayName(jid []byte) []byte { return s.PersonName(jid, nil) }
 
+// ChatName is how the interface names a chat, the same everywhere: a group
+// (and our own chat) by its name; anyone else as PersonName names them, the
+// name saved in the address book first. A one-to-one chat's own name is
+// often the one its owner chose, so it never comes before the saved one.
+func (s *Store) ChatName(ch Chat) []byte {
+	if ch.Group() || bytes.Equal(ch.ID(), s.Me.ID()) {
+		if n := ch.Name(); len(n) > 0 {
+			return n
+		}
+	}
+	return s.DisplayName(ch.ID())
+}
+
 // PersonName is how the interface names a person (zf:src/app.rs:2547):
 // the address-book name first, as WhatsApp does; else the name they chose
 // (the contact's profile name, or hint, the profile name a message

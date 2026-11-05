@@ -424,9 +424,7 @@ func (h *hub) caller() []byte {
 // chatTitle is how the interface names a chat: its name, else its person's.
 func chatTitle(a *state.Account, jid []byte) []byte {
 	if ref := a.Model.Chats.Find(jid); ref != 0 {
-		if n := a.Model.Chats.At(ref).Name(); len(n) > 0 {
-			return n
-		}
+		return a.Model.ChatName(a.Model.Chats.At(ref))
 	}
 	return a.Model.DisplayName(jid)
 }

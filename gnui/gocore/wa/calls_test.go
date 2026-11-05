@@ -108,7 +108,7 @@ func TestACallRingsIsFiledAndListed(t *testing.T) {
 		{Tag: "relay", Attrs: waBinary.Attrs{"uuid": "u"}},
 	}}
 	h.inject(&events.CallOffer{BasicCallMeta: types.BasicCallMeta{From: from, CallCreator: from, CallID: "00CA11",
-		StanzaID: "S1", Timestamp: t0}, Data: offer})
+		StanzaID: "S1", Timestamp: time.Now()}, Data: offer})
 	h.settle()
 	ring := only(h.take(), abi.EventTagCall)
 	if len(ring) != 1 || ring[0].Call.Update.Phase != abi.CallPhaseIncoming || string(ring[0].Call.Update.Chat) != peer.String() {

@@ -335,10 +335,7 @@ func Bubble(e *screen.Env, a *state.Account, ch model.Chat, m model.Message, i i
 	c.NextSize(ui.Children(1), ui.Children(1))
 	c.Push(c.Box(ui.DrawBackground, "bubble"))
 	if first && ch.Group() && !mine {
-		who := m.SenderName()
-		if len(who) == 0 {
-			who = a.Model.DisplayName(m.Sender())
-		}
+		who := a.Model.PersonName(m.Sender(), m.SenderName())
 		rexui.Label(k.Kit, model.S(who), rexui.LabelOpts{Style: rexui.TextSemibold, Color: rexui.Of(theme.Label2)})
 	}
 	text := model.S(m.Text())
@@ -470,9 +467,4 @@ func Stamp(ts int64, now time.Time) string {
 }
 
 // Title is a chat's name as the list writes it.
-func Title(a *state.Account, ch model.Chat) []byte {
-	if n := ch.Name(); len(n) > 0 {
-		return n
-	}
-	return a.Model.DisplayName(ch.ID())
-}
+func Title(a *state.Account, ch model.Chat) []byte { return a.Model.ChatName(ch) }

@@ -54,10 +54,7 @@ func (s *Screen) Toolbar(e *screen.Env, tb *rexui.Toolbar) {
 		}
 	}
 	tb.BeginCustom("chat-header", ui.Pct(1))
-	name := ch.Name()
-	if len(name) == 0 {
-		name = a.Model.DisplayName(ch.ID())
-	}
+	name := a.Model.ChatName(ch)
 	h := tb.Height()
 	// The name and subtitle give way to the toolbar's other items (and an
 	// open side pane's header), fading at the end, rather than run over them.

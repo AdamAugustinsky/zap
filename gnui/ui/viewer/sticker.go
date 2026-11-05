@@ -272,6 +272,9 @@ func (s *Screen) stickerStage(e *screen.Env, r screen.Rect) {
 func (s *Screen) stickerToolbar(e *screen.Env, ch model.Chat) {
 	k := e.K
 	title := model.S(ch.Name())
+	if a := s.account(); a != nil {
+		title = model.S(a.Model.ChatName(ch))
+	}
 	if title == "" {
 		title = i18n.T("Sticker")
 	}
