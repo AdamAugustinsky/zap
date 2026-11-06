@@ -371,7 +371,7 @@ func TestTheMenuBarIsUpstreams(t *testing.T) {
 	want := []struct{ title, items string }{
 		{"Zap", "About Zap|Settings…|Quit Zap"},
 		{"File", "New Chat…|Close Tab|Close Window"},
-		{"Edit", "Undo|Redo|Cut|Copy|Paste|Select All|Find…"},
+		{"Edit", "Undo|Redo|Cut|Copy|Paste|Select All|Find…|Search everything"}, // ⌘K from the composer's text view
 		{"View", "Toggle Sidebar|Split with the next tab|Close the split|Previous pane|Next pane|Move the pane left|Move the pane right|Float the chat over other apps|Space colour…|Zoom In|Zoom Out|Actual Size|Enter Full Screen"}, // Zap's split and floating chat after the sidebar
 		{"Window", "Minimize|Zoom|Show Zap"},
 		{"Help", "Keyboard Shortcuts|Zap Help"},

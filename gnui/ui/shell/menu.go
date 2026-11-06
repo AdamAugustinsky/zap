@@ -189,7 +189,10 @@ func buildModel(viewer bool) (*menu.Model, error) {
 	menus := []menu.Menu{
 		{Title: "Zap", Items: []menu.Item{item(CmdAbout), sep, item(CmdSettings), sep, item(CmdQuit)}},
 		{Title: P("menu bar", "File"), Items: []menu.Item{item(CmdNewChat), sep, item(CmdCloseTab), item(CmdCloseWindow)}},
-		{Title: P("menu bar", "Edit"), Items: []menu.Item{item(CmdUndo), item(CmdRedo), sep, item(CmdCut), item(CmdCopy), item(CmdPaste), item(CmdSelectAll), sep, item(CmdFind)}},
+		// Search everything is in the bar so that its ⌘K reaches it from the
+		// composer: while the hosted text view has the keyboard, AppKit's key
+		// equivalents are the only shortcuts that act.
+		{Title: P("menu bar", "Edit"), Items: []menu.Item{item(CmdUndo), item(CmdRedo), sep, item(CmdCut), item(CmdCopy), item(CmdPaste), item(CmdSelectAll), sep, item(CmdFind), item(CmdSpotlight)}},
 		{Title: P("menu bar", "View"), Items: []menu.Item{item(CmdToggleSidebar), sep, item(CmdSplit), item(CmdUnsplit), item(CmdPrevPane), item(CmdNextPane), item(CmdPaneLeft), item(CmdPaneRight), item(CmdFloat), sep, item(CmdSpaceColour), sep, item(zoomIn), item(zoomOut), item(actual), sep, item(CmdFullScreen)}},
 		{Title: P("menu bar", "Window"), Role: menu.MenuWindow, Items: []menu.Item{item(CmdMinimize), item(CmdZoom), sep, item(CmdShowWindow)}},
 		{Title: P("menu bar", "Help"), Role: menu.MenuHelp, Items: []menu.Item{item(CmdShortcuts), item(CmdHelp)}},
