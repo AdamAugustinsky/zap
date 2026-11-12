@@ -764,15 +764,14 @@ func (s *Screen) newest(e *screen.Env, ch model.Chat, w, h float32) {
 	id := k.BeginPress(&pr, ui.RoleButton, ui.Px(d), ui.Px(d), 0, nil)
 	// a raised surface of the theme, lighter (or darker) under the pointer
 	fill, side := r.Colors[theme.Raised]|0xFF, d
-	if pr.Hot > 0.5 {
-		fill, side = theme.MixRGBA(fill, r.Colors[theme.Label]|0xFF, 0.06), theme.Snap(d*1.05)
+	if pr.Hot > 0 {
+		fill, side = theme.MixRGBA(fill, r.Colors[theme.Label]|0xFF, 0.06*pr.Hot), theme.Snap(d*(1+0.05*pr.Hot))
 	}
 	c.NextCenter()
 	c.NextSize(ui.Px(side), ui.Px(side))
 	c.NextBG(fill)
-	c.NextRadius(side / 2)
-	c.NextShadow(ui.Shadow{OffY: e.Pt(3), Sigma: e.Pt(5), Color: theme.ColA(0x000000, theme.Lerp(0.16, 0.45, r.T))})
-	c.BoxKeyed(base.Floating|ui.DrawBackground|ui.DrawShadow, ui.KeyN(c.ParentKey(), 1), nil)
+	lift := rexui.NextSurface(k, side/2, theme.LiftToast)
+	c.BoxKeyed(base.Floating|ui.DrawBackground|lift, ui.KeyN(c.ParentKey(), 1), nil)
 	c.NextCenter()
 	k.Icon(s.icons.down, r.Colors[theme.Label])
 	k.FocusRing(pr.ID, pr.Visual, d/2)

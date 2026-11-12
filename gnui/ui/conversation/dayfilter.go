@@ -86,9 +86,8 @@ func (p *Search) calendarButton(e *screen.Env, st *searchState) {
 	} else {
 		sig = rexui.IconButton(k, p.calIc, name, rexui.IconButtonOpts{Variant: rexui.IconBorderless})
 	}
-	c := e.C()
 	e.TabStop(screen.StopChatSearchDate, sig.ID)
-	p.calAt = c.RectOf(c.KeyOf(sig.ID))
+	p.calAt = sig.ID
 	if sig.Clicked {
 		st.calendar = !st.calendar
 		if st.calendar {
@@ -162,7 +161,7 @@ func (p *Search) dayChip(e *screen.Env, st *searchState) {
 func (p *Search) calendar(e *screen.Env, st *searchState) {
 	c, k := e.C(), e.K.Kit
 	cell := e.Pt(cellPt)
-	pop := rexui.BeginPopover(k, "day filter", p.calAt, rexui.PopoverOpts{
+	pop := rexui.BeginPopoverOn(k, "day filter", p.calAt, rexui.PopoverOpts{
 		Width: cellPt*7 + 2*rexui.PopoverLook.Pad, Edge: rexui.PopoverBelow, Behavior: rexui.PopoverTransient,
 		Label: i18n.T("Filter by date"),
 	})

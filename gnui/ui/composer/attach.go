@@ -300,7 +300,7 @@ func (s *Screen) tool(e *screen.Env, a *state.Account, ch model.Chat, i int) {
 func (s *Screen) toolsMenu(e *screen.Env, a *state.Account, ch model.Chat) {
 	k := e.K
 	toolLabels(&s.toolLabels)
-	pop := rexui.BeginPopover(k.Kit, i18n.T("Attach")+"###composer tools", s.plusRect, rexui.PopoverOpts{Edge: rexui.PopoverAbove, Width: 190, Label: i18n.T("Attach")})
+	pop := rexui.BeginPopoverOn(k.Kit, i18n.T("Attach")+"###composer tools", s.plusID, rexui.PopoverOpts{Edge: rexui.PopoverAbove, Width: 190, Label: i18n.T("Attach")})
 	pick := -1
 	for i, n := range s.toolLabels {
 		k.NextWidth(ui.Pct(1))

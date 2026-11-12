@@ -38,7 +38,7 @@ func (s *Screen) boost(e *screen.Env, a *state.Account) {
 	c.NextSize(ui.Pct(1), ui.Px(k.Pt(18)))
 	c.NextFont(s.font(e, 13.5, 400))
 	c.NextTextColor(th.Colors[theme.Label2])
-	c.BoxKeyed(ui.DrawText|ui.FadeOverflowX, ui.KeyN(p.Key, 1), base.StrBytes(p.Name))
+	c.BoxKeyed(ui.DrawText, ui.KeyN(p.Key, 1), base.StrBytes(p.Name))
 	chev := s.ic.chevronRight
 	if s.boostOpen {
 		chev = s.ic.chevronDown
@@ -97,7 +97,9 @@ func (s *Screen) boost(e *screen.Env, a *state.Account) {
 		c.NextBG(col)
 		c.NextRadius(sw / 2)
 		if on {
-			c.NextBorder(th.Colors[theme.Label], th.Lines.Hairline*2)
+			// opaque: a border is laid over the fill, and a translucent
+			// ring would take the swatch's colour
+			c.NextBorder(th.Colors[theme.Label]|0xFF, th.Lines.Hairline*2)
 			c.NextSemState(ui.SemSelected)
 		} else if ps.Hot > 0 {
 			c.NextBorder(theme.WithAlpha(th.Colors[theme.Label], 0.5), th.Lines.Hairline)

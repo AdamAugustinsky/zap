@@ -253,13 +253,11 @@ func (p *Pip) bubble(e *screen.Env, a *state.Account, ch model.Chat) {
 			fill = theme.MixRGBA(fill, r.Colors[theme.Label]|0xFF, 0.12*cs.Hot)
 		}
 		c.NextBG(fill)
-		c.NextBorder(r.Colors[theme.Separator], r.Lines.Hairline)
-		c.NextRadius(x / 2)
-		c.NextShadow(ui.Shadow{OffY: e.Pt(1), Sigma: e.Pt(3), Color: 0x00000040})
+		lift := rexui.NextSurface(k.Kit, x/2, theme.LiftControl)
 		c.NextAxis(ui.AxisX)
 		c.NextCross(ui.CrossCenter)
 		c.NextJustify(ui.JustifyCenter)
-		k.BeginPress(&cs, ui.RoleButton, ui.Px(x), ui.Px(x), ui.DrawBackground|ui.DrawBorder|base.Floating, nil)
+		k.BeginPress(&cs, ui.RoleButton, ui.Px(x), ui.Px(x), ui.DrawBackground|lift|base.Floating, nil)
 		k.Icon(p.xsmall, r.Colors[theme.Label])
 		if k.EndPress(&cs).Clicked {
 			st.ClosePip()

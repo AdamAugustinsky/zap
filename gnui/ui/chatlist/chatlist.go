@@ -776,7 +776,7 @@ func (s *Screen) Toolbar(e *screen.Env, tb *rexui.Toolbar) {
 	c.NextTextColor(rexui.ToolbarLook.Title.RGBA(r))
 	c.NextRole(ui.RoleLabel)
 	c.NextSemName(title)
-	c.BoxKeyed(ui.DrawText|ui.FadeOverflowX|base.Floating, ui.HashString(c.ParentKey(), "title"), base.StrBytes(title))
+	c.BoxKeyed(ui.DrawText|base.Floating, ui.HashString(c.ParentKey(), "title"), base.StrBytes(title))
 	tb.EndCustom()
 	if calls || a == nil || a.Mode == state.ListStarred {
 		return

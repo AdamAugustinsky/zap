@@ -278,7 +278,9 @@ func (s *Screen) swatchOf(e *screenEnv, hex, label string, selected bool, id str
 	c.NextBG(parseColor(k, hex))
 	flags := ui.DrawBackground
 	if selected {
-		c.NextBorder(k.Theme().Colors[theme.Label], k.Pt(2))
+		// opaque: a border is laid over the fill, and a translucent ring
+		// would take the swatch's colour
+		c.NextBorder(k.Theme().Colors[theme.Label]|0xFF, k.Pt(2))
 		flags |= ui.DrawBorder
 	}
 	k.BeginPress(&p, ui.RoleButton, ui.Px(side), ui.Px(side), flags, nil)
