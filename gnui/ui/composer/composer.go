@@ -108,6 +108,7 @@ type Screen struct {
 	tools      bool // the drawn plus menu is open
 	toolsKey   ui.Key
 	plusRect   [4]float32
+	plusID     ui.ID // the plus button, which the drawn tools menu hangs on
 	toolLabels [4]string
 
 	pendingPicks []pick
@@ -434,7 +435,7 @@ func (s *Screen) field(e *screen.Env, a *state.Account, ch model.Chat) {
 		c.NextSemState(semOn(s.tools))
 		plus := toolButton(k.Kit, i18n.T("Attach"), s.ic.plus, s.tools)
 		e.TabStop(screen.StopAttach, plus.ID)
-		s.plusRect = c.RectOf(c.KeyOf(plus.ID))
+		s.plusRect, s.plusID = c.RectOf(c.KeyOf(plus.ID)), plus.ID
 		toolLabels(&s.toolLabels)
 		if plus.Clicked {
 			if e.S.Panes.Picker != state.PickerNone {
@@ -506,7 +507,7 @@ func (s *Screen) resend(k *base.Kit) {
 // its place.
 func circleButton(k *base.Kit, name string, ic icon.ID, rc *rexui.ButtonRecipe) base.Signal {
 	c, r := k.Context(), k.Theme()
-	p := k.PressState(name, base.HoverOff)
+	p := k.PressState(name, base.HoverAuto)
 	fill, fg, _ := rc.Colors(r, p.Visual)
 	side := rexui.ComposerLook.SendSize * k.Scale()
 	c.NextBG(fill)

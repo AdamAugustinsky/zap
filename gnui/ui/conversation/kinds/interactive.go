@@ -135,7 +135,7 @@ func (b *blk) button(btn *abi.InteractiveButton, i int, enabled, sends, pending,
 	k.BeginDisabled(!enabled)
 	k.BeginPress(&pr, ui.RoleButton, ui.Px(w), ui.Px(g.h), 0, nil)
 	if enabled && (pr.Hot > 0.01 || pr.Down > 0.01) {
-		b.fillBox(n, 0, 0, w, g.h, 0, theme.WithAlpha(b.hoverFill(pr.Down > 0.5), max(pr.Hot, pr.Down)))
+		b.fillBox(n, 0, 0, w, g.h, 0, theme.WithAlpha(b.col(theme.Label), (0.06+0.06*pr.Down)*max(pr.Hot, pr.Down)))
 	}
 	b.fillBox(n+1, 0, 0, w, 1, 0, b.hairline())
 	inset := float32(0)

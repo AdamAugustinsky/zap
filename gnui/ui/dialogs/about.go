@@ -118,7 +118,15 @@ func (s *Screen) shortcuts(e *screenEnv, dl *rexui.Dialog) {
 		cols = 2
 	}
 	per := (len(list) + cols - 1) / cols
-	scrollH := max(h-190, 120)
+	// the window's height less the dialog's own rows and margins: the title,
+	// the switch and the action row. In one column the switch's label takes
+	// a second line in the longest languages, which the fixed 190 left 3 px
+	// short of at 480 pt wide.
+	chrome := float32(190)
+	if !wide {
+		chrome = 200
+	}
+	scrollH := max(h-chrome, 120)
 	k.NextHeight(k.Fixed(scrollH))
 	v := k.BeginScroll("shortcuts", &s.scroll, widget.ScrollVertical)
 	k.NextGap(shortcutsGutter)

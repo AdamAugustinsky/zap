@@ -364,8 +364,8 @@ type Search struct {
 	nextIc  icon.ID
 	calIc   icon.ID
 	findIc  icon.ID
-	ticks   tickIcons  // our hits' delivery marks
-	calAt   [4]float32 // the calendar button, where the calendar hangs
+	ticks   tickIcons // our hits' delivery marks
+	calAt   ui.ID     // the calendar button, where the calendar hangs
 	// the weekday headings, for headsLoc
 	heads    [7]string
 	headsLoc i18n.Locale

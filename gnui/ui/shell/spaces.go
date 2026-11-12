@@ -278,10 +278,8 @@ func (sh *Shell) tintPopover() {
 	c.NextGap(e.Pt(theme.Space2))
 	c.NextPadding(pad, pad, pad, pad)
 	c.NextBG(th.Colors[theme.Raised] | 0xFF)
-	c.NextBorder(th.Colors[theme.Separator], th.Lines.Hairline)
-	c.NextRadius(e.K.Theme().Px.RadiusLarge)
-	c.NextShadow(ui.Shadow{OffY: e.Pt(4), Sigma: e.Pt(12), Color: 0x00000040})
-	c.Push(c.Box(ui.DrawBackground|ui.DrawBorder, "panel"))
+	lift := rexui.NextSurface(e.K.Kit, e.K.Theme().Px.RadiusLarge, theme.LiftMenu)
+	c.Push(c.Box(ui.DrawBackground|lift, "panel"))
 
 	if mode, ok := sh.modeRow(cur.Mode, fw); ok {
 		t := cur
@@ -491,7 +489,7 @@ func (sh *Shell) tintField(cur state.SpaceTheme, w, h float32) (state.SpaceTheme
 		c.NextRadius(d / 2)
 		c.NextBorder(0xFFFFFFFF, ring)
 		c.NextShadow(ui.Shadow{OffY: e.Pt(1), Sigma: e.Pt(3), Color: 0x00000040})
-		c.Box(ui.DrawBackground|ui.DrawBorder, c.Fmt().Str("dot ").Int(i).String())
+		c.Box(ui.DrawBackground|ui.DrawBorder|ui.DrawShadow, c.Fmt().Str("dot ").Int(i).String())
 	}
 
 	t, changed := cur, false

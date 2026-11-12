@@ -72,7 +72,7 @@ func (s *Screen) mediaRow(e *screen.Env, a *state.Account, contentPt float32) {
 	c.NextSize(ui.Pct(1), ui.Px(k.Pt(18)))
 	c.NextFont(s.font(e, 13.5, 400))
 	c.NextTextColor(r.Colors[theme.Label2])
-	c.BoxKeyed(ui.DrawText|ui.FadeOverflowX, ui.KeyN(p.Key, 1), base.StrBytes(p.Name))
+	c.BoxKeyed(ui.DrawText, ui.KeyN(p.Key, 1), base.StrBytes(p.Name))
 	if s.sh.loaded {
 		total := s.sh.counts[0] + s.sh.counts[1] + s.sh.counts[2]
 		f := c.Fmt().Int(total)
@@ -264,7 +264,7 @@ func (s *Screen) memberRow(e *screen.Env, a *state.Account, m *member, rowPx flo
 	c.NextSize(ui.Pct(1), ui.Px(k.Pt(18)))
 	c.NextFont(s.font(e, 13, 400))
 	c.NextTextColor(th.Colors[theme.Label])
-	c.BoxKeyed(ui.DrawText|ui.FadeOverflowX, ui.KeyN(p.Key, 1), base.StrBytes(name))
+	c.BoxKeyed(ui.DrawText, ui.KeyN(p.Key, 1), base.StrBytes(name))
 	if k.EndPress(&p).Clicked && !m.me {
 		e.S.Panes.SetInfo(jid)
 		e.S.Touch()
@@ -456,11 +456,11 @@ func (s *Screen) itemRow(e *screen.Env, label string, title, detail []byte, tile
 	c.NextSize(ui.Pct(1), ui.Px(k.Pt(18)))
 	c.NextFont(s.font(e, 13.5, 500))
 	c.NextTextColor(th.Colors[theme.Label])
-	c.BoxKeyed(ui.DrawText|ui.FadeOverflowX, ui.KeyN(p.Key, 3), title)
+	c.BoxKeyed(ui.DrawText, ui.KeyN(p.Key, 3), title)
 	c.NextSize(ui.Pct(1), ui.Px(k.Pt(16)))
 	c.NextFont(s.font(e, 12, 400))
 	c.NextTextColor(th.Colors[theme.Label2])
-	c.BoxKeyed(ui.DrawText|ui.FadeOverflowX, ui.KeyN(p.Key, 4), detail)
+	c.BoxKeyed(ui.DrawText, ui.KeyN(p.Key, 4), detail)
 	c.Pop()
 	return k.EndPress(&p).Clicked
 }

@@ -218,7 +218,7 @@ func (s *Screen) chatRow(e *screen.Env, in *rowInfo, selected, typing bool, typi
 	c.NextSize(ui.Pct(1), ui.Px(ts.Line))
 	c.NextFont(ts.Font)
 	c.NextTextColor(titleC)
-	c.BoxKeyed(ui.DrawText|ui.FadeOverflowX, ui.KeyN(p.Key, 22), base.StrBytes(in.title))
+	c.BoxKeyed(ui.DrawText, ui.KeyN(p.Key, 22), base.StrBytes(in.title))
 	if len(in.when) > 0 {
 		tm := &r.Styles[theme.StyleCaption1]
 		c.NextSize(ui.TextSize(0), ui.Px(tm.Line))

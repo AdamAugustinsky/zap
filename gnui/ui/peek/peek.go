@@ -146,12 +146,10 @@ func (s *Screen) Build(e *screen.Env) {
 	c.NextOpacity(min(t*4, 1))
 	theme.At(c, fx, fy, fw, fh)
 	c.NextBG(r.Colors[theme.Raised] | 0xFF)
-	c.NextRadius(e.Pt(theme.WindowRadius))
-	c.NextBorder(r.Colors[theme.Separator], r.Lines.Hairline)
-	c.NextShadow(ui.Shadow{OffY: e.Pt(16), Sigma: e.Pt(32), Color: 0x00000048})
+	lift := rexui.NextSurface(e.K.Kit, e.Pt(theme.WindowRadius), theme.LiftDialog)
 	c.NextRole(ui.RoleDialog)
 	c.NextSemName(i18n.Format(i18n.T("Peek: {chat}"), "{chat}", model.S(chatview.Title(a, ch))))
-	c.Push(c.Box(base.Floating|ui.DrawBackground|ui.DrawBorder|ui.Clickable|ui.Clip, "peek"))
+	c.Push(c.Box(base.Floating|ui.DrawBackground|lift|ui.Clickable|ui.Clip, "peek"))
 	// the content keeps the landed size while the panel grows round it (the
 	// motion rules' rule 4: never animate what reflows text), and shows as
 	// it nears its place
@@ -288,10 +286,8 @@ func (v *view) round(e *screen.Env, id icon.ID, label string, d float32) bool {
 	r := k.Theme()
 	c.NextSize(ui.Px(d), ui.Px(d))
 	c.NextBG(r.Colors[theme.Raised] | 0xFF)
-	c.NextRadius(d / 2)
-	c.NextBorder(r.Colors[theme.Separator], r.Lines.Hairline)
-	c.NextShadow(ui.Shadow{OffY: e.Pt(2), Sigma: e.Pt(6), Color: 0x00000026})
-	c.Push(c.Box(ui.DrawBackground|ui.DrawBorder, c.Fmt().Str("peek side ").Str(label).String()))
+	lift := rexui.NextSurface(k.Kit, d/2, theme.LiftToast)
+	c.Push(c.Box(ui.DrawBackground|lift, c.Fmt().Str("peek side ").Str(label).String()))
 	k.NextSize(ui.Px(d), ui.Px(d))
 	hit := rexui.IconButton(k.Kit, id, label, rexui.IconButtonOpts{Variant: rexui.IconBorderless}).Clicked
 	c.Pop()

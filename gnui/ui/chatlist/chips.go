@@ -298,7 +298,7 @@ func (s *Screen) chip(e *screen.Env, name string, count int, on, dotted bool, do
 	c, r := k.Context(), k.Theme()
 	sc := k.Scale()
 	st := &r.Sizes[theme.SizeSmall]
-	tg := k.ToggleBool(name, &on, base.HoverOff)
+	tg := k.ToggleBool(name, &on, base.HoverAuto)
 	fill, fg, _ := rexui.ButtonRecipes[rexui.ButtonDefault].Colors(r, tg.Visual)
 	if on {
 		// Rex's quiet tint, the open chat's row's, in place of the accent
