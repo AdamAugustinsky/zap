@@ -429,12 +429,21 @@ func (s *Screen) itemRow(e *screen.Env, label string, title, detail []byte, tile
 	th := k.Theme()
 	rowPx := k.Pt(docPt)
 	p := k.PressState(label, base.HoverOn)
+	// the row under the pointer, and one pressed, lift off the pane the way a
+	// chat row does: a rounded block inset from the pane's sides, which keeps
+	// the tile on the pane's margin
+	pad := k.Pt(8)
+	inset := k.Pt(ztheme.T.InfoMargin) - pad
+	c.NextPadding(inset, 0, inset, 0)
+	k.BeginPress(&p, ui.RoleButton, ui.Pct(1), ui.Px(rowPx), 0, nil)
 	c.NextAxis(ui.AxisX)
 	c.NextCross(ui.CrossCenter)
 	c.NextGap(k.Pt(12))
-	c.NextPadding(k.Pt(ztheme.T.InfoMargin), 0, k.Pt(ztheme.T.InfoMargin), 0)
-	c.NextBG(theme.WithAlpha(th.Colors[theme.Label], 0.06*p.Hot))
-	k.BeginPress(&p, ui.RoleButton, ui.Pct(1), ui.Px(rowPx), 0, nil)
+	c.NextPadding(pad, 0, pad, 0)
+	c.NextRadius(theme.Snap(rexui.ChatRowLook.Radius * k.Scale()))
+	c.NextBG(theme.WithAlpha(th.Colors[theme.Label], ztheme.T.RowHover*p.Hot+ztheme.T.RowPress*p.Down))
+	c.NextSize(ui.Pct(1), ui.Pct(1))
+	c.Push(c.BoxKeyed(ui.DrawBackground, ui.KeyN(p.Key, 5), nil))
 	d := k.Pt(40)
 	c.NextSize(ui.Px(d), ui.Px(d))
 	c.NextBG(th.Colors[theme.Fill2])
@@ -461,6 +470,7 @@ func (s *Screen) itemRow(e *screen.Env, label string, title, detail []byte, tile
 	c.NextFont(s.font(e, 12, 400))
 	c.NextTextColor(th.Colors[theme.Label2])
 	c.BoxKeyed(ui.DrawText, ui.KeyN(p.Key, 4), detail)
+	c.Pop()
 	c.Pop()
 	return k.EndPress(&p).Clicked
 }
