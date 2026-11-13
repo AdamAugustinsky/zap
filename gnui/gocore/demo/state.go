@@ -145,6 +145,10 @@ func (s *state) input(in input) {
 		s.emitContacts()
 		return
 	}
+	if in.ask != nil {
+		in.ask(s)
+		return
+	}
 	cmd := in.cmd
 	switch cmd.Tag {
 	case abi.CommandTagDemoPanic:

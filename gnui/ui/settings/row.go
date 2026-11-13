@@ -7,6 +7,7 @@ import (
 	"gonativeui/theme"
 	"gonativeui/ui"
 
+	"zapfast/agent"
 	"zapfast/ui/screen"
 )
 
@@ -32,6 +33,10 @@ func (s *Screen) exists(e *screen.Env, d *rowDef) bool {
 		return a != nil
 	case rUpdateFlow:
 		return s.up.Snapshot().Release.Version != ""
+	case rAIConnect, rAIRunner, rAICap, rAIActivity:
+		return e.S.Settings.AIAccess
+	case rAICommand:
+		return e.S.Settings.AIAccess && e.S.Settings.AIRunner.Kind == agent.RunnerCustom
 	}
 	if d.id >= rPriv0 && d.id <= rPriv6 {
 		return a != nil && s.info(a).privacy.has(d.id-rPriv0)

@@ -5266,3 +5266,271 @@ msgstr "Velocità di riproduzione"
 #: gnui/ui (Zap)
 msgid "Mute notifications"
 msgstr "Silenzia notifiche"
+
+#: gnui (AI access)
+msgid "AI access"
+msgstr "Accesso IA"
+
+#: gnui (AI access)
+msgid "AI access could not start"
+msgstr "Impossibile avviare l’accesso IA"
+
+#: gnui (AI access)
+msgid "AI access is turned off in Settings, so no agent can use this chat now."
+msgstr "L’accesso IA è disattivato nelle Impostazioni, quindi ora nessun agente può usare questa chat."
+
+#: gnui (AI access)
+msgid "Agent to start"
+msgstr "Agente da avviare"
+
+#: gnui (AI access)
+msgid "An AI agent you connect in Settings sees only the chats you turn this on for."
+msgstr "Un agente IA che colleghi nelle Impostazioni vede solo le chat per cui attivi questa opzione."
+
+#: gnui (AI access)
+msgid "An agent"
+msgstr "Un agente"
+
+#: gnui (AI access)
+msgid "An agent you connect reads only the chats you turn this on for, and answers only where you allow it. What it reads there goes to that agent and the company that runs it."
+msgstr "Un agente che colleghi legge solo le chat per cui attivi questa opzione e risponde solo dove lo consenti. Ciò che legge lì arriva a quell’agente e all’azienda che lo gestisce."
+
+#: gnui (AI access)
+msgid "Ask me before each reply"
+msgstr "Chiedimi prima di ogni risposta"
+
+#: gnui (AI access)
+msgid "Chats with AI access"
+msgstr "Chat con accesso IA"
+
+#: gnui (AI access)
+msgid "Connect an agent"
+msgstr "Collega un agente"
+
+#: gnui (AI access)
+msgid "Copy command"
+msgstr "Copia comando"
+
+#: gnui (AI access)
+msgid "Custom command"
+msgstr "Comando personalizzato"
+
+#: gnui (AI access)
+msgid "Each reply waits above the message field until you send or discard it."
+msgstr "Ogni risposta attende sopra il campo del messaggio finché non la invii o la scarti."
+
+#: gnui (AI access)
+msgid "Instructions for the agent"
+msgstr "Istruzioni per l’agente"
+
+#: gnui (AI access)
+msgid "Instructions…"
+msgstr "Istruzioni…"
+
+#: gnui (AI access)
+msgid "Let AI agents use chosen chats"
+msgstr "Consenti agli agenti IA di usare le chat scelte"
+
+#: gnui (AI access)
+msgid "Locked, so no agent can use it"
+msgstr "Bloccata, quindi nessun agente può usarla"
+
+#: gnui (AI access)
+msgid "No agent is chosen yet. Choose one in Settings."
+msgstr "Nessun agente ancora scelto. Scegline uno nelle Impostazioni."
+
+#: gnui (AI access)
+msgid "No chat has AI access. Right-click a chat and choose AI access."
+msgstr "Nessuna chat ha l’accesso IA. Fai clic destro su una chat e scegli Accesso IA."
+
+#: gnui (AI access)
+msgid "Not sent yet"
+msgstr "Non ancora inviata"
+
+#: gnui (AI access)
+msgid "Nothing yet."
+msgstr "Ancora niente."
+
+#: gnui (AI access)
+msgid "Open Settings"
+msgstr "Apri Impostazioni"
+
+#: gnui (AI access)
+msgid "Read and reply"
+msgstr "Leggi e rispondi"
+
+#: gnui (AI access)
+msgid "Read only"
+msgstr "Sola lettura"
+
+#: gnui (AI access)
+msgid "Recent activity"
+msgstr "Attività recente"
+
+#: gnui (AI access)
+msgid "Remove all"
+msgstr "Rimuovi tutte"
+
+#: gnui (AI access)
+msgid "Replies go out from your account without you seeing them first."
+msgstr "Le risposte partono dal tuo account senza che tu le veda prima."
+
+#: gnui (AI access)
+msgid "Replies per hour"
+msgstr "Risposte all’ora"
+
+#: gnui (AI access)
+msgid "Reply with approval"
+msgstr "Rispondi con approvazione"
+
+#: gnui (AI access)
+msgid "Run one of these once in a terminal. The agent then finds Zap's tools by itself, while Zap is open."
+msgstr "Esegui uno di questi comandi una volta in un terminale. Poi l’agente trova da solo gli strumenti di Zap, finché Zap è aperto."
+
+#: gnui (AI access)
+msgid "Runs in your shell with the prompt on its standard input. Zap cannot limit what it does: give it nothing but Zap's tools."
+msgstr "Viene eseguito nella tua shell con il prompt sullo standard input. Zap non può limitare ciò che fa: non dargli altro che gli strumenti di Zap."
+
+#: gnui (AI access)
+msgid "Start my agent when a message arrives"
+msgstr "Avvia il mio agente quando arriva un messaggio"
+
+#: gnui (AI access)
+msgid "Started when a message arrives in a chat that asks for it. Claude Code runs with Zap's tools only: no files, no shell, no web."
+msgstr "Avviato quando arriva un messaggio in una chat che lo richiede. Claude Code funziona solo con gli strumenti di Zap: niente file, niente shell, niente web."
+
+#: gnui (AI access)
+msgid "The agent's last report"
+msgstr "Ultimo resoconto dell’agente"
+
+#: gnui (AI access)
+msgid "The agent's last run failed"
+msgstr "L’ultima esecuzione dell’agente non è riuscita"
+
+#: gnui (AI access)
+msgid "The most an agent sends to one chat in an hour without asking you."
+msgstr "Il massimo che un agente invia a una chat in un’ora senza chiedertelo."
+
+#: gnui (AI access)
+msgid "The reply could not be sent"
+msgstr "Impossibile inviare la risposta"
+
+#: gnui (AI access)
+msgid "This reply is longer than what is shown. Edit puts all of it in the message field."
+msgstr "Questa risposta è più lunga di quanto mostrato. Modifica la mette per intero nel campo del messaggio."
+
+#: gnui (AI access)
+msgid "What an AI agent may do in this chat"
+msgstr "Cosa può fare un agente IA in questa chat"
+
+#: gnui (AI access)
+msgid "What should it do in this chat?"
+msgstr "Cosa deve fare in questa chat?"
+
+#: gnui (AI access)
+msgid "Your agent has a reply ready. Open the chat to send or discard it."
+msgstr "Il tuo agente ha una risposta pronta. Apri la chat per inviarla o scartarla."
+
+#: gnui (AI access)
+msgid "Your agent is working on this chat…"
+msgstr "Il tuo agente sta lavorando a questa chat…"
+
+#: gnui (AI access)
+msgid "Your agent wrote this reply"
+msgstr "Il tuo agente ha scritto questa risposta"
+
+#. Translators: what an AI agent's run did, after the agent's name in the activity list.
+#: gnui (AI access)
+msgid "failed"
+msgstr "non riuscito"
+
+#. Translators: what an AI agent's run did, after the agent's name in the activity list.
+#: gnui (AI access)
+msgid "finished"
+msgstr "terminato"
+
+#. Translators: what an AI agent did, after its name in the activity list.
+#: gnui (AI access)
+msgid "proposed a reply"
+msgstr "ha proposto una risposta"
+
+#. Translators: what an AI agent did, after its name in the activity list. {} is a number.
+#: gnui (AI access)
+msgid "read {} messages"
+msgstr "ha letto {} messaggi"
+
+#. Translators: what an AI agent did, after its name in the activity list.
+#: gnui (AI access)
+msgid "searched the chat"
+msgstr "ha cercato nella chat"
+
+#. Translators: what an AI agent did, after its name in the activity list.
+#: gnui (AI access)
+msgid "sent a reply"
+msgstr "ha inviato una risposta"
+
+#. Translators: after the chat's access in the list of chats with AI access, as in "Read only · starts your agent".
+#: gnui (AI access)
+msgid "starts your agent"
+msgstr "avvia il tuo agente"
+
+#: gnui (AI access)
+msgid "was not started: too many runs this hour"
+msgstr "non avviato: troppe esecuzioni in quest’ora"
+
+#: gnui (AI access)
+msgid "was started by a message"
+msgstr "avviato da un messaggio"
+
+#: gnui (AI access)
+msgid "was stopped by the hourly limit"
+msgstr "fermato dal limite orario"
+
+#: gnui (AI access)
+msgid "you discarded its reply"
+msgstr "hai scartato la sua risposta"
+
+#: gnui (AI access)
+msgid "you rewrote its reply"
+msgstr "hai riscritto la sua risposta"
+
+#: gnui (AI access)
+msgid "you sent its reply"
+msgstr "hai inviato la sua risposta"
+
+#. Translators: {} is how many more replies of an AI agent wait for the person's answer.
+#: gnui (AI access)
+msgid "{} more waiting"
+msgstr "altre {} in attesa"
+
+#. Translators: no AI agent is started when a message arrives.
+#: gnui (AI access)
+msgctxt "agent"
+msgid "None"
+msgstr "Nessuno"
+
+#. Translators: a verb. What an AI agent may do in a chat: read it, and no more.
+#: gnui (AI access)
+msgctxt "AI access"
+msgid "Read"
+msgstr "Leggi"
+
+#. Translators: a name. Do not translate.
+#: gnui (AI access)
+msgid "Claude Code"
+msgstr "Claude Code"
+
+#. Translators: a name. Do not translate.
+#: gnui (AI access)
+msgid "Codex"
+msgstr "Codex"
+
+#. Translators: a name. Do not translate.
+#: gnui (AI access)
+msgid "opencode"
+msgstr "opencode"
+
+#. Translators: a name. Do not translate.
+#: gnui (AI access)
+msgid "MCP"
+msgstr "MCP"

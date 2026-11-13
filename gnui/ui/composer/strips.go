@@ -50,11 +50,12 @@ func (s *Screen) closeButton(e *screen.Env, name string) bool {
 	return rexui.IconButton(e.K.Kit, s.ic.xmark, name, rexui.IconButtonOpts{Variant: rexui.IconBorderless, Size: theme.SizeSmall}).Clicked
 }
 
-// strips builds a refused voice message's strip, and the edit strip or the
-// reply strip, above the field.
+// strips builds the strip of an agent's waiting reply (ai.go), a refused
+// voice message's, and the edit strip or the reply strip, above the field.
 func (s *Screen) strips(e *screen.Env, a *state.Account) {
 	k := e.K
 	accent := rexui.Of(theme.Accent)
+	s.proposal(e, a)
 	if s.voice.unsentHere(s) {
 		s.voice.unsentStrip(s, e)
 	}

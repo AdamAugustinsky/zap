@@ -256,7 +256,7 @@ func TestNativeMenuHasUpstreamsItemsInOrder(t *testing.T) {
 	// Zap's Float first (no chat is open to split beside), then WhatsApp's
 	// groups, the mute lengths in a submenu and deleting set apart
 	want := []string{"Float over other apps", "-", "Mark as read", "Pin to top", "Add to favorites", "Archive", "-", "Mute notifications",
-		"Notification sound", "Folder", "Labels", "Lock chat", "-", "Copy number", "Info", "-", "Delete chat"}
+		"Notification sound", "Folder", "Labels", "AI access", "Lock chat", "-", "Copy number", "Info", "-", "Delete chat"}
 	if got := titles(req.Items); !slices.Equal(got, want) {
 		t.Fatalf("items\n got %v\nwant %v", got, want)
 	}

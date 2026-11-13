@@ -242,6 +242,7 @@ var (
 	_ core.CallNumbers  = (*goConn)(nil)
 	_ core.Frames       = (*goConn)(nil)
 	_ core.VoiceDecoder = (*goConn)(nil)
+	_ core.History      = (*goConn)(nil)
 )
 
 func newGoConn(c *gocore.Conn, eng *wa.Engine) *goConn {

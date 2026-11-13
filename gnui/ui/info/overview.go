@@ -144,6 +144,9 @@ func (s *Screen) overview(e *screen.Env, a *state.Account, r screen.Rect) {
 	if s.allowed(a) {
 		s.mediaRow(e, a, contentPt)
 	}
+	if s.v.hasChat && !s.v.locked && !s.v.channel {
+		s.ai(e, a)
+	}
 	if s.v.hasChat {
 		s.boost(e, a)
 	}

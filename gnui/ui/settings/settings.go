@@ -48,6 +48,7 @@ type Screen struct {
 	// The text fields that are not the search; the locked chats code is
 	// masked.
 	proxy, giphy ui.TextBuffer
+	ai           aiSettings
 	chatLock     ui.TextBuffer
 	search       struct { // the search hint, measured
 		loc   i18n.Locale
@@ -218,6 +219,7 @@ func (s *Screen) refresh(e *screen.Env) {
 		s.seeded = true
 		s.proxy.SetBytes(e.S.Settings.Proxy)
 		s.giphy.SetBytes(e.S.Settings.GiphyKey)
+		s.ai.init(&e.S.Settings)
 	}
 	if e.S.Req.FindSettings {
 		e.S.Req.FindSettings = false

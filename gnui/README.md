@@ -38,7 +38,8 @@ launch tour) are still to be measured on a live screen.
 | `format/` | upstream's util.rs text helpers the screens share: phone numbers, stamps, dates, durations, the 12/24-hour clock |
 | `lockhash/` | the app lock's and locked chats' password verifiers, the only implementation |
 | `theme/`, `sys/`, `logic/` | upstream's themes on Rex; the process's services; upstream's reducers |
-| `cmd/zapfast/` | the app: `app.Main`, the core opened async (`engine.go`), `screens.go` wires every screen |
+| `agent/` | AI access: the door through which an AI agent the user connected reads and answers the chats they chose (a Unix socket in the data folder), the runs a message starts, and the MCP server (`agent/mcp/`); `docs/ai-access.md` |
+| `cmd/zapfast/` | the app: `app.Main`, the core opened async (`engine.go`), `screens.go` wires every screen; `zapfast mcp` is the MCP server for AI agents (`agent.go`) |
 | `i18n/` | the strings and their translations, generated from `i18n/po/*.po` (`go generate ./i18n`) |
 | `third_party/whatsmeow/` | whatsmeow with Zap's call patch (`ZAP-PATCH.md`) |
 | `internal/procinfo/` | exec-relative times for the startup numbers |

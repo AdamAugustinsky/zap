@@ -94,6 +94,8 @@ func (e *Engine) Stop() {}
 type input struct {
 	start bool
 	cmd   *gocore.Command
+	// ask reads the demo's state for a caller that waits (history_read.go).
+	ask func(s *state)
 }
 
 func (e *Engine) put(in input) {

@@ -4,6 +4,7 @@ import (
 	"strings"
 	"time"
 
+	"zapfast/agent"
 	"zapfast/lockhash"
 )
 
@@ -214,6 +215,12 @@ type Settings struct {
 	HasWindowPos      bool
 	WindowMaximized   bool
 	StartAtLogin      bool // Settings → Open at login: the system's, not saved here
+	// AIAccess opens the door for AI agents (ai.go): off, no chat's grant
+	// counts. AICap is how many replies an hour an agent may send to one
+	// chat on its own (0: agent.DefaultCap); AIRunner the agent a chat wakes.
+	AIAccess bool
+	AICap    int
+	AIRunner agent.Runner
 
 	CustomTitlebar   bool   // Windows and Linux only upstream; kept for the file
 	CustomThemeCache []byte // the custom theme's palette, as the file holds it (raw JSON)
@@ -289,6 +296,8 @@ type AccountSettings struct {
 	SpaceTintLock  bool      // its colours move together (SpaceTheme.Lock)
 	// Boosts are the chats' boosts (boosts.go), by JID.
 	Boosts map[string]ChatBoost
+	// AI are the chats AI agents may use (ai.go), by JID.
+	AI map[string]agent.Grant
 }
 
 // DefaultAccountSettings are upstream's defaults (zf:src/settings.rs:852).

@@ -102,6 +102,7 @@ func (s *State) finishRemoved(a *Account) {
 		s.clearAccountUI()
 	}
 	s.forgetAccount(a)
+	s.forgetAgent(a)
 	s.accountGone(a.Serial)
 	conn, dirs, keys := a.Conn, s.accountDirs(a.ID), s.ArchiveKeys
 	a.Conn = nil

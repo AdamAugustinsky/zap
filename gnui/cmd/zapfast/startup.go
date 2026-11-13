@@ -56,6 +56,9 @@ func terminate(s *state.State, lg *sys.Log) func() {
 // a core still opening is waited for, and one that failed to open (a nil
 // *Core, which must not become a non-nil Conn) is left alone.
 func closeCores(s *state.State) {
+	if s.Agent != nil {
+		s.Agent.Close() // first: no agent reads a core that is closing
+	}
 	for _, a := range s.Accounts {
 		if a.Conn == nil && a.Pending != nil && a.Pending.Wait(5*time.Second) {
 			if c, err := a.Pending.Conn(); err == nil && c != nil {

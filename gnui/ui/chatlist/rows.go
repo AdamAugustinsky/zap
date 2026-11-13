@@ -25,6 +25,7 @@ type icons struct {
 	pin, muted, mention, clock, failed, timer, tick icon.ID
 	newChat, sidebar, back, plus, pencil, trash     icon.ID
 	more                                            icon.ID // the More chip's chevron
+	ai                                              icon.ID // the chat has AI access
 	// empty-state glyphs (36 pt)
 	eChat, eStar, eLock, eSearch, eArchive icon.ID
 }
@@ -39,6 +40,7 @@ func (ic *icons) add(k *base.Kit, tb float32) {
 	}{
 		{&ic.pin, ztheme.SmallIcon("pin")},
 		{&ic.muted, ztheme.SmallIcon("bell-off")},
+		{&ic.ai, ztheme.SmallIcon("sparkles")},
 		{&ic.mention, ztheme.SmallIcon("at-sign")},
 		{&ic.clock, ztheme.TickIcon("clock")},
 		{&ic.failed, ztheme.TickIcon("circle-alert")},
@@ -92,6 +94,7 @@ type rowInfo struct {
 	unread               int
 	marked, mention      bool
 	muted, pinned, timer bool
+	ai                   bool // the chat has AI access (state/ai.go)
 	ticks                tickKind
 	hasLast, fromMe      bool
 	prefix               []byte // "Ada: " before a group's last message
@@ -284,6 +287,14 @@ func (s *Screen) chatRow(e *screen.Env, in *rowInfo, selected, typing bool, typi
 		}
 	}
 	dim := previewC
+	if in.ai {
+		// in the accent colour, so a chat an agent can read is never missed
+		col := k.Theme().Colors[theme.Accent]
+		if on {
+			col = dim
+		}
+		k.Icon(s.ic.ai, col)
+	}
 	if in.pinned {
 		k.Icon(s.ic.pin, dim)
 	}
@@ -394,6 +405,8 @@ func (s *Screen) refresh(e *screen.Env, in *rowInfo, ch model.Chat) {
 	m := a.Model
 	day := dayNumber(e.S.Now())
 	before := in.draftOf
+	_, in.ai = a.AIGrant(ch.ID()) // the person's settings, not the chat's row: every frame
+	in.ai = in.ai && !ch.Locked()
 	s.draftFor(a, in, ch.ID())
 	draft := in.draftOf
 	if in.valid && in.gen == ch.Gen() && in.cgen == m.Contacts.Gen() && in.day == day && in.tick == s.clockSerial && before == draft {
