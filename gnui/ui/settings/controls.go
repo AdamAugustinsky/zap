@@ -113,6 +113,15 @@ func (s *Screen) control(e *screen.Env, d *rowDef, title string) {
 			s.changed(e)
 		}
 
+	case rAIAccess:
+		s.flip(e, title, &st.AIAccess)
+	case rAIRunner:
+		s.aiRunnerControl(e, title, d.ctrl)
+	case rAICommand:
+		s.aiCommandField(e, title, d.ctrl)
+	case rAICap:
+		s.aiCapControl(e, title, d.ctrl)
+
 	case rKeepRunning:
 		s.flip(e, title, &st.KeepRunning)
 	case rStartLogin:

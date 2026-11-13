@@ -43,6 +43,12 @@ func (s *Screen) block(e *screen.Env, d *rowDef) {
 		s.storageBlock(e)
 	case rAbout:
 		s.aboutBlock(e)
+	case rAIConnect:
+		s.aiConnectBlock(e)
+	case rAIChats:
+		s.aiChatsBlock(e)
+	case rAIActivity:
+		s.aiActivityBlock(e)
 	}
 	_ = c
 }

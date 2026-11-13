@@ -35,6 +35,7 @@ func main() {
 	// Keep the updater helper ahead of flags, logging and the instance lock.
 	selfupdate.Configure(selfupdate.Options{})
 	selfupdate.RunHelperIfAsked()
+	runMCPIfAsked() // `zapfast mcp`: the MCP server for AI agents, not the app
 	o, err := parseOptions(os.Args[1:])
 	if err != nil {
 		os.Exit(2)
@@ -71,6 +72,7 @@ func main() {
 	s.Wake = h.Wake
 	s.Shell = opener{}
 	h.Terminate = terminate(s, lg)
+	installAgent(s, h.Wake, false)
 	cores := &coreOpener{wake: h.Wake}
 	s.OpenCore = cores.open
 	s.ArchiveKeys = secret.Open(core.KeyringService) // a removed account's key goes with its archive

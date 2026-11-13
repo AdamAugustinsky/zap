@@ -5091,3 +5091,271 @@ msgstr "播放速度"
 #: gnui/ui (Zap)
 msgid "Mute notifications"
 msgstr "靜音通知"
+
+#: gnui (AI access)
+msgid "AI access"
+msgstr "AI 存取"
+
+#: gnui (AI access)
+msgid "AI access could not start"
+msgstr "無法啟動 AI 存取"
+
+#: gnui (AI access)
+msgid "AI access is turned off in Settings, so no agent can use this chat now."
+msgstr "AI 存取已在設定中關閉，因此現在沒有代理程式可以使用此對話。"
+
+#: gnui (AI access)
+msgid "Agent to start"
+msgstr "要啟動的代理程式"
+
+#: gnui (AI access)
+msgid "An AI agent you connect in Settings sees only the chats you turn this on for."
+msgstr "你在設定中連接的 AI 代理程式只能看到你為其開啟此項的對話。"
+
+#: gnui (AI access)
+msgid "An agent"
+msgstr "代理程式"
+
+#: gnui (AI access)
+msgid "An agent you connect reads only the chats you turn this on for, and answers only where you allow it. What it reads there goes to that agent and the company that runs it."
+msgstr "你連接的代理程式只讀取你為其開啟此項的對話，並且只在你允許的地方回覆。它在那裡讀到的內容會傳送給該代理程式及營運它的公司。"
+
+#: gnui (AI access)
+msgid "Ask me before each reply"
+msgstr "每次回覆前先問我"
+
+#: gnui (AI access)
+msgid "Chats with AI access"
+msgstr "有 AI 存取的對話"
+
+#: gnui (AI access)
+msgid "Connect an agent"
+msgstr "連接代理程式"
+
+#: gnui (AI access)
+msgid "Copy command"
+msgstr "拷貝指令"
+
+#: gnui (AI access)
+msgid "Custom command"
+msgstr "自訂指令"
+
+#: gnui (AI access)
+msgid "Each reply waits above the message field until you send or discard it."
+msgstr "每則回覆都會在訊息輸入欄上方等待，直到你傳送或丟棄。"
+
+#: gnui (AI access)
+msgid "Instructions for the agent"
+msgstr "給代理程式的指示"
+
+#: gnui (AI access)
+msgid "Instructions…"
+msgstr "指示…"
+
+#: gnui (AI access)
+msgid "Let AI agents use chosen chats"
+msgstr "允許 AI 代理程式使用選定的對話"
+
+#: gnui (AI access)
+msgid "Locked, so no agent can use it"
+msgstr "已鎖定，因此沒有代理程式可以使用它"
+
+#: gnui (AI access)
+msgid "No agent is chosen yet. Choose one in Settings."
+msgstr "尚未選擇代理程式。請在設定中選擇一個。"
+
+#: gnui (AI access)
+msgid "No chat has AI access. Right-click a chat and choose AI access."
+msgstr "沒有對話開啟 AI 存取。按右鍵點一下對話並選擇「AI 存取」。"
+
+#: gnui (AI access)
+msgid "Not sent yet"
+msgstr "尚未傳送"
+
+#: gnui (AI access)
+msgid "Nothing yet."
+msgstr "目前沒有內容。"
+
+#: gnui (AI access)
+msgid "Open Settings"
+msgstr "打開設定"
+
+#: gnui (AI access)
+msgid "Read and reply"
+msgstr "讀取並回覆"
+
+#: gnui (AI access)
+msgid "Read only"
+msgstr "唯讀"
+
+#: gnui (AI access)
+msgid "Recent activity"
+msgstr "最近活動"
+
+#: gnui (AI access)
+msgid "Remove all"
+msgstr "全部移除"
+
+#: gnui (AI access)
+msgid "Replies go out from your account without you seeing them first."
+msgstr "回覆會直接從你的帳號送出，你不會先看到。"
+
+#: gnui (AI access)
+msgid "Replies per hour"
+msgstr "每小時回覆數"
+
+#: gnui (AI access)
+msgid "Reply with approval"
+msgstr "經核准後回覆"
+
+#: gnui (AI access)
+msgid "Run one of these once in a terminal. The agent then finds Zap's tools by itself, while Zap is open."
+msgstr "在終端機中執行其中一個指令一次。之後只要 Zap 開著，代理程式就能自己找到 Zap 的工具。"
+
+#: gnui (AI access)
+msgid "Runs in your shell with the prompt on its standard input. Zap cannot limit what it does: give it nothing but Zap's tools."
+msgstr "在你的 shell 中執行，提示詞從標準輸入傳入。Zap 無法限制它的行為：除了 Zap 的工具，不要給它任何其他東西。"
+
+#: gnui (AI access)
+msgid "Start my agent when a message arrives"
+msgstr "收到訊息時啟動我的代理程式"
+
+#: gnui (AI access)
+msgid "Started when a message arrives in a chat that asks for it. Claude Code runs with Zap's tools only: no files, no shell, no web."
+msgstr "當開啟此項的對話收到訊息時啟動。Claude Code 只使用 Zap 的工具執行：沒有檔案、沒有 shell、沒有網路。"
+
+#: gnui (AI access)
+msgid "The agent's last report"
+msgstr "代理程式的上次報告"
+
+#: gnui (AI access)
+msgid "The agent's last run failed"
+msgstr "代理程式上次執行失敗"
+
+#: gnui (AI access)
+msgid "The most an agent sends to one chat in an hour without asking you."
+msgstr "代理程式在不詢問你的情況下，一小時內最多向一個對話傳送的回覆數。"
+
+#: gnui (AI access)
+msgid "The reply could not be sent"
+msgstr "無法傳送回覆"
+
+#: gnui (AI access)
+msgid "This reply is longer than what is shown. Edit puts all of it in the message field."
+msgstr "這則回覆比顯示的內容更長。「編輯」會把全文放入訊息輸入欄。"
+
+#: gnui (AI access)
+msgid "What an AI agent may do in this chat"
+msgstr "AI 代理程式可以在此對話中做什麼"
+
+#: gnui (AI access)
+msgid "What should it do in this chat?"
+msgstr "它應該在這個對話中做什麼？"
+
+#: gnui (AI access)
+msgid "Your agent has a reply ready. Open the chat to send or discard it."
+msgstr "你的代理程式已準備好一則回覆。打開對話以傳送或丟棄。"
+
+#: gnui (AI access)
+msgid "Your agent is working on this chat…"
+msgstr "你的代理程式正在處理此對話…"
+
+#: gnui (AI access)
+msgid "Your agent wrote this reply"
+msgstr "你的代理程式寫了這則回覆"
+
+#. Translators: what an AI agent's run did, after the agent's name in the activity list.
+#: gnui (AI access)
+msgid "failed"
+msgstr "失敗"
+
+#. Translators: what an AI agent's run did, after the agent's name in the activity list.
+#: gnui (AI access)
+msgid "finished"
+msgstr "已完成"
+
+#. Translators: what an AI agent did, after its name in the activity list.
+#: gnui (AI access)
+msgid "proposed a reply"
+msgstr "提議了一則回覆"
+
+#. Translators: what an AI agent did, after its name in the activity list. {} is a number.
+#: gnui (AI access)
+msgid "read {} messages"
+msgstr "讀取了 {} 則訊息"
+
+#. Translators: what an AI agent did, after its name in the activity list.
+#: gnui (AI access)
+msgid "searched the chat"
+msgstr "搜尋了對話"
+
+#. Translators: what an AI agent did, after its name in the activity list.
+#: gnui (AI access)
+msgid "sent a reply"
+msgstr "傳送了一則回覆"
+
+#. Translators: after the chat's access in the list of chats with AI access, as in "Read only · starts your agent".
+#: gnui (AI access)
+msgid "starts your agent"
+msgstr "會啟動你的代理程式"
+
+#: gnui (AI access)
+msgid "was not started: too many runs this hour"
+msgstr "未啟動：本小時執行次數過多"
+
+#: gnui (AI access)
+msgid "was started by a message"
+msgstr "由一則訊息啟動"
+
+#: gnui (AI access)
+msgid "was stopped by the hourly limit"
+msgstr "被每小時上限阻止"
+
+#: gnui (AI access)
+msgid "you discarded its reply"
+msgstr "你丟棄了它的回覆"
+
+#: gnui (AI access)
+msgid "you rewrote its reply"
+msgstr "你改寫了它的回覆"
+
+#: gnui (AI access)
+msgid "you sent its reply"
+msgstr "你傳送了它的回覆"
+
+#. Translators: {} is how many more replies of an AI agent wait for the person's answer.
+#: gnui (AI access)
+msgid "{} more waiting"
+msgstr "還有 {} 則在等待"
+
+#. Translators: no AI agent is started when a message arrives.
+#: gnui (AI access)
+msgctxt "agent"
+msgid "None"
+msgstr "無"
+
+#. Translators: a verb. What an AI agent may do in a chat: read it, and no more.
+#: gnui (AI access)
+msgctxt "AI access"
+msgid "Read"
+msgstr "讀取"
+
+#. Translators: a name. Do not translate.
+#: gnui (AI access)
+msgid "Claude Code"
+msgstr "Claude Code"
+
+#. Translators: a name. Do not translate.
+#: gnui (AI access)
+msgid "Codex"
+msgstr "Codex"
+
+#. Translators: a name. Do not translate.
+#: gnui (AI access)
+msgid "opencode"
+msgstr "opencode"
+
+#. Translators: a name. Do not translate.
+#: gnui (AI access)
+msgid "MCP"
+msgstr "MCP"

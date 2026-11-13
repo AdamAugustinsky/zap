@@ -3,11 +3,13 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"strings"
 	"time"
 
 	"zapfast/abi"
+	"zapfast/agent"
 	"zapfast/core"
 	"zapfast/model"
 	"zapfast/state"
@@ -50,7 +52,7 @@ type demoPage struct {
 // demoParts are the parts this port knows, for -demo-page help and tests.
 var demoParts = []string{
 	"chat", "empty", "light", "dark", "short-chat", "wide", "nosidebar", "rail",
-	"search", "spotlight", "folders", "space", "space-theme", "theme-creator", "boost", "peek", "float-peek", "split", "split3", "tabs", "pip", "pip-mini", "info", "info-media", "info-docs", "info-links", "group-info", "select", "select-delete", "delete-selection",
+	"search", "spotlight", "folders", "space", "space-theme", "theme-creator", "boost", "ai-access", "ai-reply", "ai-settings", "peek", "float-peek", "split", "split3", "tabs", "pip", "pip-mini", "info", "info-media", "info-docs", "info-links", "group-info", "select", "select-delete", "delete-selection",
 	"settings", "themes", "app-lock-settings", "shortcuts", "about", "new-chat", "new-contact",
 	"poll", "poll-create", "location", "unlink", "clear-media", "delete-chat", "clear-chat", "leave-group",
 	"delete-message", "forward", "reply", "private-reply", "edit", "message-info", "unread-divider",
@@ -244,6 +246,26 @@ func (p *demoPage) apply(s *state.State, a *state.Account) {
 				a.SetBoost(c.ID(), state.ChatBoost{Font: "serif", Size: 1.1, Tint: "purple"})
 				s.Panes.SetInfo(c.ID())
 			}
+		case "ai-access":
+			// the open chat given to an agent that reads, answers with the
+			// person's approval and is started by a message; its info open
+			// on those controls
+			if c, ok := a.OpenChatView(); ok {
+				a.SetAIGrant(c.ID(), agent.Grant{Write: true, Wake: true, Brief: "Ask for the branch name and tell me when it is merged."})
+				s.Panes.SetInfo(c.ID())
+			}
+		case "ai-reply":
+			// the open chat given to an agent that asks first; its reply
+			// waits above the message field (applyLate makes it)
+			if c, ok := a.OpenChatView(); ok {
+				a.SetAIGrant(c.ID(), agent.Grant{Write: true, Wake: true, Brief: "Ask for the branch name and tell me when it is merged."})
+			}
+		case "ai-settings":
+			// Settings with AI access on: two chats given, Claude Code to start
+			s.Settings.AIRunner.Kind = agent.RunnerClaude
+			a.SetAIGrant([]byte(demoAda), agent.Grant{Write: true, Wake: true})
+			a.SetAIGrant([]byte(demoGroup), agent.Grant{})
+			s.OpenWindow(state.WinSettings)
 		case "info", "group-info", "info-media", "info-docs", "info-links":
 			if c, ok := a.OpenChatView(); ok {
 				s.Panes.SetInfo(c.ID())
@@ -438,6 +460,15 @@ func (p *demoPage) applyLate(s *state.State, a *state.Account) {
 	}
 	for _, part := range p.parts {
 		switch part {
+		case "ai-reply":
+			// what the person's agent wrote for this chat, quoting the
+			// message it answers: not sent until they say so
+			if s.Agent != nil {
+				s.Agent.Do(context.Background(), agent.Request{
+					Op: "send", Agent: "Claude Code", Chat: agent.Handle(a.ID, string(chatID)), ReplyTo: string(in),
+					Text: "Thank you, Ada! The branch is feature/analytical-engine. I will tell you as soon as it is merged.",
+				})
+			}
 		case "reply":
 			if in != nil {
 				s.Panes.Reply.Reset()

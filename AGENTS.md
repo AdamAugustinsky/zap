@@ -12,7 +12,14 @@ coding agents and new contributors.
 
 - Keep it a small native client. No browser engine, no telemetry, no
   hosted backend, no Zap-operated account system. Features never send
-  message content to a third party.
+  message content to a third party, with one exception the user makes
+  themselves: AI access (`docs/ai-access.md`).
+- AI access hands chosen chats to an AI agent the user connected. It stays
+  off until the user turns it on, per chat; a locked chat is never given;
+  nothing leaves except through the local socket of `gnui/agent`, and only
+  for a chat with a grant. Do not widen it: no default grants, no grant
+  that covers every chat, no tool that reaches beyond one granted chat, and
+  no reply that goes out unseen unless the user chose that for the chat.
 - The protocol comes from whatsmeow (patched only in
   `gnui/third_party/whatsmeow`, every change marked `ZAP PATCH`). Do not
   reimplement pieces of it here, and do not advertise a capability merely

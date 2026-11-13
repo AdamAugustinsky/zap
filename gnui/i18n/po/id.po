@@ -5239,3 +5239,271 @@ msgstr "Kecepatan pemutaran"
 #: gnui/ui (Zap)
 msgid "Mute notifications"
 msgstr "Bisukan notifikasi"
+
+#: gnui (AI access)
+msgid "AI access"
+msgstr "Akses AI"
+
+#: gnui (AI access)
+msgid "AI access could not start"
+msgstr "Akses AI tidak dapat dimulai"
+
+#: gnui (AI access)
+msgid "AI access is turned off in Settings, so no agent can use this chat now."
+msgstr "Akses AI dimatikan di Pengaturan, jadi saat ini tidak ada agen yang dapat memakai obrolan ini."
+
+#: gnui (AI access)
+msgid "Agent to start"
+msgstr "Agen yang dijalankan"
+
+#: gnui (AI access)
+msgid "An AI agent you connect in Settings sees only the chats you turn this on for."
+msgstr "Agen AI yang Anda hubungkan di Pengaturan hanya melihat obrolan yang Anda aktifkan untuk ini."
+
+#: gnui (AI access)
+msgid "An agent"
+msgstr "Sebuah agen"
+
+#: gnui (AI access)
+msgid "An agent you connect reads only the chats you turn this on for, and answers only where you allow it. What it reads there goes to that agent and the company that runs it."
+msgstr "Agen yang Anda hubungkan hanya membaca obrolan yang Anda aktifkan untuk ini, dan hanya membalas di tempat yang Anda izinkan. Apa yang dibacanya di sana dikirim ke agen itu dan perusahaan yang menjalankannya."
+
+#: gnui (AI access)
+msgid "Ask me before each reply"
+msgstr "Tanya saya sebelum setiap balasan"
+
+#: gnui (AI access)
+msgid "Chats with AI access"
+msgstr "Obrolan dengan akses AI"
+
+#: gnui (AI access)
+msgid "Connect an agent"
+msgstr "Hubungkan agen"
+
+#: gnui (AI access)
+msgid "Copy command"
+msgstr "Salin perintah"
+
+#: gnui (AI access)
+msgid "Custom command"
+msgstr "Perintah kustom"
+
+#: gnui (AI access)
+msgid "Each reply waits above the message field until you send or discard it."
+msgstr "Setiap balasan menunggu di atas kolom pesan sampai Anda mengirim atau membuangnya."
+
+#: gnui (AI access)
+msgid "Instructions for the agent"
+msgstr "Instruksi untuk agen"
+
+#: gnui (AI access)
+msgid "Instructions…"
+msgstr "Instruksi…"
+
+#: gnui (AI access)
+msgid "Let AI agents use chosen chats"
+msgstr "Izinkan agen AI memakai obrolan pilihan"
+
+#: gnui (AI access)
+msgid "Locked, so no agent can use it"
+msgstr "Terkunci, jadi tidak ada agen yang dapat memakainya"
+
+#: gnui (AI access)
+msgid "No agent is chosen yet. Choose one in Settings."
+msgstr "Belum ada agen yang dipilih. Pilih satu di Pengaturan."
+
+#: gnui (AI access)
+msgid "No chat has AI access. Right-click a chat and choose AI access."
+msgstr "Tidak ada obrolan dengan akses AI. Klik kanan sebuah obrolan lalu pilih Akses AI."
+
+#: gnui (AI access)
+msgid "Not sent yet"
+msgstr "Belum dikirim"
+
+#: gnui (AI access)
+msgid "Nothing yet."
+msgstr "Belum ada apa-apa."
+
+#: gnui (AI access)
+msgid "Open Settings"
+msgstr "Buka Pengaturan"
+
+#: gnui (AI access)
+msgid "Read and reply"
+msgstr "Baca dan balas"
+
+#: gnui (AI access)
+msgid "Read only"
+msgstr "Hanya baca"
+
+#: gnui (AI access)
+msgid "Recent activity"
+msgstr "Aktivitas terbaru"
+
+#: gnui (AI access)
+msgid "Remove all"
+msgstr "Hapus semua"
+
+#: gnui (AI access)
+msgid "Replies go out from your account without you seeing them first."
+msgstr "Balasan dikirim dari akun Anda tanpa Anda lihat lebih dulu."
+
+#: gnui (AI access)
+msgid "Replies per hour"
+msgstr "Balasan per jam"
+
+#: gnui (AI access)
+msgid "Reply with approval"
+msgstr "Balas dengan persetujuan"
+
+#: gnui (AI access)
+msgid "Run one of these once in a terminal. The agent then finds Zap's tools by itself, while Zap is open."
+msgstr "Jalankan salah satu perintah ini sekali di terminal. Setelah itu agen menemukan sendiri alat Zap, selama Zap terbuka."
+
+#: gnui (AI access)
+msgid "Runs in your shell with the prompt on its standard input. Zap cannot limit what it does: give it nothing but Zap's tools."
+msgstr "Berjalan di shell Anda dengan prompt pada masukan standarnya. Zap tidak dapat membatasi apa yang dilakukannya: jangan beri apa pun selain alat Zap."
+
+#: gnui (AI access)
+msgid "Start my agent when a message arrives"
+msgstr "Jalankan agen saya saat pesan masuk"
+
+#: gnui (AI access)
+msgid "Started when a message arrives in a chat that asks for it. Claude Code runs with Zap's tools only: no files, no shell, no web."
+msgstr "Dijalankan saat pesan masuk di obrolan yang memintanya. Claude Code berjalan hanya dengan alat Zap: tanpa berkas, tanpa shell, tanpa web."
+
+#: gnui (AI access)
+msgid "The agent's last report"
+msgstr "Laporan terakhir agen"
+
+#: gnui (AI access)
+msgid "The agent's last run failed"
+msgstr "Proses terakhir agen gagal"
+
+#: gnui (AI access)
+msgid "The most an agent sends to one chat in an hour without asking you."
+msgstr "Paling banyak yang dikirim agen ke satu obrolan dalam satu jam tanpa bertanya kepada Anda."
+
+#: gnui (AI access)
+msgid "The reply could not be sent"
+msgstr "Balasan tidak dapat dikirim"
+
+#: gnui (AI access)
+msgid "This reply is longer than what is shown. Edit puts all of it in the message field."
+msgstr "Balasan ini lebih panjang daripada yang ditampilkan. Edit menaruh seluruhnya di kolom pesan."
+
+#: gnui (AI access)
+msgid "What an AI agent may do in this chat"
+msgstr "Apa yang boleh dilakukan agen AI di obrolan ini"
+
+#: gnui (AI access)
+msgid "What should it do in this chat?"
+msgstr "Apa yang harus dilakukannya di obrolan ini?"
+
+#: gnui (AI access)
+msgid "Your agent has a reply ready. Open the chat to send or discard it."
+msgstr "Agen Anda punya balasan yang siap. Buka obrolan untuk mengirim atau membuangnya."
+
+#: gnui (AI access)
+msgid "Your agent is working on this chat…"
+msgstr "Agen Anda sedang mengerjakan obrolan ini…"
+
+#: gnui (AI access)
+msgid "Your agent wrote this reply"
+msgstr "Agen Anda menulis balasan ini"
+
+#. Translators: what an AI agent's run did, after the agent's name in the activity list.
+#: gnui (AI access)
+msgid "failed"
+msgstr "gagal"
+
+#. Translators: what an AI agent's run did, after the agent's name in the activity list.
+#: gnui (AI access)
+msgid "finished"
+msgstr "selesai"
+
+#. Translators: what an AI agent did, after its name in the activity list.
+#: gnui (AI access)
+msgid "proposed a reply"
+msgstr "mengusulkan balasan"
+
+#. Translators: what an AI agent did, after its name in the activity list. {} is a number.
+#: gnui (AI access)
+msgid "read {} messages"
+msgstr "membaca {} pesan"
+
+#. Translators: what an AI agent did, after its name in the activity list.
+#: gnui (AI access)
+msgid "searched the chat"
+msgstr "mencari di obrolan"
+
+#. Translators: what an AI agent did, after its name in the activity list.
+#: gnui (AI access)
+msgid "sent a reply"
+msgstr "mengirim balasan"
+
+#. Translators: after the chat's access in the list of chats with AI access, as in "Read only · starts your agent".
+#: gnui (AI access)
+msgid "starts your agent"
+msgstr "menjalankan agen Anda"
+
+#: gnui (AI access)
+msgid "was not started: too many runs this hour"
+msgstr "tidak dijalankan: terlalu banyak proses jam ini"
+
+#: gnui (AI access)
+msgid "was started by a message"
+msgstr "dijalankan oleh sebuah pesan"
+
+#: gnui (AI access)
+msgid "was stopped by the hourly limit"
+msgstr "dihentikan oleh batas per jam"
+
+#: gnui (AI access)
+msgid "you discarded its reply"
+msgstr "Anda membuang balasannya"
+
+#: gnui (AI access)
+msgid "you rewrote its reply"
+msgstr "Anda menulis ulang balasannya"
+
+#: gnui (AI access)
+msgid "you sent its reply"
+msgstr "Anda mengirim balasannya"
+
+#. Translators: {} is how many more replies of an AI agent wait for the person's answer.
+#: gnui (AI access)
+msgid "{} more waiting"
+msgstr "{} lagi menunggu"
+
+#. Translators: no AI agent is started when a message arrives.
+#: gnui (AI access)
+msgctxt "agent"
+msgid "None"
+msgstr "Tidak ada"
+
+#. Translators: a verb. What an AI agent may do in a chat: read it, and no more.
+#: gnui (AI access)
+msgctxt "AI access"
+msgid "Read"
+msgstr "Baca"
+
+#. Translators: a name. Do not translate.
+#: gnui (AI access)
+msgid "Claude Code"
+msgstr "Claude Code"
+
+#. Translators: a name. Do not translate.
+#: gnui (AI access)
+msgid "Codex"
+msgstr "Codex"
+
+#. Translators: a name. Do not translate.
+#: gnui (AI access)
+msgid "opencode"
+msgstr "opencode"
+
+#. Translators: a name. Do not translate.
+#: gnui (AI access)
+msgid "MCP"
+msgstr "MCP"

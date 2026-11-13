@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"zapfast/agent"
 )
 
 // The settings files keep upstream's format (zf:src/settings.rs): the same
@@ -56,6 +58,9 @@ type settingsFile struct {
 	KeepChatsArchived     bool            `json:"keep_chats_archived"`
 	Proxy                 string          `json:"proxy"`
 	CheckForUpdates       bool            `json:"check_for_updates"`
+	AIAccess              bool            `json:"ai_access,omitempty"`
+	AICap                 int             `json:"ai_cap,omitempty"`
+	AIRunner              *agent.Runner   `json:"ai_runner,omitempty"`
 	DownloadUpdates       bool            `json:"download_updates_automatically"`
 	VoiceSpeed            float32         `json:"voice_speed"`
 	PauseOtherMedia       bool            `json:"pause_other_media"`
@@ -98,6 +103,8 @@ type accountFile struct {
 	SpaceTintGrain      float32              `json:"space_tint_grain,omitempty"`
 	SpaceTintLock       *bool                `json:"space_tint_lock,omitempty"`
 	ChatBoosts          map[string]boostFile `json:"chat_boosts,omitempty"`
+	// AIAccess are the chats AI agents may use (ai.go), by JID.
+	AIAccess map[string]agent.Grant `json:"ai_access,omitempty"`
 }
 
 // boostFile is a ChatBoost in the account's settings file.
@@ -191,6 +198,42 @@ func boostsFromFile(fs map[string]boostFile) map[string]ChatBoost {
 		}
 	}
 	return out
+}
+
+// grantsToFile are the chats' AI grants as the file keeps them; nil for none.
+func grantsToFile(gs map[string]agent.Grant) map[string]agent.Grant {
+	if len(gs) == 0 {
+		return nil
+	}
+	return gs
+}
+
+// grantsFromFile reads grantsToFile's grants back: a grant that does not
+// write sends nothing on its own, and a brief is no longer than the app
+// lets one be typed.
+func grantsFromFile(fs map[string]agent.Grant) map[string]agent.Grant {
+	var out map[string]agent.Grant
+	for jid, g := range fs {
+		if jid == "" {
+			continue
+		}
+		g.Auto = g.Auto && g.Write
+		g.Brief = clipBytes(g.Brief, agent.BriefMax)
+		if out == nil {
+			out = map[string]agent.Grant{}
+		}
+		out[jid] = g
+	}
+	return out
+}
+
+// runnerFromFile is the agent a chat wakes, as the file names it: a kind
+// this build does not know is none.
+func runnerFromFile(r *agent.Runner) agent.Runner {
+	if r == nil || r.Kind != agent.RunnerClaude && r.Kind != agent.RunnerCustom {
+		return agent.Runner{}
+	}
+	return *r
 }
 
 // lockToFile is a space theme's lock as the file keeps it: nil where it is
@@ -523,6 +566,10 @@ func (st *Settings) toFile() settingsFile {
 		WindowWidth: optFloat(st.WindowW, st.WindowW > 0 && st.WindowH > 0), WindowHeight: optFloat(st.WindowH, st.WindowW > 0 && st.WindowH > 0),
 		WindowX: optFloat(st.WindowX, st.HasWindowPos), WindowY: optFloat(st.WindowY, st.HasWindowPos),
 		WindowMaximized: st.WindowMaximized,
+		AIAccess:        st.AIAccess, AICap: st.AICap,
+	}
+	if st.AIRunner != (agent.Runner{}) {
+		f.AIRunner = &st.AIRunner
 	}
 	if !st.Transparency { // on, the default, is left out
 		f.Transparency = &st.Transparency
@@ -570,6 +617,7 @@ func (f *settingsFile) settings() (Settings, bool) {
 		MessageSound: soundFromFile(f.MessageSound, d.MessageSound), MentionSound: soundFromFile(f.MentionSound, d.MentionSound),
 		GroupSounds: f.GroupSounds, DownloadFolder: fromOpt(f.DownloadFolder), KeepChatsArchived: f.KeepChatsArchived,
 		Proxy: []byte(f.Proxy), CheckForUpdates: f.CheckForUpdates, AutoUpdate: f.DownloadUpdates, VoiceSpeed: f.VoiceSpeed,
+		AIAccess: f.AIAccess, AICap: max(f.AICap, 0), AIRunner: runnerFromFile(f.AIRunner),
 		PauseOtherMedia: f.PauseOtherMedia, SaveContactsToPhone: f.SaveContactsToPhone,
 		ChatLockHash: fromOpt(f.ChatLockCodeHash), ChatLockHintGone: f.ChatLockHintDismissed,
 		AppLockHash: fromOpt(f.AppLockHash), AppLockAfter: parseName(lockNames[:], f.AppLockAfter, d.AppLockAfter),
@@ -645,6 +693,7 @@ func (a *AccountSettings) toFile() accountFile {
 		Folders: foldersToFile(a.Folders), SpaceTint: a.SpaceTint,
 		SpaceTintMix: a.SpaceTintMix, SpaceTintLevel: a.SpaceTintLevel, SpaceTintColors: dotsToFile(a.SpaceTintDots), SpaceTintMode: a.SpaceTintMode, SpaceTintGrain: a.SpaceTintGrain,
 		SpaceTintLock: lockToFile(a.SpaceTintLock, a.SpaceTintMix), ChatBoosts: boostsToFile(a.Boosts),
+		AIAccess: grantsToFile(a.AI),
 	}
 }
 
@@ -658,6 +707,7 @@ func (f *accountFile) settings() AccountSettings {
 		Folders: foldersFromFile(f.Folders), SpaceTint: f.SpaceTint,
 		SpaceTintMix: f.SpaceTintMix, SpaceTintLevel: f.SpaceTintLevel, SpaceTintDots: dotsFromFile(f.SpaceTintColors), SpaceTintMode: f.SpaceTintMode, SpaceTintGrain: f.SpaceTintGrain,
 		SpaceTintLock: lockFromFile(f.SpaceTintLock, f.SpaceTintMix), Boosts: boostsFromFile(f.ChatBoosts),
+		AI: grantsFromFile(f.AIAccess),
 	}
 	if f.AutoDownloadImages != nil {
 		a.AutoDownload = *f.AutoDownloadImages

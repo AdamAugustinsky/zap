@@ -5234,3 +5234,271 @@ msgstr "Oynatma hızı"
 #: gnui/ui (Zap)
 msgid "Mute notifications"
 msgstr "Bildirimleri sessize al"
+
+#: gnui (AI access)
+msgid "AI access"
+msgstr "Yapay zekâ erişimi"
+
+#: gnui (AI access)
+msgid "AI access could not start"
+msgstr "Yapay zekâ erişimi başlatılamadı"
+
+#: gnui (AI access)
+msgid "AI access is turned off in Settings, so no agent can use this chat now."
+msgstr "Yapay zekâ erişimi Ayarlar’da kapalı, bu yüzden şu anda hiçbir ajan bu sohbeti kullanamaz."
+
+#: gnui (AI access)
+msgid "Agent to start"
+msgstr "Başlatılacak ajan"
+
+#: gnui (AI access)
+msgid "An AI agent you connect in Settings sees only the chats you turn this on for."
+msgstr "Ayarlar’da bağladığınız bir yapay zekâ ajanı yalnızca bunu açtığınız sohbetleri görür."
+
+#: gnui (AI access)
+msgid "An agent"
+msgstr "Bir ajan"
+
+#: gnui (AI access)
+msgid "An agent you connect reads only the chats you turn this on for, and answers only where you allow it. What it reads there goes to that agent and the company that runs it."
+msgstr "Bağladığınız bir ajan yalnızca bunu açtığınız sohbetleri okur ve yalnızca izin verdiğiniz yerde yanıt verir. Orada okudukları o ajana ve onu işleten şirkete gider."
+
+#: gnui (AI access)
+msgid "Ask me before each reply"
+msgstr "Her yanıttan önce bana sor"
+
+#: gnui (AI access)
+msgid "Chats with AI access"
+msgstr "Yapay zekâ erişimi olan sohbetler"
+
+#: gnui (AI access)
+msgid "Connect an agent"
+msgstr "Bir ajan bağla"
+
+#: gnui (AI access)
+msgid "Copy command"
+msgstr "Komutu kopyala"
+
+#: gnui (AI access)
+msgid "Custom command"
+msgstr "Özel komut"
+
+#: gnui (AI access)
+msgid "Each reply waits above the message field until you send or discard it."
+msgstr "Her yanıt, siz gönderene veya vazgeçene kadar mesaj alanının üstünde bekler."
+
+#: gnui (AI access)
+msgid "Instructions for the agent"
+msgstr "Ajan için talimatlar"
+
+#: gnui (AI access)
+msgid "Instructions…"
+msgstr "Talimatlar…"
+
+#: gnui (AI access)
+msgid "Let AI agents use chosen chats"
+msgstr "Yapay zekâ ajanlarının seçilen sohbetleri kullanmasına izin ver"
+
+#: gnui (AI access)
+msgid "Locked, so no agent can use it"
+msgstr "Kilitli, bu yüzden hiçbir ajan kullanamaz"
+
+#: gnui (AI access)
+msgid "No agent is chosen yet. Choose one in Settings."
+msgstr "Henüz bir ajan seçilmedi. Ayarlar’dan birini seçin."
+
+#: gnui (AI access)
+msgid "No chat has AI access. Right-click a chat and choose AI access."
+msgstr "Hiçbir sohbetin yapay zekâ erişimi yok. Bir sohbete sağ tıklayıp Yapay zekâ erişimi’ni seçin."
+
+#: gnui (AI access)
+msgid "Not sent yet"
+msgstr "Henüz gönderilmedi"
+
+#: gnui (AI access)
+msgid "Nothing yet."
+msgstr "Henüz bir şey yok."
+
+#: gnui (AI access)
+msgid "Open Settings"
+msgstr "Ayarlar’ı aç"
+
+#: gnui (AI access)
+msgid "Read and reply"
+msgstr "Oku ve yanıtla"
+
+#: gnui (AI access)
+msgid "Read only"
+msgstr "Yalnızca okuma"
+
+#: gnui (AI access)
+msgid "Recent activity"
+msgstr "Son etkinlik"
+
+#: gnui (AI access)
+msgid "Remove all"
+msgstr "Tümünü kaldır"
+
+#: gnui (AI access)
+msgid "Replies go out from your account without you seeing them first."
+msgstr "Yanıtlar, siz önce görmeden hesabınızdan gönderilir."
+
+#: gnui (AI access)
+msgid "Replies per hour"
+msgstr "Saat başına yanıt"
+
+#: gnui (AI access)
+msgid "Reply with approval"
+msgstr "Onayla yanıtla"
+
+#: gnui (AI access)
+msgid "Run one of these once in a terminal. The agent then finds Zap's tools by itself, while Zap is open."
+msgstr "Bunlardan birini bir terminalde bir kez çalıştırın. Ardından ajan, Zap açıkken Zap’in araçlarını kendisi bulur."
+
+#: gnui (AI access)
+msgid "Runs in your shell with the prompt on its standard input. Zap cannot limit what it does: give it nothing but Zap's tools."
+msgstr "Kabuğunuzda, istem standart girdisinde olacak şekilde çalışır. Zap ne yaptığını sınırlayamaz: ona Zap’in araçlarından başka bir şey vermeyin."
+
+#: gnui (AI access)
+msgid "Start my agent when a message arrives"
+msgstr "Bir mesaj geldiğinde ajanımı başlat"
+
+#: gnui (AI access)
+msgid "Started when a message arrives in a chat that asks for it. Claude Code runs with Zap's tools only: no files, no shell, no web."
+msgstr "Bunu isteyen bir sohbete mesaj geldiğinde başlatılır. Claude Code yalnızca Zap’in araçlarıyla çalışır: dosya yok, kabuk yok, web yok."
+
+#: gnui (AI access)
+msgid "The agent's last report"
+msgstr "Ajanın son raporu"
+
+#: gnui (AI access)
+msgid "The agent's last run failed"
+msgstr "Ajanın son çalışması başarısız oldu"
+
+#: gnui (AI access)
+msgid "The most an agent sends to one chat in an hour without asking you."
+msgstr "Bir ajanın size sormadan bir sohbete bir saatte gönderebileceği en fazla yanıt."
+
+#: gnui (AI access)
+msgid "The reply could not be sent"
+msgstr "Yanıt gönderilemedi"
+
+#: gnui (AI access)
+msgid "This reply is longer than what is shown. Edit puts all of it in the message field."
+msgstr "Bu yanıt gösterilenden daha uzun. Düzenle, tamamını mesaj alanına koyar."
+
+#: gnui (AI access)
+msgid "What an AI agent may do in this chat"
+msgstr "Bir yapay zekâ ajanı bu sohbette ne yapabilir"
+
+#: gnui (AI access)
+msgid "What should it do in this chat?"
+msgstr "Bu sohbette ne yapmalı?"
+
+#: gnui (AI access)
+msgid "Your agent has a reply ready. Open the chat to send or discard it."
+msgstr "Ajanınızın hazır bir yanıtı var. Göndermek veya vazgeçmek için sohbeti açın."
+
+#: gnui (AI access)
+msgid "Your agent is working on this chat…"
+msgstr "Ajanınız bu sohbet üzerinde çalışıyor…"
+
+#: gnui (AI access)
+msgid "Your agent wrote this reply"
+msgstr "Bu yanıtı ajanınız yazdı"
+
+#. Translators: what an AI agent's run did, after the agent's name in the activity list.
+#: gnui (AI access)
+msgid "failed"
+msgstr "başarısız oldu"
+
+#. Translators: what an AI agent's run did, after the agent's name in the activity list.
+#: gnui (AI access)
+msgid "finished"
+msgstr "bitti"
+
+#. Translators: what an AI agent did, after its name in the activity list.
+#: gnui (AI access)
+msgid "proposed a reply"
+msgstr "bir yanıt önerdi"
+
+#. Translators: what an AI agent did, after its name in the activity list. {} is a number.
+#: gnui (AI access)
+msgid "read {} messages"
+msgstr "{} mesaj okudu"
+
+#. Translators: what an AI agent did, after its name in the activity list.
+#: gnui (AI access)
+msgid "searched the chat"
+msgstr "sohbette arama yaptı"
+
+#. Translators: what an AI agent did, after its name in the activity list.
+#: gnui (AI access)
+msgid "sent a reply"
+msgstr "bir yanıt gönderdi"
+
+#. Translators: after the chat's access in the list of chats with AI access, as in "Read only · starts your agent".
+#: gnui (AI access)
+msgid "starts your agent"
+msgstr "ajanınızı başlatır"
+
+#: gnui (AI access)
+msgid "was not started: too many runs this hour"
+msgstr "başlatılmadı: bu saatte çok fazla çalıştırma"
+
+#: gnui (AI access)
+msgid "was started by a message"
+msgstr "bir mesajla başlatıldı"
+
+#: gnui (AI access)
+msgid "was stopped by the hourly limit"
+msgstr "saatlik sınır nedeniyle durduruldu"
+
+#: gnui (AI access)
+msgid "you discarded its reply"
+msgstr "yanıtından vazgeçtiniz"
+
+#: gnui (AI access)
+msgid "you rewrote its reply"
+msgstr "yanıtını yeniden yazdınız"
+
+#: gnui (AI access)
+msgid "you sent its reply"
+msgstr "yanıtını gönderdiniz"
+
+#. Translators: {} is how many more replies of an AI agent wait for the person's answer.
+#: gnui (AI access)
+msgid "{} more waiting"
+msgstr "{} tane daha bekliyor"
+
+#. Translators: no AI agent is started when a message arrives.
+#: gnui (AI access)
+msgctxt "agent"
+msgid "None"
+msgstr "Yok"
+
+#. Translators: a verb. What an AI agent may do in a chat: read it, and no more.
+#: gnui (AI access)
+msgctxt "AI access"
+msgid "Read"
+msgstr "Oku"
+
+#. Translators: a name. Do not translate.
+#: gnui (AI access)
+msgid "Claude Code"
+msgstr "Claude Code"
+
+#. Translators: a name. Do not translate.
+#: gnui (AI access)
+msgid "Codex"
+msgstr "Codex"
+
+#. Translators: a name. Do not translate.
+#: gnui (AI access)
+msgid "opencode"
+msgstr "opencode"
+
+#. Translators: a name. Do not translate.
+#: gnui (AI access)
+msgid "MCP"
+msgstr "MCP"

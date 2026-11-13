@@ -82,6 +82,7 @@ func main() {
 	// lock) and never returns.
 	selfupdate.Configure(selfupdate.Options{})
 	selfupdate.RunHelperIfAsked()
+	runMCPIfAsked() // `zapfast mcp`: the MCP server for AI agents, not the app
 	o, err := parseOptions(os.Args[1:])
 	if err != nil {
 		os.Exit(2) // flag has printed why
@@ -157,6 +158,7 @@ func main() {
 	h.Terminate = terminate(s, lg)
 	// Each account's core loads and opens on its own goroutine, so the
 	// window never waits for SQLCipher, the Keychain or a migration.
+	installAgent(s, h.Wake, o.demo)
 	cores := &coreOpener{demo: o.demo, wake: h.Wake}
 	s.OpenCore = cores.open
 	if !o.demo {

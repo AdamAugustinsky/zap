@@ -36,7 +36,7 @@ const (
 // Screen is the composer: the band at the foot of the open chat.
 type Screen struct {
 	name string // the split view's second pane's ("" the first): its keys
-	ic   struct{ plus, smile, mic, send, check, xmark, pencil, keyboard, clip, trash icon.ID }
+	ic   struct{ plus, smile, mic, send, check, xmark, pencil, keyboard, clip, trash, sparkles icon.ID }
 
 	env   *screen.Env // the main window's (Init's)
 	state *state.State
@@ -80,6 +80,11 @@ type Screen struct {
 	replyText              []byte
 	replyGone              bool // a private reply whose message cannot be shown
 	replyHidden            bool // QuoteHidden when the reply was last synced
+
+	// aiShown is the agent's reply the strip shows (ai.go), there since
+	// aiSince.
+	aiShown uint64
+	aiSince time.Time
 
 	comp completion
 
@@ -153,6 +158,7 @@ func (s *Screen) Init(e *screen.Env) error {
 	s.ic.keyboard = k.AddIcon(ztheme.SmallIcon("keyboard"))
 	s.ic.clip = add("paperclip", 26)
 	s.ic.trash = add("trash-2", 15)
+	s.ic.sparkles = add("sparkles", 13)
 	s.env, s.win, s.state = e, e.A.Win, e.S
 	s.enter = enterPolicy(e.S)
 	var text []byte

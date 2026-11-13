@@ -33,6 +33,7 @@ const (
 	secChats
 	secNotifications
 	secPrivacy
+	secAI
 	secSystem
 	secUpdates
 	secAccount
@@ -42,7 +43,7 @@ const (
 )
 
 var secTitle = [numSections]string{
-	"Appearance", "Chats", "Notifications", "Privacy", "System", "Updates", "Account", "Files", "About",
+	"Appearance", "Chats", "Notifications", "Privacy", "AI access", "System", "Updates", "Account", "Files", "About",
 }
 
 type rowID uint8
@@ -82,6 +83,14 @@ const (
 	rPriv4
 	rPriv5
 	rPriv6
+
+	rAIAccess
+	rAIConnect
+	rAIRunner
+	rAICommand
+	rAICap
+	rAIChats
+	rAIActivity
 
 	rKeepRunning
 	rStartLogin
@@ -172,6 +181,14 @@ var rowDefs = func() []rowDef {
 		d = append(d, rowDef{id: rPriv0 + rowID(i), sec: secPrivacy, title: privTitle(i), desc: privHint(i), ctrl: 220})
 	}
 	d = append(d,
+		rowDef{id: rAIAccess, sec: secAI, title: m("Let AI agents use chosen chats"), desc: m("An agent you connect reads only the chats you turn this on for, and answers only where you allow it. What it reads there goes to that agent and the company that runs it."), ctrl: 54},
+		rowDef{id: rAIConnect, sec: secAI, kw: []tx{m("Connect an agent"), {id: "Claude Code"}, {id: "Codex"}, {id: "opencode"}, {id: "MCP"}}},
+		rowDef{id: rAIRunner, sec: secAI, title: m("Agent to start"), desc: m("Started when a message arrives in a chat that asks for it. Claude Code runs with Zap's tools only: no files, no shell, no web."), ctrl: 200},
+		rowDef{id: rAICommand, sec: secAI, title: m("Custom command"), desc: m("Runs in your shell with the prompt on its standard input. Zap cannot limit what it does: give it nothing but Zap's tools."), ctrl: 260},
+		rowDef{id: rAICap, sec: secAI, title: m("Replies per hour"), desc: m("The most an agent sends to one chat in an hour without asking you."), ctrl: 120},
+		rowDef{id: rAIChats, sec: secAI, kw: []tx{m("Chats with AI access"), m("Remove all")}},
+		rowDef{id: rAIActivity, sec: secAI, kw: []tx{m("Recent activity")}},
+
 		rowDef{id: rKeepRunning, sec: secSystem, title: m("Keep running when the window closes"), desc: m("Quit from the tray or with Ctrl+Q."), ctrl: 54},
 		rowDef{id: rStartLogin, sec: secSystem, title: m("Start at login"), desc: m("Starts in the tray, without a window."), ctrl: 54},
 		rowDef{id: rCheckUpdates, sec: secSystem, title: m("Check for updates"), desc: m("Asks GitHub once a day, sending only the Zap version."), ctrl: 54},

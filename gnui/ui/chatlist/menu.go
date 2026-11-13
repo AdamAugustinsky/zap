@@ -58,6 +58,12 @@ const (
 	miFolderDelete
 	miSplit             // open it beside the open chat (the split view)
 	miFloat             // keep it floating over other apps
+	miAIOff             // AI access: none
+	miAIRead            // read only
+	miAIWrite           // read and reply
+	miAIAsk             // each reply waits for the person
+	miAIWake            // a message starts the person's agent
+	miAIMore            // the chat's info, on its AI access
 	miSound      = 100  // + the choice
 	miFilter     = 500  // + the filter
 	miLabel      = 1000 // + the label's index
@@ -189,6 +195,9 @@ func (s *Screen) chatMenu(items *[]ui.MenuItem, e *screen.Env, a *state.Account,
 	add(ui.MenuItem{Title: i18n.T("Notification sound"), Symbol: "speaker.wave.2", Icon: "volume-2", Sub: s.soundItems(ch)})
 	add(ui.MenuItem{Title: i18n.T("Folder"), Symbol: "folder", Icon: "folder", Sub: s.folderItems(a, ch)})
 	add(ui.MenuItem{Title: i18n.T("Labels"), Symbol: "tag", Icon: "tag", Sub: s.labelItems(a, ch)})
+	if !ch.Locked() && !isChannel(ch) { // a locked chat is never given to an agent
+		add(ui.MenuItem{Title: i18n.T("AI access"), Symbol: "sparkles", Icon: "sparkles", Sub: aiItems(a, ch)})
+	}
 	if ch.Locked() {
 		add(ui.MenuItem{ID: miLock, Title: i18n.T("Unlock chat"), Symbol: "lock.open", Icon: "lock-open"})
 	} else {
@@ -225,6 +234,9 @@ func (s *Screen) chatAct(e *screen.Env, a *state.Account, ref model.ChatRef, ite
 		a.Send(cmd)
 	}
 	if s.chatFolderAct(a, ch, item) {
+		return
+	}
+	if aiAct(e, a, ref, id, item) {
 		return
 	}
 	switch {

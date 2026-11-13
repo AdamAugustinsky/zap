@@ -23,6 +23,7 @@ import (
 	"gonativeui/app/prefs"
 
 	"zapfast/abi"
+	"zapfast/agent"
 	"zapfast/core"
 	"zapfast/i18n"
 	"zapfast/model"
@@ -186,6 +187,8 @@ type Account struct {
 	startBy  time.Time
 	// removed is the ref of the chat a ChatRemoved being applied names.
 	removed model.ChatRef
+	// ai is what the agents' door was last told of the account (ai.go).
+	ai aiSync
 }
 
 // Event applies one event (core.Handler): the model first, then the
@@ -198,6 +201,11 @@ func (a *Account) Event(e *abi.Event) {
 	a.lockingNotices(e)
 	wasSyncing, _, _ := a.Model.Syncing()
 	a.Model.Event(e)
+	if e.Tag == abi.EventTagChatRemoved {
+		// A deleted chat takes its AI access with it: the chat a later
+		// message makes again starts with none.
+		a.ClearAIGrant(e.ChatRemoved.Chat)
+	}
 	a.st.dispatch(a, e, wasSyncing)
 }
 
@@ -717,17 +725,27 @@ type State struct {
 	// Shell opens files and links: New's refuses, and only cmd/zapfast
 	// installs the real opener (tests install fakes).
 	Shell core.Shell
+	// Agent is the door for AI agents (ai.go), which only cmd/zapfast
+	// installs: nil (New, the tests), no chat is ever given to one.
+	Agent *agent.Server
 	// Demo: the accounts run the demo core, which keeps no settings of its
 	// own and refuses the commands that set them (not sent).
 	Demo bool
 	// Now is the clock (tests replace it).
 	Now func() time.Time
 
-	history      history
-	listeners    [256][]Listener
-	hooks        hooks
-	gen          uint64
-	settingsGen  uint64
+	history     history
+	listeners   [256][]Listener
+	hooks       hooks
+	gen         uint64
+	settingsGen uint64
+	aiConfig    agent.Config // what Agent was last told
+	// aiPending are the replies agents wait to send (Agent.Pending as of
+	// aiGen); aiSeen is the newest the person was told of.
+	aiPending    []agent.Proposal
+	aiGen        uint64
+	aiSeen       uint64
+	aiConfigured bool
 	persist      *persist
 	beforeAdding string                 // the account shown before AddNewAccount
 	coresStarted bool                   // StartCores ran
@@ -955,6 +973,9 @@ func (s *State) dispatch(a *Account, e *abi.Event, wasSyncing bool) {
 	for _, l := range ls {
 		l.Event(a, e)
 	}
+	if e.Tag == abi.EventTagIncoming && s.Agent != nil {
+		s.Agent.Incoming(a.ID, string(e.Incoming.Chat))
+	}
 	s.policy(a, e, len(ls), wasSyncing)
 }
 
@@ -1000,6 +1021,7 @@ func (s *State) Pump(budget time.Duration) bool {
 	}
 	s.drainRemoved()
 	s.syncPrefetch()
+	s.syncAgent()
 	s.saveSettings(false)
 	return applied
 }

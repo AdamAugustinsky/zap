@@ -38,7 +38,7 @@ type icons struct {
 	pencil                                            icon.ID
 	message, person, copy, bell, bellOff, pin, pinOff icon.ID
 	archive, unarchive, photo, video, play, doc, link icon.ID
-	refresh                                           icon.ID
+	refresh, sparkles                                 icon.ID
 }
 
 // Screen is the info pane.
@@ -52,7 +52,8 @@ type Screen struct {
 	// the boost's segments' labels (boost.go), kept so a frame makes none
 	faceOpts  [4]string
 	sizeOpts  [5]string
-	boostOpen bool // the boost's controls show
+	boostOpen bool     // the boost's controls show
+	aiAcc     aiAccess // the chat's AI access (ai.go)
 	acct      int
 	owner     model.ChatRef // the open chat the panel was opened over
 	valid     bool
@@ -118,6 +119,7 @@ func (s *Screen) Init(e *screen.Env) error {
 		{&ic.archive, icon.Lucide("archive").Size(13)}, {&ic.unarchive, icon.Lucide("archive-restore").Size(13)},
 		{&ic.photo, icon.Lucide("image").Size(22)}, {&ic.video, icon.Lucide("video").Size(22)}, {&ic.play, icon.Lucide("play").Filled().Size(14)},
 		{&ic.doc, icon.Lucide("file-text").Size(20)}, {&ic.link, icon.Lucide("link").Size(20)}, {&ic.refresh, icon.Lucide("rotate-cw").Size(13)},
+		{&ic.sparkles, icon.Lucide("sparkles").Size(theme.SmallIconPt)},
 	} {
 		*it.dst = k.AddIcon(it.spec)
 	}
@@ -129,6 +131,7 @@ func (s *Screen) Init(e *screen.Env) error {
 	s.contact.last.Reserve(256)
 	s.rename.name.Max = maxName * 4
 	s.rename.name.Reserve(maxName * 4)
+	s.aiAcc.init()
 	return nil
 }
 
@@ -280,6 +283,9 @@ func (s *Screen) sync(e *screen.Env, a *state.Account) bool {
 	jid := p.Info.At(0)
 	fresh := !s.valid || a.Index != s.acct || !bytes.Equal(jid, s.jid[:s.jidN]) || a.Open != s.owner
 	if fresh {
+		if s.valid && s.acct < len(e.S.Accounts) {
+			s.aiLeave(e.S.Accounts[s.acct]) // what was typed for the chat before
+		}
 		if len(jid) > jidMax || !shows(a, jid) {
 			p.SetInfo(nil)
 			e.S.Touch()
@@ -291,6 +297,7 @@ func (s *Screen) sync(e *screen.Env, a *state.Account) bool {
 		s.contact.on, s.rename.on = false, false
 		// a boosted chat's panel opens on its boost, a plain one's folded
 		s.boostOpen = a.BoostOf(jid) != (state.ChatBoost{})
+		s.aiAcc.reset(a, jid)
 		s.tab = 0
 		s.find.reset()
 		s.scroll, s.gridSc, s.docSc, s.linkSc, s.memberSc, s.descSc = widget.ScrollState{}, widget.ScrollState{}, widget.ScrollState{}, widget.ScrollState{}, widget.ScrollState{}, widget.ScrollState{}
@@ -353,6 +360,7 @@ func (s *Screen) AppendSelected(dst []byte, id uint64, fromPart uint16, fromOff 
 
 // closePanel closes the panel and gives the keyboard back to the composer.
 func (s *Screen) closePanel(e *screen.Env) {
+	s.aiLeave(e.Acct())
 	e.S.Panes.SetInfo(nil)
 	e.S.Req.FocusComposer = true
 	e.S.Touch()
