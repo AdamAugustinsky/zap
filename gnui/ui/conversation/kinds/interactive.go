@@ -1,6 +1,7 @@
 package kinds
 
 import (
+	"bytes"
 	"gonativeui/icon"
 	"gonativeui/img"
 	"gonativeui/rexui"
@@ -120,6 +121,8 @@ func (b *blk) button(btn *abi.InteractiveButton, i int, enabled, sends, pending,
 	}
 	var ic icon.ID
 	switch {
+	case btn.HasURL && bytes.HasPrefix(btn.URL, []byte("tel:")):
+		ic = icPhone
 	case btn.HasURL:
 		ic = icExternal
 	case btn.Action.Tag == abi.InteractiveActionTagSelect:
