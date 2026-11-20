@@ -159,6 +159,8 @@ type SendRequestExtra struct {
 	Meta *types.MsgMetaInfo
 	// use this only if you know what you are doing
 	AdditionalNodes *[]waBinary.Node
+
+	NoBizNode bool // ZAP PATCH: send a button reply without its <biz> node
 }
 
 // SendMessage sends the given message.
@@ -236,6 +238,7 @@ func (cli *Client) SendMessage(ctx context.Context, to types.JID, message *waE2E
 	isBotMode := isInlineBotMode || to.IsBot()
 	needsMessageSecret := isBotMode || cli.shouldIncludeReportingToken(message)
 	var extraParams nodeExtraParams
+	extraParams.noBizNode = req.NoBizNode // ZAP PATCH
 
 	if needsMessageSecret {
 		if message.MessageContextInfo == nil {
@@ -757,6 +760,7 @@ type nodeExtraParams struct {
 	additionalNodes *[]waBinary.Node
 	addressingMode  types.AddressingMode
 	peerRecipientPN types.JID
+	noBizNode       bool // ZAP PATCH
 }
 
 func (cli *Client) sendGroup(
@@ -938,6 +942,8 @@ func getTypeFromMessage(msg *waE2E.Message) string {
 		return "reaction"
 	case msg.PollCreationMessage != nil, msg.PollUpdateMessage != nil:
 		return "poll"
+	case msg.ButtonsResponseMessage != nil, msg.ListResponseMessage != nil, msg.InteractiveResponseMessage != nil: // ZAP PATCH
+		return "text" // ZAP PATCH: a reply to a business's buttons carries no media
 	case getMediaTypeFromMessage(msg) != "":
 		return "media"
 	case msg.Conversation != nil, msg.ExtendedTextMessage != nil, msg.ProtocolMessage != nil:
@@ -1163,7 +1169,7 @@ func (cli *Client) getMessageContent(
 		content = append(content, *extraParams.additionalNodes...)
 	}
 
-	if buttonType := getButtonTypeFromMessage(message); buttonType != "" {
+	if buttonType := getButtonTypeFromMessage(message); buttonType != "" && !extraParams.noBizNode { // ZAP PATCH
 		content = append(content, waBinary.Node{
 			Tag: "biz",
 			Content: []waBinary.Node{{

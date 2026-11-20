@@ -40,3 +40,16 @@ Files: `types/call.go` (the fields), `call.go` (their values and
    to count a failure or force the reconnect after `KeepAliveMaxFailTime`.
    Zap's Rust core hit the same in whatsapp-rust (its
    `src/backend/worker/link_watch.rs`, issue #177).
+
+6. A reply to a business's buttons, list or native-flow message
+   (`ButtonsResponseMessage`, `ListResponseMessage`,
+   `InteractiveResponseMessage`) is sent as `type="text"`, its
+   `mediatype` (`buttons_response` and the like) kept on the `<enc>`
+   (`send.go`, `getTypeFromMessage`). Upstream calls it `media` because it
+   has a mediatype, though it carries none. This alone did not get a
+   refused reply through (see 7); it is kept as what the reply is.
+7. `SendRequestExtra.NoBizNode` sends a message without the `<biz>` node
+   whatsmeow adds to a button reply (`send.go`). A real business's server
+   refused a `ButtonsResponseMessage` with that node (error 479) and took
+   it without (Nov 2026): Zap sends button replies without it
+   (`gocore/wa/polls.go` `sendReply`), the node kept as a fallback.

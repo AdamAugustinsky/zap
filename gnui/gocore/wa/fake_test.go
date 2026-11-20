@@ -78,6 +78,8 @@ type fakeClient struct {
 	lids     map[types.JID]types.JID
 
 	sendErr, appStateErr, logoutErr, pairErr, downloadErr error
+	sendErrs                                              []error // the next sends' errors, one each
+	noBiz                                                 []int   // which of sent went without a <biz> node
 	pairCode                                              string
 	downloaded                                            []byte
 	picture                                               *types.ProfilePictureInfo
@@ -212,7 +214,19 @@ func (f *fakeClient) SendMessage(_ context.Context, chat types.JID, msg *waE2E.M
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.sent = append(f.sent, sentMessage{chat, id, msg})
+	if len(f.sendErrs) > 0 {
+		err := f.sendErrs[0]
+		f.sendErrs = f.sendErrs[1:]
+		return whatsmeow.SendResponse{}, err
+	}
 	return whatsmeow.SendResponse{ID: id, Timestamp: time.Now()}, f.sendErr
+}
+
+func (f *fakeClient) SendWithoutBiz(ctx context.Context, chat types.JID, msg *waE2E.Message, id types.MessageID) (whatsmeow.SendResponse, error) {
+	f.mu.Lock()
+	f.noBiz = append(f.noBiz, len(f.sent))
+	f.mu.Unlock()
+	return f.SendMessage(ctx, chat, msg, id)
 }
 
 func (f *fakeClient) SendPeerMessage(_ context.Context, msg *waE2E.Message) (whatsmeow.SendResponse, error) {

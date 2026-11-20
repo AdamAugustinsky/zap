@@ -62,6 +62,9 @@ type Client interface {
 	GenerateMessageID() types.MessageID
 	// SendMessage sends msg to chat with the given id (empty: a new one).
 	SendMessage(ctx context.Context, chat types.JID, msg *waE2E.Message, id types.MessageID) (whatsmeow.SendResponse, error)
+	// SendWithoutBiz is SendMessage for a button reply, without the <biz>
+	// node whatsmeow adds to one.
+	SendWithoutBiz(ctx context.Context, chat types.JID, msg *waE2E.Message, id types.MessageID) (whatsmeow.SendResponse, error)
 	// SendPeerMessage sends a message to the account's own phone.
 	SendPeerMessage(ctx context.Context, msg *waE2E.Message) (whatsmeow.SendResponse, error)
 	ParseWebMessage(chat types.JID, msg *waWeb.WebMessageInfo) (*events.Message, error)
@@ -220,6 +223,10 @@ func (w *waClient) GenerateMessageID() types.MessageID { return w.c.GenerateMess
 
 func (w *waClient) SendMessage(ctx context.Context, chat types.JID, msg *waE2E.Message, id types.MessageID) (whatsmeow.SendResponse, error) {
 	return w.c.SendMessage(ctx, chat, msg, whatsmeow.SendRequestExtra{ID: id})
+}
+
+func (w *waClient) SendWithoutBiz(ctx context.Context, chat types.JID, msg *waE2E.Message, id types.MessageID) (whatsmeow.SendResponse, error) {
+	return w.c.SendMessage(ctx, chat, msg, whatsmeow.SendRequestExtra{ID: id, NoBizNode: true})
 }
 
 func (w *waClient) SendPeerMessage(ctx context.Context, msg *waE2E.Message) (whatsmeow.SendResponse, error) {
