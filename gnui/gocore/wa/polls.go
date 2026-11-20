@@ -476,7 +476,7 @@ func interactiveReply(m store.Message, p *waE2E.Message, index int) (*waE2E.Mess
 		}
 		return nil, unavailable
 	}
-	if template := p.GetTemplateMessage(); template != nil {
+	if template := p.GetTemplateMessage(); template != nil && interactiveOf(p) == nil {
 		h := template.GetHydratedTemplate()
 		if h == nil {
 			h = template.GetHydratedFourRowTemplate()
@@ -490,7 +490,7 @@ func interactiveReply(m store.Message, p *waE2E.Message, index int) (*waE2E.Mess
 		}
 		return &waE2E.Message{TemplateButtonReplyMessage: &waE2E.TemplateButtonReplyMessage{SelectedID: button.ID, SelectedDisplayText: button.DisplayText, SelectedIndex: proto.Uint32(uint32(index)), ContextInfo: c}}, nil
 	}
-	if im := p.GetInteractiveMessage(); im != nil {
+	if im := interactiveOf(p); im != nil {
 		choices := nativeChoices(im)
 		if index >= len(choices) {
 			return nil, unavailable

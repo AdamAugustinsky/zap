@@ -122,6 +122,11 @@ func FuzzNativeChoices(f *testing.F) {
 				if !safeURL(c.value) {
 					t.Fatalf("%q %q: unsafe link %+v", name, params, c)
 				}
+			case "phone", "unavailable":
+				// opens on the phone: it says what it is
+				if c.label == "" || c.id != "" {
+					t.Fatalf("%q %q: phone-only %+v", name, params, c)
+				}
 			default:
 				t.Fatalf("%q %q: kind %q", name, params, c.kind)
 			}
@@ -129,8 +134,13 @@ func FuzzNativeChoices(f *testing.F) {
 		if lists > 256 || len(choices) > 256+len(buttons) {
 			t.Fatalf("%q %q: %d choices, %d rows", name, params, len(choices), lists)
 		}
-		if !json.Valid([]byte(params)) && len(choices) != 0 {
-			t.Fatalf("%q %q: choices from invalid JSON: %+v", name, params, choices)
+		// Unreadable params leave a button only for the phone.
+		if !json.Valid([]byte(params)) {
+			for _, c := range choices {
+				if c.kind != "unavailable" {
+					t.Fatalf("%q %q: choices from invalid JSON: %+v", name, params, choices)
+				}
+			}
 		}
 	})
 }

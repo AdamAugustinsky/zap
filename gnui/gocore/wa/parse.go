@@ -7,9 +7,13 @@
 package wa
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
+	"log/slog"
 	"math"
 	"net/url"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -19,6 +23,7 @@ import (
 	"go.mau.fi/whatsmeow/types/events"
 	"google.golang.org/protobuf/proto"
 
+	"zapfast/gocore/out"
 	"zapfast/gocore/store"
 )
 
@@ -366,7 +371,7 @@ func parseDepth(e *events.Message, chat, sender string, depth int) store.Message
 	case p.GetButtonsMessage() != nil:
 		x := p.GetButtonsMessage()
 		m.Kind = kindInteractive
-		m.Text = x.GetContentText()
+		m.Text = firstText(x.GetContentText(), x.GetText(), x.GetFooterText())
 		ctx = x.GetContextInfo()
 		for i, a := range x.GetButtons() {
 			if a.GetType() == waE2E.ButtonsMessage_Button_RESPONSE {
@@ -389,12 +394,20 @@ func parseDepth(e *events.Message, chat, sender string, depth int) store.Message
 		x := p.GetTemplateMessage()
 		m.Kind = kindInteractive
 		ctx = x.GetContextInfo()
+		if im := interactiveOf(p); im != nil {
+			// a template sent as a native-flow message
+			parseInteractive(&m, im)
+			if ctx == nil {
+				ctx = im.GetContextInfo()
+			}
+			break
+		}
 		h := x.GetHydratedTemplate()
 		if h == nil {
 			h = x.GetHydratedFourRowTemplate()
 		}
 		if h != nil {
-			m.Text = h.GetHydratedContentText()
+			m.Text = firstText(h.GetHydratedContentText(), h.GetHydratedTitleText(), h.GetHydratedFooterText())
 			for i, b := range h.GetHydratedButtons() {
 				switch {
 				case b.GetQuickReplyButton() != nil:
@@ -537,6 +550,42 @@ func viewOnceInner(p *waE2E.Message) *waE2E.Message {
 	return nil
 }
 
+// firstText is the first of texts with something to see, its blank lines
+// at either end trimmed: an interactive message's body, else its header's
+// or its footer's line. Businesses fill a body they leave empty with
+// invisible characters, which count as blank.
+func firstText(texts ...string) string {
+	for _, t := range texts {
+		if t = strings.TrimFunc(t, invisible); t != "" {
+			return t
+		}
+	}
+	return ""
+}
+
+// invisible is a character that draws nothing: spaces, format characters
+// (zero-width, direction marks) and the fillers used as blank text.
+func invisible(r rune) bool {
+	switch r {
+	case '\u115f', '\u1160', '\u3164', '\uffa0', '\u2800':
+		return true
+	}
+	return unicode.IsSpace(r) || unicode.Is(unicode.Cf, r)
+}
+
+// interactiveOf is a message's native-flow body: its own, or the one a
+// template carries in place of a hydrated template (how business templates
+// with buttons come now).
+func interactiveOf(p *waE2E.Message) *waE2E.InteractiveMessage {
+	if im := p.GetInteractiveMessage(); im != nil {
+		return im
+	}
+	if t := p.GetTemplateMessage(); t != nil && t.GetHydratedTemplate() == nil && t.GetHydratedFourRowTemplate() == nil {
+		return t.GetInteractiveMessageTemplate()
+	}
+	return nil
+}
+
 func isInteractive(p *waE2E.Message) bool {
 	return p.GetInteractiveMessage() != nil || p.GetButtonsMessage() != nil || p.GetListMessage() != nil || p.GetTemplateMessage() != nil
 }
@@ -584,11 +633,12 @@ func parsePoll(m *store.Message, p *waE2E.PollCreationMessage) {
 // (from zapfast-go 3104c46 internal/backend/interactive.go, MIT).
 func parseInteractive(m *store.Message, im *waE2E.InteractiveMessage) {
 	m.Kind = kindInteractive
-	m.Text = im.GetBody().GetText()
-	if t := im.GetHeader().GetTitle(); t != "" && m.Text == "" {
-		m.Text = t
+	m.Text = firstText(im.GetBody().GetText(), im.GetHeader().GetTitle(), im.GetHeader().GetSubtitle(), im.GetFooter().GetText())
+	if order := paymentLines(im); order != "" {
+		m.Text = strings.TrimSpace(m.Text + "\n\n" + order)
 	}
 	m.Media = interactiveMedia(im)
+	logShape(im)
 	for i, c := range nativeChoices(im) {
 		m.Actions = append(m.Actions, store.InteractiveAction{Label: c.label, Kind: c.kind, Value: c.value, Index: i, Group: c.group, Description: c.description})
 	}
@@ -631,8 +681,10 @@ func interactiveMedia(im *waE2E.InteractiveMessage) *store.Media {
 
 type nativeChoice struct{ label, id, kind, value, group, description string }
 
-// nativeChoices are a native-flow message's buttons this app can show:
-// quick replies, a single-select list's rows, copy codes and web links.
+// nativeChoices are a native-flow message's buttons: quick replies, a
+// single-select list's rows, copy codes (a Pix key among them) and web
+// links this app carries out, and every other button as one that opens on
+// the phone, so a message is never left without its buttons.
 func nativeChoices(im *waE2E.InteractiveMessage) []nativeChoice {
 	var out []nativeChoice
 	for _, button := range im.GetNativeFlowMessage().GetButtons() {
@@ -640,10 +692,18 @@ func nativeChoices(im *waE2E.InteractiveMessage) []nativeChoice {
 			continue
 		}
 		var params struct {
-			ID       string `json:"id"`
-			Display  string `json:"display_text"`
-			Copy     string `json:"copy_code"`
-			URL      string `json:"url"`
+			ID      string `json:"id"`
+			Display string `json:"display_text"`
+			Copy    string `json:"copy_code"`
+			URL     string `json:"url"`
+			Phone   string `json:"phone_number"`
+			FlowCTA string `json:"flow_cta"`
+			Payment []struct {
+				Type string `json:"type"`
+				Pix  struct {
+					Key string `json:"key"`
+				} `json:"pix_static_code"`
+			} `json:"payment_settings"`
 			Sections []struct {
 				Title string `json:"title"`
 				Rows  []struct {
@@ -653,9 +713,9 @@ func nativeChoices(im *waE2E.InteractiveMessage) []nativeChoice {
 				} `json:"rows"`
 			} `json:"sections"`
 		}
-		if json.Unmarshal([]byte(button.GetButtonParamsJSON()), &params) != nil {
-			continue
-		}
+		// Params this app cannot read still leave the button, for the phone.
+		_ = json.Unmarshal([]byte(button.GetButtonParamsJSON()), &params)
+		n := len(out)
 		switch button.GetName() {
 		case "quick_reply":
 			if params.ID != "" && params.Display != "" {
@@ -671,15 +731,274 @@ func nativeChoices(im *waE2E.InteractiveMessage) []nativeChoice {
 			}
 		case "cta_copy":
 			if params.Copy != "" {
-				out = append(out, nativeChoice{label: params.Display, kind: "copy", value: params.Copy})
+				label := firstText(params.Display)
+				if label == "" {
+					label = "Copy code"
+				}
+				out = append(out, nativeChoice{label: label, kind: "copy", value: params.Copy})
 			}
 		case "cta_url":
-			if safeURL(params.URL) {
-				out = append(out, nativeChoice{label: params.Display, kind: "url", value: params.URL})
+			if link := webLink(params.URL); link != "" {
+				label := firstText(params.Display)
+				if label == "" {
+					// a link with no text of its own is named by its site
+					u, _ := url.Parse(link)
+					label = strings.TrimPrefix(u.Hostname(), "www.")
+				}
+				out = append(out, nativeChoice{label: label, kind: "url", value: link})
 			}
+		case "cta_call":
+			label := params.Display
+			if label == "" {
+				label = phoneOnlyLabel("cta_call")
+			}
+			number, kind := dialable(params.Phone), "phone"
+			if number == "" {
+				kind = "unavailable"
+			}
+			out = append(out, nativeChoice{label: label, kind: kind, value: number})
+		case "payment_info", "review_and_pay":
+			for _, p := range params.Payment {
+				if p.Type == "pix_static_code" && p.Pix.Key != "" {
+					label := params.Display
+					if label == "" {
+						label = "Copy Pix key"
+					}
+					out = append(out, nativeChoice{label: label, kind: "copy", value: p.Pix.Key})
+					break
+				}
+			}
+		}
+		if len(out) == n && len(out) < 256 {
+			label := firstText(params.Display, params.FlowCTA)
+			if label == "" {
+				label = phoneOnlyLabel(button.GetName())
+			}
+			out = append(out, nativeChoice{label: label, kind: "unavailable"})
 		}
 	}
 	return out
+}
+
+// logShape logs, at debug, how a native-flow message is built: which of
+// its parts came and its buttons' protocol names, never their text, so a
+// message that shows little can be told apart from the log alone.
+func logShape(im *waE2E.InteractiveMessage) {
+	if !slog.Default().Enabled(context.Background(), slog.LevelDebug) {
+		return
+	}
+	var names, links []string
+	unlabeled := 0
+	for _, b := range im.GetNativeFlowMessage().GetButtons() {
+		if len(names) == 16 {
+			break
+		}
+		names = append(names, out.Clip(b.GetName(), 48))
+		var params struct {
+			URL     string `json:"url"`
+			Display string `json:"display_text"`
+		}
+		_ = json.Unmarshal([]byte(b.GetButtonParamsJSON()), &params)
+		if b.GetName() == "cta_url" {
+			links = append(links, linkCheck(params.URL))
+		}
+		if firstText(params.Display) == "" {
+			unlabeled++
+		}
+	}
+	body := im.GetBody().GetText()
+	slog.Debug("zapfast wa: interactive message", "buttons", names, "links", links, "unlabeled", unlabeled,
+		"hasBody", body != "", "bodyVisible", firstText(body) != "", "bodyLeadsBlank", body != "" && invisible([]rune(body)[0]),
+		"title", im.GetHeader().GetTitle() != "",
+		"subtitle", im.GetHeader().GetSubtitle() != "", "footer", im.GetFooter().GetText() != "",
+		"media", interactiveMedia(im) != nil, "cards", len(im.GetCarouselMessage().GetCards()),
+		"shop", im.GetShopStorefrontMessage() != nil, "collection", im.GetCollectionMessage() != nil)
+}
+
+// linkCheck says, for the log, how a button's link fares, never the link:
+// "ok", or which check it fails.
+func linkCheck(raw string) string {
+	switch u, err := url.Parse(raw); {
+	case raw == "":
+		return "empty"
+	case strings.ContainsFunc(raw, unicode.IsControl):
+		return "control"
+	case err != nil:
+		return "unparsed"
+	case u.Scheme == "":
+		if webLink(raw) != "" {
+			return "no-scheme-fixed"
+		}
+		return "no-scheme"
+	case u.Scheme != "http" && u.Scheme != "https":
+		return "scheme-other"
+	case u.Host == "":
+		return "no-host"
+	case u.User != nil:
+		return "credentials"
+	}
+	return "ok"
+}
+
+// webLink is a button's link as a web address this app opens: as it came,
+// or with https:// before one that names a host with no scheme
+// ("shop.example/x"); "" for anything else.
+func webLink(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if safeURL(raw) {
+		return raw
+	}
+	if raw == "" || strings.Contains(raw, "://") || strings.ContainsAny(raw, " @") {
+		return ""
+	}
+	host, _, _ := strings.Cut(raw, "/")
+	if !strings.Contains(host, ".") || strings.HasPrefix(host, ".") || strings.HasSuffix(host, ".") {
+		return ""
+	}
+	if fixed := "https://" + raw; safeURL(fixed) {
+		return fixed
+	}
+	return ""
+}
+
+// dialable is a call button's number as a tel: link takes it: a leading +
+// and digits, "" when fewer than five digits remain.
+func dialable(raw string) string {
+	var b strings.Builder
+	for i, r := range strings.TrimSpace(raw) {
+		switch {
+		case r >= '0' && r <= '9':
+			b.WriteRune(r)
+		case r == '+' && i == 0:
+			b.WriteRune(r)
+		case r == ' ' || r == '-' || r == '(' || r == ')' || r == '.':
+		default:
+			return ""
+		}
+	}
+	n := b.String()
+	if digits := len(strings.TrimPrefix(n, "+")); digits < 5 || digits > 20 {
+		return ""
+	}
+	return n
+}
+
+// amount is a payment's money: value / offset, offset 100 being cents.
+type amount struct {
+	Value  int64 `json:"value"`
+	Offset int64 `json:"offset"`
+}
+
+// money writes a in currency: R$ 1.234,56 for reais, "USD 12.34" otherwise.
+func money(a amount, currency string) string {
+	if a.Offset <= 0 {
+		a.Offset = 1
+	}
+	whole, frac := a.Value/a.Offset, a.Value%a.Offset
+	if frac < 0 {
+		frac = -frac
+	}
+	digits := len(strconv.FormatInt(a.Offset, 10)) - 1
+	if currency == "BRL" {
+		var b strings.Builder
+		w := strconv.FormatInt(whole, 10)
+		for i, r := range w {
+			if i > 0 && (len(w)-i)%3 == 0 && r != '-' && w[i-1] != '-' {
+				b.WriteByte('.')
+			}
+			b.WriteRune(r)
+		}
+		if digits > 0 {
+			return fmt.Sprintf("R$ %s,%0*d", b.String(), digits, frac)
+		}
+		return "R$ " + b.String()
+	}
+	label := ""
+	if currency != "" {
+		label = currency + " "
+	}
+	if digits > 0 {
+		return fmt.Sprintf("%s%d.%0*d", label, whole, digits, frac)
+	}
+	return fmt.Sprintf("%s%d", label, whole)
+}
+
+// paymentLines is what a payment button says of the order, as the phone's
+// card lists it: who is paid by Pix, the items and the total.
+func paymentLines(im *waE2E.InteractiveMessage) string {
+	for _, button := range im.GetNativeFlowMessage().GetButtons() {
+		switch button.GetName() {
+		case "payment_info", "review_and_pay", "review_order":
+		default:
+			continue
+		}
+		if len(button.GetButtonParamsJSON()) > 65536 {
+			continue
+		}
+		var p struct {
+			Currency string  `json:"currency"`
+			Total    *amount `json:"total_amount"`
+			Order    struct {
+				Items []struct {
+					Name     string `json:"name"`
+					Amount   amount `json:"amount"`
+					Quantity int64  `json:"quantity"`
+				} `json:"items"`
+			} `json:"order"`
+			Payment []struct {
+				Type string `json:"type"`
+				Pix  struct {
+					Merchant string `json:"merchant_name"`
+				} `json:"pix_static_code"`
+			} `json:"payment_settings"`
+		}
+		if json.Unmarshal([]byte(button.GetButtonParamsJSON()), &p) != nil {
+			continue
+		}
+		var lines []string
+		for _, s := range p.Payment {
+			if s.Type == "pix_static_code" && strings.TrimSpace(s.Pix.Merchant) != "" {
+				lines = append(lines, "Pix: "+oneLine(s.Pix.Merchant))
+				break
+			}
+		}
+		for i, it := range p.Order.Items {
+			if i == 10 {
+				lines = append(lines, fmt.Sprintf("+%d more", len(p.Order.Items)-i))
+				break
+			}
+			if strings.TrimSpace(it.Name) == "" {
+				continue
+			}
+			q := max(it.Quantity, 1)
+			lines = append(lines, fmt.Sprintf("%d× %s · %s", q, oneLine(it.Name), money(amount{Value: it.Amount.Value * q, Offset: it.Amount.Offset}, p.Currency)))
+		}
+		if p.Total != nil && p.Total.Value > 0 {
+			lines = append(lines, "Total: "+money(*p.Total, p.Currency))
+		}
+		return strings.Join(lines, "\n")
+	}
+	return ""
+}
+
+// phoneOnlyLabel names a native-flow button that came with no text of its
+// own, by what it does on the phone.
+func phoneOnlyLabel(name string) string {
+	switch name {
+	case "payment_info", "review_and_pay", "review_order":
+		return "Pay"
+	case "galaxy_message":
+		return "Open form"
+	case "send_location":
+		return "Send location"
+	case "address_message":
+		return "Send address"
+	case "cta_catalog", "mpm", "single_product":
+		return "View products"
+	case "cta_call":
+		return "Call"
+	}
+	return "Open on your phone"
 }
 
 // safeURL is a web address with a host and no credentials. url.Parse lets

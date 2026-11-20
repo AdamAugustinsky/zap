@@ -531,7 +531,12 @@ func callStatus(s string) abi.CallStatus {
 // one Select button, its header picture, and a carousel's cards.
 func (cv conv) interactiveCard(r *out.Record, m store.Message) (abi.InteractiveCard, bool) {
 	if len(m.Actions) == 0 && len(m.Cards) == 0 && m.Media == nil {
-		return abi.InteractiveCard{}, false
+		if strings.TrimSpace(m.Text) != "" {
+			return abi.InteractiveCard{}, false
+		}
+		// Nothing this app can show: the card says where it opens rather
+		// than leave an empty bubble.
+		return abi.InteractiveCard{NeedsPhone: true}, true
 	}
 	card := abi.InteractiveCard{Body: b(out.Clip(m.Text, 16384)), Buttons: cardButtons(m.Actions, 10)}
 	if m.Media != nil {
@@ -606,6 +611,11 @@ func cardButtons(actions []store.InteractiveAction, limit int) []abi.Interactive
 			}
 			bt.Action.Tag = abi.InteractiveActionTagCopy
 			bt.Action.Copy.Code = b(a.Value)
+		case "phone":
+			// a call through the Mac's phone handler (FaceTime, the iPhone)
+			if a.Value != "" && len(a.Value) <= 24 {
+				bt.URL, bt.HasURL = b("tel:"+a.Value), true
+			}
 		}
 		buttons = append(buttons, bt)
 	}

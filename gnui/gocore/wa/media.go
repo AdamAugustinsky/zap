@@ -150,7 +150,7 @@ func keepMediaIn(dir, chat, id, mime string, data []byte) (string, error) {
 
 // mediaSource is what whatsmeow downloads of a message.
 func mediaSource(p *waE2E.Message) whatsmeow.DownloadableMessage {
-	if h := p.GetInteractiveMessage().GetHeader(); h != nil {
+	if h := interactiveOf(p).GetHeader(); h != nil {
 		switch {
 		case h.GetImageMessage() != nil:
 			return h.GetImageMessage()
@@ -200,7 +200,7 @@ func (e *Engine) download(chat, id string, card int, manual bool) {
 	}
 	body := &p
 	if card >= 0 {
-		cards := p.GetInteractiveMessage().GetCarouselMessage().GetCards()
+		cards := interactiveOf(&p).GetCarouselMessage().GetCards()
 		if card >= len(cards) {
 			fail("This card has no attachment")
 			return

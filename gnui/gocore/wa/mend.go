@@ -3,6 +3,7 @@ package wa
 import (
 	"context"
 	"log/slog"
+	"slices"
 	"strings"
 	"time"
 
@@ -45,6 +46,7 @@ func (e *Engine) mend() {
 		}
 	}
 	e.mendSignalling()
+	e.mendInteractive()
 	e.mendStubs()
 	e.mendPrivacyIDs()
 	e.resyncContacts()
@@ -134,7 +136,12 @@ func (e *Engine) mendSignalling() {
 		}
 		touched[m.ChatID] = true
 	}
-	for chat := range touched {
+	e.refreshPreviews(touched)
+}
+
+// refreshPreviews sets each chat's preview again from its newest message.
+func (e *Engine) refreshPreviews(chats map[string]bool) {
+	for chat := range chats {
 		newest, _, err := e.arch.Messages(chat, "", 1)
 		if err != nil || len(newest) == 0 {
 			continue
@@ -143,6 +150,37 @@ func (e *Engine) mendSignalling() {
 			e.emitChat(chat)
 		}
 	}
+}
+
+// mendInteractive reads the interactive messages filed again from their
+// originals: the parser now keeps a footer or header line when the body is
+// empty, and the buttons that open on the phone, which it used to drop and
+// leave a bubble with nothing in it.
+func (e *Engine) mendInteractive() {
+	rows, err := e.arch.OfKind(kindInteractive, 0)
+	if err != nil {
+		slog.Warn("zapfast wa: listing interactive messages", "err", err)
+		return
+	}
+	touched := map[string]bool{}
+	for _, m := range rows {
+		var p waE2E.Message
+		if len(m.Raw) == 0 || proto.Unmarshal(m.Raw, &p) != nil {
+			continue
+		}
+		again := parseMessage(&events.Message{Info: types.MessageInfo{ID: m.ID}, Message: &p}, m.ChatID, m.Sender)
+		if again.Kind != kindInteractive || again.Text == m.Text && slices.Equal(again.Actions, m.Actions) {
+			continue
+		}
+		err := e.arch.UpdateMessage(m.ChatID, m.ID, func(old *store.Message) { old.Text, old.Actions = again.Text, again.Actions })
+		if err != nil {
+			slog.Warn("zapfast wa: mending a message", "err", err)
+			continue
+		}
+		e.emitMessage(m.ChatID, m.ID)
+		touched[m.ChatID] = true
+	}
+	e.refreshPreviews(touched)
 }
 
 // mendStubs drops what history filed before stub (parse.go) told system

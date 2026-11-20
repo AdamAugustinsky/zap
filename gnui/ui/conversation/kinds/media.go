@@ -173,10 +173,28 @@ func externalURL(s string) (string, bool) {
 		if u.Opaque == "" && u.Path == "" {
 			return "", false
 		}
+	case "tel":
+		if !dialNumber(u.Opaque) {
+			return "", false
+		}
 	default:
 		return "", false
 	}
 	return u.String(), true
+}
+
+// dialNumber is a tel: link's number: an optional + and 5 to 20 digits.
+func dialNumber(n string) bool {
+	d := strings.TrimPrefix(n, "+")
+	if len(d) < 5 || len(d) > 20 {
+		return false
+	}
+	for _, r := range d {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 // inviteCode is group_invite_code: the code of a chat.whatsapp.com link.

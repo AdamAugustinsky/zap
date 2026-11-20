@@ -135,6 +135,33 @@ func TestInteractiveCardWithAnImageAndAPhoneNote(t *testing.T) {
 	}
 }
 
+// A business message with nothing this app can show still says where it
+// opens, never an empty bubble.
+func TestInteractiveMessageWithNothingToShow(t *testing.T) {
+	m := interactive("i", false, abi.InteractiveCard{NeedsPhone: true})
+	m.Content.Interactive.Text = nil
+	r := newRig(t, m)
+	if !hasText(r, "More content in WhatsApp Web or on your phone") {
+		t.Error("no phone note")
+	}
+	if s := r.p.sized["i"]; s[1] <= 0 {
+		t.Errorf("bubble size %v", s)
+	}
+}
+
+// A call button places the call through the Mac's phone handler.
+func TestInteractiveCallButtonDials(t *testing.T) {
+	opened := make(chan string, 1)
+	defer kinds.SetOpeners(nil, func(s string) error { opened <- s; return nil }, nil)()
+	call := button("Call us", abi.InteractiveActionTagUnavailable)
+	call.URL, call.HasURL = []byte("tel:+5511940758022"), true
+	r := newRig(t, interactive("i", false, abi.InteractiveCard{Buttons: []abi.InteractiveButton{call}}))
+	r.Play(widgettest.Click(ui.RoleButton, "Call us"), widgettest.Idle(2))
+	if got := <-opened; got != "tel:+5511940758022" {
+		t.Errorf("opened %q", got)
+	}
+}
+
 func carouselOf(n int) abi.InteractiveCard {
 	c := abi.InteractiveCard{Body: []byte("Our picks")}
 	for i := 0; i < n; i++ {
