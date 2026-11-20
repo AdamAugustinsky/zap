@@ -258,6 +258,9 @@ func (e *Engine) sent(chat, id string, err error) {
 	e.emitMessage(chat, id)
 	e.emitChat(chat)
 	if err != nil {
+		// WhatsApp's refusals name no content; the log keeps them for a bug
+		// report once the toast is gone.
+		slog.Warn("zapfast wa: a message was not sent", "err", err)
 		e.emitError("Message not sent: " + err.Error())
 	}
 }

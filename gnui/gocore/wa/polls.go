@@ -411,6 +411,7 @@ func (e *Engine) replyInteractive(c *abi.CommandReplyInteractive) {
 		return
 	}
 	reply, err := interactiveReply(m, &p, action.Index)
+	slog.Debug("zapfast wa: answering an interactive message", "action", action.Kind, "format", interactiveFormat(&p), "reply", replyFormat(reply), "err", err)
 	if err != nil {
 		e.emitError(err.Error())
 		return
@@ -429,8 +430,9 @@ func (e *Engine) replyInteractive(c *abi.CommandReplyInteractive) {
 		return
 	}
 	cli, gen := e.cli, e.gen
+	label := action.Label
 	e.job(func(ctx context.Context) func() {
-		_, err := cli.SendMessage(ctx, j, reply, mid)
+		err := sendReply(ctx, cli, j, reply, label, mid)
 		return func() {
 			delete(e.replies, key)
 			if gen != e.gen {
@@ -519,4 +521,114 @@ func interactiveReply(m store.Message, p *waE2E.Message, index int) (*waE2E.Mess
 		}}, nil
 	}
 	return nil, unavailable
+}
+
+// interactiveFormat names, for the log, how an interactive message came.
+func interactiveFormat(p *waE2E.Message) string {
+	switch t := p.GetTemplateMessage(); {
+	case p.GetButtonsMessage() != nil:
+		return "buttons"
+	case p.GetListMessage() != nil:
+		return "list"
+	case p.GetInteractiveMessage() != nil:
+		return "native-flow"
+	case t.GetHydratedTemplate() != nil || t.GetHydratedFourRowTemplate() != nil:
+		return "hydrated-template"
+	case t.GetInteractiveMessageTemplate() != nil:
+		return "template-native-flow"
+	case t != nil:
+		return "template"
+	}
+	return "other"
+}
+
+// replyFormat names, for the log, the reply built.
+func replyFormat(r *waE2E.Message) string {
+	switch {
+	case r == nil:
+		return "none"
+	case r.GetButtonsResponseMessage() != nil:
+		return "buttons-response"
+	case r.GetListResponseMessage() != nil:
+		return "list-response"
+	case r.GetTemplateButtonReplyMessage() != nil:
+		return "template-button-reply"
+	case r.GetInteractiveResponseMessage() != nil:
+		return "native-flow-response"
+	}
+	return "other"
+}
+
+// refused is the server's 479: the message was refused as it was built.
+func refused(err error) bool {
+	return errors.Is(err, whatsmeow.ErrServerReturnedError) && strings.HasSuffix(err.Error(), " 479")
+}
+
+// replyContext is a reply's context info, whichever kind of reply it is.
+func replyContext(r *waE2E.Message) *waE2E.ContextInfo {
+	switch {
+	case r.GetButtonsResponseMessage() != nil:
+		return r.GetButtonsResponseMessage().GetContextInfo()
+	case r.GetListResponseMessage() != nil:
+		return r.GetListResponseMessage().GetContextInfo()
+	case r.GetTemplateButtonReplyMessage() != nil:
+		return r.GetTemplateButtonReplyMessage().GetContextInfo()
+	case r.GetInteractiveResponseMessage() != nil:
+		return r.GetInteractiveResponseMessage().GetContextInfo()
+	}
+	return nil
+}
+
+// sendReply sends a reply to a business's buttons. It goes without the
+// <biz> node whatsmeow adds to a reply, which the server refuses with 479
+// (found on a real business's buttons, Nov 2026). A form the server
+// refuses as built (479), and so did not deliver, is followed by the next,
+// until one is taken: without the quote of the whole message, with the
+// <biz> node after all, as the button's text quoting the message, and last
+// to the privacy id the business writes from. Each try is logged with its
+// form, never its text.
+func sendReply(ctx context.Context, cli Client, to types.JID, reply *waE2E.Message, label string, id types.MessageID) error {
+	bare := proto.Clone(reply).(*waE2E.Message)
+	quote := &waE2E.ContextInfo{}
+	if c := replyContext(bare); c != nil {
+		quote = &waE2E.ContextInfo{StanzaID: c.StanzaID, Participant: c.Participant}
+		c.QuotedMessage = nil
+	}
+	text := &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{Text: proto.String(label), ContextInfo: quote}}
+	tries := []struct {
+		form   string
+		msg    *waE2E.Message
+		noBiz  bool
+		viaLID bool
+	}{
+		{"without the biz node", reply, true, false},
+		{"without its quote", bare, true, false},
+		{"with the biz node", reply, false, false},
+		{"as text", text, false, false},
+		{"to the privacy id", reply, true, true},
+	}
+	var err error
+	for i, t := range tries {
+		if i > 0 && !refused(err) {
+			break
+		}
+		dest := to
+		if t.viaLID {
+			lid, lerr := cli.LIDForPN(ctx, to)
+			if to.Server != types.DefaultUserServer || lerr != nil || lid.IsEmpty() {
+				break
+			}
+			dest = lid
+		}
+		if t.form == "as text" && label == "" {
+			continue
+		}
+		if t.noBiz {
+			_, err = cli.SendWithoutBiz(ctx, dest, t.msg, id)
+		} else {
+			_, err = cli.SendMessage(ctx, dest, t.msg, id)
+		}
+		slog.Debug("zapfast wa: an interactive reply", "form", t.form, "err", err)
+	}
+	return err
 }
