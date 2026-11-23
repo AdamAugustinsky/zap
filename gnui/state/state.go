@@ -601,6 +601,11 @@ type Requests struct {
 	UsePane       model.ChatRef
 	FocusSearch   bool // ⌘K, ⌘⇧F: ui/chatlist focuses its search field
 	ClearSearch   bool // the locked folder closed: ui/chatlist empties its search
+	// RevealOpen: the shell stepped to the chat before or after the open
+	// one (⌥↑, ⌥↓, J, K): ui/chatlist scrolls the open chat into view. A
+	// chat opened any other way (⌘K, a notification, a link) leaves the
+	// list where it is.
+	RevealOpen    bool
 	FocusComposer bool // ⌘L: ui/composer takes the keyboard
 	FindInChat    bool // ⌘F with a chat open: ui/conversation opens the search pane
 	FindSettings  bool // ⌘F in the Settings window: ui/settings

@@ -58,6 +58,10 @@ type Screen struct {
 
 	st   base.VListState
 	sbar base.ScrollState
+	// where the rows go once an edit is in, where they were before the
+	// search, and the search the rows show ("" for the chats) (apply)
+	place, before placement
+	shownQ        string
 
 	chipScroll, labelScroll    base.ScrollState // the chip rows' sideways scroll
 	rowInner, rowBox, revealed ui.ID            // the row being built, and the chip last brought into view
@@ -122,7 +126,6 @@ type Screen struct {
 	cst   base.VListState
 	cids  []uint64
 	cver  uint32
-	cOpen model.ChatRef
 }
 
 var _ screen.ListPane = (*Screen)(nil)
@@ -256,6 +259,7 @@ func (s *Screen) sync(e *screen.Env, a *state.Account) {
 			s.setQuery(e, a, s.query)
 		}
 	}
+	s.settle() // an edit rebuilt over frames is in
 	mir := s.mirror(a)
 	s.refreshMirror(a, mir)
 	key := viewKey{acct: a.Serial, state: e.S.Gen(), chats: m.Chats.Gen(), order: m.Chats.OrderGen(), contacts: m.Contacts.Gen(),
@@ -263,7 +267,6 @@ func (s *Screen) sync(e *screen.Env, a *state.Account) {
 	if s.vok && key == s.vkey {
 		return
 	}
-	prev := s.vkey
 	s.vkey, s.vok = key, true
 	s.rebuild(e, a, mir)
 	s.version++
@@ -274,7 +277,8 @@ func (s *Screen) sync(e *screen.Env, a *state.Account) {
 			a.OpenChat(ref)
 		}
 	}
-	if a.Open != 0 && a.Open != prev.open {
+	if e.S.Req.RevealOpen {
+		e.S.Req.RevealOpen = false
 		s.reveal(a.Open)
 	}
 }
@@ -285,10 +289,44 @@ func droppedChats(m *model.Store) uint64 {
 	return m.DroppedOf(abi.EventTagChats) + m.DroppedOf(abi.EventTagChatUpdated)
 }
 
-// reveal scrolls the list to chat ref when it is listed.
+// reveal scrolls the list, and the rail's pictures, to chat ref when it is
+// listed. Only walking the list reveals (its keys, Req.RevealOpen): a chat
+// opened from elsewhere leaves the list where the reader put it.
 func (s *Screen) reveal(ref model.ChatRef) {
-	if _, ok := s.st.IndexOf(itemID(kChat, uint32(ref))); ok {
-		s.st.ScrollToID(itemID(kChat, uint32(ref)), base.AlignNearest)
+	id := itemID(kChat, uint32(ref))
+	if _, ok := s.st.IndexOf(id); ok && ref != 0 {
+		s.st.ScrollToID(id, base.AlignNearest)
+	}
+	if _, ok := s.cst.IndexOf(id); ok && ref != 0 {
+		s.cst.ScrollToID(id, base.AlignNearest)
+	}
+}
+
+// atTop reports whether st's view shows the top of its list.
+func atTop(st *base.VListState) bool {
+	id, off := st.Anchor()
+	first, ok := st.First()
+	return !ok || id == base.NoID || id == first && off < 0.5
+}
+
+// settle puts the list where an edit left it to go (s.place), once the
+// list holds the edit: the item and offset it names, or the top when that
+// item is gone or none is named.
+func (s *Screen) settle() {
+	if !s.place.on || s.st.Pending() {
+		return
+	}
+	s.place.on = false
+	id, off := s.place.id, s.place.off
+	if _, ok := s.st.IndexOf(id); !ok {
+		id, off = base.NoID, 0
+		if first, ok := s.st.First(); ok {
+			id = first
+		}
+	}
+	// already there: SetAnchor would only cancel a scroll under way
+	if now, at := s.st.Anchor(); id != base.NoID && (now != id || at != off) {
+		s.st.SetAnchor(id, off)
 	}
 }
 
@@ -390,7 +428,7 @@ func (s *Screen) rebuild(e *screen.Env, a *state.Account, mir *mirror) {
 	default:
 		s.collect(e, a, mir)
 	}
-	s.apply()
+	s.apply(s.searching(a))
 }
 
 // collect lists the chats the chips and the search show, then the search's
@@ -602,9 +640,46 @@ func (s *Screen) offersSelf(a *state.Account, me []byte) bool {
 	return ph != nil && len(s.needleB) > 0 && bytes.Contains(ph, s.needleB)
 }
 
-// apply moves the virtual list to s.next, with Move and Splice where the
+// apply moves the virtual list to s.next (search results when searching),
+// and keeps the reader's place: a list shown from its top stays at its top,
+// so a chat that moves or arrives there is seen; search results start at
+// their top; and leaving a search goes back to where the list was before it.
+// Further down, the edits keep the rows on screen still (VListState).
+func (s *Screen) apply(searching bool) {
+	q := ""
+	if searching {
+		q = s.query
+	}
+	switch {
+	case q != "" && s.shownQ == "":
+		id, off := s.st.Anchor()
+		s.before = placement{id: id, off: off}
+		s.place = placement{id: base.NoID, on: true}
+	case q != s.shownQ && q != "":
+		s.place = placement{id: base.NoID, on: true}
+	case q == "" && s.shownQ != "":
+		s.place, s.before = s.before, placement{}
+		s.place.on = true
+	case atTop(&s.st):
+		s.place = placement{id: base.NoID, on: true}
+	}
+	s.shownQ = q
+	s.edit()
+	s.settle()
+}
+
+// placement is where the list goes once an edit is in (Screen.place), or
+// where it was before a search (Screen.before): the item at the view's top
+// and the points into it; NoID is the list's top.
+type placement struct {
+	id  uint64
+	off float64
+	on  bool
+}
+
+// edit moves the virtual list to s.next, with Move and Splice where the
 // change is one chat moving or arriving, and Reset otherwise.
-func (s *Screen) apply() {
+func (s *Screen) edit() {
 	old, nw := s.ids, s.next
 	defer func() { s.ids = append(s.ids[:0], nw...) }()
 	if len(old) == 0 || len(nw) == 0 {

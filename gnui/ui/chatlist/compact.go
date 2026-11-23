@@ -37,7 +37,11 @@ func (s *Screen) Compact(e *screen.Env, r screen.Rect) {
 		for _, ref := range s.refs {
 			s.cids = append(s.cids, itemID(kChat, uint32(ref)))
 		}
+		top := atTop(&s.cst)
 		s.cst.Reset(s.cids)
+		if first, ok := s.cst.First(); ok && top {
+			s.cst.SetAnchor(first, 0) // a chat that comes first shows, as in the list
+		}
 	}
 	if len(s.refs) == 0 {
 		return
@@ -51,12 +55,6 @@ func (s *Screen) Compact(e *screen.Env, r screen.Rect) {
 	c.Push(v.Outer)
 	s.emptyBelow(e, v, false) // under the pictures: a double click shows the list
 	c.Pop()
-	if a.Open != 0 && a.Open != s.cOpen {
-		s.cOpen = a.Open
-		if _, ok := s.cst.IndexOf(itemID(kChat, uint32(a.Open))); ok {
-			s.cst.ScrollToID(itemID(kChat, uint32(a.Open)), base.AlignNearest)
-		}
-	}
 }
 
 // compactCell is one avatar: a click opens the chat, hovering names it, an
