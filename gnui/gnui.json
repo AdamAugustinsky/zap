@@ -5,8 +5,8 @@
 	"bundleName": "Zap",
 	"main": "./cmd/zapfast",
 	"executable": "zapfast",
-	"version": "0.20.13",
-	"build": "0.20.13",
+	"version": "0.20.14",
+	"build": "0.20.14",
 	"category": "public.app-category.social-networking",
 	"icon": "../packaging/macos/icon-1024.png",
 	"frameworks": [

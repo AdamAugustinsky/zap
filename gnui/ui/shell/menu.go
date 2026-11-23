@@ -482,6 +482,7 @@ func (sh *Shell) stepChat(a *state.Account, step int) {
 	}
 	sh.keepUnread(v[next])
 	a.OpenChat(v[next])
+	sh.S.Req.RevealOpen = true // stepping walks the list: it follows
 	// the chat the next step opens draws at once too
 	a.Prefetch(v[(next+step%len(v)+len(v))%len(v)])
 }
